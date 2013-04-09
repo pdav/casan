@@ -1,0 +1,7 @@
+.*
+*.o
+*.swp
+*/build-cli/
+send
+recv
+*.out
