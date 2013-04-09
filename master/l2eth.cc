@@ -15,11 +15,7 @@
 #include "l2.h"
 #include "l2eth.h"
 
-#define	ETHADDRLEN	6
-
-// http://stackoverflow.com/questions/3366812/linux-raw-ethernet-socket-bind-to-specific-protocol
-#define	ETHTYPE_SOS	0x88b5		// public use for prototype
-
+#include "../include/defs.h"
 
 /******************************************************************************
  * l2addr_eth methods
@@ -67,6 +63,8 @@ l2addr_eth::l2addr_eth (const char *a)
 	addr [i] = b ;
 }
 
+l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
+
 // copy constructor
 l2addr_eth::l2addr_eth (const l2addr_eth &x)
 {
@@ -95,6 +93,18 @@ l2addr_eth::~l2addr_eth ()
 /******************************************************************************
  * l2net_eth methods
  */
+
+int l2addr_eth::operator== (const l2addr &other)
+{
+    l2addr_eth *oe = (l2addr_eth *) &other ;
+    return memcmp (this->addr, oe->addr, ETHADDRLEN) != 0 ;
+}
+
+int l2addr_eth::operator!= (const l2addr &other)
+{
+    l2addr_eth *oe = (l2addr_eth *) &other ;
+    return memcmp (this->addr, oe->addr, ETHADDRLEN) == 0 ;
+}
 
 int l2net_eth::init (const char *iface)
 {
@@ -149,13 +159,20 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
     return r ;
 }
 
-pktype_t l2net_eth::recv (l2addr *saddr, void *data, int *len)
+int l2net_eth::bsend (void *data, int len)
+{
+    return send (&l2addr_eth_broadcast, data, len) ;
+}
+
+pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 {
     struct sockaddr_ll sll ;
     socklen_t ssll ;
-    l2addr_eth *a = (l2addr_eth *) saddr ;
+    l2addr_eth **a = (l2addr_eth **) saddr ;
     int r ;
     pktype_t pktype ;
+
+    *a = new l2addr_eth ;
 
     memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
@@ -189,52 +206,8 @@ pktype_t l2net_eth::recv (l2addr *saddr, void *data, int *len)
 		break ;
 	}
 
-	memcpy (a->addr, sll.sll_addr, ETHADDRLEN) ;
+	memcpy ((*a)->addr, sll.sll_addr, ETHADDRLEN) ;
     }
 
     return pktype ;
 }
-
-#if 0
-main (int argc, char *argv [])
-{
-    l2desc_t *desc ;
-
-    if (argc != 2)
-    {
-	fprintf (stderr, "usage: %s if\n", argv [0]) ;
-	exit (1) ;
-    }
-
-    desc = eth_init (argv [1]) ;
-    if (desc == NULL)
-    {
-	perror ("open interface") ;
-	exit (1) ;
-    }
-
-    for (;;)
-    {
-	char coucou [] = "coucou !\r" ;
-	ethaddr_t b = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } ;
-	int r ;
-
-	r = eth_send (desc, b, coucou, sizeof coucou) ;
-	if (r == -1)
-	   perror ("eth_send") ;
-
-	if (eth_is_data_available (desc))
-	{
-	    ethaddr_t saddr ;
-	    pktype_t pkt ;
-	    char data [2000] ;
-	    int len ;
-
-	    len = sizeof data ;
-	    pkt = eth_recv (desc, saddr, data, &len) ;
-	    printf ("pkt=%d len=%d\n", pkt, len) ;
-	}
-	sleep (1) ;
-    }
-}
-#endif

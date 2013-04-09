@@ -11,18 +11,6 @@
 #include "l2eth.h"
 #include "engine.h"
 
-int data_available (int desc)
-{
-    struct pollfd fds [1] ;
-    int r ;
-
-    fds [0].fd = desc ;
-    fds [0].events = POLLIN ;
-    fds [0].revents = 0 ;
-    r = poll (fds, NTAB (fds), 0) ;
-    return r == 1 ;
-}
-
 int main (int argc, char *argv [])
 {
     l2net *l ;
@@ -30,19 +18,40 @@ int main (int argc, char *argv [])
     l2addr_eth *ae ;
     l2addr_eth rae ;
     l2addr *la ;
-    int s ;
+    l2addr_eth *sa ;			// slave address
+    slave s ;				// slave
     byte buf [512] ;
     char coucou [] = "coucou++ !\r" ;
     engine e ;
 
+    // start SOS engine machinery
     e.init () ;
-    std::cout << "JE M'ENDORS\n" ;
-    for (;;)
+
+    // start new interface
+    l = new l2net_eth ;
+    if (l->init ("eth0") == -1)
     {
-	sleep (3) ;
-	le = new l2net_eth ;
-	e.start_net (le) ;
+	perror ("init") ;
+	exit (1) ;
     }
+    // register network
+    e.start_net (l) ;
+    std::cout << "eth0 initialized\n" ;
+
+    sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;
+    s.set_l2addr (sa) ;
+    s.set_l2net (l) ;
+    e.add_slave (s) ;
+
+    sleep (1000) ;
+
+    // send packets
+//    for (;;)
+//    {
+//	sleep (3) ;
+//	le = new l2net_eth ;
+//	e.start_net (le) ;
+//    }
 
 #if 0
     le = new l2net_eth ;
