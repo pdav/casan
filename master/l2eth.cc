@@ -97,13 +97,13 @@ l2addr_eth::~l2addr_eth ()
 int l2addr_eth::operator== (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr, oe->addr, ETHADDRLEN) != 0 ;
+    return memcmp (this->addr, oe->addr, ETHADDRLEN) == 0 ;
 }
 
 int l2addr_eth::operator!= (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr, oe->addr, ETHADDRLEN) == 0 ;
+    return memcmp (this->addr, oe->addr, ETHADDRLEN) != 0 ;
 }
 
 int l2net_eth::init (const char *iface)
