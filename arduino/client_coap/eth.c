@@ -174,7 +174,7 @@ main (int argc, char *argv [])
 		// On rajoute le type
 		char a_envoyer[10];
 		// Type 1 | TKL 4
-		a_envoyer[0] = 0x14;
+		a_envoyer[0] = 0x15;
 		a_envoyer[1] = 0x23;
 
 		// ID : 1
@@ -186,19 +186,23 @@ main (int argc, char *argv [])
 		a_envoyer[5] = 0x12;
 		a_envoyer[6] = 0x13;
 		a_envoyer[7] = 0x14;
+		a_envoyer[8] = 0x15;
+		a_envoyer[9] = 0x15;
+		a_envoyer[10] = 0x15;
+		a_envoyer[11] = 0x17;
 
 		// Séparateur
-		a_envoyer[8] = 0xFF;
+		a_envoyer[12] = 0xFF;
 	
 		// données
-		a_envoyer[9] = 0x11;
-		a_envoyer[10] = 0x12;
-		a_envoyer[11] = '\0';
+		a_envoyer[13] = 0x11;
+		a_envoyer[14] = 0x12;
+		a_envoyer[15] = '\0';
 
 		ethaddr_t b = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } ;
 		int r ;
 
-		r = eth_send (desc, b, a_envoyer, 12) ;
+		r = eth_send (desc, b, a_envoyer, 16) ;
 		if (r == -1)
 			perror ("eth_send") ;
 

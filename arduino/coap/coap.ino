@@ -29,14 +29,14 @@ void loop()
 		uint8_t length;
 		uint8_t token[10];
 		uint8_t token_length;
-		int id;
-		int type;
+		uint8_t id[2];
+		uint8_t type;
 		uint8_t code;
-		uint8_t payload[30];
+		uint8_t *payload;
 		{
 			uint8_t ret;
 			ret = coap->decode_individual_coap(mac_src, &type, &code, 
-					&id, &token_length, token, payload, &length);
+					id, &token_length, token, &length, &payload);
 
 			/*
 			switch(ret)
@@ -55,7 +55,9 @@ void loop()
 		}
 
 		Serial.print(F("id "));
-		Serial.println(id,HEX);
+		Serial.print(id[0],HEX);
+		Serial.print(':');
+		Serial.println(id[1],HEX);
 		Serial.print(F("type "));
 		Serial.println(type, HEX);
 		Serial.print(F("token_length "));
@@ -73,17 +75,19 @@ void loop()
 		Serial.print(F("code "));
 		Serial.println(code, HEX);
 		Serial.print(F("payloadlen "));
-		Serial.println(length);
+		Serial.println(length);		// TODO : FIXME the length isn't the right
 		Serial.print(F("payload "));
-		{
+
+		{	// We display the payload
 			int i ;
 			for (i = 0 ; i < length ; i++)
 			{
-				Serial.print (payload[i], HEX);
+				Serial.print (*(payload + i) , HEX);
 				Serial.print(':');
 			}
 			Serial.println();
 		}
+		coap->emit_individual_coap(mac_src, type, code, id, token_length, token, length, payload );
 	}
 	
 	delay(1000);
