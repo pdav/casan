@@ -8,37 +8,31 @@
  * - setting the sender condition variable and signalling this thread
  *
  * There is a receiver thread by L2 network. These receiver threads
- * are used to receive events from clients:
+ * are used to receive events from slaves:
  * - events which can be matched with a request are handled through
  *   the request handler
  * - events which can not be paired with a request are handled through
- *   the client handler
- * - events which are not issued by a recognized client are ignored.
+ *   the slave handler
+ * - events which are not issued by a recognized slave are ignored.
  */
 
 
 #include <iostream>
 #include <chrono>
 
-#include <poll.h>
-#define	NTAB(t)	(sizeof (t)/sizeof (t)[0])
 #include <string.h>
 
 #include "engine.h"
+
+#include "../include/defs.h"
+
+#define	MAXBUF	1024
 
 struct receiver
 {
     l2net *l2 ;
     std::thread *thr ;
     receiver_t next ;
-} ;
-
-struct client
-{
-    l2net *l2 ;
-    l2addr *addr ;
-    req_handler_t handler ;
-    client_t next ;
 } ;
 
 /*
@@ -48,7 +42,6 @@ struct client
 engine::engine ()
 {
     rlist = NULL ;
-    clist = NULL ;
     tsender = NULL ;
 }
 
@@ -62,6 +55,8 @@ engine::~engine ()
 	delete rlist ;
 	rlist = next ;
     }
+    slist.clear () ;
+    qlist.clear () ;
 }
 
 void engine::init (void)
@@ -76,7 +71,7 @@ void engine::start_net (l2net *l2)
 {
     if (tsender != NULL)
     {
-	std::lock_guard <std::mutex> lk (mut) ;
+	std::lock_guard <std::mutex> lk (mtx) ;
 	receiver_t r ;
 
 	r = new struct receiver ;
@@ -93,24 +88,17 @@ void engine::stop_net (l2net *l2)
 {
 }
 
-void engine::add_client (l2net *l2, l2addr *a, req_handler_t handler)
+void engine::add_slave (slave &s)
 {
-    std::lock_guard <std::mutex> lk (mut) ;
-    client_t c ;
+    std::lock_guard <std::mutex> lk (mtx) ;
 
-    c = new struct client ;
-    c->l2 = l2 ;
-    c->addr = a ;
-    c->handler = handler ;
-    c->next = clist ;
-
-    clist = c ;
+    slist.push_front (s) ;
     condvar.notify_one () ;
 }
 
 void engine::add_request (request &r)
 {
-    std::lock_guard <std::mutex> lk (mut) ;
+    std::lock_guard <std::mutex> lk (mtx) ;
 
     qlist.push_front (r) ;
     condvar.notify_one () ;
@@ -127,7 +115,7 @@ void engine::add_request (request &r)
 
 void engine::sender (void)
 {
-    std::unique_lock <std::mutex> lk (mut) ;
+    std::unique_lock <std::mutex> lk (mtx) ;
     std::cv_status cvstat ;
 
     for (;;)
@@ -136,6 +124,14 @@ void engine::sender (void)
 	if (cvstat == std::cv_status::timeout)
 	{
 	    std::cout << "TIMEOUT\n" ;
+	    /*
+	     * Send hello
+	     */
+
+	    receiver_t r ;
+	    char buf [] = "coucou++ !" ;
+	    for (r = rlist ; r != NULL ; r = r->next)
+		r->l2->bsend (buf, strlen (buf)) ;
 	}
 	else
 	{
@@ -151,7 +147,7 @@ void engine::sender (void)
 	    }
 
 	    /*
-	     * Traverse client list to check new entries
+	     * Traverse slave list to check new entries
 	     */
 
 	    /*
@@ -192,19 +188,41 @@ void engine::sender (void)
 
 void engine::receiver (l2net *l2)
 {
-    struct pollfd fds [1] ;
-    int r ;
-
-    fds [0].fd = l2->getfd () ;
-    fds [0].events = POLLIN ;
-    fds [0].revents = 0 ;
+    l2addr *a ;
+    int len ;
+    pktype_t pkt ;
+    char data [MAXBUF] ;
+    int found ;
 
     for (;;)
     {
-	r = poll (fds, NTAB (fds), 0) ;
-	if (r == 1)
+	len = sizeof data ;
+	pkt = l2->recv (&a, data, &len) ;
+	std::cout << "pkt=" << pkt << ", len=" << len << std::endl ;
+
+	/*
+	 * Search originator slave
+	 */
+
+	std::list <slave>::iterator s ;
+
+	found = 0 ;
+	for (s = slist.begin () ; s != slist.end () ; s++)
 	{
-	    std::cout << "received a packet on " << l2->getfd () << "\n" ;
+	    if (*a == *(s->addr_))
+	    {
+		found = 1 ;
+		break ;
+	    }
+	}
+	delete a ;
+	if (found)
+	{
+	    std::cout << "slave found" << std::endl ;
+	}
+	else
+	{
+	    std::cout << "slave not found" << std::endl ;
 	}
     }
 }
