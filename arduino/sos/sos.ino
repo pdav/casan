@@ -9,22 +9,42 @@
 
 uint8_t eth_type[] = { 0x42, 0x42 };
 uint8_t mac_addr[] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05 };  
-uint8_t mac_src[] = { 0x00, 0x22, 0x68, 0x32, 0x10, 0xf7 }; // the master
-Coap *coap;
+//uint8_t mac_src[] = { 0x00, 0x22, 0x68, 0x32, 0x10, 0xf7 }; // the master
+Sos *sos;
 
-void setup()
-{
+void setup() {
+	/*
 	wdt_disable();
+	*/
 	Serial.begin (9600) ;
 	Serial.println(F("start"));
-	coap = new Coap(mac_addr, eth_type);
+
+	EthernetRaw eth = new EthernetRaw();
+	eth->setmac(mac_addr);
+	eth->setethtype(eth_type);
+
+	sos = new sos();
+	sos->set_l2(eth);
+	sos->register_resource("/light", process_light);
+	sos->register_resource("/temp", process_temp);
 }
 
-void loop()
-{
+void process_light(enum coap_request_method coap_req, uint8_t *option) {
+	Serial.println(F("process_light"));
+}
+
+void process_temp(enum coap_request_method coap_req, uint8_t *option) {
+	Serial.println(F("process_temp"));
+}
+
+
+void loop() {
 	Serial.println(F("loop"));
+
+	/*
 	uint8_t rx_length = coap->coap_available();
-	if(rx_length > 0) {
+	if(rx_length > 0)
+	{
 		uint8_t length;
 		uint8_t token[10];
 		uint8_t token_length;
@@ -32,8 +52,8 @@ void loop()
 		uint8_t type;
 		uint8_t code;
 		uint8_t *payload;
-		/*
-		{ 
+
+		{
 			uint8_t ret;
 			ret = coap->decode_individual_coap(mac_src, &type, &code, 
 					id, &token_length, token, &length, &payload);
@@ -51,7 +71,6 @@ void loop()
 				return;
 			}
 		}
-	*/
 
 		Serial.print(F("id "));
 		Serial.print(id[0],HEX);
@@ -88,6 +107,9 @@ void loop()
 		}
 		coap->emit_individual_coap(mac_src, type, code, id, token_length, token, length, payload );
 	}
-	
+	*/
+
+	sos->loop();
+
 	delay(1000);
 }
