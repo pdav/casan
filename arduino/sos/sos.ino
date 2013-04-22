@@ -29,11 +29,11 @@ void setup() {
 	sos->register_resource("/temp", process_temp);
 }
 
-void process_light(enum coap_request_method coap_req, uint8_t *option) {
+uint8_t process_light(Message &in, Message &out) {
 	Serial.println(F("process_light"));
 }
 
-void process_temp(enum coap_request_method coap_req, uint8_t *option) {
+uint8_t process_temp(Message &in, Message &out) {
 	Serial.println(F("process_temp"));
 }
 

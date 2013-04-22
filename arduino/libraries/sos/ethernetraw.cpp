@@ -1,4 +1,4 @@
-#include "EthernetRaw.h"
+#include "ethernetraw.h"
 
 EthernetRaw::EthernetRaw() : _s(0) {//_sock(MAX_SOCK_NUM)
 	W5100.init();

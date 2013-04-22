@@ -1,8 +1,8 @@
-#ifndef sos_h
-#define sos_h
+#ifndef __SOS_H__
+#define __SOS_H__
 
 #include "Arduino.h"
-#include "Coap.h"
+#include "coap.h"
 
 #define SOS_BUF_LEN 50
 
@@ -25,7 +25,7 @@ class Sos {
 
 		void set_l2(EthernetRaw *e);
 		void regiter_resource(char *name, 
-			uint8_t (*handler)(enum request_method, uint8_t*) );
+			uint8_t (*handler)(Message &in, Message &out) );
 		void set_status(enum status);
 		void reset (void);
 		void set_ttl (int ttl);	// set ttl
