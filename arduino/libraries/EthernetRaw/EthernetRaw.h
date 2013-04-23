@@ -18,6 +18,7 @@ class EthernetRaw {
 		EthernetRaw();
 		void setmac(uint8_t *mac_address);
 		void setethtype(uint8_t *eth_type);
+		void setethtype(uint16_t eth_type);
 		size_t send(uint8_t *addr, uint8_t b);
 		size_t send(uint8_t *mac_dest, const uint8_t *data, size_t len);
 		int available();
