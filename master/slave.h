@@ -3,6 +3,7 @@
 
 #include <mutex>
 
+#include "sos.h"
 #include "l2.h"
 #include "req.h"
 

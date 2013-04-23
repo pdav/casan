@@ -45,42 +45,4 @@ int main (int argc, char *argv [])
 
     sleep (1000) ;
 
-    // send packets
-//    for (;;)
-//    {
-//	sleep (3) ;
-//	le = new l2net_eth ;
-//	e.start_net (le) ;
-//    }
-
-#if 0
-    le = new l2net_eth ;
-    l = le ;
-
-    ae = new l2addr_eth ("ff:ff:ff:ff:ff:ff") ;
-
-    if (l->init ("eth0") == -1)
-    {
-	perror ("init") ;
-	exit (1) ;
-    }
-
-    for (;;)
-    {
-	if (l->send (ae, buf, sizeof buf) == -1)
-	    perror ("send") ;
-
-	if (data_available (l->getfd ()))
-	{
-	    int len ;
-	    pktype_t pkt ;
-
-	    len = sizeof (buf) ;
-	    pkt = l->recv (&rae, buf, &len) ;
-	    std::cout << "pkt=" << pkt << ", len=" << len << std::endl ;
-	}
-
-	sleep (1) ;
-    }
-#endif
 }

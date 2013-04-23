@@ -7,6 +7,7 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "sos.h"
 #include "l2.h"
 #include "slave.h"
 #include "req.h"

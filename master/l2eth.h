@@ -3,6 +3,7 @@
 
 #include <iostream>
 
+#include "sos.h"
 #include "l2.h"
 
 class l2net_eth ;

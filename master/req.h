@@ -1,6 +1,7 @@
 #ifndef SOS_REQ_H
 #define SOS_REQ_H
 
+#include "sos.h"
 #include "l2.h"
 
 class request ;

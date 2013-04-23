@@ -150,6 +150,12 @@ void engine::sender (void)
 	     * Traverse slave list to check new entries
 	     */
 
+	    std::list <slave>::iterator s ;
+
+	    for (s = slist.begin () ; s != slist.end () ; s++)
+	    {
+	    }
+
 	    /*
 	     * Traverse request list to check new entries
 	     */
@@ -197,7 +203,7 @@ void engine::receiver (l2net *l2)
     for (;;)
     {
 	len = sizeof data ;
-	pkt = l2->recv (&a, data, &len) ;
+	pkt = l2->recv (&a, data, &len) ;	// create a l2addr *a
 	std::cout << "pkt=" << pkt << ", len=" << len << std::endl ;
 
 	/*
@@ -215,14 +221,20 @@ void engine::receiver (l2net *l2)
 		break ;
 	    }
 	}
-	delete a ;
+	delete a ;			// remove address created by recv()
+
+	/*
+	 * If originator slave is found, process the request.
+	 * Else, ignore it.
+	 */
+
 	if (found)
 	{
+	    /*
+	     * Process request
+	     */
+
 	    std::cout << "slave found" << std::endl ;
-	}
-	else
-	{
-	    std::cout << "slave not found" << std::endl ;
 	}
     }
 }
