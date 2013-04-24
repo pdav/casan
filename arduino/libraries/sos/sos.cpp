@@ -7,13 +7,15 @@ Sos::Sos() {
 void Sos::set_l2(EthernetRaw *e) {
 	_coap->set_l2(e);
 }
-void Sos::regiter_resource(char *name, uint8_t (*handler)(uint8_t, uint8_t*) ) {
+
+void Sos::regiter_resource(char *name, uint8_t (*handler)(Message &in, Message &out) ) {
 	_rmanager->add_resource(name, handler);
 }
 
 void Sos::set_status(enum status s) {
 	_status = s;
 }
+
 void Sos::reset (void) {
 }
 
@@ -26,7 +28,6 @@ void Sos::reset (void) {
 	// TODO : we need to restart all the application, delete all the history of the exchanges
 }
 
-// TODO
 void Sos::send_register() {
 	uint8_t * dest;
 	if( _status == SL_WAITING_KNOWN) {
@@ -35,20 +36,18 @@ void Sos::send_register() {
 	else {
 		dest = _broadcast;
 	}
-	char message[SOS_BUF_LEN];
-	sprintf(message, "/.well-known/sos?register=%d", _uuid);
-	_coap->emit_individual_coap( dest,
-	COAP_MES_TYPE_NON, 
-	COAP_CODE_POST, 
-	_current_message_id++,
-	0,			// token_length
-	NULL,		// *token
-	strlen(message),	// payload_len
-	message);	// *payload
+	Message m;
+	{
+		char message[SOS_BUF_LEN];
+		sprintf(message, "/.well-known/sos?register=%d", _uuid);
+		m.set_payload(SOS_BUF_LEN, message);
+	}
+	m.set_type( COAP_MES_TYPE_NON );
+	m.set_id(_current_message_id++);
+	_coap->send(dest, m);
 }
 
 void Sos::loop() {
-
 	timeout_handler();
 	if(_coap->coap_available()) {
 		_coap->fetch();

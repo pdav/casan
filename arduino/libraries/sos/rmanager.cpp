@@ -4,27 +4,10 @@ Rmanager::Rmanager() {
 }
 
 Rmanager::~Rmanager() { 
-	rmanager_s * tmp = _resources;
-	rmanager_s * tmp2 = tmp;
-	while(tmp != NULL) {
-		if(tmp->s == NULL) {
-			free(tmp->name);
-			free(tmp);
-			break;
-		}
-		while(tmp->s != NULL) {
-			tmp2 = tmp;
-			tmp = tmp->s;
-		}
-		free(tmp->name);
-		free(tmp);
-		tmp2->s = NULL;
-		tmp = _resources;
-		tmp2 = tmp;
-	}
+	reset();
 }
 
-void Rmanager::add_resource(char *name, uint8_t (*handler)(uint8_t, uint8_t*)) {
+void Rmanager::add_resource(char *name, uint8_t (*handler)(Message &in, Message &out)) {
 	rmanager_s * newresource = malloc(sizeof(rmanager_s));
 	newresource->name = malloc(strlen(name) + 1);
 	memcpy(newresource->name, name, strlen(name) + 1);
@@ -61,7 +44,6 @@ uint8_t Rmanager::request_resource(char *name, enum coap_request_method coap_req
 		default :
 			return exec_request(name, coap_req, option);
 	}
-
 	return res;
 }
 

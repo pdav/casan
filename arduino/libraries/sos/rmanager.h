@@ -12,7 +12,7 @@ public:
 	Rmanager();
 	~Rmanager();
 
-	void add_resource(char *name, uint8_t (*handler)(enum coap_request_method, uint8_t*));
+	void add_resource(char *name, uint8_t (*handler)(Message &in, Message &out));
 	uint8_t request_resource(char *name, enum coap_request_method, uint8_t *option);
 	void delete_resource(char *name);
 	void delete_resource(rmanager_s *r);
