@@ -5,7 +5,7 @@
 
 #include "sos.h"
 #include "l2.h"
-#include "req.h"
+#include "msg.h"
 
 class slave
 {
@@ -23,25 +23,32 @@ class slave
 	~slave () ;			// destructor
 
 	void reset (void) ;		// reset state to void
-	void set_l2net (l2net *l2) ;	// set l2 network
-	void set_l2addr (l2addr *a) ;	// set address
-	void set_ttl (int ttl) ;	// set ttl
-	void set_handler (req_handler_t h) ;// set handler for incoming requests
+
+	// Mutators
+	void l2 (l2net *l2) ;		// set l2 network
+	void addr (l2addr *a) ;		// set address
+	void ttl (int ttl) ;		// set ttl
+
+	// Accessors
+	l2net *l2 (void) ;
+	l2addr *addr (void) ;
+	int ttl (void) ;
+
+	void handler (reply_handler_t h) ;// handler for incoming requests
 
     protected:
 	// process a message from this slave
 	// data is NULL if this is timeout
 	void process (void *data, int len) ;
 
-	l2net *l2_ ;			// l2 network this slave is on
-	l2addr *addr_ ;			// slave address
-
 	friend class engine ;
 
     private:
+	l2net *l2_ ;			// l2 network this slave is on
+	l2addr *addr_ ;			// slave address
 	int ttl_ ;			// remaining ttl
 	enum status status_ ;		// current status of slave
-	req_handler_t handler_ ;	// handler to process answers
+	reply_handler_t handler_ ;	// handler to process answers
 } ;
 
 #endif

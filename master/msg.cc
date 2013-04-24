@@ -8,7 +8,7 @@ int msg::global_message_id = 0 ;
 
 msg::msg ()
 {
-    addr_ = 0 ;
+    peer_ = 0 ;
     msg_ = 0 ; msglen_ = 0 ;
     payload_ = 0 ; paylen_ = 0 ;
     token_ = 0 ; token_ = 0 ;
@@ -47,14 +47,9 @@ void msg::recv (l2net *l2)
  * Mutators
  */
 
-void msg::l2 (l2net *l)
+void msg::peer (slave *p)
 {
-    net_ = l ;
-}
-
-void msg::destaddr (l2addr *a)
-{
-    addr_ = a ;
+    peer_ = p ;
 }
 
 void msg::token (void *data, int len)
@@ -100,9 +95,9 @@ void msg::handler (reply_handler_t func)
  * Accessors
  */
 
-l2addr *msg::srcaddr (void)
+slave *msg::peer (void)
 {
-    return addr_ ;
+    return peer_ ;
 }
 
 pktype_t msg::pktype (void)

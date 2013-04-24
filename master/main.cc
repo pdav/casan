@@ -38,9 +38,10 @@ int main (int argc, char *argv [])
     e.start_net (l) ;
     std::cout << "eth0 initialized\n" ;
 
+    // register new slave
     sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;
-    s.set_l2addr (sa) ;
-    s.set_l2net (l) ;
+    s.addr (sa) ;
+    s.l2 (l) ;
     e.add_slave (s) ;
 
     sleep (1000) ;

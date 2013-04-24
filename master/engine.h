@@ -6,13 +6,14 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 #include "sos.h"
 #include "l2.h"
 #include "slave.h"
 #include "msg.h"
 
-typedef struct receiver *receiver_t ;
+struct receiver ;
 
 class engine
 {
@@ -34,16 +35,19 @@ class engine
 	void add_request (msg &m) ;
 
     private:
-	receiver_t rlist ;
-	std::list <slave> slist ;
-	std::list <msg> mlist ;
+	long int hid_ ; 		// hello id, initialized at boot time
 
-	std::thread *tsender ;
-	std::mutex mtx ;
-	std::condition_variable condvar ;
+	std::list <receiver> rlist_ ;
+	std::list <slave> slist_ ;
+	std::list <msg> mlist_ ;
+
+	std::thread *tsender_ ;
+	std::mutex mtx_ ;
+	std::condition_variable condvar_ ;
 
 	void sender (void) ;
-	void receiver (l2net *l2) ;
+	void receive (receiver *r) ;
+	std::chrono::system_clock::time_point next_timeout (void) ;
 } ;
 
 #endif

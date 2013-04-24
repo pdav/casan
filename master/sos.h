@@ -8,4 +8,7 @@ typedef unsigned char byte ;
 // NONE:        not a packet (or not for me)
 typedef enum pktype { PK_ME, PK_BCAST, PK_NONE } pktype_t ;
 
+// delays (in milliseconds)
+#define	INTERVAL_HELLO	30000
+
 #endif

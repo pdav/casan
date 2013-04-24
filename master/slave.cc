@@ -29,22 +29,22 @@ void slave::reset (void)
     handler_ = 0 ;
 }
 
-void slave::set_l2net (l2net *l2)
+void slave::l2 (l2net *l2)
 {
     l2_ = l2 ;
 }
 
-void slave::set_l2addr (l2addr *a)
+void slave::addr (l2addr *a)
 {
     addr_ = a ;
 }
 
-void slave::set_ttl (int ttl)
+void slave::ttl (int ttl)
 {
     ttl_ = ttl ;
 }
 
-void slave::set_handler (req_handler_t h)
+void slave::handler (reply_handler_t h)
 {
     handler_ = h ;
 }

@@ -5,6 +5,7 @@
 #include "l2.h"
 
 class msg ;
+class slave ;
 
 typedef void (*reply_handler_t) (msg *request, msg *reply) ;
 
@@ -31,8 +32,7 @@ class msg
 	void recv (l2net *l2) ;
 
 	// mutators (to send messages)
-	void l2 (l2net *l) ;
-	void destaddr (l2addr *a) ;
+	void peer (slave *s) ;
 	void token (void *token, int len) ;
 	void type (msgtype_t type) ;
 	void code (int code) ;
@@ -40,7 +40,7 @@ class msg
 	void handler (reply_handler_t h) ;
 
 	// accessors (for received messages)
-	l2addr *srcaddr (void) ;
+	slave *peer (void) ;
 	pktype_t pktype (void) ;
 	void *token (int *toklen) ;
 	int id (void) ;
@@ -66,8 +66,7 @@ class msg
 	pktype_t pktype_ ;
 
 	// CoAP specific variables
-	l2net *net_ ;
-	l2addr *addr_ ;
+	slave *peer_ ;
 	unsigned char *payload_ ;
 	int paylen_ ;
 	unsigned char *token_ ;

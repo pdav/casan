@@ -31,8 +31,8 @@
 struct receiver
 {
     l2net *l2 ;
+    std::chrono::system_clock::time_point last_hello ;
     std::thread *thr ;
-    receiver_t next ;
 } ;
 
 /*
@@ -41,46 +41,42 @@ struct receiver
 
 engine::engine ()
 {
-    rlist = NULL ;
-    tsender = NULL ;
+    std::chrono::system_clock::time_point now ;
+
+    now = std::chrono::system_clock::now () ;
+    hid_ = std::chrono::system_clock::to_time_t (now) ;
+
+    // rlist_ = NULL ;
+    tsender_ = NULL ;
 }
 
 engine::~engine ()
 {
-    while (rlist != NULL)
-    {
-	receiver_t next ;
-
-	next = rlist->next ;
-	delete rlist ;
-	rlist = next ;
-    }
-    slist.clear () ;
-    mlist.clear () ;
+    rlist_.clear () ;
+    slist_.clear () ;
+    mlist_.clear () ;
 }
 
 void engine::init (void)
 {
-    if (tsender == NULL)
+    if (tsender_ == NULL)
     {
-	tsender = new std::thread (&engine::sender, this) ;
+	tsender_ = new std::thread (&engine::sender, this) ;
     }
 }
 
 void engine::start_net (l2net *l2)
 {
-    if (tsender != NULL)
+    if (tsender_ != NULL)
     {
-	std::lock_guard <std::mutex> lk (mtx) ;
-	receiver_t r ;
+	std::lock_guard <std::mutex> lk (mtx_) ;
+	receiver *r ;
 
-	r = new struct receiver ;
+	r = new receiver ;
 	r->l2 = l2 ;
-	r->thr = NULL ;			// not started
-
-	r->next = rlist ;
-	rlist = r ;
-	condvar.notify_one () ;
+	r->thr = NULL ;
+	rlist_.push_front (*r) ;
+	condvar_.notify_one () ;
     }
 }
 
@@ -90,18 +86,45 @@ void engine::stop_net (l2net *l2)
 
 void engine::add_slave (slave &s)
 {
-    std::lock_guard <std::mutex> lk (mtx) ;
+    std::lock_guard <std::mutex> lk (mtx_) ;
 
-    slist.push_front (s) ;
-    condvar.notify_one () ;
+    slist_.push_front (s) ;
+    condvar_.notify_one () ;
 }
 
 void engine::add_request (msg &m)
 {
-    std::lock_guard <std::mutex> lk (mtx) ;
+    std::lock_guard <std::mutex> lk (mtx_) ;
 
-    mlist.push_front (m) ;
-    condvar.notify_one () ;
+    mlist_.push_front (m) ;
+    condvar_.notify_one () ;
+}
+
+/******************************************************************************
+ * Utility functions
+ */
+
+std::chrono::system_clock::time_point engine::next_timeout (void)
+{
+    std::chrono::system_clock::time_point next ;
+    std::list <receiver>::iterator r ;
+
+    next = std::chrono::system_clock::time_point::max () ;
+
+    /*
+     * HELLO message on each network
+     */
+
+    for (r = rlist_.begin () ; r != rlist_.end () ; r++)
+    {
+	std::chrono::system_clock::time_point h ;
+
+	h = r->last_hello + std::chrono::milliseconds (INTERVAL_HELLO) ;
+	if (next > h)
+	    next = h ;
+    }
+
+    return next ;
 }
 
 /******************************************************************************
@@ -115,12 +138,12 @@ void engine::add_request (msg &m)
 
 void engine::sender (void)
 {
-    std::unique_lock <std::mutex> lk (mtx) ;
+    std::unique_lock <std::mutex> lk (mtx_) ;
     std::cv_status cvstat ;
 
     for (;;)
     {
-	cvstat = condvar.wait_for (lk, std::chrono::seconds (10)) ;
+	cvstat = condvar_.wait_for (lk, std::chrono::seconds (10)) ;
 	if (cvstat == std::cv_status::timeout)
 	{
 	    std::cout << "TIMEOUT\n" ;
@@ -128,9 +151,10 @@ void engine::sender (void)
 	     * Send hello
 	     */
 
-	    receiver_t r ;
+	    std::list <receiver>::iterator r ;
 	    char buf [] = "coucou++ !" ;
-	    for (r = rlist ; r != NULL ; r = r->next)
+
+	    for (r = rlist_.begin () ; r != rlist_.end () ; r++)
 		r->l2->bsend (buf, strlen (buf)) ;
 	}
 	else
@@ -139,11 +163,15 @@ void engine::sender (void)
 	     * Traverse the receiver list to check new entries
 	     */
 
-	    receiver_t r ;
-	    for (r = rlist ; r != NULL && r->thr == NULL ; r = r->next)
+	    std::list <receiver>::iterator r ;
+
+	    for (r = rlist_.begin () ; r != rlist_.end () ; r++)
 	    {
-		std::cout << "Found a receiver to start\n" ;
-		r->thr = new std::thread (&engine::receiver, this, r->l2) ;
+		if (r->thr == NULL)
+		{
+		    std::cout << "Found a receiver to start\n" ;
+		    r->thr = new std::thread (&engine::receive, this, &(*r)) ;
+		}
 	    }
 
 	    /*
@@ -152,7 +180,7 @@ void engine::sender (void)
 
 	    std::list <slave>::iterator s ;
 
-	    for (s = slist.begin () ; s != slist.end () ; s++)
+	    for (s = slist_.begin () ; s != slist_.end () ; s++)
 	    {
 	    }
 
@@ -162,7 +190,7 @@ void engine::sender (void)
 
 	    std::list <msg>::iterator m ;
 
-	    for (m = mlist.begin () ; m != mlist.end () ; m++)
+	    for (m = mlist_.begin () ; m != mlist_.end () ; m++)
 	    {
 		if (m->ntrans_ == 0)
 		{
@@ -180,7 +208,7 @@ void engine::sender (void)
  * Block on packet reception on the given interface
  */
 
-void engine::receiver (l2net *l2)
+void engine::receive (receiver *r)
 {
     l2addr *a ;
     int len ;
@@ -191,7 +219,7 @@ void engine::receiver (l2net *l2)
     for (;;)
     {
 	len = sizeof data ;
-	pkt = l2->recv (&a, data, &len) ;	// create a l2addr *a
+	pkt = r->l2->recv (&a, data, &len) ;	// create a l2addr *a
 	std::cout << "pkt=" << pkt << ", len=" << len << std::endl ;
 
 	/*
@@ -201,7 +229,7 @@ void engine::receiver (l2net *l2)
 	std::list <slave>::iterator s ;
 
 	found = 0 ;
-	for (s = slist.begin () ; s != slist.end () ; s++)
+	for (s = slist_.begin () ; s != slist_.end () ; s++)
 	{
 	    if (*a == *(s->addr_))
 	    {
