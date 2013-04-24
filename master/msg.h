@@ -4,6 +4,10 @@
 #include "sos.h"
 #include "l2.h"
 
+class msg ;
+
+typedef void (*reply_handler_t) (msg *request, msg *reply) ;
+
 /*
  * Message encoder/decoder
  *
@@ -22,41 +26,58 @@ class msg
 	~msg () ;				// destructor
 
 	// basic operations
-	void reset () ;				// reset to a known state
-	void send (l2net *l2) ;
+	void reset (void) ;			// reset to a known state
+	void send (void) ;
 	void recv (l2net *l2) ;
 
-	// settors (to send messages)
+	// mutators (to send messages)
+	void l2 (l2net *l) ;
 	void destaddr (l2addr *a) ;
-	void token (int token) ;
+	void token (void *token, int len) ;
 	void type (msgtype_t type) ;
 	void code (int code) ;
 	void payload (void *data, int len) ;
+	void handler (reply_handler_t h) ;
 
-	// accessor (for received messages)
+	// accessors (for received messages)
 	l2addr *srcaddr (void) ;
 	pktype_t pktype (void) ;
-	int token (void) ;
+	void *token (int *toklen) ;
 	int id (void) ;
 	msgtype_t type (void) ;
-	isanswer (void) ;
-	isrequest (void) ;
+	bool isanswer (void) ;
+	bool isrequest (void) ;
 	int code (void) ;
-	int payload (void *data) ;
+	void *payload (int *paylen) ;
+
+    protected:
+	// CoAP protocol parameters
+	int timeout_ ;				// current timeout
+	int ntrans_ ;				// number of transmissions
+
+	reply_handler_t handler_ ;
+
+	friend class engine ;
 
     private:
-	unsigned char *msg ;			// NULL when reset
-	int len ;				// len of msg
+	// Formatted message, as it appears on the cable/over the air
+	unsigned char *msg_ ;			// NULL when reset
+	int msglen_ ;				// len of msg
+	pktype_t pktype_ ;
 
-	unsigned char *payload ;
-	int token_ ;
-	int id ;				// message id
-	req_handler_t handler_ ;
-	enum internal_req_status status ;
+	// CoAP specific variables
+	l2net *net_ ;
+	l2addr *addr_ ;
+	unsigned char *payload_ ;
+	int paylen_ ;
+	unsigned char *token_ ;
+	int toklen_ ;
+	msgtype_t type_ ;
+	int code_ ;
+	int id_ ;				// message id
 
 	static int global_message_id ;
 
-	friend class engine ;
 } ;
 
 #endif

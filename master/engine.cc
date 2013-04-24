@@ -56,7 +56,7 @@ engine::~engine ()
 	rlist = next ;
     }
     slist.clear () ;
-    qlist.clear () ;
+    mlist.clear () ;
 }
 
 void engine::init (void)
@@ -96,15 +96,15 @@ void engine::add_slave (slave &s)
     condvar.notify_one () ;
 }
 
-void engine::add_request (request &r)
+void engine::add_request (msg &m)
 {
     std::lock_guard <std::mutex> lk (mtx) ;
 
-    qlist.push_front (r) ;
+    mlist.push_front (m) ;
     condvar.notify_one () ;
 }
 
-/*
+/******************************************************************************
  * Sender thread
  * Block on a condition variable, waiting for events:
  * - timer event, signalling that a request timeout has expired
@@ -160,34 +160,22 @@ void engine::sender (void)
 	     * Traverse request list to check new entries
 	     */
 
-	    std::list <request>::iterator q ;
+	    std::list <msg>::iterator m ;
 
-	    for (q = qlist.begin () ; q != qlist.end () ; q++)
+	    for (m = mlist.begin () ; m != mlist.end () ; m++)
 	    {
-		if (q->status == REQ_NONE)
+		if (m->ntrans_ == 0)
 		{
-		    struct message
-		    {
-			int mid ;
-			char text [10] ;
-		    } m ;
-
 		    std::cout << "Found a request to handle\n" ;
-		    q->status = REQ_WAITING ;
-		    m.mid = q->id ;
-		    strcpy (m.text, "coucou !\n") ;
-		    
-		    if (q->dl2->send (q->daddr, &m, sizeof m) == -1)
-		    {
-			perror ("SEND") ;
-		    }
+		    m->send () ;
+		    /***** TESTER ERREUR *****/
 		}
 	    }
 	}
     }
 }
 
-/*
+/******************************************************************************
  * Receiver thread
  * Block on packet reception on the given interface
  */
@@ -223,18 +211,17 @@ void engine::receiver (l2net *l2)
 	}
 	delete a ;			// remove address created by recv()
 
+	if (! found)
+	    continue ;			// ignore message if no slave is found
+
 	/*
-	 * If originator slave is found, process the request.
-	 * Else, ignore it.
+	 * Process request
 	 */
 
-	if (found)
-	{
-	    /*
-	     * Process request
-	     */
+	std::cout << "slave found" << std::endl ;
 
-	    std::cout << "slave found" << std::endl ;
-	}
+	// create a message from raw data
+	// is this a already received message (deduplication)?
+	// is this a reply to an existing request?
     }
 }

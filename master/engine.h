@@ -10,7 +10,7 @@
 #include "sos.h"
 #include "l2.h"
 #include "slave.h"
-#include "req.h"
+#include "msg.h"
 
 typedef struct receiver *receiver_t ;
 
@@ -31,12 +31,12 @@ class engine
 	void add_slave (slave &s) ;
 
 	// add a request
-	void add_request (request &r) ;
+	void add_request (msg &m) ;
 
     private:
 	receiver_t rlist ;
 	std::list <slave> slist ;
-	std::list <request> qlist ;
+	std::list <msg> mlist ;
 
 	std::thread *tsender ;
 	std::mutex mtx ;

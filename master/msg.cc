@@ -1,36 +1,148 @@
 #include "l2.h"
 #include "msg.h"
 
+
+#include <string.h>
+
 int msg::global_message_id = 0 ;
 
 msg::msg ()
 {
-    // timeout_ = 0 ;
-    dl2 = 0 ;
-    daddr = 0 ;
-    // token_ = 0 ;
-    id = global_message_id++ ;
-    status = REQ_NONE ;
+    addr_ = 0 ;
+    msg_ = 0 ; msglen_ = 0 ;
+    payload_ = 0 ; paylen_ = 0 ;
+    token_ = 0 ; token_ = 0 ;
+    timeout_ = 0 ; ntrans_ = 0 ;
+    id_ = global_message_id++ ;
 }
 
 msg::~msg ()
 {
+    if (payload_)
+	delete payload_ ;
+    if (token_)
+	delete token_ ;
 }
 
-void msg::dest (l2net *l2, l2addr *a)
+#define	RESET_MSG	if (msg_) delete msg_		// no ";"
+
+
+/******************************************************************************
+ * Send and receive functions
+ */
+
+void msg::reset (void)
 {
-    dl2 = l2 ;
-    daddr = a ;
 }
 
-/*****
-msg::token (int tok)
+void msg::send (void)
 {
-    token_ = &token ;
 }
-****/
 
-void msg::handler (req_handler_t func)
+void msg::recv (l2net *l2)
+{
+}
+
+/******************************************************************************
+ * Mutators
+ */
+
+void msg::l2 (l2net *l)
+{
+    net_ = l ;
+}
+
+void msg::destaddr (l2addr *a)
+{
+    addr_ = a ;
+}
+
+void msg::token (void *data, int len)
+{
+    if (token_)
+	delete token_ ;
+
+    token_ = new unsigned char [len] ;
+    memcpy (token_, data, len) ;
+    toklen_ = len ;
+    RESET_MSG ;
+}
+
+void msg::type (msgtype_t type)
+{
+    type_ = type ;
+    RESET_MSG ;
+}
+
+void msg::code (int code)
+{
+    code_ = code ;
+    RESET_MSG ;
+}
+
+void msg::payload (void *data, int len)
+{
+    if (payload_)
+	delete payload_ ;
+
+    payload_ = new unsigned char [len] ;
+    memcpy (payload_, data, len) ;
+    paylen_ = len ;
+    RESET_MSG ;
+}
+
+void msg::handler (reply_handler_t func)
 {
     handler_ = func ;
+}
+
+/******************************************************************************
+ * Accessors
+ */
+
+l2addr *msg::srcaddr (void)
+{
+    return addr_ ;
+}
+
+pktype_t msg::pktype (void)
+{
+    return pktype_ ;
+}
+
+void *msg::token (int *toklen)
+{
+    *toklen = toklen_ ;
+    return token_ ;
+}
+
+int msg::id (void)
+{
+    return id_ ;
+}
+
+msg::msgtype_t msg::type (void)
+{
+    return type_ ;
+}
+
+bool msg::isanswer (void)
+{
+    /*********** NOT YET *****/
+}
+
+bool msg::isrequest (void)
+{
+    /*********** NOT YET *****/
+}
+
+int msg::code (void)
+{
+    return code_ ;
+}
+
+void *msg::payload (int *paylen)
+{
+    *paylen = paylen_ ;
+    return payload_ ;
 }
