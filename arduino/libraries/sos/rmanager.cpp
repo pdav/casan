@@ -16,10 +16,6 @@ void Rmanager::add_resource(char *name, uint8_t (*handler)(Message &in, Message 
 	_resources = newresource;
 }
 
-void Rmanager::delete_resource(char *name) {
-	delete_resource(get_resource_instance(name));
-}
-
 void Rmanager::delete_resource(rmanager_s *r) {
 	if(r == NULL) {
 		return;
@@ -36,18 +32,24 @@ void Rmanager::delete_resource(rmanager_s *r) {
 	free(r);
 }
 
-uint8_t Rmanager::request_resource(char *name, enum coap_request_method coap_req, uint8_t *option) {
-	switch(coap_req) {
+// TODO
+uint8_t Rmanager::request_resource(Message &in, Message &out) {
+	
+	switch(in->get_code()) { // TODO : not sure we can do this way
 		case COAP_REQ_DELETE :
-			delete_resource(name);
+			delete_resource();
 			break;
 		default :
-			return exec_request(name, coap_req, option);
+			return exec_request(in, out);
 	}
 	return res;
 }
 
-rmanager_s * Rmanager::get_resource_instance(char *name) {
+// TODO
+rmanager_s * Rmanager::get_resource_instance(Message &in) {
+	char name[SOS_BUF_LEN]; 
+	// TODO : get the resource name
+
 	rmanager_s * tmp = _resources;
 	while(tmp != NULL) {
 		if(strcmp(tmp->name, name) == 0)
@@ -57,11 +59,11 @@ rmanager_s * Rmanager::get_resource_instance(char *name) {
 	return NULL;
 }
 
-uint8_t Rmanager::exec_request(char *name, enum coap_request_method coap_req, uint8_t *option) {
-	rmanager_s * tmp = get_resource_instance(name);
+uint8_t Rmanager::exec_request(Message &in, Message &out) {
+	rmanager_s * tmp = get_resource_instance(in);
 	if(tmp == NULL)
 		return 1;
-	return (*tmp->h)(coap_req, option);
+	return (*tmp->h)(in, out);
 }
 
 void Rmanager::reset() {

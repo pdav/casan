@@ -38,8 +38,8 @@ void Coap::send(l2addr *mac_addr_dest, Message *m) {
 }
 
 // mac_addr of the master or broadcast, the message we get
-uint8_t Coap::recv(l2addr *mac_addr, Message *m) {
-	uint8_t ret = fetch(mac_addr);
+uint8_t Coap::recv(Message *m) {
+	uint8_t ret = fetch();
 	if(ret != 0)
 		return ret;
 	m->set_type(get_type());
@@ -60,9 +60,8 @@ uint8_t Coap::coap_available() {
  * returns 3 if it's the wrong eth type
  * return 0 if ok
  */
-uint8_t Coap::fetch(l2addr *mac_addr_src) {
-	// NULL NULL because we don't want a copy of the payload
-	return _eth->recv(mac_addr_src, NULL, NULL); 
+uint8_t Coap::fetch() {
+	return _eth->recv(); 
 }
 
 uint8_t Coap::get_type(void) {

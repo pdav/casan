@@ -13,18 +13,17 @@ public:
 	~Rmanager();
 
 	void add_resource(char *name, uint8_t (*handler)(Message &in, Message &out));
-	uint8_t request_resource(char *name, enum coap_request_method, uint8_t *option);
-	void delete_resource(char *name);
+	uint8_t request_resource(Message &in, Message &out); // TODO
 	void delete_resource(rmanager_s *r);
 	void reset();
 
 private :
 
-	rmanager_s * get_resource_instance(char *name);
-	uint8_t exec_request(char *name, enum coap_request_method coap_req, uint8_t *option);
+	rmanager_s * get_resource_instance(Message &in);
+	uint8_t exec_request(rmanager_s *m, Message &in, Message &out);
 
 	typedef struct {
-		uint8_t (*h)(uint8_t, uint8_t*);
+		uint8_t (*h)(Message &in, Message &out);
 		char *name;
 		rmanager_s *s;
 	} rmanager_s;

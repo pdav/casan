@@ -1,5 +1,6 @@
 #include "sos.h"
 
+// TODO : set all variables
 Sos::Sos() {
 	set_status(SL_COLDSTART);
 }
@@ -8,15 +9,24 @@ void Sos::set_l2(EthernetRaw *e) {
 	_coap->set_l2(e);
 }
 
+void Sos::set_master_addr(l2addr *a) {
+	if(_master_addr != NULL)
+		delete _master_addr;
+	_master_addr = a;
+}
+
 void Sos::regiter_resource(char *name, uint8_t (*handler)(Message &in, Message &out) ) {
 	_rmanager->add_resource(name, handler);
 }
 
-void Sos::set_status(enum status s) {
+void Sos::set_status(enum sos_slave_status s) {
 	_status = s;
 }
 
+// TODO : reset all the application
 void Sos::reset (void) {
+	_rmanager->reset();
+	_retransmition_handler->reset();
 }
 
 void Sos::set_ttl (int ttl) {
@@ -47,10 +57,13 @@ void Sos::send_register() {
 	_coap->send(dest, m);
 }
 
+// TODO : do the loop
 void Sos::loop() {
-	timeout_handler();
+	_retransmition_handler->loop_retransmit(); // to check all retrans. we have to do
+	Message in();
+	Message out();
 	if(_coap->coap_available()) {
-		_coap->fetch();
+		_coap->recv(&in);
 		Serial.println(F("On vient de fetch"));
 	}
 	switch(_status) {
@@ -59,11 +72,10 @@ void Sos::loop() {
 			set_status(SL_WAITING_UNKNOWN);
 			break;
 		case SL_RUNNING :
-			deduplicate();
+		//	deduplicate();
+			_rmanager->request_resource(in, out);
 			break;
 		default :
 	}
-}
-
-void Sos::deduplicate() {
+	delete m;
 }

@@ -19,13 +19,8 @@ enum coap_message_type {
 	COAP_MES_TYPE_RST
 } ;
 
-// TODO : it's just an example for now
-// We need to create a MACRO
-enum coap_return_code {
-	COAP_RETURN_CODE_200 = (0x2 << 5),
-	COAP_RETURN_CODE_400 = (0x4 << 5)
-};
 
+#define COAP_RETURN_CODE(x,y) ((x << 5) | (y & 0x1f))
 
 // the offset to get pieces of information in the MAC payload
 #define		COAP_OFFSET_TYPE	0
@@ -42,9 +37,9 @@ class Coap {
 		Coap();
 		void set_l2(EthernetRaw *e);
 		uint8_t coap_available();
-		uint8_t fetch(uint8_t *mac_addr_src);
+		uint8_t fetch();
 		void send(l2addr *mac_addr_dest, Message *m);
-		void recv(l2addr *mac_addr_src, Message *m);
+		void recv(Message *m);
 
 		uint8_t get_type(void);
 		uint8_t get_code(void);

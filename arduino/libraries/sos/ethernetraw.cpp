@@ -38,12 +38,12 @@ size_t EthernetRaw::send(l2addr *mac_dest, const uint8_t *data, size_t len) {
 	sbuf = (byte*) malloc(len + 16);
 	int sbuflen;
 	size_t reste;
-	
+
 	reste = BUFFER_SIZE < len ? len - BUFFER_SIZE - OFFSET_DATA: 0;
 	sbuflen = BUFFER_SIZE < len + OFFSET_DATA ? BUFFER_SIZE : len + OFFSET_DATA;
 
 	memcpy(sbuf + OFFSET_DEST_ADDR, mac_dest, 6);
-	memcpy(sbuf + OFFSET_SRC_ADDR, _mac_addr, 6);
+	memcpy(sbuf + OFFSET_SRC_ADDR, _mac_addr->get_raw_addr(), 6);
 	memcpy(sbuf + OFFSET_ETHTYPE, _eth_type, 2);
 	memcpy(sbuf + OFFSET_DATA, data, len);
 
@@ -58,8 +58,7 @@ size_t EthernetRaw::send(l2addr *mac_dest, const uint8_t *data, size_t len) {
 
 int EthernetRaw::available() {
 	_rbuflen = W5100.getRXReceivedSize(_s) ;
-	// There is an offset in the reception (2 bytes, see the w5100 datasheet)
-	return _rbuflen - OFFSET_DATA - OFFSET_RECEPTION;
+	return get_payload_length();
 }
 
 /*
@@ -68,7 +67,11 @@ int EthernetRaw::available() {
  * returns 3 if it's the wrong eth type
  * return 0 if ok
  */
-int EthernetRaw::recv(l2addr *mac_addr_src, uint8_t *data, int *len) {
+uint8_t EthernetRaw::recv(void) {
+	return recv(NULL,NULL);
+}
+
+uint8_t EthernetRaw::recv(l2addr *mac_addr_src, uint8_t *data, int *len) {
 	mac_addr_src = (l2addr_eth *) mac_addr_src;
 	W5100.recv_data_processing(_s, _rbuf, _rbuflen);
 	W5100.execCmdSn(_s, Sock_RECV);
@@ -150,6 +153,7 @@ void EthernetRaw::print_packet (byte pkt [], int len) {
 	Serial.println () ;
 }
 
+// There is an offset in the reception (2 bytes, see the w5100 datasheet)
 int EthernetRaw::get_payload_length(void) {
 	return _rbuflen - (OFFSET_DATA + OFFSET_RECEPTION);
 }

@@ -22,17 +22,19 @@ class EthernetRaw {
 		size_t send(l2addr *addr, uint8_t b);
 		size_t send(l2addr *mac_dest, const uint8_t *data, size_t len);
 		int available();
-		int recv(l2addr *mac_addr_src, uint8_t *buf, int *len);
+		uint8_t recv(void);
+		uint8_t recv(uint8_t *buf, int *len);
 		void get_mac_src(l2addr * mac_src);
 		uint8_t * get_offset_payload(int offset);
 		int get_payload_length(void);
 
-		int _rbuflen; // length of data received
 	private:
 		SOCKET _s; // our socket that will be opened in RAW mode
 		l2addr_eth _mac_addr;
 		uint8_t _eth_type[2];
 		byte _rbuf[BUFFER_SIZE]; // receive buffer
+		int _rbuflen; // length of data received
+
 		void print_eth_addr (byte addr []);
 		void print_packet (byte pkt [], int len);
 };
