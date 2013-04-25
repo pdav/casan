@@ -3,6 +3,13 @@
 
 #include "Arduino.h"
 #include "coap.h"
+#include "rmanager.h"
+#include "ethernetraw.h"
+#include "l2eth.h"
+#include "l2.h"
+#include "message.h"
+#include "retransmit.h"
+#include "util.h"
 
 #define SOS_BUF_LEN 50
 

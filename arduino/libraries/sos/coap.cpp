@@ -1,6 +1,6 @@
 #include "coap.h"
 
-Coap::Coap(uint8_t *mac_addr, uint8_t *eth_type) {
+Coap::Coap(l2addr *mac_addr, uint8_t *eth_type) {
 	_eth = new EthernetRaw();
 	_eth->setmac(mac_addr);
 	_eth->setethtype(eth_type);
@@ -19,7 +19,7 @@ void Coap::set_l2(EthernetRaw *e) {
 	_eth = e;
 }
 
-void Coap::send(uint8_t *mac_addr_dest, Message *m) {
+void Coap::send(l2addr *mac_addr_dest, Message *m) {
 	uint8_t sbuf[BUFFER_SIZE] = {0};
 	sbuf[COAP_OFFSET_TYPE] |= (m->get_type() & 0x3) << 4;
 	sbuf[COAP_OFFSET_TKL] |= (m->get_token_length() & 0xF);
@@ -38,7 +38,7 @@ void Coap::send(uint8_t *mac_addr_dest, Message *m) {
 }
 
 // mac_addr of the master or broadcast, the message we get
-uint8_t Coap::recv(uint8_t *mac_addr, Message *m) {
+uint8_t Coap::recv(l2addr *mac_addr, Message *m) {
 	uint8_t ret = fetch(mac_addr);
 	if(ret != 0)
 		return ret;
@@ -60,7 +60,7 @@ uint8_t Coap::coap_available() {
  * returns 3 if it's the wrong eth type
  * return 0 if ok
  */
-uint8_t Coap::fetch(uint8_t *mac_addr_src) {
+uint8_t Coap::fetch(l2addr *mac_addr_src) {
 	// NULL NULL because we don't want a copy of the payload
 	return _eth->recv(mac_addr_src, NULL, NULL); 
 }

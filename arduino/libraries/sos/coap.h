@@ -37,14 +37,14 @@ enum coap_return_code {
 class Coap {
 	public:
 
-		Coap(uint8_t *mac_addr, uint8_t *eth_type);
+		Coap(l2addr *addr, uint8_t *eth_type);
 		Coap(EthernetRaw *e);
 		Coap();
 		void set_l2(EthernetRaw *e);
 		uint8_t coap_available();
 		uint8_t fetch(uint8_t *mac_addr_src);
-		void send(uint8_t *mac_addr_dest, Message *m);
-		void recv(uint8_t *mac_addr_src, Message *m);
+		void send(l2addr *mac_addr_dest, Message *m);
+		void recv(l2addr *mac_addr_src, Message *m);
 
 		uint8_t get_type(void);
 		uint8_t get_code(void);

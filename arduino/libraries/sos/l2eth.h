@@ -10,35 +10,39 @@ class l2net_eth ;
 
 class l2addr_eth: public l2addr
 {
-    public:
-	l2addr_eth () ;				// constructor
-	l2addr_eth (const char *) ;		// constructor
-	l2addr_eth (const l2addr_eth &) ;	// copy constructor
-	l2addr_eth &operator= (const l2addr_eth &) ; // copy assignment
+	public:
+		l2addr_eth () ;				// constructor
+		l2addr_eth (const char *) ;		// constructor
+		l2addr_eth (const l2addr_eth &) ;	// copy constructor
+		l2addr_eth &operator= (const l2addr_eth &) ; // copy assignment
 
-	~l2addr_eth () ;			// destructor
+		~l2addr_eth () ;			// destructor
 
-	int operator== (const l2addr &) ;
-	int operator!= (const l2addr &) ;
+		bool operator== (const l2addr &) ;
+		bool operator!= (const l2addr &) ;
+		bool operator!= (const unsigned char* mac_addr);
 
-	friend class l2net_eth ;
+		void set_addr(const unsigned char* mac_addr);
+		unsigned char * get_raw_addr(void) ;
 
-	// friend ostream &operator << (ostream &o, const l2addr_eth &addr) ;
+		friend class l2net_eth ;
+
+		// friend ostream &operator << (ostream &o, const l2addr_eth &addr) ;
 } ;
 
 extern l2addr_eth l2addr_eth_broadcast ;
 
 class l2net_eth: public l2net
 {
-    public:
-	int init (const char *iface) ;
-	void term (void) ;
-	int send (l2addr *daddr, void *data, int len) ;
-	int bsend (void *data, int len) ;
-	pktype_t recv (l2addr **saddr, void *data, int *len) ;
+	public:
+		int init (const char *iface) ;
+		void term (void) ;
+		int send (l2addr *daddr, void *data, int len) ;
+		int bsend (void *data, int len) ;
+		pktype_t recv (l2addr **saddr, void *data, int *len) ;
 
-    private:
-	int ifidx ;			// interface index
+	private:
+		int ifidx ;			// interface index
 } ;
 
 #endif
