@@ -12,3 +12,6 @@
 
 // Ethernet address length
 #define	ETHADDRLEN	6
+
+// SOS is based on this CoAP version
+#define	SOS_VERSION	1

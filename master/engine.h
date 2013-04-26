@@ -45,6 +45,8 @@ class engine
 
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
+
+	void send_hello (receiver *r) ;
 } ;
 
 #endif

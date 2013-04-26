@@ -20,19 +20,20 @@
 #include <iostream>
 #include <chrono>
 #include <cstdlib>
+#include <cstdio>
 
 #include <string.h>
 
 #include "engine.h"
+#include "sos.h"
 
-#include "../include/defs.h"
-
-#define	MAXBUF	1024
+#include "defs.h"
 
 struct receiver
 {
     l2net *l2 ;
     long int hid ; 		// hello id, initialized at start time
+    slave broadcast ;
     std::chrono::system_clock::time_point next_hello ;
     std::thread *thr ;
 } ;
@@ -100,6 +101,9 @@ void engine::start_net (l2net *l2)
 
 	r->l2 = l2 ;
 	r->thr = NULL ;
+	// define a pseudo-slave for broadcast address
+	r->broadcast.l2 (l2) ;
+	r->broadcast.addr (l2->bcastaddr ()) ;
 
 	now = std::chrono::system_clock::now () ;
 	r->hid = std::chrono::system_clock::to_time_t (now) ;
@@ -144,6 +148,24 @@ void engine::add_request (msg *m)
 }
 
 /******************************************************************************
+ * SOS autodiscovery handling
+ */
+
+void engine::send_hello (receiver *r)
+{
+    msg m ;
+    char buf [MAXBUF] ;
+
+    m.peer (& r->broadcast) ;		// send to broadcast address
+    m.type (msg::MT_NON) ;
+    m.code (msg::MC_POST) ;
+    snprintf (buf, MAXBUF, "POST /.well-known/sos?uuid=%ld", r->hid) ;
+    m.payload (buf, strlen (buf)) ;
+
+    m.send () ;
+}
+
+/******************************************************************************
  * Sender thread
  * Block on a condition variable, waiting for events:
  * - timer event, signalling that a request timeout has expired
@@ -155,7 +177,6 @@ void engine::add_request (msg *m)
 void engine::sender_thread (void)
 {
     std::unique_lock <std::mutex> lk (mtx_) ;
-    std::cv_status cvstat ;
     std::chrono::system_clock::time_point now, next_timeout ;
 
     next_timeout = std::chrono::system_clock::time_point::max () ;
@@ -211,7 +232,7 @@ void engine::sender_thread (void)
 		 * Send hello
 		 */
 
-		std::cout << "ENVOYER UN HELLO\n" ;
+		engine::send_hello (&*r) ;
 
 		// schedule next hello packet
 		r->next_hello = now + std::chrono::milliseconds (INTERVAL_HELLO) ;

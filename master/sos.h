@@ -1,7 +1,10 @@
 #ifndef	SOS_SOS_H
 #define	SOS_SOS_H
 
+#define	MAXBUF		1024
+
 typedef unsigned char byte ;
+typedef unsigned int uint32 ;
 
 // ME:          packet addressed to me
 // BCAST:       packet broadcasted

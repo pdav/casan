@@ -15,7 +15,7 @@
 #include "l2.h"
 #include "l2eth.h"
 
-#include "../include/defs.h"
+#include "defs.h"
 
 /******************************************************************************
  * l2addr_eth methods
@@ -112,8 +112,8 @@ int l2net_eth::init (const char *iface)
 
     /* Get interface index */
 
-    ifidx = if_nametoindex (iface) ;
-    if (ifidx == 0)
+    ifidx_ = if_nametoindex (iface) ;
+    if (ifidx_ == 0)
 	return -1 ;
 
     /* Open socket */
@@ -122,12 +122,11 @@ int l2net_eth::init (const char *iface)
     if (fd == -1)
 	return -1 ;
 
-
     /* Bind the socket to the interface */
 
     sll.sll_family = AF_PACKET ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
-    sll.sll_ifindex = ifidx ;
+    sll.sll_ifindex = ifidx_ ;
     if (bind (fd, (struct sockaddr *) &sll, sizeof sll) == -1)
     {
 	close (fd) ;
@@ -152,7 +151,7 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
     sll.sll_family = AF_PACKET ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
     sll.sll_halen = ETHADDRLEN ;
-    sll.sll_ifindex = ifidx ;
+    sll.sll_ifindex = ifidx_ ;
     memcpy (sll.sll_addr, a->addr, ETHADDRLEN) ;
 
     r = sendto (fd, data, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
@@ -162,6 +161,11 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
 int l2net_eth::bsend (void *data, int len)
 {
     return send (&l2addr_eth_broadcast, data, len) ;
+}
+
+l2addr *l2net_eth::bcastaddr (void)
+{
+    return &l2addr_eth_broadcast ;
 }
 
 pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
@@ -176,7 +180,7 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 
     memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
-    sll.sll_ifindex = ifidx ;
+    sll.sll_ifindex = ifidx_ ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
     sll.sll_halen = ETHADDRLEN ;
 

@@ -29,6 +29,29 @@ void slave::reset (void)
     handler_ = 0 ;
 }
 
+/******************************************************************************
+ * Accessors
+ */
+
+l2net *slave::l2 (void)
+{
+    return l2_ ;
+}
+
+l2addr *slave::addr (void)
+{
+    return addr_ ;
+}
+
+int slave::ttl (void)
+{
+    return ttl_ ;
+}
+
+/******************************************************************************
+ * Mutators
+ */
+
 void slave::l2 (l2net *l2)
 {
     l2_ = l2 ;

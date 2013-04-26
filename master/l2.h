@@ -22,6 +22,7 @@ class l2net
 	virtual int	  send (l2addr *daddr, void *data, int len) = 0 ;
 	virtual int	  bsend (void *data, int len) = 0 ;
 	virtual pktype_t  recv (l2addr **saddr, void *data, int *len) = 0 ;
+	virtual l2addr *  bcastaddr (void) = 0 ;
     protected:
 	int fd ;
 } ;

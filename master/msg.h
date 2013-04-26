@@ -61,7 +61,7 @@ class msg
 
     private:
 	// Formatted message, as it appears on the cable/over the air
-	unsigned char *msg_ ;			// NULL when reset
+	byte *msg_ ;				// NULL when reset
 	int msglen_ ;				// len of msg
 	pktype_t pktype_ ;
 

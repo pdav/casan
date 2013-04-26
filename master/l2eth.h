@@ -36,9 +36,10 @@ class l2net_eth: public l2net
 	int send (l2addr *daddr, void *data, int len) ;
 	int bsend (void *data, int len) ;
 	pktype_t recv (l2addr **saddr, void *data, int *len) ;
+	l2addr *bcastaddr (void) ;
 
     private:
-	int ifidx ;			// interface index
+	int ifidx_ ;			// interface index
 } ;
 
 #endif
