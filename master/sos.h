@@ -9,6 +9,7 @@ typedef unsigned char byte ;
 typedef enum pktype { PK_ME, PK_BCAST, PK_NONE } pktype_t ;
 
 // delays (in milliseconds)
-#define	INTERVAL_HELLO	30000
+#define	INTERVAL_HELLO		10000
+#define	DELAY_FIRST_HELLO	3000
 
 #endif

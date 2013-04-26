@@ -124,11 +124,13 @@ msg::msgtype_t msg::type (void)
 bool msg::isanswer (void)
 {
     /*********** NOT YET *****/
+    return 1 ;
 }
 
 bool msg::isrequest (void)
 {
     /*********** NOT YET *****/
+    return 1 ;
 }
 
 int msg::code (void)

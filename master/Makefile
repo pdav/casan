@@ -1,4 +1,4 @@
-CXXFLAGS = -g -std=c++11
+CXXFLAGS = -g -std=c++11 -Wall -W -pedantic
 
 OBJS = main.o l2.o l2eth.o engine.o slave.o msg.o
 

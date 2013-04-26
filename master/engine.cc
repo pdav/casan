@@ -1,5 +1,5 @@
 /*
- * Sender of the SOS system
+ * Main engine of the SOS system
  *
  * This is the sender thread of the SOS system: it processes send
  * requests, eventually re-transmits requests with a timeout.
@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <cstdlib>
 
 #include <string.h>
 
@@ -31,22 +32,35 @@
 struct receiver
 {
     l2net *l2 ;
-    std::chrono::system_clock::time_point last_hello ;
+    long int hid ; 		// hello id, initialized at start time
+    std::chrono::system_clock::time_point next_hello ;
     std::thread *thr ;
 } ;
 
+
+
+/******************************************************************************
+ * Some utility functions
+ */
+
 /*
+ * returns a random delay between 0 and maxmilli milliseconds
+ */
+
+std::chrono::milliseconds random_timeout (int maxmilli)
+{
+    int delay ;
+
+    delay = std::rand () % (maxmilli + 1) ;
+    return std::chrono::milliseconds (delay) ;
+}
+
+/******************************************************************************
  * Constructor and destructor
  */
 
 engine::engine ()
 {
-    std::chrono::system_clock::time_point now ;
-
-    now = std::chrono::system_clock::now () ;
-    hid_ = std::chrono::system_clock::to_time_t (now) ;
-
-    // rlist_ = NULL ;
     tsender_ = NULL ;
 }
 
@@ -59,11 +73,20 @@ engine::~engine ()
 
 void engine::init (void)
 {
+    std::srand (std::time (0)) ;
+
     if (tsender_ == NULL)
     {
-	tsender_ = new std::thread (&engine::sender, this) ;
+	tsender_ = new std::thread (&engine::sender_thread, this) ;
     }
 }
+
+/******************************************************************************
+ * Add a new L2 network:
+ * - schedule the first HELLO packet
+ * - add the network to the receiver queue
+ * - notifiy the sender thread in order to create a new receiver thread
+ */
 
 void engine::start_net (l2net *l2)
 {
@@ -71,10 +94,17 @@ void engine::start_net (l2net *l2)
     {
 	std::lock_guard <std::mutex> lk (mtx_) ;
 	receiver *r ;
+	std::chrono::system_clock::time_point now ;
 
 	r = new receiver ;
+
 	r->l2 = l2 ;
 	r->thr = NULL ;
+
+	now = std::chrono::system_clock::now () ;
+	r->hid = std::chrono::system_clock::to_time_t (now) ;
+	r->next_hello = now + random_timeout (DELAY_FIRST_HELLO)  ;
+
 	rlist_.push_front (*r) ;
 	condvar_.notify_one () ;
     }
@@ -84,47 +114,33 @@ void engine::stop_net (l2net *l2)
 {
 }
 
-void engine::add_slave (slave &s)
+/******************************************************************************
+ * Add a new slave:
+ * - initialize the status
+ * - add it to the slave list
+ * - (no need to notify the sender thread)
+ */
+
+void engine::add_slave (slave *s)
 {
     std::lock_guard <std::mutex> lk (mtx_) ;
 
-    slist_.push_front (s) ;
-    condvar_.notify_one () ;
-}
-
-void engine::add_request (msg &m)
-{
-    std::lock_guard <std::mutex> lk (mtx_) ;
-
-    mlist_.push_front (m) ;
-    condvar_.notify_one () ;
+    s->status_ = slave::SL_INACTIVE ;
+    slist_.push_front (*s) ;
+    // condvar_.notify_one () ;
 }
 
 /******************************************************************************
- * Utility functions
+ * Add a new message to send
  */
 
-std::chrono::system_clock::time_point engine::next_timeout (void)
+void engine::add_request (msg *m)
 {
-    std::chrono::system_clock::time_point next ;
-    std::list <receiver>::iterator r ;
+    std::lock_guard <std::mutex> lk (mtx_) ;
 
-    next = std::chrono::system_clock::time_point::max () ;
-
-    /*
-     * HELLO message on each network
-     */
-
-    for (r = rlist_.begin () ; r != rlist_.end () ; r++)
-    {
-	std::chrono::system_clock::time_point h ;
-
-	h = r->last_hello + std::chrono::milliseconds (INTERVAL_HELLO) ;
-	if (next > h)
-	    next = h ;
-    }
-
-    return next ;
+    // timeout_ = 5 ;
+    mlist_.push_front (*m) ;
+    condvar_.notify_one () ;
 }
 
 /******************************************************************************
@@ -136,68 +152,90 @@ std::chrono::system_clock::time_point engine::next_timeout (void)
  * - answer for a paired request has been received (from a receiver thread)
  */
 
-void engine::sender (void)
+void engine::sender_thread (void)
 {
     std::unique_lock <std::mutex> lk (mtx_) ;
     std::cv_status cvstat ;
+    std::chrono::system_clock::time_point now, next_timeout ;
+
+    next_timeout = std::chrono::system_clock::time_point::max () ;
 
     for (;;)
     {
-	cvstat = condvar_.wait_for (lk, std::chrono::seconds (10)) ;
-	if (cvstat == std::cv_status::timeout)
+	std::cout << "WAIT\n" ;
+	if (next_timeout == std::chrono::system_clock::time_point::max ())
 	{
-	    std::cout << "TIMEOUT\n" ;
-	    /*
-	     * Send hello
-	     */
-
-	    std::list <receiver>::iterator r ;
-	    char buf [] = "coucou++ !" ;
-
-	    for (r = rlist_.begin () ; r != rlist_.end () ; r++)
-		r->l2->bsend (buf, strlen (buf)) ;
+	    condvar_.wait (lk) ;
 	}
 	else
 	{
-	    /*
-	     * Traverse the receiver list to check new entries
-	     */
+	    auto delay = next_timeout - now ;	// needed precision for delay
 
-	    std::list <receiver>::iterator r ;
+	    condvar_.wait_for (lk, delay) ;
+	}
 
-	    for (r = rlist_.begin () ; r != rlist_.end () ; r++)
+	/*
+	 * we have been awaken for (one or more) multiple reasons:
+	 * - a new l2 network has been registered
+	 * - a new slave has been registered
+	 * - a new message is to be sent
+	 * - timeout expired: there is an action to do (message to
+	 *	retransmit or to remove from a queue)
+	 *
+	 * After each iteration, we check all timeout reasons.
+	 */
+
+	now = std::chrono::system_clock::now () ;
+	next_timeout = std::chrono::system_clock::time_point::max () ;
+
+	/*
+	 * Traverse the receiver list to check new entries, and
+	 * start receiver threads.
+	 */
+
+	std::list <receiver>::iterator r ;
+
+	for (r = rlist_.begin () ; r != rlist_.end () ; r++)
+	{
+	    // should the receiver thread be started?
+	    if (r->thr == NULL)
 	    {
-		if (r->thr == NULL)
-		{
-		    std::cout << "Found a receiver to start\n" ;
-		    r->thr = new std::thread (&engine::receive, this, &(*r)) ;
-		}
+		std::cout << "Found a receiver to start\n" ;
+		r->thr = new std::thread (&engine::receiver_thread, this, &*r) ;
 	    }
 
-	    /*
-	     * Traverse slave list to check new entries
-	     */
-
-	    std::list <slave>::iterator s ;
-
-	    for (s = slist_.begin () ; s != slist_.end () ; s++)
+	    // is it time to send a new hello ?
+	    if (now >= r->next_hello)
 	    {
+		/*
+		 * Send hello
+		 */
+
+		std::cout << "ENVOYER UN HELLO\n" ;
+
+		// schedule next hello packet
+		r->next_hello = now + std::chrono::milliseconds (INTERVAL_HELLO) ;
 	    }
 
-	    /*
-	     * Traverse request list to check new entries
-	     */
+	    // must current timeout be the next hello?
+	    if (next_timeout > r->next_hello)
+		next_timeout = r->next_hello ;
+	}
 
-	    std::list <msg>::iterator m ;
+	/*
+	 * Traverse message list to check new messages to send or older
+	 * messages to retransmit
+	 */
 
-	    for (m = mlist_.begin () ; m != mlist_.end () ; m++)
+	std::list <msg>::iterator m ;
+
+	for (m = mlist_.begin () ; m != mlist_.end () ; m++)
+	{
+	    if (m->ntrans_ == 0)
 	    {
-		if (m->ntrans_ == 0)
-		{
-		    std::cout << "Found a request to handle\n" ;
-		    m->send () ;
-		    /***** TESTER ERREUR *****/
-		}
+		std::cout << "Found a request to handle\n" ;
+		m->send () ;
+		/***** TESTER ERREUR *****/
 	    }
 	}
     }
@@ -208,7 +246,7 @@ void engine::sender (void)
  * Block on packet reception on the given interface
  */
 
-void engine::receive (receiver *r)
+void engine::receiver_thread (receiver *r)
 {
     l2addr *a ;
     int len ;

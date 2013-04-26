@@ -23,7 +23,7 @@ slave::~slave ()
 
 void slave::reset (void)
 {
-    status_ = SL_COLDSTART ;
+    status_ = SL_INACTIVE ;
     l2_ = 0 ;
     addr_ = 0 ;
     handler_ = 0 ;
@@ -58,7 +58,7 @@ void slave::process (void *data, int len)
     if (data)
     {
 	// regular message
-	std::cout << "received a message\n" ;
+	std::cout << "received a message of len " << len << " bytes\n" ;
     }
     else
     {

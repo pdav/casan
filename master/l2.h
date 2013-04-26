@@ -6,6 +6,7 @@
 class l2addr
 {
     public:
+	virtual ~l2addr () {} ;
 	virtual int	  operator== (const l2addr &other) = 0 ;
 	virtual int	  operator!= (const l2addr &other) = 0 ;
     protected:

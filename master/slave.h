@@ -12,11 +12,9 @@ class slave
     public:
 	enum status
 	{
-	    SL_COLDSTART,
-	    SL_WAITING_UNKNOWN,
+	    SL_INACTIVE,
+	    SL_ASSOCIATING,
 	    SL_RUNNING,
-	    SL_RENEW,
-	    SL_WAITING_KNOWN,
 	} ;
 
 	slave () ;			// constructor
@@ -41,14 +39,15 @@ class slave
 	// data is NULL if this is timeout
 	void process (void *data, int len) ;
 
+	enum status status_ ;		// current status of slave
+	reply_handler_t handler_ ;	// handler to process answers
+
 	friend class engine ;
 
     private:
 	l2net *l2_ ;			// l2 network this slave is on
 	l2addr *addr_ ;			// slave address
 	int ttl_ ;			// remaining ttl
-	enum status status_ ;		// current status of slave
-	reply_handler_t handler_ ;	// handler to process answers
 } ;
 
 #endif

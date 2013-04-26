@@ -29,14 +29,12 @@ class engine
 	void stop_net (l2net *l2) ;
 
 	// add a known slave (may be off)
-	void add_slave (slave &s) ;
+	void add_slave (slave *s) ;
 
 	// add a request
-	void add_request (msg &m) ;
+	void add_request (msg *m) ;
 
     private:
-	long int hid_ ; 		// hello id, initialized at boot time
-
 	std::list <receiver> rlist_ ;
 	std::list <slave> slist_ ;
 	std::list <msg> mlist_ ;
@@ -45,9 +43,8 @@ class engine
 	std::mutex mtx_ ;
 	std::condition_variable condvar_ ;
 
-	void sender (void) ;
-	void receive (receiver *r) ;
-	std::chrono::system_clock::time_point next_timeout (void) ;
+	void sender_thread (void) ;
+	void receiver_thread (receiver *r) ;
 } ;
 
 #endif
