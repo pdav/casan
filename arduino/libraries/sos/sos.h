@@ -38,7 +38,6 @@ class Sos {
 
 	private:
 
-		l2addr *_master_addr = NULL;	// l2 network this slave is on
 		Rmanager * _rmanager = NULL;
 		Retransmit * _retransmition_handler = NULL;
 		Coap *_coap = NULL;

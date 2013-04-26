@@ -26,6 +26,8 @@ Message::~Message() {
 		free(_token);
 	if(_payload != NULL)
 		free(_payload);
+	if(_options != NULL)
+		free(_options);
 }
 
 uint8_t Message::get_type(void) {
@@ -38,6 +40,23 @@ uint8_t Message::get_code(void) {
 
 uint8_t * Message::get_id(void) {
 	return _id;
+}
+
+uint8_t * Message::get_name_copy(void) {
+	uint8_t * payload = get_payload();
+	char *tmp = index(payload, '?');
+	uint8_t * name;
+	uint8_t size;
+	if(tmp == NULL)
+		size = get_payload_length();
+	else
+		size = tmp - payload;
+
+	name = malloc(sizeof(uint8_t) * size +1);
+	memcpy(name, payload, size);
+	name[size] = '\0';
+
+	return name;
 }
 
 uint8_t Message::get_token_length(void) {
@@ -68,6 +87,20 @@ uint8_t * Message::get_payload_copy(void) {
 	return copy;
 }
 
+uint8_t Message::get_options_length(void) {
+	return _options_length ;
+}
+
+uint8_t * Message::get_options(void) {
+	return _options;
+}
+
+uint8_t * Message::get_options_copy(void) {
+	uint8_t * copy = malloc(_options_length);
+	memcpy(copy, _options, _options_length);
+	return copy;
+}
+
 void Message::set_type(uint8_t t) {
 	_type = t;
 }
@@ -92,3 +125,8 @@ void Message::set_payload(uint8_t payload_length, uint8_t * payload) {
 	memcpy(_payload, payload, payload_length);
 }
 
+void Message::set_options(uint8_t options_length, uint8_t * options) {
+	_options_length = options_length;
+	_options = malloc(options_length);
+	memcpy(_options, options, options_length);
+}

@@ -19,11 +19,11 @@ class Retransmit {
 
 		void add(Message *m, int time_first_transmit);
 		void del(Message *m);
-		retransmit_s * get_retransmit(Message *m);
-		void loop_retransmit(void);
+		void loop_retransmit(void); // TODO
 		void reset(void);
 
 	private:
+		retransmit_s * get_retransmit(Message *m);
 		retransmit_s * _retransmit;
 		Coap *_c;
 }

@@ -3,7 +3,7 @@
 Coap::Coap(l2addr *mac_addr, uint8_t *eth_type) {
 	_eth = new EthernetRaw();
 	_eth->setmac(mac_addr);
-	_eth->setethtype(eth_type);
+	_eth->set_ethtype(eth_type);
 }
 
 Coap::Coap(EthernetRaw *e) {
@@ -13,40 +13,45 @@ Coap::Coap(EthernetRaw *e) {
 Coap::Coap() {
 }
 
+Coap::~Coap(void) {
+	delete _eth;
+}
+
 void Coap::set_l2(EthernetRaw *e) {
 	if( _eth != NULL )
 		delete _eth;
 	_eth = e;
 }
 
-void Coap::send(l2addr *mac_addr_dest, Message *m) {
+void Coap::send(l2addr &mac_addr_dest, Message &m) {
 	uint8_t sbuf[BUFFER_SIZE] = {0};
-	sbuf[COAP_OFFSET_TYPE] |= (m->get_type() & 0x3) << 4;
-	sbuf[COAP_OFFSET_TKL] |= (m->get_token_length() & 0xF);
-	sbuf[COAP_OFFSET_CODE] = m->get_code();
-	memcpy(sbuf + COAP_OFFSET_ID, m->get_id(), 2);
-	memcpy(sbuf + COAP_OFFSET_TOKEN, m->get_token(), m->get_token_length());
+	sbuf[COAP_OFFSET_TYPE] |= (m.get_type() & 0x3) << 4;
+	sbuf[COAP_OFFSET_TKL] |= (m.get_token_length() & 0xF);
+	sbuf[COAP_OFFSET_CODE] = m.get_code();
+	memcpy(sbuf + COAP_OFFSET_ID, m.get_id(), 2);
+	memcpy(sbuf + COAP_OFFSET_TOKEN, m.get_token(), m.get_token_length());
 	{
 		uint8_t payload_offset = 0;
-		payload_offset = m->get_token_length() + (4 - (m->get_token_length() % 4));
+		payload_offset = m.get_token_length() + (4 - (m.get_token_length() % 4));
 		sbuf[COAP_OFFSET_TOKEN + payload_offset] = 0xFF;
 		memcpy(sbuf + COAP_OFFSET_TOKEN + payload_offset + 1, 
-				m->get_payload(), m->get_payload_length);
+				m.get_payload(), m.get_payload_length);
 		_eth->send( mac_addr_dest, sbuf, 
-				COAP_OFFSET_TOKEN + payload_offset + m->get_payload_length +1);
+				COAP_OFFSET_TOKEN + payload_offset + m.get_payload_length +1);
 	}
 }
 
 // mac_addr of the master or broadcast, the message we get
-uint8_t Coap::recv(Message *m) {
+uint8_t Coap::recv(Message &m) {
 	uint8_t ret = fetch();
 	if(ret != 0)
 		return ret;
-	m->set_type(get_type());
-	m->set_code(get_code());
-	m->set_id(get_id());
-	m->set_token(get_token_length(), get_token());
-	m->set_payload(get_payload_length(), get_payload());
+	m.set_type(get_type());
+	m.set_code(get_code());
+	m.set_id(get_id());
+	m.set_token(get_token_length(), get_token());
+	m.set_payload(get_payload_length(), get_payload());
+	m.set_options(get_options_length(), get_options());
 	return 0;
 }
 
@@ -103,7 +108,20 @@ uint8_t * Coap::get_payload(void) {
 	return _eth->get_offset_payload(payload_offset);
 }
 
+uint8_t Coap::get_options_length(void) {
+	uint8_t tkl = get_token_length();
+	uint8_t complement = (tlk%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
+	return get_payload() - (get_token() + tlk + complement) - 1; 
+}
+
+uint8_t * Coap::get_options(void) {
+	uint8_t options_offset = 0;
+	uint8_t tkl = get_token_length();
+	uint8_t complement = (tlk%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
+	options_offset =  COAP_OFFSET_TOKEN + tlk + complement;
+	return _eth->get_offset_options(options_offset);
+}
+
 void Coap::get_mac_src(uint8_t * mac_src) {
 	_eth->get_mac_src(mac_src);
 }
-

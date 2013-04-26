@@ -32,22 +32,28 @@ enum coap_message_type {
 class Coap {
 	public:
 
-		Coap(l2addr *addr, uint8_t *eth_type);
+		Coap(l2addr *addr, uint8_t *eth_type);"
 		Coap(EthernetRaw *e);
 		Coap();
+		~Coap();
 		void set_l2(EthernetRaw *e);
 		uint8_t coap_available();
 		uint8_t fetch();
-		void send(l2addr *mac_addr_dest, Message *m);
-		void recv(Message *m);
+		void send(l2addr &mac_addr_dest, Message &m);
+		void recv(Message &m);
 
 		uint8_t get_type(void);
 		uint8_t get_code(void);
 		uint8_t *get_id(void);
 		uint8_t get_token_length(void);
 		uint8_t * get_token(void);
+
+		// TODO / FIXME
 		uint8_t get_payload_length(void);
 		uint8_t * get_payload(void);
+		uint8_t get_options_length(void);
+		uint8_t * get_options(void);
+
 		void get_mac_src(uint8_t * mac_src);
 
 	private:
