@@ -12,10 +12,12 @@ int msg::global_message_id = 0 ;
 msg::msg ()
 {
     peer_ = 0 ;
-    msg_ = 0 ; msglen_ = 0 ;
+    msg_ = 0     ; msglen_ = 0 ;
     payload_ = 0 ; paylen_ = 0 ;
-    token_ = 0 ; toklen_ = 0 ;
-    timeout_ = 0 ; ntrans_ = 0 ;
+    token_ = 0   ; toklen_ = 0 ;
+    timeout_ = 0 ;
+    ntrans_ = 0 ;
+
     id_ = global_message_id++ ;
 }
 
@@ -35,10 +37,6 @@ msg::~msg ()
 /******************************************************************************
  * Send and receive functions
  */
-
-void msg::reset (void)
-{
-}
 
 #define	FORMAT_BYTE0(ver,type,toklen) \
 			((((unsigned int) (ver) & 0x3) << 6) | \
@@ -78,18 +76,12 @@ void msg::send (void)
 	// XXX NO OPTION HANDLING FOR THE MOMENT
 	msg_ [i++] = 0xff ;			// start of payload
 	std::memcpy (msg_ + i, payload_, paylen_) ;
-
     }
 
-    l2net *l ;
-    slave *s ;
-    s = peer_ ;
-    l = s->l2 () ;
-    if (l->send (peer_->addr (), msg_, msglen_) == -1)
+    if (peer_->l2 ()->send (peer_->addr (), msg_, msglen_) == -1)
     {
 	std::cout << "ERREUR \n" ;
     }
-    return ;
 }
 
 void msg::recv (l2net *l2)

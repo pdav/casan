@@ -27,7 +27,6 @@ class msg
 	~msg () ;				// destructor
 
 	// basic operations
-	void reset (void) ;			// reset to a known state
 	void send (void) ;
 	void recv (l2net *l2) ;
 
