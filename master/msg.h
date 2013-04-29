@@ -1,6 +1,8 @@
 #ifndef SOS_MSG_H
 #define SOS_MSG_H
 
+#include <chrono>
+
 #include "sos.h"
 #include "l2.h"
 
@@ -27,8 +29,8 @@ class msg
 	~msg () ;				// destructor
 
 	// basic operations
-	void send (void) ;
-	void recv (l2net *l2) ;
+	int send (void) ;
+	int recv (l2net *l2) ;
 
 	// mutators (to send messages)
 	void peer (slave *s) ;
@@ -51,8 +53,9 @@ class msg
 
     protected:
 	// CoAP protocol parameters
-	int timeout_ ;				// current timeout
 	int ntrans_ ;				// number of transmissions
+	std::chrono::milliseconds timeout_ ;	// current timeout
+	std::chrono::system_clock::time_point next_timeout_ ;
 
 	reply_handler_t handler_ ;
 
@@ -75,7 +78,6 @@ class msg
 	int id_ ;				// message id
 
 	static int global_message_id ;
-
 } ;
 
 #endif

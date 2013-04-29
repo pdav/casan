@@ -18,6 +18,8 @@ int main (int argc, char *argv [])
     l2addr_eth *sa ;			// slave address
     slave s ;				// slave
     engine e ;
+    msg m ;
+    char buf [] = "coucou\n" ;
 
     // start SOS engine machinery
     e.init () ;
@@ -38,6 +40,16 @@ int main (int argc, char *argv [])
     s.addr (sa) ;
     s.l2 (l) ;
     e.add_slave (&s) ;
+
+    sleep (10) ;
+    
+    // register new message
+    m.type (msg::MT_CON) ;
+    m.code (msg::MC_GET) ;
+    m.peer (&s) ;
+    m.token ((void *) "ABCD", 4) ;
+    m.payload (buf, sizeof buf) ;
+    e.add_request (&m) ;
 
     sleep (1000) ;
 

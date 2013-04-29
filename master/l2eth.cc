@@ -24,7 +24,7 @@
 // constructor
 l2addr_eth::l2addr_eth ()
 {
-    addr = new byte [ETHADDRLEN] ;
+    addr_ = new byte [ETHADDRLEN] ;
 }
 
 // constructor
@@ -33,13 +33,13 @@ l2addr_eth::l2addr_eth (const char *a)
     int i = 0 ;
     byte b = 0 ;
 
-    addr = new byte [ETHADDRLEN] ;
+    addr_ = new byte [ETHADDRLEN] ;
 
     while (*a != '\0' && i < ETHADDRLEN)
     {
 	if (*a == ':')
 	{
-	    addr [i++] = b ;
+	    addr_ [i++] = b ;
 	    b = 0 ;
 	}
 	else if (isxdigit (*a))
@@ -54,13 +54,13 @@ l2addr_eth::l2addr_eth (const char *a)
 	else
 	{
 	    for (i = 0 ; i < ETHADDRLEN ; i++)
-		addr [i] = 0 ;
+		addr_ [i] = 0 ;
 	    break ;
 	}
 	a++ ;
     }
     if (i < ETHADDRLEN)
-	addr [i] = b ;
+	addr_ [i] = b ;
 }
 
 l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
@@ -68,26 +68,26 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 // copy constructor
 l2addr_eth::l2addr_eth (const l2addr_eth &x)
 {
-    addr = new byte [ETHADDRLEN] ;
-    memcpy (addr, x.addr, ETHADDRLEN) ;
+    addr_ = new byte [ETHADDRLEN] ;
+    memcpy (addr_, x.addr_, ETHADDRLEN) ;
 }
 
 // assignment operator
 l2addr_eth & l2addr_eth::operator = (const l2addr_eth &x)
 {
-    if (addr == x.addr)
+    if (addr_ == x.addr_)
 	return *this ;
 
-    if (addr == NULL)
-	addr = new byte [ETHADDRLEN] ;
-    memcpy (addr, x.addr, ETHADDRLEN) ;
+    if (addr_ == NULL)
+	addr_ = new byte [ETHADDRLEN] ;
+    memcpy (addr_, x.addr_, ETHADDRLEN) ;
     return *this ;
 }
 
 // destructor
 l2addr_eth::~l2addr_eth ()
 {
-    delete [] addr ;
+    delete [] addr_ ;
 }
 
 /******************************************************************************
@@ -97,18 +97,20 @@ l2addr_eth::~l2addr_eth ()
 int l2addr_eth::operator== (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr, oe->addr, ETHADDRLEN) == 0 ;
+    return memcmp (this->addr_, oe->addr_, ETHADDRLEN) == 0 ;
 }
 
 int l2addr_eth::operator!= (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr, oe->addr, ETHADDRLEN) != 0 ;
+    return memcmp (this->addr_, oe->addr_, ETHADDRLEN) != 0 ;
 }
 
 int l2net_eth::init (const char *iface)
 {
     struct sockaddr_ll sll ;
+
+    mtu_ = ETHMTU ;
 
     /* Get interface index */
 
@@ -118,8 +120,8 @@ int l2net_eth::init (const char *iface)
 
     /* Open socket */
 
-    fd = socket (PF_PACKET, SOCK_DGRAM, htons (ETHTYPE_SOS)) ;
-    if (fd == -1)
+    fd_ = socket (PF_PACKET, SOCK_DGRAM, htons (ETHTYPE_SOS)) ;
+    if (fd_ == -1)
 	return -1 ;
 
     /* Bind the socket to the interface */
@@ -127,9 +129,9 @@ int l2net_eth::init (const char *iface)
     sll.sll_family = AF_PACKET ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
     sll.sll_ifindex = ifidx_ ;
-    if (bind (fd, (struct sockaddr *) &sll, sizeof sll) == -1)
+    if (bind (fd_, (struct sockaddr *) &sll, sizeof sll) == -1)
     {
-	close (fd) ;
+	close (fd_) ;
 	return -1 ;
     }
 
@@ -138,7 +140,7 @@ int l2net_eth::init (const char *iface)
 
 void l2net_eth::term (void)
 {
-    close (fd) ;
+    close (fd_) ;
 }
 
 int l2net_eth::send (l2addr *daddr, void *data, int len)
@@ -152,9 +154,9 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
     sll.sll_halen = ETHADDRLEN ;
     sll.sll_ifindex = ifidx_ ;
-    memcpy (sll.sll_addr, a->addr, ETHADDRLEN) ;
+    memcpy (sll.sll_addr, a->addr_, ETHADDRLEN) ;
 
-    r = sendto (fd, data, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
+    r = sendto (fd_, data, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
     return r ;
 }
 
@@ -186,7 +188,7 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 
     ssll = sizeof sll ;
 
-    r = recvfrom (fd, data, *len, 0, (struct sockaddr *) &sll, &ssll) ;
+    r = recvfrom (fd_, data, *len, 0, (struct sockaddr *) &sll, &ssll) ;
     if (r == -1)
     {
 	pktype = PK_NONE ;
@@ -210,7 +212,7 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 		break ;
 	}
 
-	memcpy ((*a)->addr, sll.sll_addr, ETHADDRLEN) ;
+	memcpy ((*a)->addr_, sll.sll_addr, ETHADDRLEN) ;
     }
 
     return pktype ;

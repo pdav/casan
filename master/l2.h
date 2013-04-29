@@ -10,7 +10,7 @@ class l2addr
 	virtual int	  operator== (const l2addr &other) = 0 ;
 	virtual int	  operator!= (const l2addr &other) = 0 ;
     protected:
-	byte *addr ;
+	byte *addr_ ;
 } ;
 
 class l2net
@@ -18,13 +18,15 @@ class l2net
     public:
 	virtual int	  init (const char *iface) = 0 ;
 	virtual void	  term (void) = 0 ;
-	virtual int	  getfd (void) ;
 	virtual int	  send (l2addr *daddr, void *data, int len) = 0 ;
 	virtual int	  bsend (void *data, int len) = 0 ;
 	virtual pktype_t  recv (l2addr **saddr, void *data, int *len) = 0 ;
 	virtual l2addr *  bcastaddr (void) = 0 ;
+	int fd (void) ;
+	int mtu (void) ;
     protected:
-	int fd ;
+	int fd_ ;			// initialized in the init method
+	int mtu_ ;			// initialized in the init method
 } ;
 
 #endif

@@ -26,6 +26,7 @@
 
 #include "engine.h"
 #include "sos.h"
+#include "utils.h"
 
 #include "defs.h"
 
@@ -39,22 +40,6 @@ struct receiver
 } ;
 
 
-
-/******************************************************************************
- * Some utility functions
- */
-
-/*
- * returns a random delay between 0 and maxmilli milliseconds
- */
-
-std::chrono::milliseconds random_timeout (int maxmilli)
-{
-    int delay ;
-
-    delay = std::rand () % (maxmilli + 1) ;
-    return std::chrono::milliseconds (delay) ;
-}
 
 /******************************************************************************
  * Constructor and destructor
@@ -116,6 +101,7 @@ void engine::start_net (l2net *l2)
 
 void engine::stop_net (l2net *l2)
 {
+    std::cout << sizeof *l2 << "\n" ;	// calm down -Wall
 }
 
 /******************************************************************************
@@ -142,7 +128,6 @@ void engine::add_request (msg *m)
 {
     std::lock_guard <std::mutex> lk (mtx_) ;
 
-    // timeout_ = 5 ;
     mlist_.push_front (*m) ;
     condvar_.notify_one () ;
 }
@@ -179,10 +164,14 @@ void engine::sender_thread (void)
     std::unique_lock <std::mutex> lk (mtx_) ;
     std::chrono::system_clock::time_point now, next_timeout ;
 
+    now = std::chrono::system_clock::now () ;
     next_timeout = std::chrono::system_clock::time_point::max () ;
 
     for (;;)
     {
+	std::list <receiver>::iterator r ;
+	std::list <msg>::iterator m ;
+
 	std::cout << "WAIT\n" ;
 	if (next_timeout == std::chrono::system_clock::time_point::max ())
 	{
@@ -214,8 +203,6 @@ void engine::sender_thread (void)
 	 * start receiver threads.
 	 */
 
-	std::list <receiver>::iterator r ;
-
 	for (r = rlist_.begin () ; r != rlist_.end () ; r++)
 	{
 	    // should the receiver thread be started?
@@ -228,19 +215,11 @@ void engine::sender_thread (void)
 	    // is it time to send a new hello ?
 	    if (now >= r->next_hello)
 	    {
-		/*
-		 * Send hello
-		 */
-
 		engine::send_hello (&*r) ;
 
 		// schedule next hello packet
 		r->next_hello = now + std::chrono::milliseconds (INTERVAL_HELLO) ;
 	    }
-
-	    // must current timeout be the next hello?
-	    if (next_timeout > r->next_hello)
-		next_timeout = r->next_hello ;
 	}
 
 	/*
@@ -248,16 +227,51 @@ void engine::sender_thread (void)
 	 * messages to retransmit
 	 */
 
-	std::list <msg>::iterator m ;
-
-	for (m = mlist_.begin () ; m != mlist_.end () ; m++)
+	for (auto &m : mlist_)
 	{
-	    if (m->ntrans_ == 0)
+	    /*
+	     * New message or message to retransmit
+	     */
+
+	    if (m.ntrans_ == 0 ||
+		(m.ntrans_ < MAX_RETRANSMIT && now >= m.next_timeout_)
+		)
 	    {
 		std::cout << "Found a request to handle\n" ;
-		m->send () ;
-		/***** TESTER ERREUR *****/
+		if (m.send () == -1)
+		{
+		    std::cout << "ERROR DURING TRANSMISSION\n" ;
+		}
 	    }
+
+	    /*
+	     * Message to put back in the deduplication list
+	     */
+
+	    if (m.ntrans_ >= MAX_RETRANSMIT)
+	    {
+		mlist_.erase (m) ;
+	    }
+	}
+
+	/*
+	 * Determine date of next action
+	 */
+
+	now = std::chrono::system_clock::now () ;
+
+	for (auto &r : rlist_)
+	{
+	    // must current timeout be the next hello?
+	    if (next_timeout > r.next_hello)
+		next_timeout = r.next_hello ;
+	}
+
+	for (auto &m : mlist_)
+	{
+	    // must current timeout be the next retransmission of this message?
+	    if (next_timeout > m.next_timeout_)
+		next_timeout = m.next_timeout_ ;
 	}
     }
 }

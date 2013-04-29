@@ -1,6 +1,11 @@
 #include "l2.h"
 
-int l2net::getfd (void)
+int l2net::fd (void)
 {
-    return fd ;
+    return fd_ ;
+}
+
+int l2net::mtu (void)
+{
+    return mtu_ ;
 }
