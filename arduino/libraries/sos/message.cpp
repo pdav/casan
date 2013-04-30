@@ -1,12 +1,14 @@
 #include "message.h"
 
-Message::Message() : _id(0), _token_length(0), _payload_length(0), _options_length(0) {
+Message::Message() : _id(0), _token_length(0), 
+	_payload_length(0), _options_length(0) {
 	_payload = NULL;
 	_options = NULL;
 }
 
 Message::Message( Message & c) 
-	: _id(c._id),  _type(c._type), _code(c._code), _token_length(c._token_length), 
+	: _id(c._id),  _type(c._type), _code(c._code), 
+	_token_length(c._token_length), 
 	_payload_length(c._payload_length) {
 		_token = c.get_token_copy();
 		_payload = c.get_payload_copy();
@@ -41,22 +43,65 @@ int Message::get_id(void) {
 	return _id;
 }
 
-char * Message::get_name_copy(void) {
+char * Message::get_method_copy(void) {
 	uint8_t size;
+	char * name;
 	{
 		uint8_t * payload = get_payload();
 		uint8_t plen = get_payload_length();
-		size_t i = 0;
 
-		while(i < plen && payload[i] != '?') {
-			i++;
+		while(size < plen && payload[size] != ' ') {
+			size++;
 		}
-		size = i;
 	}
-	char * name;
 
 	name = (char *) malloc(sizeof(char) * size +1);
 	memcpy(name, get_payload(), size);
+	name[size] = '\0';
+
+	return name;
+}
+
+uint8_t Message::get_method_id(void) {
+	char * type = get_method_copy();
+	uint8_t res;
+	// TODO
+	if(strcmp(type, "POST") == 0) {
+		res = COAP_METHOD_POST;
+	} else if(strcmp(type, "PUT") == 0) {
+		res = COAP_METHOD_PUT;
+	} else if(strcmp(type, "GET") == 0) {
+		res = COAP_METHOD_GET;
+	} else if(strcmp(type, "DELETE") == 0) {
+		res = COAP_METHOD_DELETE;
+	} else {
+		res = 0;
+	}
+	free(type);
+	return res;
+}
+
+char * Message::get_name_copy(void) {
+	uint8_t size;
+	// to avoid the method's name
+	uint8_t start;
+	char * name;
+	{
+		uint8_t * payload = get_payload();
+		uint8_t plen = get_payload_length();
+
+		while(size < plen && payload[size] != '?') {
+			size++;
+		}
+
+		while(start < plen && payload[start] != ' ') {
+			start++;
+		}
+	}
+	start++; // to take the space into account
+
+	name = (char *) malloc(sizeof(char) * size - start + 1);
+	memcpy(name, get_payload() + start, size - start);
 	name[size] = '\0';
 
 	return name;

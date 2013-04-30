@@ -1,18 +1,21 @@
 #include "retransmit.h"
 
-Retransmit::Retransmit(Coap *c) {
+Retransmit::Retransmit(Coap *c, l2addr **master) {
 	_c = c;
+	_master_addr = master;
 }
 
 Retransmit::~Retransmit() {
 	reset();
 }
 
-void Retransmit::add(Message *m, int time_first_transmit) {
+void Retransmit::add(Message *m, ulong_t time_first_transmit) {
 	retransmit_s * n = (retransmit_s *) malloc(sizeof(retransmit_s));
 	n->m = m ;
-	n->time = time_first_transmit;
-	n->nb_retransmissions = 0;
+	// next retransmit
+	n->timel = time_first_transmit;
+	n->timen = time_first_transmit + ALEA(ACK_TIMEOUT * ACK_RANDOM_FACTOR);
+	n->nb = 0;
 	n->s = _retransmit;
 	_retransmit = n;
 }
@@ -40,6 +43,7 @@ void Retransmit::del(retransmit_s *r) {
 retransmit_s * Retransmit::get_retransmit(Message *m) {
 	retransmit_s *tmp = _retransmit;
 	while(tmp != NULL) {
+		// TODO : maybe check the token too
 		if(tmp->m->get_id() == m->get_id())
 			return tmp;
 		tmp = tmp->s;
@@ -47,10 +51,35 @@ retransmit_s * Retransmit::get_retransmit(Message *m) {
 	return NULL;
 }
 
+// TODO
 void Retransmit::loop_retransmit(void) {
+	//enum coap_message_type coap_mes_type = in.get_coap_type();
+	retransmit_s * tmp = _retransmit;
+	while(tmp != NULL) {
+		if( tmp->nb >= MAX_RETRANSMIT ) {
+			retransmit_s * tmp2 = tmp->s;
+			del(tmp);
+			tmp = tmp2;
+			continue;
+		}
+		else if( tmp->timen < millis()) {
+			_c->send(**_master_addr, *(tmp->m));
+			tmp->nb++;
+			ulong_t time_tmp = tmp->timen;
+			tmp->timen = tmp->timen + 2 * (tmp->timen - tmp->timel);
+			tmp->timel = time_tmp;
+		}
+		tmp = tmp->s;
+	}
 }
 
 void Retransmit::reset(void) {
 	while(_retransmit != NULL)
 		del(_retransmit);
+}
+
+void Retransmit::check_message(Message &in) {
+	if( in.get_type() == COAP_TYPE_ACK ) {
+		del(&in);
+	}
 }

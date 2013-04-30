@@ -10,7 +10,7 @@
                    ((x)>>24 & 0x000000FFUL) )
 #define ntohl(x) htonl(x)
 
-typedef enum pktype { PK_ME, PK_BCAST, PK_NONE } pktype_t ;
 typedef unsigned char byte ;
+typedef unsigned long ulong_t ;
 
 #endif

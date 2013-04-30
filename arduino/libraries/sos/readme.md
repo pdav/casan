@@ -6,8 +6,10 @@
 * handle the options in the recv process (EthernetRaw) --done
 * delete all pointers when we don''t need them and replace them by aliases -- done
 * get the name of the resource (in the payload of the Message) -- done
+* do the part in the l2addr class to compare l2addr_eth and byte * --done
 
-* change the Coap class to get the options and the payload
-* do the part in the l2addr class to compare l2addr_eth and byte *
+* change the Coap class to get 
+	* the payload -- done
+	* the options 
 * complete the Retransmit class
 * complete the Sos class

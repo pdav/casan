@@ -3,35 +3,35 @@
 
 #include "Arduino.h"
 #include "util.h"
+#include "defs.h"
 #include "ethernetraw.h"
 #include "coap.h"
 #include "retransmit.h"
 #include "rmanager.h"
+#include "enum.h"
 
-#define SOS_BUF_LEN 50
+
+#define SOS_BUF_LEN			50
+#define SOS_DELAY			1000
+#define SOS_DEFAULT_TTL		30000
+#define SOS_RANDOM_UUID()	1337
+#define	SOS_ETH_TYPE		0x88b5		// public use for prototype
 
 class Sos {
 	public:
-		enum sos_slave_status {
-			SL_COLDSTART,
-			SL_WAITING_UNKNOWN,
-			SL_RUNNING,
-			SL_RENEW,
-			SL_WAITING_KNOWN,
-		} ;
 
-		Sos();
+		Sos(l2addr *mac_addr, int eth_type, uint8_t uuid);
 		~Sos();
 
 		void set_master_addr (l2addr *a) ;	// set address
-		void send_register();
+		void set_ttl (int ttl);	// set ttl
+		void set_status(enum sos_slave_status);
 
-		void set_l2(EthernetRaw *e);
+		void registration();
 		void register_resource(char *name, 
 			uint8_t (*handler)(Message &in, Message &out) );
-		void set_status(enum sos_slave_status);
+
 		void reset (void);
-		void set_ttl (int ttl);	// set ttl
 		void loop();
 
 	private:
@@ -40,6 +40,7 @@ class Sos {
 		Retransmit * _retransmition_handler = NULL;
 		Coap *_coap = NULL;
 		l2addr *_master_addr;
+		EthernetRaw *_eth = NULL;
 		uint8_t _status;
 		uint8_t _ttl;
 		int _current_message_id;

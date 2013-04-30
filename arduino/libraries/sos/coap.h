@@ -2,23 +2,10 @@
 #define __COAP_H__
 
 #include "Arduino.h"
+#include "defs.h"
 #include "ethernetraw.h"
 #include "l2.h"
 #include "message.h"
-
-enum coap_request_method {
-	COAP_CODE_GET,
-	COAP_CODE_PUT,
-	COAP_CODE_POST,
-	COAP_CODE_DELETE
-} ;
-
-enum coap_message_type {
-	COAP_MES_TYPE_CON,
-	COAP_MES_TYPE_NON,
-	COAP_MES_TYPE_ACK,
-	COAP_MES_TYPE_RST
-} ;
 
 
 #define COAP_RETURN_CODE(x,y) ((x << 5) | (y & 0x1f))
@@ -33,12 +20,8 @@ enum coap_message_type {
 class Coap {
 	public:
 
-		Coap(l2addr *addr, uint8_t *eth_type);
 		Coap(EthernetRaw *e);
-		Coap();
 		~Coap();
-		void set_l2(EthernetRaw *e);
-		void set_master_addr(l2addr *master_addr);
 		uint8_t coap_available();
 		uint8_t fetch(void);
 		void send(l2addr &mac_addr_dest, Message &m);

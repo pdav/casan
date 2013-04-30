@@ -3,6 +3,7 @@
 
 #include "l2eth.h"
 #include "utility/w5100.h"
+#include "defs.h"
 
 #define		BUFFER_SIZE			127
 #define		OFFSET_DEST_ADDR	(0)
@@ -10,9 +11,11 @@
 #define		OFFSET_ETHTYPE		(12)
 #define		OFFSET_DATA			(14)
 #define		OFFSET_RECEPTION	(2)
-#define		TAG_1Q				0x8100
 
-
+/*******
+ * this class handle the lowest layer, it will talk directly with the 
+ * arduino ethernet shield
+ */
 class EthernetRaw {
 	public:
 		EthernetRaw();
@@ -29,14 +32,13 @@ class EthernetRaw {
 
 		void set_master_addr(l2addr * master_addr);
 		void set_mac(l2addr *mac_address);
-		void set_ethtype(uint8_t *eth_type);
-		void set_ethtype(uint16_t eth_type);
+		void set_ethtype(int eth_type);
 
 	private:
 		SOCKET _s; // our socket that will be opened in RAW mode
 		l2addr_eth *_mac_addr = NULL;
 		l2addr_eth *_master_addr = NULL;	// l2 network this slave is on
-		uint8_t _eth_type[2];
+		int _eth_type;
 		byte _rbuf[BUFFER_SIZE]; // receive buffer
 		int _rbuflen; // length of data received
 

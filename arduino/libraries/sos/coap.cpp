@@ -1,26 +1,11 @@
 #include "coap.h"
 
-Coap::Coap(l2addr *mac_addr, uint8_t *eth_type) {
-	_eth = new EthernetRaw();
-	_eth->set_mac(mac_addr);
-	_eth->set_ethtype(eth_type);
-}
-
 Coap::Coap(EthernetRaw *e) {
 	_eth = e;
 }
 
-Coap::Coap() {
-}
-
 Coap::~Coap(void) {
 	delete _eth;
-}
-
-void Coap::set_l2(EthernetRaw *e) {
-	if( _eth != NULL )
-		delete _eth;
-	_eth = e;
 }
 
 void Coap::send(l2addr &mac_addr_dest, Message &m) {

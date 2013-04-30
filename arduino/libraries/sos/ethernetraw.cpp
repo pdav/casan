@@ -34,7 +34,7 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 
 	memcpy(sbuf + OFFSET_DEST_ADDR, m->get_raw_addr(), 6);
 	memcpy(sbuf + OFFSET_SRC_ADDR, _mac_addr->get_raw_addr(), 6);
-	memcpy(sbuf + OFFSET_ETHTYPE, _eth_type, 2);
+	memcpy(sbuf + OFFSET_ETHTYPE, &_eth_type, 2);
 	memcpy(sbuf + OFFSET_DATA, data, len);
 
 	W5100.send_data_processing(_s, sbuf, sbuflen);
@@ -74,7 +74,7 @@ uint8_t EthernetRaw::recv(uint8_t *data, int *len) {
 		}
 	}
 	// we check the ethernet type
-	if(memcmp(packet + OFFSET_ETHTYPE, _eth_type, 2) != 0) {
+	if(memcmp(packet + OFFSET_ETHTYPE, &_eth_type, 2) != 0) {
 		return 3;
 	}
 	if(data != NULL) {
@@ -122,14 +122,8 @@ void EthernetRaw::set_mac(l2addr *mac_address) {
 	*/
 }
 
-void EthernetRaw::set_ethtype(uint8_t * eth_type) {
-	_eth_type[0] = eth_type[0];
-	_eth_type[1] = eth_type[1];
-}
-
-void EthernetRaw::set_ethtype(uint16_t eth_type) {
-	_eth_type[0] = (uint8_t) eth_type >> 8;
-	_eth_type[1] = (uint8_t) eth_type & 0xFF;
+void EthernetRaw::set_ethtype(int eth_type) {
+	_eth_type = eth_type;
 }
 
 void EthernetRaw::print_eth_addr (byte addr []) {

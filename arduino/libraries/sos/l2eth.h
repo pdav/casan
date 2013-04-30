@@ -3,8 +3,7 @@
 
 #include "Arduino.h"
 #include "l2.h"
-
-#define ETHADDRLEN 6
+#include "defs.h"
 
 class l2addr_eth: public l2addr
 {
