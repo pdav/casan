@@ -1,6 +1,7 @@
 #ifndef SOS_MSG_H
 #define SOS_MSG_H
 
+#include <list>
 #include <chrono>
 
 #include "sos.h"
@@ -26,15 +27,20 @@ class msg
 		    MC_GET=1, MC_POST, MC_PUT, MC_DELETE } msgcode_t ;
 
 	msg () ;				// constructor
+	msg (const msg &m) ;			// copy constructor
 	~msg () ;				// destructor
+
+	// operators
+	int operator == (msg &) ;		// only for received messages
 
 	// basic operations
 	int send (void) ;
-	int recv (l2net *l2) ;
+	int recv (l2net *l2, std::list <slave> slist) ;
 
 	// mutators (to send messages)
 	void peer (slave *s) ;
 	void token (void *token, int len) ;
+	void id (int id) ;
 	void type (msgtype_t type) ;
 	void code (int code) ;
 	void payload (void *data, int len) ;
@@ -46,10 +52,12 @@ class msg
 	void *token (int *toklen) ;
 	int id (void) ;
 	msgtype_t type (void) ;
-	bool isanswer (void) ;
-	bool isrequest (void) ;
 	int code (void) ;
 	void *payload (int *paylen) ;
+
+	bool isanswer (void) ;
+	bool isrequest (void) ;
+	bool issosctl (void) ;			// SOS control message
 
     protected:
 	// CoAP protocol parameters

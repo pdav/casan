@@ -35,6 +35,7 @@ struct receiver
     l2net *l2 ;
     long int hid ; 		// hello id, initialized at start time
     slave broadcast ;
+    std::list <msg> deduplist ;
     std::chrono::system_clock::time_point next_hello ;
     std::thread *thr ;
 } ;
@@ -83,9 +84,11 @@ void engine::start_net (l2net *l2)
 	std::chrono::system_clock::time_point now ;
 
 	r = new receiver ;
+	std::memset (r, 0, sizeof *r) ;
 
 	r->l2 = l2 ;
 	r->thr = NULL ;
+	r->deduplist.clear () ;
 	// define a pseudo-slave for broadcast address
 	r->broadcast.l2 (l2) ;
 	r->broadcast.addr (l2->bcastaddr ()) ;
@@ -147,6 +150,7 @@ void engine::send_hello (receiver *r)
     snprintf (buf, MAXBUF, "POST /.well-known/sos?uuid=%ld", r->hid) ;
     m.payload (buf, strlen (buf)) ;
 
+    std::cout << "Send Hello\n" ;
     m.send () ;
 }
 
@@ -169,18 +173,19 @@ void engine::sender_thread (void)
 
     for (;;)
     {
-	std::list <receiver>::iterator r ;
-	std::list <msg>::iterator m ;
+	std::list <receiver>::iterator ri ;
+	std::list <msg>::iterator mi ;
 
-	std::cout << "WAIT\n" ;
 	if (next_timeout == std::chrono::system_clock::time_point::max ())
 	{
+	    std::cout << "WAIT\n" ;
 	    condvar_.wait (lk) ;
 	}
 	else
 	{
 	    auto delay = next_timeout - now ;	// needed precision for delay
 
+	    std::cout << "WAIT " << std::chrono::duration_cast<std::chrono::milliseconds> (delay).count() << "ms\n" ;
 	    condvar_.wait_for (lk, delay) ;
 	}
 
@@ -203,22 +208,22 @@ void engine::sender_thread (void)
 	 * start receiver threads.
 	 */
 
-	for (r = rlist_.begin () ; r != rlist_.end () ; r++)
+	for (ri = rlist_.begin () ; ri != rlist_.end () ; ri++)
 	{
 	    // should the receiver thread be started?
-	    if (r->thr == NULL)
+	    if (ri->thr == NULL)
 	    {
 		std::cout << "Found a receiver to start\n" ;
-		r->thr = new std::thread (&engine::receiver_thread, this, &*r) ;
+		ri->thr = new std::thread (&engine::receiver_thread, this, &*ri) ;
 	    }
 
 	    // is it time to send a new hello ?
-	    if (now >= r->next_hello)
+	    if (now >= ri->next_hello)
 	    {
-		engine::send_hello (&*r) ;
+		engine::send_hello (&*ri) ;
 
 		// schedule next hello packet
-		r->next_hello = now + std::chrono::milliseconds (INTERVAL_HELLO) ;
+		ri->next_hello = now + std::chrono::milliseconds (INTERVAL_HELLO) ;
 	    }
 	}
 
@@ -227,18 +232,22 @@ void engine::sender_thread (void)
 	 * messages to retransmit
 	 */
 
-	for (auto &m : mlist_)
+	mi = mlist_.begin () ;
+	while (mi != mlist_.end ())
 	{
+	    auto newmi = mi ;		// backup mi since we may erase it
+	    newmi++ ;
+
 	    /*
-	     * New message or message to retransmit
+	     * New message to transmit or old message to retransmit
 	     */
 
-	    if (m.ntrans_ == 0 ||
-		(m.ntrans_ < MAX_RETRANSMIT && now >= m.next_timeout_)
-		)
+	    if (mi->ntrans_ == 0 ||
+		    (mi->ntrans_ < MAX_RETRANSMIT && now >= mi->next_timeout_)
+		    )
 	    {
 		std::cout << "Found a request to handle\n" ;
-		if (m.send () == -1)
+		if (mi->send () == -1)
 		{
 		    std::cout << "ERROR DURING TRANSMISSION\n" ;
 		}
@@ -248,10 +257,14 @@ void engine::sender_thread (void)
 	     * Message to put back in the deduplication list
 	     */
 
-	    if (m.ntrans_ >= MAX_RETRANSMIT)
+	    if (mi->ntrans_ >= MAX_RETRANSMIT)
 	    {
-		mlist_.erase (m) ;
+		std::cout << "ERASE id=" << mi->id () << "\n" ;
+		mlist_.erase (mi) ;
+		/**** PUT BACK IN DEDEUP LIST */
 	    }
+
+	    mi = newmi ;
 	}
 
 	/*
@@ -281,47 +294,66 @@ void engine::sender_thread (void)
  * Block on packet reception on the given interface
  */
 
+void engine::clean_deduplist (receiver *r)
+{
+    std::list <msg>::iterator di ;
+    std::chrono::system_clock::time_point now ;
+
+    now = std::chrono::system_clock::now () ;
+
+    di = r->deduplist.begin () ;
+    while (di != deduplist.end ())
+    {
+	auto newdi = di ;		// backup di since we may erase it
+	newdi++ ;
+
+	if (now >= di.next_timeout)
+	    deduplist.erase (di) ;
+
+	di = newdi ;
+    }
+}
+
 void engine::receiver_thread (receiver *r)
 {
-    l2addr *a ;
-    int len ;
-    pktype_t pkt ;
-    char data [MAXBUF] ;
-    int found ;
-
     for (;;)
     {
-	len = sizeof data ;
-	pkt = r->l2->recv (&a, data, &len) ;	// create a l2addr *a
-	std::cout << "pkt=" << pkt << ", len=" << len << std::endl ;
+	msg *m ;
 
-	/*
-	 * Search originator slave
-	 */
-
-	std::list <slave>::iterator s ;
-
-	found = 0 ;
-	for (s = slist_.begin () ; s != slist_.end () ; s++)
+	m = new msg ;
+	if (m->recv (r->l2, slist_))
 	{
-	    if (*a == *(s->addr_))
+
+	    /*
+	     * House cleaning: remove obsolete messages from deduplication list
+	     */
+
+	    clean_deduplist (r->deduplist) ;
+
+	    /*
+	     * Is this message a duplicated one?
+	     */
+	    if (m->peer ()->status_ == slave::SL_RUNNING && m->type () == msg::MT_CON)
 	    {
-		found = 1 ;
-		break ;
+		// XXX LOCK
+		for (auto &d : deduplist_)
+		{
+		    if (*m == d)
+		    {
+			/* found a duplicated message */
+			// XXX FIND ANSWER
+		    }
+		}
+
+		// if not found, store it on deduplist with a timeout
+
+	    }
+	    if (m->peer ()->status_ != slave::SL_RUNNING && m->issosctl ())
+	    {
+		std::cout << "CTL MSG\n" ;
+		delete m ;
 	    }
 	}
-	delete a ;			// remove address created by recv()
-
-	if (! found)
-	    continue ;			// ignore message if no slave is found
-
-	/*
-	 * Process request
-	 */
-
-	std::cout << "slave found" << std::endl ;
-
-	// create a message from raw data
 	// is this a already received message (deduplication)?
 	// is this a reply to an existing request?
     }

@@ -8,42 +8,74 @@
 #include "slave.h"
 #include "utils.h"
 
-int msg::global_message_id = 0 ;
+int msg::global_message_id = 1 ;
 
-msg::msg ()
-{
-    peer_ = 0 ;
-    msg_ = 0     ; msglen_ = 0 ;
-    payload_ = 0 ; paylen_ = 0 ;
-    token_ = 0   ; toklen_ = 0 ;
-    timeout_ = std::chrono::milliseconds (0) ;
-    ntrans_ = 0 ;
-
-    id_ = global_message_id++ ;
-}
-
-msg::~msg ()
-{
-    if (msg_)
-	delete msg_ ;
-    if (payload_)
-	delete payload_ ;
-    if (token_)
-	delete token_ ;
-}
-
-#define	RESET_MSG	if (msg_) delete msg_		// no ";"
-
-
-/******************************************************************************
- * Send and receive functions
- */
+#define	RESET_BINARY	if (msg_) delete msg_		// no ";"
+#define	RESET_POINTERS	if (msg_) delete msg_ ; \
+			if (payload_) delete payload_ ; \
+			if (token_) delete token_	// no ";"
+#define	RESET_VALUES	peer_ = 0 ; \
+			msg_ = 0     ; msglen_ = 0 ; \
+			payload_ = 0 ; paylen_ = 0 ; \
+			token_ = 0   ; toklen_ = 0 ; \
+			timeout_ = std::chrono::milliseconds (0) ; \
+			ntrans_ = 0 ; \
+			id_ = 0				// no ";"
 
 #define	FORMAT_BYTE0(ver,type,toklen) \
 			((((unsigned int) (ver) & 0x3) << 6) | \
 			 (((unsigned int) (type) & 0x3) << 4) | \
 			 (((unsigned int) (toklen) & 0x7)) \
 			 )
+#define	COAP_VERSION(b)	(((b) [0] >> 30) & 0x3)
+#define	COAP_TYPE(b)	(((b) [0] >> 28) & 0x3)
+#define	COAP_TOKLEN(b)	(((b) [0] >> 24) & 0xf)
+#define	COAP_CODE(b)	(((b) [1]))
+#define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
+
+#define	ALLOC_COPY(f,m,l)	(f=new byte [(l)], std::memcpy (f, (m), (l)))
+
+
+msg::msg ()
+{
+    RESET_VALUES ;
+}
+
+msg::msg (const msg &m)
+{
+    *this = m ;
+    if (msg_)
+	ALLOC_COPY (msg_, m.msg_, msglen_) ;
+    if (token_)
+	ALLOC_COPY (token_, m.token_, toklen_) ;
+    if (payload_)
+	ALLOC_COPY (payload_, m.payload_, paylen_) ;
+}
+
+msg::~msg ()
+{
+    RESET_POINTERS ;
+}
+
+
+/******************************************************************************
+ * Operators
+ */
+
+// Only for received messages
+int msg::operator == (msg &m)
+{
+    int r ;
+
+    r = 0 ;
+    if (this->msg_ != 0 && m.msg_ != 0 && this->msglen_ == m.msglen_)
+	r = std::memcmp (this->msg_, m.msg_, this->msglen_) == 0 ;
+    return r ;
+}
+
+/******************************************************************************
+ * Send and receive functions
+ */
 
 int msg::send (void)
 {
@@ -60,11 +92,18 @@ int msg::send (void)
 	msglen_ = 5 + toklen_ + paylen_ ;
 	// XXX NO OPTION HANDLING FOR THE MOMENT
 
+	if (id_ == 0)
+	{
+	    id_ = global_message_id++ ;
+	    if (global_message_id > 0xffff)
+		global_message_id = 1 ;
+	}
+
 	/*
 	 * Format message, part 2 : build message
 	 */
 
-	msg_ = new unsigned char [msglen_] ;
+	msg_ = new byte [msglen_] ;
 
 	i = 0 ;
 	msg_ [i++] = FORMAT_BYTE0 (SOS_VERSION, type_, toklen_) ;
@@ -141,9 +180,134 @@ int msg::send (void)
     return r ;
 }
 
-int msg::recv (l2net *l2)
+int msg::recv (l2net *l2, std::list <slave> slist)
 {
-    return sizeof l2 ;		// keep -Wall silent
+    l2addr *a ;
+    int len ;
+    int r ;
+
+    /*
+     * Reset message object to a known state
+     */
+
+    RESET_POINTERS ;
+    RESET_VALUES ;
+
+    /*
+     * Read message from L2 network
+     */
+
+    len = l2->mtu () ;
+    msg_ = new byte [len] ;
+    pktype_ = l2->recv (&a, msg_, &len) ; 	// create a l2addr *a
+    std::cout << "RECV pkt=" << pktype_ << ", len=" << len << "\n" ;
+    r = 0 ;				// recv failed
+    if ((pktype_ == PK_ME || pktype_ == PK_BCAST)
+    		&& COAP_VERSION (msg_) == SOS_VERSION)
+    {
+	/*
+	 * Search originator slave
+	 */
+
+	std::list <slave>::iterator s ;
+	int found ;
+
+	found = 0 ;
+	for (s = slist.begin () ; s != slist.end () ; s++)
+	{
+	    if (*a == *(s->addr ()))
+	    {
+		found = 1 ;
+		break ;
+	    }
+	}
+
+	if (found)
+	{
+	    int i ;
+	    int opt_nb ;
+
+	    /*
+	     * By default, message is correct. Note that decoding may
+	     * prove that message is in error
+	     */
+
+	    r = 1 ;			// recv succeeded
+
+	    /*
+	     * Decode message
+	     */
+
+	    peer_ = &*s ;
+	    type_ = msgtype_t (COAP_TYPE (msg_)) ;
+	    toklen_ = COAP_TOKLEN (msg_) ;
+	    code_ = COAP_CODE (msg_) ;
+	    id_ = COAP_ID (msg_) ;
+	    i = 4 ;
+
+	    if (toklen_ > 0)
+	    {
+		ALLOC_COPY (token_, msg_ + i, toklen_) ;
+		i += toklen_ ;
+	    }
+
+	    /*
+	     * Options XXXXXXXXXXXXXXXX
+	     */
+
+	    opt_nb = 0 ;
+	    while (msg_ [i] != 0xff)
+	    {
+		int opt_delta, opt_len ;
+
+		opt_delta = (msg_ [i] >> 4) & 0x0f ;
+		opt_len   = (msg_ [i]     ) & 0x0f ;
+		i++ ;
+		switch (opt_delta)
+		{
+		    case 13 :
+			opt_delta = msg_ [i] - 13 ;
+			i += 1 ;
+			break ;
+		    case 14 :
+			opt_delta = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+			i += 2 ;
+			break ;
+		    case 15 :
+			r = 0 ;			// recv failed
+			break ;
+		}
+		opt_nb += opt_delta ;
+
+		switch (opt_len)
+		{
+		    case 13 :
+			opt_len = msg_ [i] - 13 ;
+			i += 1 ;
+			break ;
+		    case 14 :
+			opt_len = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+			i += 2 ;
+			break ;
+		    case 15 :
+			r = 0 ;			// recv failed
+			break ;
+		}
+
+		/* get option value */
+		// XXXX
+		std::cout << "OPTION " << opt_nb << "\n" ;
+
+		i += opt_len ;
+	    }
+
+	    ALLOC_COPY (payload_, msg_ + i, msglen_ - i) ;
+	}
+    }
+
+    delete a ;				// remove address created by l2->recv ()
+
+    return r ;
 }
 
 /******************************************************************************
@@ -160,22 +324,27 @@ void msg::token (void *data, int len)
     if (token_)
 	delete token_ ;
 
-    token_ = new unsigned char [len] ;
-    std::memcpy (token_, data, len) ;
+    ALLOC_COPY (token_, data, len) ;
     toklen_ = len ;
-    RESET_MSG ;
+    RESET_BINARY ;
+}
+
+void msg::id (int id)
+{
+    id_ = id ;
+    RESET_BINARY ;
 }
 
 void msg::type (msgtype_t type)
 {
     type_ = type ;
-    RESET_MSG ;
+    RESET_BINARY ;
 }
 
 void msg::code (int code)
 {
     code_ = code ;
-    RESET_MSG ;
+    RESET_BINARY ;
 }
 
 void msg::payload (void *data, int len)
@@ -183,10 +352,9 @@ void msg::payload (void *data, int len)
     if (payload_)
 	delete payload_ ;
 
-    payload_ = new unsigned char [len] ;
-    std::memcpy (payload_, data, len) ;
+    ALLOC_COPY (payload_, data, len) ;
     paylen_ = len ;
-    RESET_MSG ;
+    RESET_BINARY ;
 }
 
 void msg::handler (reply_handler_t func)
@@ -224,6 +392,17 @@ msg::msgtype_t msg::type (void)
     return type_ ;
 }
 
+int msg::code (void)
+{
+    return code_ ;
+}
+
+void *msg::payload (int *paylen)
+{
+    *paylen = paylen_ ;
+    return payload_ ;
+}
+
 bool msg::isanswer (void)
 {
     /*********** NOT YET *****/
@@ -236,13 +415,9 @@ bool msg::isrequest (void)
     return 1 ;
 }
 
-int msg::code (void)
+bool msg::issosctl (void)
 {
-    return code_ ;
+    /*********** NOT YET *****/
+    return 1 ;
 }
 
-void *msg::payload (int *paylen)
-{
-    *paylen = paylen_ ;
-    return payload_ ;
-}

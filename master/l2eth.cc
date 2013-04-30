@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -69,7 +70,7 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 l2addr_eth::l2addr_eth (const l2addr_eth &x)
 {
     addr_ = new byte [ETHADDRLEN] ;
-    memcpy (addr_, x.addr_, ETHADDRLEN) ;
+    std::memcpy (addr_, x.addr_, ETHADDRLEN) ;
 }
 
 // assignment operator
@@ -80,7 +81,7 @@ l2addr_eth & l2addr_eth::operator = (const l2addr_eth &x)
 
     if (addr_ == NULL)
 	addr_ = new byte [ETHADDRLEN] ;
-    memcpy (addr_, x.addr_, ETHADDRLEN) ;
+    std::memcpy (addr_, x.addr_, ETHADDRLEN) ;
     return *this ;
 }
 
@@ -97,13 +98,13 @@ l2addr_eth::~l2addr_eth ()
 int l2addr_eth::operator== (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr_, oe->addr_, ETHADDRLEN) == 0 ;
+    return std::memcmp (this->addr_, oe->addr_, ETHADDRLEN) == 0 ;
 }
 
 int l2addr_eth::operator!= (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr_, oe->addr_, ETHADDRLEN) != 0 ;
+    return std::memcmp (this->addr_, oe->addr_, ETHADDRLEN) != 0 ;
 }
 
 int l2net_eth::init (const char *iface)
@@ -149,12 +150,12 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
     l2addr_eth *a = (l2addr_eth *) daddr ;
     int r ;
 
-    memset (&sll, 0, sizeof sll) ;
+    std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
     sll.sll_halen = ETHADDRLEN ;
     sll.sll_ifindex = ifidx_ ;
-    memcpy (sll.sll_addr, a->addr_, ETHADDRLEN) ;
+    std::memcpy (sll.sll_addr, a->addr_, ETHADDRLEN) ;
 
     r = sendto (fd_, data, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
     return r ;
@@ -180,7 +181,7 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 
     *a = new l2addr_eth ;
 
-    memset (&sll, 0, sizeof sll) ;
+    std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
     sll.sll_ifindex = ifidx_ ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
@@ -212,7 +213,7 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 		break ;
 	}
 
-	memcpy ((*a)->addr_, sll.sll_addr, ETHADDRLEN) ;
+	std::memcpy ((*a)->addr_, sll.sll_addr, ETHADDRLEN) ;
     }
 
     return pktype ;
