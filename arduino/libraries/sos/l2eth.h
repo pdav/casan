@@ -1,12 +1,10 @@
 #ifndef SOS_L2ETH_H
 #define	SOS_L2ETH_H
 
-#include <iostream>
-
-#include "sos.h"
+#include "Arduino.h"
 #include "l2.h"
 
-class l2net_eth ;
+#define ETHADDRLEN 6
 
 class l2addr_eth: public l2addr
 {
@@ -25,24 +23,8 @@ class l2addr_eth: public l2addr
 		void set_addr(const unsigned char* mac_addr);
 		unsigned char * get_raw_addr(void) ;
 
-		friend class l2net_eth ;
-
-		// friend ostream &operator << (ostream &o, const l2addr_eth &addr) ;
 } ;
 
 extern l2addr_eth l2addr_eth_broadcast ;
-
-class l2net_eth: public l2net
-{
-	public:
-		int init (const char *iface) ;
-		void term (void) ;
-		int send (l2addr *daddr, void *data, int len) ;
-		int bsend (void *data, int len) ;
-		pktype_t recv (l2addr **saddr, void *data, int *len) ;
-
-	private:
-		int ifidx ;			// interface index
-} ;
 
 #endif

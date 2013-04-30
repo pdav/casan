@@ -3,15 +3,16 @@
 Retransmit::Retransmit(Coap *c) {
 	_c = c;
 }
+
 Retransmit::~Retransmit() {
 	reset();
 }
 
 void Retransmit::add(Message *m, int time_first_transmit) {
-	retransmit_s * n = malloc(sizeof(retransmit_s));
+	retransmit_s * n = (retransmit_s *) malloc(sizeof(retransmit_s));
 	n->m = m ;
 	n->time = time_first_transmit;
-	n->nb_retransmissions(0);
+	n->nb_retransmissions = 0;
 	n->s = _retransmit;
 	_retransmit = n;
 }
@@ -32,18 +33,14 @@ void Retransmit::del(retransmit_s *r) {
 		while( tmp->s != r ) tmp = tmp->s;
 		tmp->s = r->s;
 	}
-	free(r->name);
+	delete r->m;
 	free(r);
 }
 
 retransmit_s * Retransmit::get_retransmit(Message *m) {
 	retransmit_s *tmp = _retransmit;
-	uint8_t *tmp_id0;
-	uint8_t	*tmp_id1;
 	while(tmp != NULL) {
-		tmp_id0 = tmp->m.get_id();
-		tmp_id1 = m->get_id();
-		if(tmp_id0[0] == tmp_id1[0] && tmp_id0[1] == tmp_id1[1])
+		if(tmp->m->get_id() == m->get_id())
 			return tmp;
 		tmp = tmp->s;
 	}

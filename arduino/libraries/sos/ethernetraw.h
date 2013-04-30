@@ -1,7 +1,7 @@
 #ifndef ETHERNET_RAW_H
 #define ETHERNET_RAW_H
 
-#include "Arduino.h"
+#include "l2eth.h"
 #include "utility/w5100.h"
 
 #define		BUFFER_SIZE			127
@@ -21,7 +21,7 @@ class EthernetRaw {
 		size_t send(l2addr &addr, uint8_t b);
 		size_t send(l2addr &mac_dest, const uint8_t *data, size_t len);
 		uint8_t recv(void);
-		uint8_t recv(uint8_t *buf, int *len);
+		uint8_t recv(uint8_t *data, int *len);
 
 		void get_mac_src(l2addr * mac_src);
 		uint8_t * get_offset_payload(int offset);

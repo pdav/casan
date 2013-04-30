@@ -8,8 +8,8 @@ Rmanager::~Rmanager() {
 }
 
 void Rmanager::add_resource(char *name, uint8_t (*handler)(Message &in, Message &out)) {
-	rmanager_s * newresource = malloc(sizeof(rmanager_s));
-	newresource->name = malloc(strlen(name) + 1);
+	rmanager_s * newresource = (rmanager_s *) malloc(sizeof(rmanager_s));
+	newresource->name = (char *) malloc(strlen(name) + 1);
 	memcpy(newresource->name, name, strlen(name) + 1);
 	newresource->h = handler;
 	newresource->s = _resources;
@@ -34,28 +34,33 @@ void Rmanager::delete_resource(rmanager_s *r) {
 
 // TODO
 uint8_t Rmanager::request_resource(Message &in, Message &out) {
-	
-	switch(in->get_code()) { // TODO : not sure we can do this way
+	uint8_t res(0);
+	/*
+	switch(in.get_code()) { // TODO : not sure we can do this way
 		case COAP_REQ_DELETE :
 			delete_resource();
 			break;
 		default :
 			return exec_request(in, out);
 	}
+	*/
 	return res;
 }
 
 // TODO
 rmanager_s * Rmanager::get_resource_instance(Message &in) {
-	char name[SOS_BUF_LEN]; 
+	char *name = in.get_name_copy();
 	// TODO : get the resource name
 
 	rmanager_s * tmp = _resources;
 	while(tmp != NULL) {
-		if(strcmp(tmp->name, name) == 0)
+		if(strcmp(tmp->name, name) == 0) {
+			free(name);
 			return tmp;
+		}
 		tmp = tmp->s;
 	}
+	free(name);
 	return NULL;
 }
 

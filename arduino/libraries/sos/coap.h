@@ -3,6 +3,7 @@
 
 #include "Arduino.h"
 #include "ethernetraw.h"
+#include "l2.h"
 #include "message.h"
 
 enum coap_request_method {
@@ -32,19 +33,20 @@ enum coap_message_type {
 class Coap {
 	public:
 
-		Coap(l2addr *addr, uint8_t *eth_type);"
+		Coap(l2addr *addr, uint8_t *eth_type);
 		Coap(EthernetRaw *e);
 		Coap();
 		~Coap();
 		void set_l2(EthernetRaw *e);
+		void set_master_addr(l2addr *master_addr);
 		uint8_t coap_available();
-		uint8_t fetch();
+		uint8_t fetch(void);
 		void send(l2addr &mac_addr_dest, Message &m);
-		void recv(Message &m);
+		uint8_t recv(Message &m);
 
 		uint8_t get_type(void);
 		uint8_t get_code(void);
-		uint8_t *get_id(void);
+		int get_id(void);
 		uint8_t get_token_length(void);
 		uint8_t * get_token(void);
 
@@ -54,7 +56,7 @@ class Coap {
 		uint8_t get_options_length(void);
 		uint8_t * get_options(void);
 
-		void get_mac_src(uint8_t * mac_src);
+		void get_mac_src(l2addr * mac_src);
 
 	private:
 		EthernetRaw *_eth;

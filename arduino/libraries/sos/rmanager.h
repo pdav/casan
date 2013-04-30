@@ -1,9 +1,15 @@
 #ifndef __RMANAGER_H__
 #define __RMANAGER_H__
 
-#include "sos.h"
+#include "message.h"
+#include "coap.h"
 
 // The resources manager
+typedef struct _rmanager_s {
+	uint8_t (*h)(Message &in, Message &out);
+	char *name;
+	_rmanager_s *s;
+} rmanager_s;
 
 class Rmanager {
 
@@ -20,15 +26,10 @@ public:
 private :
 
 	rmanager_s * get_resource_instance(Message &in);
-	uint8_t exec_request(rmanager_s *m, Message &in, Message &out);
+	uint8_t exec_request(Message &in, Message &out);
 
-	typedef struct {
-		uint8_t (*h)(Message &in, Message &out);
-		char *name;
-		rmanager_s *s;
-	} rmanager_s;
 	rmanager_s *_resources = NULL;
-}
+};
 
 #endif
 

@@ -10,6 +10,6 @@ F_CPU			= 16000000L
 ARDUINO_PORT	= /dev/ttyACM0
 UPLOAD_RATE		= 9600
 
-ARDUINO_LIBS	= sos Coap EthernetRaw EthernetRaw/utility SPI
+ARDUINO_LIBS	= sos sos/utility SPI
 
 include /usr/share/arduino/Arduino.mk

@@ -2,7 +2,7 @@
 
 Coap::Coap(l2addr *mac_addr, uint8_t *eth_type) {
 	_eth = new EthernetRaw();
-	_eth->setmac(mac_addr);
+	_eth->set_mac(mac_addr);
 	_eth->set_ethtype(eth_type);
 }
 
@@ -28,16 +28,17 @@ void Coap::send(l2addr &mac_addr_dest, Message &m) {
 	sbuf[COAP_OFFSET_TYPE] |= (m.get_type() & 0x3) << 4;
 	sbuf[COAP_OFFSET_TKL] |= (m.get_token_length() & 0xF);
 	sbuf[COAP_OFFSET_CODE] = m.get_code();
-	memcpy(sbuf + COAP_OFFSET_ID, m.get_id(), 2);
+	int id = m.get_id();
+	memcpy(sbuf + COAP_OFFSET_ID, &id, 2);
 	memcpy(sbuf + COAP_OFFSET_TOKEN, m.get_token(), m.get_token_length());
 	{
 		uint8_t payload_offset = 0;
 		payload_offset = m.get_token_length() + (4 - (m.get_token_length() % 4));
 		sbuf[COAP_OFFSET_TOKEN + payload_offset] = 0xFF;
 		memcpy(sbuf + COAP_OFFSET_TOKEN + payload_offset + 1, 
-				m.get_payload(), m.get_payload_length);
+				m.get_payload(), (unsigned int) m.get_payload_length());
 		_eth->send( mac_addr_dest, sbuf, 
-				COAP_OFFSET_TOKEN + payload_offset + m.get_payload_length +1);
+				COAP_OFFSET_TOKEN + payload_offset + m.get_payload_length() +1);
 	}
 }
 
@@ -77,8 +78,10 @@ uint8_t Coap::get_code(void) {
 	return *(_eth->get_offset_payload(COAP_OFFSET_CODE));
 }
 
-uint8_t * Coap::get_id(void) {
-	return _eth->get_offset_payload(COAP_OFFSET_ID);
+int Coap::get_id(void) {
+	int ret;
+	memcpy(&ret, _eth->get_offset_payload(COAP_OFFSET_ID), 2);
+	return ret;
 }
 
 uint8_t Coap::get_token_length(void) {
@@ -98,30 +101,30 @@ uint8_t * Coap::get_payload(void) {
 	uint8_t payload_offset = 0;
 	uint8_t tmp = 0;
 	uint8_t tkl = get_token_length();
-	payload_offset = (tkl == 0 || tkl == 4) ? COAP_OFFSET_TOKEN + tkl : COAP_OFFSET_TOKEN + tlk + (4 - (tkl % 4));
+	payload_offset = (tkl == 0 || tkl == 4) ? COAP_OFFSET_TOKEN + tkl : COAP_OFFSET_TOKEN + tkl + (4 - (tkl % 4));
 	tmp = *(_eth->get_offset_payload(payload_offset));
 	while(tmp != 0xFF && payload_offset < _eth->get_payload_length()) {
-		payload_offset += 4;
+		payload_offset++;
 		tmp = *(_eth->get_offset_payload(payload_offset)); 
 	}
 	++payload_offset;
 	return _eth->get_offset_payload(payload_offset);
 }
 
-uint8_t Coap::get_options_length(void) {
+uint8_t Coap::get_options_length(void) { // FIXME : It's not the way it works
 	uint8_t tkl = get_token_length();
-	uint8_t complement = (tlk%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
-	return get_payload() - (get_token() + tlk + complement) - 1; 
+	uint8_t complement = (tkl%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
+	return get_payload() - (get_token() + tkl + complement) - 1; 
 }
 
-uint8_t * Coap::get_options(void) {
+uint8_t * Coap::get_options(void) { // FIXME : it's not the way it works
 	uint8_t options_offset = 0;
 	uint8_t tkl = get_token_length();
-	uint8_t complement = (tlk%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
-	options_offset =  COAP_OFFSET_TOKEN + tlk + complement;
-	return _eth->get_offset_options(options_offset);
+	uint8_t complement = (tkl%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
+	options_offset =  COAP_OFFSET_TOKEN + tkl + complement;
+	return _eth->get_offset_payload(options_offset);
 }
 
-void Coap::get_mac_src(uint8_t * mac_src) {
+void Coap::get_mac_src(l2addr * mac_src) {
 	_eth->get_mac_src(mac_src);
 }

@@ -23,6 +23,7 @@ size_t EthernetRaw::send(l2addr &mac_dest, uint8_t data) {
 }
 
 size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
+	l2addr_eth * m = (l2addr_eth *) &mac_dest;
 	byte *sbuf = NULL;
 	sbuf = (byte*) malloc(len + 16);
 	int sbuflen;
@@ -31,7 +32,7 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 	reste = BUFFER_SIZE < len ? len - BUFFER_SIZE - OFFSET_DATA: 0;
 	sbuflen = BUFFER_SIZE < len + OFFSET_DATA ? BUFFER_SIZE : len + OFFSET_DATA;
 
-	memcpy(sbuf + OFFSET_DEST_ADDR, mac_dest.get_raw_addr(), 6);
+	memcpy(sbuf + OFFSET_DEST_ADDR, m->get_raw_addr(), 6);
 	memcpy(sbuf + OFFSET_SRC_ADDR, _mac_addr->get_raw_addr(), 6);
 	memcpy(sbuf + OFFSET_ETHTYPE, _eth_type, 2);
 	memcpy(sbuf + OFFSET_DATA, data, len);
@@ -52,23 +53,23 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
  * return 0 if ok
  */
 uint8_t EthernetRaw::recv(void) {
-	return recv(NULL,NULL);
+	return recv(NULL, NULL);
 }
 
-uint8_t EthernetRaw::recv(l2addr *mac_addr_src, uint8_t *data, int *len) {
-	mac_addr_src = (l2addr_eth *) mac_addr_src;
+uint8_t EthernetRaw::recv(uint8_t *data, int *len) {
 	W5100.recv_data_processing(_s, _rbuf, _rbuflen);
 	W5100.execCmdSn(_s, Sock_RECV);
 	// There is an offset in the reception (2 bytes, see the w5100 datasheet)
 	byte * packet = _rbuf + OFFSET_RECEPTION;
 	// we check the source address (only the master must send informations)
-	if(_mac_addr != packet + OFFSET_SRC_ADDR ) {
+	// TODO : we don't use it for now, but we will use this feature later
+	if(_master_addr != NULL && *_master_addr != packet + OFFSET_SRC_ADDR ) {
 		return 1;
 	}
 	// we check the destination address
 	{
-		l2addr mac_broadcast("ff:ff:ff:ff:ff:ff");
-		if( _mac_addr != packet +OFFSET_DEST_ADDR && mac_broadcast != packet + OFFSET_DEST_ADDR) {
+		l2addr_eth mac_broadcast("ff:ff:ff:ff:ff:ff");
+		if( *_mac_addr != packet +OFFSET_DEST_ADDR && mac_broadcast != packet + OFFSET_DEST_ADDR) {
 			return 2;
 		}
 	}
@@ -86,8 +87,8 @@ uint8_t EthernetRaw::recv(l2addr *mac_addr_src, uint8_t *data, int *len) {
 }
 
 void EthernetRaw::get_mac_src(l2addr * mac_src) {
-	mac_src = (l2addr_eth *) mac_src;
-	mac_src->set_addr( _rbuf + OFFSET_RECEPTION + OFFSET_SRC_ADDR );
+	l2addr_eth * m = (l2addr_eth *) mac_src;
+	m->set_addr( _rbuf + OFFSET_RECEPTION + OFFSET_SRC_ADDR );
 }
 
 uint8_t * EthernetRaw::get_offset_payload(int offset) {
@@ -103,11 +104,13 @@ int EthernetRaw::get_payload_length(void) {
 }
 
 void EthernetRaw::set_master_addr(l2addr * master_addr) {
-	_master_addr = master_addr;
+	if(_master_addr != NULL)
+		delete _master_addr;
+	_master_addr = (l2addr_eth *) master_addr;
 }
 
 void EthernetRaw::set_mac(l2addr *mac_address) {
-	_mac_addr = mac_address;
+	_mac_addr = (l2addr_eth *) mac_address;
 	W5100.setMACAddress(_mac_addr->get_raw_addr());
 	/*
 	Serial.print(F("mac : "));
