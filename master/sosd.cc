@@ -40,6 +40,7 @@ int main (int argc, char *argv [])
     s.l2 (l) ;
     e.add_slave (&s) ;
 
+    sleep (100000) ;
     sleep (10) ;
     
     // register new message

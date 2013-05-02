@@ -17,7 +17,7 @@ sosd:	$(OBJS)
 	c++ $(CXXFLAGS) -o sosd $(OBJS) -lpthread
 
 sendtest: $(SOBJS)
-	c++ $(CXXFLAGS) -o sendtest $(OBJS) -lpthread
+	c++ $(CXXFLAGS) -o sendtest $(SOBJS) -lpthread
 
 *.o: $(INCL)
 

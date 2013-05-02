@@ -83,11 +83,10 @@ void engine::start_net (l2net *l2)
 	std::chrono::system_clock::time_point now ;
 
 	r = new receiver ;
-	std::memset (r, 0, sizeof *r) ;
+	// std::memset (r, 0, sizeof *r) ;
 
 	r->l2 = l2 ;
 	r->thr = NULL ;
-	r->deduplist.clear () ;
 	// define a pseudo-slave for broadcast address
 	r->broadcast.l2 (l2) ;
 	r->broadcast.addr (l2->bcastaddr ()) ;
@@ -119,7 +118,6 @@ void engine::add_slave (slave *s)
 
     s->status_ = slave::SL_INACTIVE ;
     slist_.push_front (*s) ;
-    // condvar_.notify_one () ;
 }
 
 /******************************************************************************
@@ -307,7 +305,10 @@ void engine::clean_deduplist (receiver *r)
 	newdi++ ;
 
 	if (now >= di->next_timeout_)
+	{
+	    std::cout << "ERASE FROM DEDUP id=" << di->id () << "\n" ;
 	    r->deduplist.erase (di) ;
+	}
 
 	di = newdi ;
     }
@@ -330,46 +331,58 @@ void engine::receiver_thread (receiver *r)
 	    clean_deduplist (r) ;
 
 	    /*
-	     * Is this message a duplicated one?
+	     * Is this a reply to an existing request?
 	     */
-	    if (m->peer ()->status_ == slave::SL_RUNNING)
+
+	    /*
+	     * Process message
+	     */
+
+	    if (m->issosctl ())
 	    {
+		    std::cout << "CTL MSG\n" ;
+		    delete m ;
+	    }
+	    else if (m->peer ()->status_ == slave::SL_RUNNING)
+	    {
+		/*
+		 * Is this message a duplicated one?
+		 */
+
 		if (m->type () == msg::MT_CON)
 		{
-		    int found ;
+		    msg *orgmsg ;
 
-		    found = 0 ;
+		    orgmsg = 0 ;
 		    for (auto &d : r->deduplist)
 		    {
 			if (*m == d)
 			{
-			    found = 1 ;
+			    orgmsg = &d ;
 			    break ;
 			}
 		    }
-		    if (found)
+		    if (orgmsg)
 		    {
 			/* found a duplicated message */
-			std::cout << "DUPLICATE MESSAGE\n" ;
-			// XXX FIND ANSWER
+			std::cout << "DUPLICATE MESSAGE id=" << orgmsg->id () << "\n" ;
+			// XXX FIND ANSWER AND SEND IT BACK
 			continue ;
 		    }
 		    else
 		    {
 			// if not found, store it on deduplist with a timeout
+			r->deduplist.push_front (*m) ;
 		    }
 		}
 	    }
 	    else
 	    {
-		if (m->issosctl ())
-		{
-		    std::cout << "CTL MSG\n" ;
-		    delete m ;
-		}
+		/*
+		 * No else: we silently ignore messages from non associated
+		 * slaves
+		 */
 	    }
 	}
-	// is this a already received message (deduplication)?
-	// is this a reply to an existing request?
     }
 }

@@ -11,6 +11,8 @@
 #include "l2eth.h"
 #include "engine.h"
 
+#define	IFACE		"eth0"
+
 int main (int argc, char *argv [])
 {
     l2net *l ;
@@ -26,37 +28,38 @@ int main (int argc, char *argv [])
 
     // start new interface
     l = new l2net_eth ;
-    if (l->init ("eth0") == -1)
+    if (l->init (IFACE) == -1)
     {
 	perror ("init") ;
 	exit (1) ;
     }
     // register network
     e.start_net (l) ;
-    std::cout << "eth0 initialized\n" ;
+    std::cout << IFACE << " initialized\n" ;
 
     // register new slave
-    sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;
+    // sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;	// arduino
+    sa = new l2addr_eth ("e8:e0:b7:29:03:63") ;		// vagabond
     s.addr (sa) ;
     s.l2 (l) ;
     e.add_slave (&s) ;
 
-    sleep (10) ;
+    sleep (2) ;
     
     // register new message
-    m.type (msg::MT_CON) ;
+    m.type (msg::MT_CON) ;		// will be retransmitted
     m.code (msg::MC_GET) ;
     m.peer (&s) ;
     m.token ((void *) "ABCD", 4) ;
     m.payload (buf, sizeof buf) ;
     e.add_request (&m) ;
 
-    sleep (10) ;
+    sleep (5) ;
 
     // register another NON message
-    m2 = m ;
-    m2.type (msg::MT_NON) ;
-    m2.id (0) ;
+    m2 = m ;				// basically the same as before
+    m2.type (msg::MT_NON) ;		// will not be retransmitted
+    m2.id (0) ;				// id = 0 => let SOS choose it
     e.add_request (&m2) ;
 
     sleep (1000) ;
