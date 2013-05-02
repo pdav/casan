@@ -21,8 +21,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstdio>
-
-#include <string.h>
+#include <cstring>
 
 #include "engine.h"
 #include "sos.h"
@@ -302,13 +301,13 @@ void engine::clean_deduplist (receiver *r)
     now = std::chrono::system_clock::now () ;
 
     di = r->deduplist.begin () ;
-    while (di != deduplist.end ())
+    while (di != r->deduplist.end ())
     {
 	auto newdi = di ;		// backup di since we may erase it
 	newdi++ ;
 
-	if (now >= di.next_timeout)
-	    deduplist.erase (di) ;
+	if (now >= di->next_timeout_)
+	    r->deduplist.erase (di) ;
 
 	di = newdi ;
     }
@@ -328,30 +327,46 @@ void engine::receiver_thread (receiver *r)
 	     * House cleaning: remove obsolete messages from deduplication list
 	     */
 
-	    clean_deduplist (r->deduplist) ;
+	    clean_deduplist (r) ;
 
 	    /*
 	     * Is this message a duplicated one?
 	     */
-	    if (m->peer ()->status_ == slave::SL_RUNNING && m->type () == msg::MT_CON)
+	    if (m->peer ()->status_ == slave::SL_RUNNING)
 	    {
-		// XXX LOCK
-		for (auto &d : deduplist_)
+		if (m->type () == msg::MT_CON)
 		{
-		    if (*m == d)
+		    int found ;
+
+		    found = 0 ;
+		    for (auto &d : r->deduplist)
+		    {
+			if (*m == d)
+			{
+			    found = 1 ;
+			    break ;
+			}
+		    }
+		    if (found)
 		    {
 			/* found a duplicated message */
+			std::cout << "DUPLICATE MESSAGE\n" ;
 			// XXX FIND ANSWER
+			continue ;
+		    }
+		    else
+		    {
+			// if not found, store it on deduplist with a timeout
 		    }
 		}
-
-		// if not found, store it on deduplist with a timeout
-
 	    }
-	    if (m->peer ()->status_ != slave::SL_RUNNING && m->issosctl ())
+	    else
 	    {
-		std::cout << "CTL MSG\n" ;
-		delete m ;
+		if (m->issosctl ())
+		{
+		    std::cout << "CTL MSG\n" ;
+		    delete m ;
+		}
 	    }
 	}
 	// is this a already received message (deduplication)?

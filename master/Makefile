@@ -1,13 +1,25 @@
 CXXFLAGS = -g -std=c++11 -Wall -W -pedantic -I ../include
 
-OBJS = main.o l2.o l2eth.o engine.o msg.o slave.o utils.o
+# common "library" files
+LOBJS = l2.o l2eth.o engine.o msg.o slave.o utils.o
 
-INCL = sos.h l2.h l2eth.h engine.h msg.h slave.h utils.h
+# object files for SOS daemon program
+OBJS = sosd.o $(LOBJS)
 
-x:	$(OBJS)
-	c++ $(CXXFLAGS) -o x $(OBJS) -lpthread
+# object files to test SOS packet sending
+SOBJS = sendtest.o $(LOBJS)
+
+INCL = sos.h l2.h l2eth.h engine.h msg.h slave.h utils.h ../include/defs.h
+
+all:	sosd sendtest
+
+sosd:	$(OBJS)
+	c++ $(CXXFLAGS) -o sosd $(OBJS) -lpthread
+
+sendtest: $(SOBJS)
+	c++ $(CXXFLAGS) -o sendtest $(OBJS) -lpthread
 
 *.o: $(INCL)
 
 clean:
-	rm -f *.o x
+	rm -f *.o sosd sendtest
