@@ -27,9 +27,9 @@ int msg::global_message_id = 1 ;
 			 (((unsigned int) (type) & 0x3) << 4) | \
 			 (((unsigned int) (toklen) & 0x7)) \
 			 )
-#define	COAP_VERSION(b)	(((b) [0] >> 30) & 0x3)
-#define	COAP_TYPE(b)	(((b) [0] >> 28) & 0x3)
-#define	COAP_TOKLEN(b)	(((b) [0] >> 24) & 0xf)
+#define	COAP_VERSION(b)	(((b) [0] >> 6) & 0x3)
+#define	COAP_TYPE(b)	(((b) [0] >> 4) & 0x3)
+#define	COAP_TOKLEN(b)	(((b) [0]     ) & 0xf)
 #define	COAP_CODE(b)	(((b) [1]))
 #define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
 
@@ -201,6 +201,8 @@ int msg::recv (l2net *l2, std::list <slave> slist)
     msg_ = new byte [len] ;
     pktype_ = l2->recv (&a, msg_, &len) ; 	// create a l2addr *a
     std::cout << "RECV pkt=" << pktype_ << ", len=" << len << "\n" ;
+    msglen_ = len ;
+
     r = 0 ;				// recv failed
     if ((pktype_ == PK_ME || pktype_ == PK_BCAST)
     		&& COAP_VERSION (msg_) == SOS_VERSION)
@@ -256,7 +258,7 @@ int msg::recv (l2net *l2, std::list <slave> slist)
 	     */
 
 	    opt_nb = 0 ;
-	    while (msg_ [i] != 0xff)
+	    while (msg_ [i] != 0xff && i < msglen_)
 	    {
 		int opt_delta, opt_len ;
 
@@ -301,8 +303,26 @@ int msg::recv (l2net *l2, std::list <slave> slist)
 		i += opt_len ;
 	    }
 
-	    ALLOC_COPY (payload_, msg_ + i, msglen_ - i) ;
+	    if (msg_ [i] != 0xff)
+	    {
+		r = 0 ;
+	    }
+	    else
+	    {
+		i++ ;
+		paylen_ = msglen_ - i ;
+		ALLOC_COPY (payload_, msg_ + i, paylen_) ;
+	    }
 	}
+    }
+
+    if (r)
+    {
+	char *p ;
+	if (pktype_ == PK_ME) p = "me" ;
+	if (pktype_ == PK_BCAST) p = "bcast" ;
+
+	std::cout << "RECV -> " << p << ", id=" << id_ << ", len=" << msglen_ << "\n" ;
     }
 
     delete a ;				// remove address created by l2->recv ()

@@ -319,9 +319,12 @@ void engine::receiver_thread (receiver *r)
     for (;;)
     {
 	msg *m ;
+	int rc ;
 
 	m = new msg ;
-	if (m->recv (r->l2, slist_))
+	rc = m->recv (r->l2, slist_) ;
+
+	if (rc)
 	{
 
 	    /*

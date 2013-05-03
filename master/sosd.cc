@@ -35,7 +35,8 @@ int main (int argc, char *argv [])
     std::cout << "eth0 initialized\n" ;
 
     // register new slave
-    sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;
+    // sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;	// arduino
+    sa = new l2addr_eth ("52:54:00:f5:7b:46") ;		// lognet
     s.addr (sa) ;
     s.l2 (l) ;
     e.add_slave (&s) ;
