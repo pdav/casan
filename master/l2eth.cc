@@ -112,6 +112,7 @@ int l2net_eth::init (const char *iface)
     struct sockaddr_ll sll ;
 
     mtu_ = ETHMTU ;
+    maxlatency_ = ETHMAXLATENCY ;
 
     /* Get interface index */
 

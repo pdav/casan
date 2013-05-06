@@ -24,6 +24,7 @@ slave::~slave ()
 void slave::reset (void)
 {
     status_ = SL_INACTIVE ;
+    slaveid_ = 0 ;
     l2_ = 0 ;
     addr_ = 0 ;
     handler_ = 0 ;
@@ -48,6 +49,11 @@ int slave::ttl (void)
     return ttl_ ;
 }
 
+slaveid_t slave::slaveid (void)
+{
+    return slaveid_ ;
+}
+
 /******************************************************************************
  * Mutators
  */
@@ -65,6 +71,11 @@ void slave::addr (l2addr *a)
 void slave::ttl (int ttl)
 {
     ttl_ = ttl ;
+}
+
+void slave::slaveid (slaveid_t sid)
+{
+    slaveid_ = sid ;
 }
 
 void slave::handler (reply_handler_t h)
@@ -89,4 +100,3 @@ void slave::process (void *data, int len)
 	std::cout << "got a timeout\n" ;
     }
 }
-

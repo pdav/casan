@@ -37,7 +37,7 @@ class engine
     private:
 	std::list <receiver> rlist_ ;
 	std::list <slave> slist_ ;
-	std::list <msg> mlist_ ;
+	std::list <msg *> mlist_ ;
 
 	std::thread *tsender_ ;
 	std::mutex mtx_ ;
@@ -46,6 +46,7 @@ class engine
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
 	void clean_deduplist (receiver *r) ;
+	bool find_peer (msg *m, l2addr *a, receiver *r) ;
 
 	void send_hello (receiver *r) ;
 } ;

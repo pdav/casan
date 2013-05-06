@@ -1,4 +1,4 @@
-CXXFLAGS = -g -std=c++11 -Wall -W -pedantic -I ../include
+CXXFLAGS = -g -DDEBUG -std=c++11 -Wall -W -pedantic -I ../include
 
 # common "library" files
 LOBJS = l2.o l2eth.o engine.o msg.o slave.o utils.o

@@ -25,17 +25,21 @@ class msg
 	typedef enum msgtype { MT_CON=0, MT_NON, MT_ACK, MT_RST } msgtype_t ;
 	typedef enum msgcode { MC_EMPTY=0,
 		    MC_GET=1, MC_POST, MC_PUT, MC_DELETE } msgcode_t ;
+	// SOS_HELLO is never used
+	typedef enum sostype { SOS_NONE=0, SOS_REGISTER, SOS_ASSOC_REQUEST,
+		    SOS_ASSOC_ANSWER, SOS_HELLO, SOS_UNKNOWN} sostype_t ;
 
-	msg () ;				// constructor
-	msg (const msg &m) ;			// copy constructor
-	~msg () ;				// destructor
+
+	msg () ;			// constructor
+	msg (const msg &m) ;		// copy constructor
+	~msg () ;			// destructor
 
 	// operators
-	int operator == (msg &) ;		// only for received messages
+	int operator == (msg &) ;	// only for received messages
 
 	// basic operations
 	int send (void) ;
-	int recv (l2net *l2, std::list <slave> slist) ;
+	l2addr *recv (l2net *l2) ;	// returned addr must be freed by caller
 
 	// mutators (to send messages)
 	void peer (slave *s) ;
@@ -44,7 +48,9 @@ class msg
 	void type (msgtype_t type) ;
 	void code (int code) ;
 	void payload (void *data, int len) ;
-	void handler (reply_handler_t h) ;
+
+	void complete (void) ;			// no need for more retransmits
+	void handler (reply_handler_t h) ;	// for answers to requests
 
 	// accessors (for received messages)
 	slave *peer (void) ;
@@ -54,16 +60,19 @@ class msg
 	msgtype_t type (void) ;
 	int code (void) ;
 	void *payload (int *paylen) ;
+	msg *reqrep (void) ;
 
-	bool isanswer (void) ;
-	bool isrequest (void) ;
-	bool issosctl (void) ;			// SOS control message
+	void link_reqrep (msg *m) ;		// m == 0 <=> unlink
+	sostype_t sos_type (void) ;
+
+	slaveid_t is_sos_register (void) ;	// SOS control message
+	bool is_sos_associate (void) ;		// SOS control message
 
     protected:
-	// CoAP protocol parameters
-	int ntrans_ ;				// number of transmissions
-	std::chrono::milliseconds timeout_ ;	// current timeout
-	std::chrono::system_clock::time_point next_timeout_ ;
+	std::chrono::system_clock::time_point expire_ ;	// all msg
+	int ntrans_ ;				// # of transmissions (CON/NON)
+	std::chrono::milliseconds timeout_ ;	// current timeout (CON)
+	std::chrono::system_clock::time_point next_timeout_ ;	// (CON)
 
 	reply_handler_t handler_ ;
 
@@ -75,9 +84,11 @@ class msg
 	int msglen_ ;				// len of msg
 	pktype_t pktype_ ;
 
+	// Peer
+	slave *peer_ ;				// if found associated slave
+
 	// CoAP specific variables
-	slave *peer_ ;
-	unsigned char *payload_ ;
+	unsigned char *payload_ ;		// nul added at the end
 	int paylen_ ;
 	unsigned char *token_ ;
 	int toklen_ ;
@@ -85,7 +96,13 @@ class msg
 	int code_ ;
 	int id_ ;				// message id
 
+	msg *reqrep_ ;				// "request of" or "response of"
+	sostype_t sostype_ ;
+
 	static int global_message_id ;
+
+	void coap_encode (void) ;
+	bool coap_decode (void) ;
 } ;
 
 #endif

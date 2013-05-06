@@ -34,7 +34,7 @@ struct receiver
     l2net *l2 ;
     long int hid ; 		// hello id, initialized at start time
     slave broadcast ;
-    std::list <msg> deduplist ;
+    std::list <msg *> deduplist ;	// for received messages
     std::chrono::system_clock::time_point next_hello ;
     std::thread *thr ;
 } ;
@@ -128,7 +128,7 @@ void engine::add_request (msg *m)
 {
     std::lock_guard <std::mutex> lk (mtx_) ;
 
-    mlist_.push_front (*m) ;
+    mlist_.push_front (m) ;
     condvar_.notify_one () ;
 }
 
@@ -147,7 +147,7 @@ void engine::send_hello (receiver *r)
     snprintf (buf, MAXBUF, "POST /.well-known/sos?uuid=%ld", r->hid) ;
     m.payload (buf, strlen (buf)) ;
 
-    std::cout << "Send Hello\n" ;
+    D ("Send Hello") ;
     m.send () ;
 }
 
@@ -157,7 +157,6 @@ void engine::send_hello (receiver *r)
  * - timer event, signalling that a request timeout has expired
  * - change in L2 network handling (new L2, or removed L2)
  * - a new request is added (from an exterior thread)
- * - answer for a paired request has been received (from a receiver thread)
  */
 
 void engine::sender_thread (void)
@@ -171,18 +170,18 @@ void engine::sender_thread (void)
     for (;;)
     {
 	std::list <receiver>::iterator ri ;
-	std::list <msg>::iterator mi ;
+	std::list <msg *>::iterator mi ;
 
 	if (next_timeout == std::chrono::system_clock::time_point::max ())
 	{
-	    std::cout << "WAIT\n" ;
+	    D ("WAIT") ;
 	    condvar_.wait (lk) ;
 	}
 	else
 	{
 	    auto delay = next_timeout - now ;	// needed precision for delay
 
-	    std::cout << "WAIT " << std::chrono::duration_cast<std::chrono::milliseconds> (delay).count() << "ms\n" ;
+	    D ("WAIT " << std::chrono::duration_cast<std::chrono::milliseconds> (delay).count() << "ms") ;
 	    condvar_.wait_for (lk, delay) ;
 	}
 
@@ -210,7 +209,7 @@ void engine::sender_thread (void)
 	    // should the receiver thread be started?
 	    if (ri->thr == NULL)
 	    {
-		std::cout << "Found a receiver to start\n" ;
+		D ("Found a receiver to start") ;
 		ri->thr = new std::thread (&engine::receiver_thread, this, &*ri) ;
 	    }
 
@@ -239,26 +238,26 @@ void engine::sender_thread (void)
 	     * New message to transmit or old message to retransmit
 	     */
 
-	    if (mi->ntrans_ == 0 ||
-		    (mi->ntrans_ < MAX_RETRANSMIT && now >= mi->next_timeout_)
+	    if ((*mi)->ntrans_ == 0 ||
+		    ((*mi)->ntrans_ < MAX_RETRANSMIT && now >= (*mi)->next_timeout_)
 		    )
 	    {
-		std::cout << "Found a request to handle\n" ;
-		if (mi->send () == -1)
+		D ("Found a " << ((*mi)->ntrans_==0?"new ":"") << "request to handle") ;
+		if ((*mi)->send () == -1)
 		{
 		    std::cout << "ERROR DURING TRANSMISSION\n" ;
 		}
 	    }
 
 	    /*
-	     * Message to put back in the deduplication list
+	     * Message expired
 	     */
 
-	    if (mi->ntrans_ >= MAX_RETRANSMIT)
+	    if (now > (*mi)->expire_)
 	    {
-		std::cout << "ERASE id=" << mi->id () << "\n" ;
+		D ("ERASE id=" << (*mi)->id ()) ;
+		delete *mi ;
 		mlist_.erase (mi) ;
-		/**** PUT BACK IN DEDEUP LIST */
 	    }
 
 	    mi = newmi ;
@@ -280,8 +279,8 @@ void engine::sender_thread (void)
 	for (auto &m : mlist_)
 	{
 	    // must current timeout be the next retransmission of this message?
-	    if (next_timeout > m.next_timeout_)
-		next_timeout = m.next_timeout_ ;
+	    if (next_timeout > m->next_timeout_)
+		next_timeout = m->next_timeout_ ;
 	}
     }
 }
@@ -291,9 +290,65 @@ void engine::sender_thread (void)
  * Block on packet reception on the given interface
  */
 
+bool engine::find_peer (msg *m, l2addr *a, receiver *r)
+{
+    bool found ;
+
+    found = false ;
+    if (a)
+    {
+	bool free_a = true ;
+
+	/*
+	 * Is the peer already known?
+	 */
+
+	for (auto &s : slist_)
+	{
+	    if (*a == *(s.addr ()))
+	    {
+		m->peer (&s) ;
+		found = true ;
+		break ;
+	    }
+	}
+
+	/*
+	 * If the peer is not known, it may be a new slave coming up
+	 * In this case, we must send a ASSOCIATE message
+	 */
+
+	if (!found)
+	{
+	    slaveid_t sid ;
+
+	    sid = m->is_sos_register () ;
+	    if (sid)
+	    {
+		for (auto &s : slist_)
+		{
+		    if (sid == s.slaveid_)
+		    {
+			s.l2 (r->l2) ;
+			s.addr (a) ; free_a = false ;
+			m->peer (&s) ;
+			found = true ;
+			break ;
+		    }
+		}
+	    }
+	}
+
+	if (free_a)
+	    delete a ;
+    }
+
+    return found ;
+}
+
 void engine::clean_deduplist (receiver *r)
 {
-    std::list <msg>::iterator di ;
+    std::list <msg *>::iterator di ;
     std::chrono::system_clock::time_point now ;
 
     now = std::chrono::system_clock::now () ;
@@ -304,9 +359,9 @@ void engine::clean_deduplist (receiver *r)
 	auto newdi = di ;		// backup di since we may erase it
 	newdi++ ;
 
-	if (now >= di->next_timeout_)
+	if (now >= (*di)->expire_)
 	{
-	    std::cout << "ERASE FROM DEDUP id=" << di->id () << "\n" ;
+	    D ("ERASE FROM DEDUP id=" << (*di)->id ()) ;
 	    r->deduplist.erase (di) ;
 	}
 
@@ -319,72 +374,119 @@ void engine::receiver_thread (receiver *r)
     for (;;)
     {
 	msg *m ;
-	int rc ;
+	l2addr *a ;
+	bool process_it ;
+	msg *orgmsg ;			// original message in case of duplicate
+
+	/*
+	 * Wait for a new message
+	 */
 
 	m = new msg ;
-	rc = m->recv (r->l2, slist_) ;
+	a = m->recv (r->l2) ;
+	process_it = true ;
 
-	if (rc)
+	/*
+	 * House cleaning: remove obsolete messages from deduplication list
+	 */
+
+	clean_deduplist (r) ;
+
+	/*
+	 * Find slave
+	 */
+
+	if (! find_peer (m, a, r))
 	{
+	    process_it = false ;
+	    continue ;
+	}
 
-	    /*
-	     * House cleaning: remove obsolete messages from deduplication list
-	     */
+	/*
+	 * Message correlation: see CoAP spec, section 4.4
+	 * Is this a reply to an existing request?
+	 * For this, we need to perform a search in the message list
+	 * for a request message with this id.
+	 */
 
-	    clean_deduplist (r) ;
+	if (process_it && (m->type () == msg::MT_ACK || m->type () == msg::MT_RST))
+	{
+	    std::lock_guard <std::mutex> lk (mtx_) ;
+	    int id ;
 
-	    /*
-	     * Is this a reply to an existing request?
-	     */
-
-	    /*
-	     * Process message
-	     */
-
-	    if (m->issosctl ())
+	    id = m->id () ;
+	    for (auto &mr : mlist_)
 	    {
-		    std::cout << "CTL MSG\n" ;
-		    delete m ;
-	    }
-	    else if (m->peer ()->status_ == slave::SL_RUNNING)
-	    {
-		/*
-		 * Is this message a duplicated one?
-		 */
-
-		if (m->type () == msg::MT_CON)
+		if (mr->id () == id)
 		{
-		    msg *orgmsg ;
-
-		    orgmsg = 0 ;
-		    for (auto &d : r->deduplist)
+		    /* Got it! Original request found */
+		    if (mr->reqrep ())
 		    {
-			if (*m == d)
-			{
-			    orgmsg = &d ;
-			    break ;
-			}
-		    }
-		    if (orgmsg)
-		    {
-			/* found a duplicated message */
-			std::cout << "DUPLICATE MESSAGE id=" << orgmsg->id () << "\n" ;
-			// XXX FIND ANSWER AND SEND IT BACK
-			continue ;
+			// answer already received : ignore this new message
+			process_it = false ;
 		    }
 		    else
 		    {
-			// if not found, store it on deduplist with a timeout
-			r->deduplist.push_front (*m) ;
+			// new (unseen) answer to the original message
+			// register 
+			mr->link_reqrep (m) ;
+			// no more re-transmission needed
+			mr->complete () ;
 		    }
+		    break ;
 		}
+	    }
+	}
+
+	/*
+	 * Message deduplication: see CoAP spec, section 4.5
+	 * Is this the same request as already seen?
+	 */
+
+	orgmsg = 0 ;			// no duplicate
+	if (process_it && (m->type () == msg::MT_CON || m->type () == msg::MT_NON))
+	{
+	    for (auto &d : r->deduplist)
+	    {
+		if (*m == *d)
+		{
+		    orgmsg = *(&d) ;
+		    break ;
+		}
+	    }
+	    if (orgmsg)
+	    {
+		/* found a duplicated message */
+		D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
 	    }
 	    else
 	    {
-		/*
-		 * No else: we silently ignore messages from non associated
-		 * slaves
-		 */
+		// store the new message on deduplist with a timeout
+		m->expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
+		r->deduplist.push_front (m) ;
+	    }
+	}
+
+	/*
+	 * Check SOS control messages first
+	 */
+
+	if (process_it && m->sos_type () != msg::SOS_NONE)
+	{
+		D ("CTL MSG") ;
+		delete m ;
+		process_it = false ;		// already processed
+	}
+
+	if (process_it && m->peer ()->status_ == slave::SL_RUNNING)
+	{
+	    /*
+	     * Is this message a duplicated one?
+	     */
+
+	    if (m->type () == msg::MT_CON)
+	    {
+		////         XXXXXXXXXXXXXXXXXXXXX
 	    }
 	}
     }

@@ -26,11 +26,13 @@ class slave
 	void l2 (l2net *l2) ;		// set l2 network
 	void addr (l2addr *a) ;		// set address
 	void ttl (int ttl) ;		// set ttl
+	void slaveid (slaveid_t sid) ;	// set slave id
 
 	// Accessors
 	l2net *l2 (void) ;
 	l2addr *addr (void) ;
 	int ttl (void) ;
+	slaveid_t slaveid (void) ;
 
 	void handler (reply_handler_t h) ;// handler for incoming requests
 
@@ -39,6 +41,7 @@ class slave
 	// data is NULL if this is timeout
 	void process (void *data, int len) ;
 
+	slaveid_t slaveid_ ;		// slave id
 	enum status status_ ;		// current status of slave
 	reply_handler_t handler_ ;	// handler to process answers
 

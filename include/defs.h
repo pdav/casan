@@ -12,9 +12,11 @@
 
 // Ethernet address length
 #define	ETHADDRLEN	6
-
 // Ethernet default MTU
 #define	ETHMTU		1536
+// Ethernet maximum latency (ms). Even a very conservative value is far
+// more realistic than the default CoAP value (100 s)
+#define	ETHMAXLATENCY	10
 
 // SOS is based on this CoAP version
 #define	SOS_VERSION	1
@@ -37,9 +39,9 @@
 // Maximum probing rate (in bytes/sec)
 #define	PROBING_RATE	1
 // max time from the first transmission of a CON message to the last
-#define	MAX_TRANSMIT_SPAN	(ACK_TIMEOUT*((1<<MAX_RETRANSMIT)-1)*ACK_RANDOM_FACTOR)
+#define	MAX_TRANSMIT_SPAN	(int (ACK_TIMEOUT*((1<<MAX_RETRANSMIT)-1)*ACK_RANDOM_FACTOR))
 // max time rom the first transmission of a CON msg to time when sender gives up
-#define	MAX_TRANSMIT_WAIT	(ACK_TIMEOUT*((1<<(MAX_RETRANSMIT+1))-1)*ACK_RANDOM_FACTOR)
+#define	MAX_TRANSMIT_WAIT	(int (ACK_TIMEOUT*((1<<(MAX_RETRANSMIT+1))-1)*ACK_RANDOM_FACTOR))
 // default MAX_LATENCY is way too high for SOS
 #define	DEFAULT_MAX_LATENCY	1000
 // processing delay from CON reception to the ACK send

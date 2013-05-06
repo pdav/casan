@@ -34,11 +34,14 @@ int main (int argc, char *argv [])
     e.start_net (l) ;
     std::cout << "eth0 initialized\n" ;
 
+#if 0
     // register new slave
     // sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;	// arduino
     sa = new l2addr_eth ("52:54:00:f5:7b:46") ;		// lognet
     s.addr (sa) ;
     s.l2 (l) ;
+#endif
+    s.slaveid (169) ;			// no l2 nor addr specified
     e.add_slave (&s) ;
 
     sleep (100000) ;

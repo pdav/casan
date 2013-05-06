@@ -14,12 +14,12 @@ int msg::global_message_id = 1 ;
 #define	RESET_POINTERS	if (msg_) delete msg_ ; \
 			if (payload_) delete payload_ ; \
 			if (token_) delete token_	// no ";"
-#define	RESET_VALUES	peer_ = 0 ; \
+#define	RESET_VALUES	peer_ = 0 ; reqrep_ = 0 ; \
 			msg_ = 0     ; msglen_ = 0 ; \
 			payload_ = 0 ; paylen_ = 0 ; \
 			token_ = 0   ; toklen_ = 0 ; \
 			timeout_ = std::chrono::milliseconds (0) ; \
-			ntrans_ = 0 ; \
+			ntrans_ = 0 ; sostype_ = SOS_UNKNOWN ; \
 			id_ = 0				// no ";"
 
 #define	FORMAT_BYTE0(ver,type,toklen) \
@@ -34,6 +34,8 @@ int msg::global_message_id = 1 ;
 #define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
 
 #define	ALLOC_COPY(f,m,l)	(f=new byte [(l)], std::memcpy (f, (m), (l)))
+// add a nul byte to ease string operations
+#define	ALLOC_COPYNUL(f,m,l)	(f=new byte [(l)+1],std::memcpy (f, (m), (l)),f[(l)]=0)
 
 
 msg::msg ()
@@ -49,7 +51,7 @@ msg::msg (const msg &m)
     if (token_)
 	ALLOC_COPY (token_, m.token_, toklen_) ;
     if (payload_)
-	ALLOC_COPY (payload_, m.payload_, paylen_) ;
+	ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
 }
 
 msg::~msg ()
@@ -74,6 +76,144 @@ int msg::operator == (msg &m)
 }
 
 /******************************************************************************
+ * Message encoding and decoding (private methods)
+ */
+
+void msg::coap_encode (void)
+{
+    int i ;
+
+    /*
+     * Format message, part 1 : compute message size
+     */
+
+    msglen_ = 5 + toklen_ + paylen_ ;
+    // XXX NO OPTION HANDLING FOR THE MOMENT
+
+    if (id_ == 0)
+    {
+	id_ = global_message_id++ ;
+	if (global_message_id > 0xffff)
+	    global_message_id = 1 ;
+    }
+
+    /*
+     * Format message, part 2 : build message
+     */
+
+    msg_ = new byte [msglen_] ;
+
+    i = 0 ;
+    msg_ [i++] = FORMAT_BYTE0 (SOS_VERSION, type_, toklen_) ;
+    msg_ [i++] = code_ ;
+    msg_ [i++] = (id_ & 0xff00) >> 8 ;
+    msg_ [i++] = id_ & 0xff ;
+    if (toklen_ > 0)
+    {
+	std::memcpy (msg_ + i, token_, toklen_) ;
+	i += toklen_ ;
+    }
+    // XXX NO OPTION HANDLING FOR THE MOMENT
+    msg_ [i++] = 0xff ;			// start of payload
+    std::memcpy (msg_ + i, payload_, paylen_) ;
+}
+
+/* returns true if message is decoding was successful */
+bool msg::coap_decode (void)
+{
+    bool success ;
+
+    if (COAP_VERSION (msg_) != SOS_VERSION)
+    {
+	success = false ;
+    }
+    else
+    {
+	int i ;
+	int opt_nb ;
+
+	success = true ;
+
+	type_ = msgtype_t (COAP_TYPE (msg_)) ;
+	toklen_ = COAP_TOKLEN (msg_) ;
+	code_ = COAP_CODE (msg_) ;
+	id_ = COAP_ID (msg_) ;
+	i = 4 ;
+
+	if (toklen_ > 0)
+	{
+	    ALLOC_COPY (token_, msg_ + i, toklen_) ;
+	    i += toklen_ ;
+	}
+
+	/*
+	 * Options XXXXXXXXXXXXXXXX
+	 */
+
+	opt_nb = 0 ;
+	while (msg_ [i] != 0xff && i < msglen_)
+	{
+	    int opt_delta, opt_len ;
+
+	    opt_delta = (msg_ [i] >> 4) & 0x0f ;
+	    opt_len   = (msg_ [i]     ) & 0x0f ;
+	    i++ ;
+	    switch (opt_delta)
+	    {
+		case 13 :
+		    opt_delta = msg_ [i] - 13 ;
+		    i += 1 ;
+		    break ;
+		case 14 :
+		    opt_delta = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+		    i += 2 ;
+		    break ;
+		case 15 :
+		    success = false ;			// recv failed
+		    break ;
+	    }
+	    opt_nb += opt_delta ;
+
+	    switch (opt_len)
+	    {
+		case 13 :
+		    opt_len = msg_ [i] - 13 ;
+		    i += 1 ;
+		    break ;
+		case 14 :
+		    opt_len = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+		    i += 2 ;
+		    break ;
+		case 15 :
+		    success = false ;			// recv failed
+		    break ;
+	    }
+
+	    /* get option value */
+	    // XXXX
+#ifdef DEBUG
+	    std::cout << "OPTION " << opt_nb << "\n" ;
+#endif
+
+	    i += opt_len ;
+	}
+
+	if (msg_ [i] != 0xff)
+	{
+	    success = false ;
+	}
+	else
+	{
+	    i++ ;
+	    paylen_ = msglen_ - i ;
+	    ALLOC_COPYNUL (payload_, msg_ + i, paylen_) ;
+	}
+    }
+
+    return success ;
+}
+
+/******************************************************************************
  * Send and receive functions
  */
 
@@ -82,45 +222,11 @@ int msg::send (void)
     int r ;
 
     if (! msg_)
-    {
-	int i ;
+	coap_encode () ;
 
-	/*
-	 * Format message, part 1 : compute message size
-	 */
-
-	msglen_ = 5 + toklen_ + paylen_ ;
-	// XXX NO OPTION HANDLING FOR THE MOMENT
-
-	if (id_ == 0)
-	{
-	    id_ = global_message_id++ ;
-	    if (global_message_id > 0xffff)
-		global_message_id = 1 ;
-	}
-
-	/*
-	 * Format message, part 2 : build message
-	 */
-
-	msg_ = new byte [msglen_] ;
-
-	i = 0 ;
-	msg_ [i++] = FORMAT_BYTE0 (SOS_VERSION, type_, toklen_) ;
-	msg_ [i++] = code_ ;
-	msg_ [i++] = (id_ & 0xff00) >> 8 ;
-	msg_ [i++] = id_ & 0xff ;
-	if (toklen_ > 0)
-	{
-	    std::memcpy (msg_ + i, token_, toklen_) ;
-	    i += toklen_ ;
-	}
-	// XXX NO OPTION HANDLING FOR THE MOMENT
-	msg_ [i++] = 0xff ;			// start of payload
-	std::memcpy (msg_ + i, payload_, paylen_) ;
-    }
-
+#ifdef DEBUG
     std::cout << "TRANSMIT id=" << id_ << " ntrans_=" << ntrans_ << "\n" ;
+#endif
     r = peer_->l2 ()->send (peer_->addr (), msg_, msglen_) ;
     if (r == -1)
     {
@@ -128,63 +234,75 @@ int msg::send (void)
     }
     else
     {
+	int maxlat = peer_ ->l2 ()->maxlatency () ;
+
 	/*
 	 * Timers for reliable messages
 	 */
 
-	if (type_ == MT_CON)
+	switch (type_)
 	{
-	    if (ntrans_ == 0)
-	    {
-		long int nmilli ;
-		int r ;
+	    case MT_CON :
+		if (ntrans_ == 0)
+		{
+		    long int nmilli ;
+		    int r ;
 
+		    /*
+		     * initial timeout should be \in
+		     *	[ACK_TIMEOUT ... ACK_TIMEOUT * ACK_RANDOM_FACTOR] (1)
+		     *
+		     * Let's name i = initial timeout, t = ACK_TIMEOUT and
+		     * f = ACK_RANDOM_FACTOR
+		     * (1)	<==> t <= i < t*f
+		     *		<==> 1 <= i/t < f
+		     *		<==> 0 <= (i/t) - 1 < f-1
+		     *		<==> 0 <= ((i/t) - 1) * 1000 < (f-1)*1000
+		     * So, we take a pseudo-random number r between 0 and (f-1)*1000
+		     *		r = ((i/t) - 1) * 1000
+		     * and compute i = t(r/1000 + 1) = t*(r + 1)/1000
+		     */
+
+		    r = random_value (int ((ACK_RANDOM_FACTOR - 1.0) * 1000)) ;
+		    nmilli = ACK_TIMEOUT * (r + 1) ;
+		    nmilli = nmilli / 1000 ;
+		    timeout_ = std::chrono::milliseconds (nmilli) ;
+		    expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (maxlat)) ;
+		}
+		else
+		{
+		    timeout_ *= 2 ;
+		}
+		next_timeout_ = std::chrono::system_clock::now () + timeout_ ;
+
+		ntrans_++ ;
+		break ;
+	    case MT_NON :
+		ntrans_ = MAX_RETRANSMIT ;
+		expire_ = DATE_TIMEOUT (NON_LIFETIME (maxlat)) ;
+		break ;
+	    case MT_ACK :
+	    case MT_RST :
 		/*
-		 * initial timeout should be \in
-		 *	[ACK_TIMEOUT ... ACK_TIMEOUT * ACK_RANDOM_FACTOR] (1)
-		 *
-		 * Let's name i = initial timeout, t = ACK_TIMEOUT and
-		 * f = ACK_RANDOM_FACTOR
-		 * (1)	<==> t <= i < t*f
-		 *		<==> 1 <= i/t < f
-		 *		<==> 0 <= (i/t) - 1 < f-1
-		 *		<==> 0 <= ((i/t) - 1) * 1000 < (f-1)*1000
-		 * So, we take a pseudo-random number r between 0 and (f-1)*1000
-		 *		r = ((i/t) - 1) * 1000
-		 * and compute i = t(r/1000 + 1) = t*(r + 1)/1000
+		 * Non reliable messages : arbitrary set the retransmission
+		 * counter in order to skip further retransmissions.
 		 */
 
-		r = random_value (int ((ACK_RANDOM_FACTOR - 1.0) * 1000)) ;
-		nmilli = ACK_TIMEOUT * (r + 1) ;
-		nmilli = nmilli / 1000 ;
-		timeout_ = std::chrono::milliseconds (nmilli) ;
-	    }
-	    else
-	    {
-		timeout_ *= 2 ;
-	    }
-	    next_timeout_ = std::chrono::system_clock::now () + timeout_ ;
-
-	    ntrans_++ ;
-	}
-	else
-	{
-	    /*
-	     * Non reliable messages : arbitrary set the retransmission
-	     * counter in order to skip further retransmissions.
-	     */
-
-	    ntrans_ = MAX_RETRANSMIT ;
+		ntrans_ = MAX_RETRANSMIT ;
+		expire_ = DATE_TIMEOUT (MAX_RTT (maxlat)) ;	// arbitrary
+		break ;
+	    default :
+		std::cout << "Can't happen (msg type == " << type_ << ")\n" ;
+		break ;
 	}
     }
     return r ;
 }
 
-int msg::recv (l2net *l2, std::list <slave> slist)
+l2addr *msg::recv (l2net *l2)
 {
     l2addr *a ;
     int len ;
-    int r ;
 
     /*
      * Reset message object to a known state
@@ -200,134 +318,39 @@ int msg::recv (l2net *l2, std::list <slave> slist)
     len = l2->mtu () ;
     msg_ = new byte [len] ;
     pktype_ = l2->recv (&a, msg_, &len) ; 	// create a l2addr *a
-    std::cout << "RECV pkt=" << pktype_ << ", len=" << len << "\n" ;
     msglen_ = len ;
 
-    r = 0 ;				// recv failed
-    if ((pktype_ == PK_ME || pktype_ == PK_BCAST)
-    		&& COAP_VERSION (msg_) == SOS_VERSION)
+    if (! ((pktype_ == PK_ME || pktype_ == PK_BCAST) && coap_decode ()))
     {
 	/*
-	 * Search originator slave
+	 * Packet reception failed, not addressed to me, or not a SOS packet
 	 */
 
-	std::list <slave>::iterator s ;
-	int found ;
-
-	found = 0 ;
-	for (s = slist.begin () ; s != slist.end () ; s++)
-	{
-	    if (*a == *(s->addr ()))
-	    {
-		found = 1 ;
-		break ;
-	    }
-	}
-
-	if (found)
-	{
-	    int i ;
-	    int opt_nb ;
-
-	    /*
-	     * By default, message is correct. Note that decoding may
-	     * prove that message is in error
-	     */
-
-	    r = 1 ;			// recv succeeded
-
-	    /*
-	     * Decode message
-	     */
-
-	    peer_ = &*s ;
-	    type_ = msgtype_t (COAP_TYPE (msg_)) ;
-	    toklen_ = COAP_TOKLEN (msg_) ;
-	    code_ = COAP_CODE (msg_) ;
-	    id_ = COAP_ID (msg_) ;
-	    i = 4 ;
-
-	    if (toklen_ > 0)
-	    {
-		ALLOC_COPY (token_, msg_ + i, toklen_) ;
-		i += toklen_ ;
-	    }
-
-	    /*
-	     * Options XXXXXXXXXXXXXXXX
-	     */
-
-	    opt_nb = 0 ;
-	    while (msg_ [i] != 0xff && i < msglen_)
-	    {
-		int opt_delta, opt_len ;
-
-		opt_delta = (msg_ [i] >> 4) & 0x0f ;
-		opt_len   = (msg_ [i]     ) & 0x0f ;
-		i++ ;
-		switch (opt_delta)
-		{
-		    case 13 :
-			opt_delta = msg_ [i] - 13 ;
-			i += 1 ;
-			break ;
-		    case 14 :
-			opt_delta = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
-			i += 2 ;
-			break ;
-		    case 15 :
-			r = 0 ;			// recv failed
-			break ;
-		}
-		opt_nb += opt_delta ;
-
-		switch (opt_len)
-		{
-		    case 13 :
-			opt_len = msg_ [i] - 13 ;
-			i += 1 ;
-			break ;
-		    case 14 :
-			opt_len = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
-			i += 2 ;
-			break ;
-		    case 15 :
-			r = 0 ;			// recv failed
-			break ;
-		}
-
-		/* get option value */
-		// XXXX
-		std::cout << "OPTION " << opt_nb << "\n" ;
-
-		i += opt_len ;
-	    }
-
-	    if (msg_ [i] != 0xff)
-	    {
-		r = 0 ;
-	    }
-	    else
-	    {
-		i++ ;
-		paylen_ = msglen_ - i ;
-		ALLOC_COPY (payload_, msg_ + i, paylen_) ;
-	    }
-	}
+	delete a ;			// remove address created by l2->recv ()
+	a = 0 ;
     }
 
-    if (r)
+#ifdef DEBUG
+    if (a)
     {
-	char *p ;
+	const char *p ;
 	if (pktype_ == PK_ME) p = "me" ;
 	if (pktype_ == PK_BCAST) p = "bcast" ;
 
-	std::cout << "RECV -> " << p << ", id=" << id_ << ", len=" << msglen_ << "\n" ;
+	std::cout << "VALID RECV -> " << p << ", id=" << id_ << ", len=" << msglen_ << "\n" ;
     }
+    else
+    {
+	std::cout << "INVALID RECV pkt=" << pktype_ << ", len=" << len << "\n" ;
+    }
+#endif
 
-    delete a ;				// remove address created by l2->recv ()
+    return a ;
+}
 
-    return r ;
+void msg::complete (void)
+{
+    ntrans_ = MAX_RETRANSMIT ;
 }
 
 /******************************************************************************
@@ -372,9 +395,24 @@ void msg::payload (void *data, int len)
     if (payload_)
 	delete payload_ ;
 
-    ALLOC_COPY (payload_, data, len) ;
+    ALLOC_COPYNUL (payload_, data, len) ;
     paylen_ = len ;
     RESET_BINARY ;
+}
+
+void msg::link_reqrep (msg *m)
+{
+    if (m == 0)
+    {
+	// unlink
+	reqrep_ = m ;
+	m->reqrep_ = this ;
+    }
+    else
+    {
+	m->reqrep_ = 0 ;
+	reqrep_ = 0 ;
+    }
 }
 
 void msg::handler (reply_handler_t func)
@@ -423,21 +461,62 @@ void *msg::payload (int *paylen)
     return payload_ ;
 }
 
-bool msg::isanswer (void)
+msg *msg::reqrep (void)
 {
-    /*********** NOT YET *****/
-    return 1 ;
+    return reqrep_ ;
 }
 
-bool msg::isrequest (void)
+#define	SOS_REGISTER_STRING	"POST /.well-known/sos?register="
+#define	SOS_ASSOCIATE_STRING	"POST /.well-known/sos?associate="
+
+slaveid_t msg::is_sos_register (void)
 {
-    /*********** NOT YET *****/
-    return 1 ;
+    int len = sizeof SOS_REGISTER_STRING - 1 ;
+    slaveid_t sid = 0 ;
+
+    if (type_ == MT_NON && code_ == MC_POST
+	    && paylen_ > len
+	    && std::memcmp (payload_, SOS_REGISTER_STRING, len) == 0
+	    )
+    {
+	// we benefit from the implicit nul byte at the end
+	sid = std::atol ((const char *) payload_ + len) ;
+	sostype_ = SOS_REGISTER ;
+    }
+    return sid ;
 }
 
-bool msg::issosctl (void)
+bool msg::is_sos_associate (void)
 {
-    /*********** NOT YET *****/
-    return 1 ;
+    if (sostype_ == SOS_UNKNOWN)
+    {
+	int len = sizeof SOS_ASSOCIATE_STRING - 1 ;
+
+	if (type_ == MT_CON && code_ == MC_POST
+		&& paylen_ > len
+		&& std::memcmp (payload_, SOS_ASSOCIATE_STRING, len) == 0
+		)
+	{
+	    sostype_ = SOS_ASSOC_REQUEST ;
+	}
+    }
+    return sostype_ == SOS_ASSOC_REQUEST ;
 }
 
+msg::sostype_t msg::sos_type (void)
+{
+    if (sostype_ == SOS_UNKNOWN)
+    {
+	sostype_ = SOS_NONE ;
+	if (is_sos_register () == 0 && ! is_sos_associate ())
+	{
+	    if (reqrep_ != 0)
+	    {
+		sostype_t st = reqrep_->sos_type () ;
+		if (st == SOS_ASSOC_REQUEST)
+		    sostype_ = SOS_ASSOC_ANSWER ;
+	    }
+	}
+    }
+    return sostype_ ;
+}
