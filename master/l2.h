@@ -22,11 +22,9 @@ class l2net
 	virtual int	  bsend (void *data, int len) = 0 ;
 	virtual pktype_t  recv (l2addr **saddr, void *data, int *len) = 0 ;
 	virtual l2addr *  bcastaddr (void) = 0 ;
-	int fd (void) ;
 	int mtu (void) ;
 	int maxlatency (void) ;
     protected:
-	int fd_ ;			// initialized in the init method
 	int mtu_ ;			// initialized in the init method
 	int maxlatency_ ;		// initialized in the init method
 } ;

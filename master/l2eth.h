@@ -40,6 +40,7 @@ class l2net_eth: public l2net
 
     private:
 	int ifidx_ ;			// interface index
+	int fd_ ;			// socket descriptor
 } ;
 
 #endif
