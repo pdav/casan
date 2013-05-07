@@ -10,17 +10,30 @@
 
 int msg::global_message_id = 1 ;
 
-#define	RESET_BINARY	if (msg_) delete msg_		// no ";"
-#define	RESET_POINTERS	if (msg_) delete msg_ ; \
-			if (payload_) delete payload_ ; \
-			if (token_) delete token_	// no ";"
-#define	RESET_VALUES	peer_ = 0 ; reqrep_ = 0 ; \
-			msg_ = 0     ; msglen_ = 0 ; \
-			payload_ = 0 ; paylen_ = 0 ; \
-			token_ = 0   ; toklen_ = 0 ; \
-			timeout_ = std::chrono::milliseconds (0) ; \
-			ntrans_ = 0 ; sostype_ = SOS_UNKNOWN ; \
-			id_ = 0				// no ";"
+// reset pointer and length
+#define	RESET_PL(p,l)	do { \
+			    if (p) { delete p ; p = 0 ; l = 0 ; } \
+			} while (false)			// no ";"
+// reset encoded message
+#define	RESET_BINARY	do { \
+			    RESET_PL (msg_, msglen_) ; \
+			} while (false)			// no ";"
+// reset all pointers
+#define	RESET_POINTERS	do { \
+			    RESET_PL (msg_, msglen_) ; \
+			    RESET_PL (payload_, paylen_) ; \
+			    RESET_PL (token_, toklen_) ; \
+			} while (false)			// no ";"
+// reset all values and pointers (but don't deallocate them)
+#define	RESET_VALUES	do { \
+			    peer_ = 0 ; reqrep_ = 0 ; \
+			    msg_ = 0     ; msglen_ = 0 ; \
+			    payload_ = 0 ; paylen_ = 0 ; \
+			    token_ = 0   ; toklen_ = 0 ; \
+			    timeout_ = std::chrono::milliseconds (0) ; \
+			    ntrans_ = 0 ; sostype_ = SOS_UNKNOWN ; \
+			    id_ = 0 ; \
+			} while (false)			// no ";"
 
 #define	FORMAT_BYTE0(ver,type,toklen) \
 			((((unsigned int) (ver) & 0x3) << 6) | \
@@ -33,16 +46,25 @@ int msg::global_message_id = 1 ;
 #define	COAP_CODE(b)	(((b) [1]))
 #define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
 
-#define	ALLOC_COPY(f,m,l)	(f=new byte [(l)], std::memcpy (f, (m), (l)))
+#define	ALLOC_COPY(f,m,l)	do { \
+				    f = new byte [(l)] ; \
+				    std::memcpy (f, (m), (l)) ; \
+				} while (false)		// no ";"
 // add a nul byte to ease string operations
-#define	ALLOC_COPYNUL(f,m,l)	(f=new byte [(l)+1],std::memcpy (f, (m), (l)),f[(l)]=0)
+#define	ALLOC_COPYNUL(f,m,l)	do { \
+				    f = new byte [(l) + 1] ; \
+				    std::memcpy (f, (m), (l)) ; \
+				    f [(l)]=0 ; \
+				} while (false)		// no ";"
 
 
+// default constructor
 msg::msg ()
 {
     RESET_VALUES ;
 }
 
+// copy constructor
 msg::msg (const msg &m)
 {
     *this = m ;
@@ -54,6 +76,24 @@ msg::msg (const msg &m)
 	ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
 }
 
+// copy assignment constructor
+msg &msg::operator= (const msg &m)
+{
+    if (this != &m)
+    {
+	RESET_POINTERS ;
+	*this = m ;
+	if (msg_)
+	    ALLOC_COPY (msg_, m.msg_, msglen_) ;
+	if (token_)
+	    ALLOC_COPY (token_, m.token_, toklen_) ;
+	if (payload_)
+	    ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
+    }
+    return *this ;
+}
+
+// default destructor
 msg::~msg ()
 {
     RESET_POINTERS ;

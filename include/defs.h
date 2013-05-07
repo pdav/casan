@@ -21,6 +21,8 @@
 // SOS is based on this CoAP version
 #define	SOS_VERSION	1
 
+#define	COAP_MKCODE(class,detail)	((((class)&0x7)<<5)|((detail)&0x1f))
+
 /*
  * CoAP constants
  */

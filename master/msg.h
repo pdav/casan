@@ -32,6 +32,7 @@ class msg
 
 	msg () ;			// constructor
 	msg (const msg &m) ;		// copy constructor
+	msg &operator= (const msg &m) ;	// copy assignment constructor
 	~msg () ;			// destructor
 
 	// operators

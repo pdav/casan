@@ -305,7 +305,7 @@ bool engine::find_peer (msg *m, l2addr *a, receiver *r)
 
 	for (auto &s : slist_)
 	{
-	    if (*a == *(s.addr ()))
+	    if (s.addr () != 0 && *a == *(s.addr ()))
 	    {
 		m->peer (&s) ;
 		found = true ;

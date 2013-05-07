@@ -1,6 +1,6 @@
 #include <iostream>
+#include <cstring>
 
-#include <poll.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,8 +10,11 @@
 #include "l2.h"
 #include "l2eth.h"
 #include "engine.h"
+#include "defs.h"
 
-#define	IFACE		"eth0"
+#define IFACE		"eth0"
+// #define ADDR		"90:a2:da:80:0a:d4"		// arduino
+#define ADDR		"e8:e0:b7:29:03:63"		// vagabond
 
 int main (int argc, char *argv [])
 {
@@ -19,12 +22,9 @@ int main (int argc, char *argv [])
     // l2addr *la ;
     l2addr_eth *sa ;			// slave address
     slave s ;				// slave
-    engine e ;
-    msg m, m2 ;
-    char buf [] = "coucou\n" ;
-
-    // start SOS engine machinery
-    e.init () ;
+    slave sb ;				// pseudo-slave for broadcast
+    msg m1, m2 ;
+    char buf [512] = "" ;
 
     // start new interface
     l = new l2net_eth ;
@@ -33,35 +33,37 @@ int main (int argc, char *argv [])
 	perror ("init") ;
 	exit (1) ;
     }
-    // register network
-    e.start_net (l) ;
-    std::cout << IFACE << " initialized\n" ;
 
     // register new slave
-    // sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;	// arduino
-    sa = new l2addr_eth ("e8:e0:b7:29:03:63") ;		// vagabond
+    sa = new l2addr_eth (ADDR) ;
     s.addr (sa) ;
     s.l2 (l) ;
-    e.add_slave (&s) ;
+
+    // pseudo-slave for broadcast address
+    sb.addr (&l2addr_eth_broadcast) ;
+    sb.l2 (l) ;
+
+    std::cout << IFACE << " initialized for " << ADDR << "\n" ;
 
     sleep (2) ;
     
-    // register new message
-    m.type (msg::MT_CON) ;		// will be retransmitted
-    m.code (msg::MC_GET) ;
-    m.peer (&s) ;
-    m.token ((void *) "ABCD", 4) ;
-    m.payload (buf, sizeof buf) ;
-    e.add_request (&m) ;
+    // REGISTER message
+    std::strcpy (buf, "POST /.well-known/sos?register=169") ;
+    m1.type (msg::MT_NON) ;
+    m1.code (msg::MC_POST) ;
+    m1.peer (&sb) ;
+    m1.payload (buf, strlen (buf)) ;
+    m1.id (10) ;
+    m1.send () ;
 
     sleep (5) ;
 
-    // register another NON message
-    m2 = m ;				// basically the same as before
-    m2.type (msg::MT_NON) ;		// will not be retransmitted
-    m2.id (0) ;				// id = 0 => let SOS choose it
-    e.add_request (&m2) ;
-
-    sleep (1000) ;
-
+    // ASSOCIATE answer message
+    std::strcpy (buf, "<resource list>") ;
+    m2.type (msg::MT_ACK) ;		// will not be retransmitted
+    m2.code (COAP_MKCODE (2, 5)) ;
+    m2.peer (&s) ;
+    m2.payload (buf, strlen (buf)) ;
+    m2.id (0) ;
+    m2.send () ;
 }
