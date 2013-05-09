@@ -2,9 +2,16 @@
 #include <cstring>
 
 #include <sys/types.h>
+#include <unistd.h>
+
+#ifdef USE_PF_PACKET
 #include <sys/socket.h>
-#include <sys/unistd.h>
 #include <netpacket/packet.h>
+#endif
+#ifdef USE_PCAP
+#include <pcap/pcap.h>
+#endif
+
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
@@ -109,6 +116,7 @@ int l2addr_eth::operator!= (const l2addr &other)
 
 int l2net_eth::init (const char *iface)
 {
+#ifdef USE_PF_PACKET
     struct sockaddr_ll sll ;
 
     mtu_ = ETHMTU ;
@@ -138,15 +146,52 @@ int l2net_eth::init (const char *iface)
     }
 
     return 0 ;
+#endif
+#ifdef USE_PCAP
+    struct bpf_program *bpfp ;
+    char buf [MAXBUF] ;
+
+    fd_ = pcap_create (iface, errbuf_) ;
+    if (fd_ == NULL)
+	return -1 ;
+
+    snprintf (buf, sizeof buf, "ether proto 0x%x", ETHTYPE_SOS) ;
+    if (pcap_compile (fd_, bpfp, buf, 1, PCAP_NETMASK_UNKNOWN) != 0)
+    {
+	pcap_close (fd_) ;
+	return -1 ;
+    }
+
+    if (pcap_setfilter (fd_, bpfp) != 0)
+    {
+	pcap_close (fd_) ;
+	return -1 ;
+    }
+    pcap_freecode (bpfp) ;
+
+    if (pcap_activate (fd_) != 0)
+    {
+	pcap_close (fd_) ;
+	return -1 ;
+    }
+
+    return 0 ;
+#endif
 }
 
 void l2net_eth::term (void)
 {
+#ifdef USE_PF_PACKET
     close (fd_) ;
+#endif
+#ifdef USE_PCAP
+    pcap_close (fd_) ;
+#endif
 }
 
 int l2net_eth::send (l2addr *daddr, void *data, int len)
 {
+#ifdef USE_PF_PACKET
     struct sockaddr_ll sll ;
     l2addr_eth *a = (l2addr_eth *) daddr ;
     int r ;
@@ -160,6 +205,10 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
 
     r = sendto (fd_, data, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
     return r ;
+#endif
+#ifdef USE_PCAP
+    return 0 ;
+#endif
 }
 
 int l2net_eth::bsend (void *data, int len)
@@ -174,6 +223,7 @@ l2addr *l2net_eth::bcastaddr (void)
 
 pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 {
+#ifdef USE_PF_PACKET
     struct sockaddr_ll sll ;
     socklen_t ssll ;
     l2addr_eth **a = (l2addr_eth **) saddr ;
@@ -218,4 +268,25 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     }
 
     return pktype ;
+#endif
+#ifdef USE_PCAP
+    struct pcap_pkthdr pkthdr ;
+    const u_char *d ;
+    pktype_t pktype ;
+
+    d = pcap_next (fd_, &pkthdr) ;
+    if (d == NULL)
+    {
+	pktype = PK_NONE ;
+    }
+    else
+    {
+	if (*len >= (int) pkthdr.caplen)
+	    *len = (int) pkthdr.caplen ;
+	std::memcpy (data, d, *len) ;
+
+	pktype = PK_ME ;
+    }
+    return pktype ;
+#endif
 }

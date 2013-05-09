@@ -6,6 +6,17 @@
 #include "sos.h"
 #include "l2.h"
 
+/* consistency check */
+#ifdef USE_PF_PACKET
+#elif USE_PCAP
+#else
+#error	"Must define either USE_PF_PACKET or USE_PCAP"
+#endif
+
+#ifdef USE_PCAP
+#include <pcap/pcap.h>
+#endif
+
 class l2net_eth ;
 
 class l2addr_eth: public l2addr
@@ -39,8 +50,14 @@ class l2net_eth: public l2net
 	l2addr *bcastaddr (void) ;
 
     private:
+#ifdef USE_PF_PACKET
 	int ifidx_ ;			// interface index
 	int fd_ ;			// socket descriptor
+#endif
+#ifdef USE_PCAP
+	pcap_t *fd_ ;			// pcap descriptor
+	char errbuf_ [PCAP_ERRBUF_SIZE] ;
+#endif
 } ;
 
 #endif

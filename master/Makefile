@@ -1,4 +1,7 @@
-CXXFLAGS = -g -DDEBUG -std=c++11 -Wall -W -pedantic -I ../include
+CXX = g++
+L2ETH = -DUSE_PF_PACKET=1
+#L2ETH = -DUSE_PCAP=1
+CXXFLAGS = -g -DDEBUG -std=c++11 $(L2ETH) -Wall -W -pedantic -I ../include
 
 # common "library" files
 LOBJS = l2.o l2eth.o engine.o msg.o slave.o utils.o
