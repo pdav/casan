@@ -13,8 +13,6 @@
 int main (int argc, char *argv [])
 {
     l2net *l ;
-    // l2addr *la ;
-    l2addr_eth *sa ;			// slave address
     slave s ;				// slave
     engine e ;
     msg m, m2 ;
@@ -22,6 +20,7 @@ int main (int argc, char *argv [])
 
     // start SOS engine machinery
     e.init () ;
+    e.ttl (DEFAULT_SLAVE_TTL) ;
 
     // start new interface
     l = new l2net_eth ;
@@ -34,13 +33,6 @@ int main (int argc, char *argv [])
     e.start_net (l) ;
     std::cout << "eth0 initialized\n" ;
 
-#if 0
-    // register new slave
-    // sa = new l2addr_eth ("90:a2:da:80:0a:d4") ;	// arduino
-    sa = new l2addr_eth ("52:54:00:f5:7b:46") ;		// lognet
-    s.addr (sa) ;
-    s.l2 (l) ;
-#endif
     s.slaveid (169) ;			// no l2 nor addr specified
     e.add_slave (&s) ;
 
@@ -64,5 +56,4 @@ int main (int argc, char *argv [])
     e.add_request (&m2) ;
 
     sleep (1000) ;
-
 }

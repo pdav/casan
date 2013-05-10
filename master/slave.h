@@ -7,13 +7,16 @@
 #include "l2.h"
 #include "msg.h"
 
+class engine ;
+class msg ;
+
 class slave
 {
     public:
 	enum status
 	{
-	    SL_INACTIVE,
-	    SL_ASSOCIATING,
+	    SL_INACTIVE = 0,
+	    SL_ASSOCIATING = 0,
 	    SL_RUNNING,
 	} ;
 
@@ -33,6 +36,9 @@ class slave
 	l2addr *addr (void) ;
 	int ttl (void) ;
 	slaveid_t slaveid (void) ;
+
+	// SOS protocol handling
+	void process_sos (engine *e, msg *m) ;
 
 	void handler (reply_handler_t h) ;// handler for incoming requests
 

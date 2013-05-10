@@ -32,10 +32,10 @@
 struct receiver
 {
     l2net *l2 ;
-    long int hid ; 		// hello id, initialized at start time
+    long int hid ; 			// hello id, initialized at start time
     slave broadcast ;
-    std::list <msg *> deduplist ;	// for received messages
-    std::chrono::system_clock::time_point next_hello ;
+    std::list <msg *> deduplist ;	// received messages
+    timepoint_t next_hello ;
     std::thread *thr ;
 } ;
 
@@ -67,6 +67,16 @@ void engine::init (void)
     }
 }
 
+void engine::ttl (slavettl_t t)
+{
+    ttl_ = t ;
+}
+
+slavettl_t engine::ttl (void)
+{
+    return ttl_ ;
+}
+
 /******************************************************************************
  * Add a new L2 network:
  * - schedule the first HELLO packet
@@ -80,7 +90,7 @@ void engine::start_net (l2net *l2)
     {
 	std::lock_guard <std::mutex> lk (mtx_) ;
 	receiver *r ;
-	std::chrono::system_clock::time_point now ;
+	timepoint_t now ;
 
 	r = new receiver ;
 	// std::memset (r, 0, sizeof *r) ;
@@ -145,7 +155,7 @@ void engine::send_hello (receiver *r)
     m.type (msg::MT_NON) ;
     m.code (msg::MC_POST) ;
     snprintf (buf, MAXBUF, "POST /.well-known/sos?uuid=%ld", r->hid) ;
-    m.payload (buf, strlen (buf)) ;
+    m.payload (buf, std::strlen (buf)) ;
 
     D ("Send Hello") ;
     m.send () ;
@@ -162,7 +172,7 @@ void engine::send_hello (receiver *r)
 void engine::sender_thread (void)
 {
     std::unique_lock <std::mutex> lk (mtx_) ;
-    std::chrono::system_clock::time_point now, next_timeout ;
+    timepoint_t now, next_timeout ;
 
     now = std::chrono::system_clock::now () ;
     next_timeout = std::chrono::system_clock::time_point::max () ;
@@ -181,14 +191,13 @@ void engine::sender_thread (void)
 	{
 	    auto delay = next_timeout - now ;	// needed precision for delay
 
-	    D ("WAIT " << std::chrono::duration_cast<std::chrono::milliseconds> (delay).count() << "ms") ;
+	    D ("WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
 	    condvar_.wait_for (lk, delay) ;
 	}
 
 	/*
 	 * we have been awaken for (one or more) multiple reasons:
 	 * - a new l2 network has been registered
-	 * - a new slave has been registered
 	 * - a new message is to be sent
 	 * - timeout expired: there is an action to do (message to
 	 *	retransmit or to remove from a queue)
@@ -219,7 +228,7 @@ void engine::sender_thread (void)
 		engine::send_hello (&*ri) ;
 
 		// schedule next hello packet
-		ri->next_hello = now + std::chrono::milliseconds (INTERVAL_HELLO) ;
+		ri->next_hello = now + duration_t (INTERVAL_HELLO) ;
 	    }
 	}
 
@@ -349,7 +358,7 @@ bool engine::find_peer (msg *m, l2addr *a, receiver *r)
 void engine::clean_deduplist (receiver *r)
 {
     std::list <msg *>::iterator di ;
-    std::chrono::system_clock::time_point now ;
+    timepoint_t now ;
 
     now = std::chrono::system_clock::now () ;
 
@@ -377,6 +386,7 @@ void engine::receiver_thread (receiver *r)
 	l2addr *a ;
 	bool process_it ;
 	msg *orgmsg ;			// original message in case of duplicate
+	msg::msgtype mt ;
 
 	/*
 	 * Wait for a new message
@@ -384,6 +394,7 @@ void engine::receiver_thread (receiver *r)
 
 	m = new msg ;
 	a = m->recv (r->l2) ;
+	mt = m->type () ;
 	process_it = true ;
 
 	/*
@@ -391,6 +402,10 @@ void engine::receiver_thread (receiver *r)
 	 */
 
 	clean_deduplist (r) ;
+
+	/*************************************************************
+	 * CoAP message pre-processing (dedup, correlation, etc.)
+	 */
 
 	/*
 	 * Find slave
@@ -404,12 +419,12 @@ void engine::receiver_thread (receiver *r)
 
 	/*
 	 * Message correlation: see CoAP spec, section 4.4
-	 * Is this a reply to an existing request?
+	 * Is the received message a reply to an already sent request?
 	 * For this, we need to perform a search in the message list
 	 * for a request message with this id.
 	 */
 
-	if (process_it && (m->type () == msg::MT_ACK || m->type () == msg::MT_RST))
+	if (process_it && (mt == msg::MT_ACK || mt == msg::MT_RST))
 	{
 	    std::lock_guard <std::mutex> lk (mtx_) ;
 	    int id ;
@@ -431,11 +446,18 @@ void engine::receiver_thread (receiver *r)
 			// register 
 			mr->link_reqrep (m) ;
 			// no more re-transmission needed
-			mr->complete () ;
+			mr->stop_retransmit () ;
 		    }
 		    break ;
 		}
 	    }
+	    
+	    /*
+	     * At this point, if the received message was an answer to
+	     * a sent message, we made the link between the two messages,
+	     * and the process_it variable is set only if the answer was
+	     * never received.
+	     */
 	}
 
 	/*
@@ -444,7 +466,7 @@ void engine::receiver_thread (receiver *r)
 	 */
 
 	orgmsg = 0 ;			// no duplicate
-	if (process_it && (m->type () == msg::MT_CON || m->type () == msg::MT_NON))
+	if (process_it && (mt == msg::MT_CON || mt == msg::MT_NON))
 	{
 	    for (auto &d : r->deduplist)
 	    {
@@ -454,10 +476,15 @@ void engine::receiver_thread (receiver *r)
 		    break ;
 		}
 	    }
-	    if (orgmsg)
+	    if (orgmsg && orgmsg->reqrep ())
 	    {
-		/* found a duplicated message */
+		/*
+		 * Found a duplicated message (and an answer). Just send
+		 * back the already sent answer.
+		 */
 		D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
+		process_it = false ;
+		(void) orgmsg->reqrep ()->send () ;
 	    }
 	    else
 	    {
@@ -467,15 +494,18 @@ void engine::receiver_thread (receiver *r)
 	    }
 	}
 
+	/*************************************************************
+	 * Message processing
+	 */
+
 	/*
 	 * Check SOS control messages first
 	 */
 
 	if (process_it && m->sos_type () != msg::SOS_NONE)
 	{
-		D ("CTL MSG") ;
-		delete m ;
-		process_it = false ;		// already processed
+	    m->peer ()->process_sos (this, m) ;
+	    process_it = false ;		// already processed
 	}
 
 	if (process_it && m->peer ()->status_ == slave::SL_RUNNING)

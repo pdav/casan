@@ -22,11 +22,11 @@ int random_value (int n)
  * returns a random delay between [0...maxmilli] milliseconds
  */
 
-std::chrono::milliseconds random_timeout (int maxmilli)
+duration_t random_timeout (int maxmilli)
 {
     int delay ;
 
     delay = random_value (maxmilli + 1) ;
-    return std::chrono::milliseconds (delay) ;
+    return duration_t (delay) ;
 }
 

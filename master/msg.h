@@ -50,7 +50,7 @@ class msg
 	void code (int code) ;
 	void payload (void *data, int len) ;
 
-	void complete (void) ;			// no need for more retransmits
+	void stop_retransmit (void) ;	// no need for more retransmits
 	void handler (reply_handler_t h) ;	// for answers to requests
 
 	// accessors (for received messages)
@@ -63,17 +63,17 @@ class msg
 	void *payload (int *paylen) ;
 	msg *reqrep (void) ;
 
-	void link_reqrep (msg *m) ;		// m == 0 <=> unlink
+	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
 	sostype_t sos_type (void) ;
 
 	slaveid_t is_sos_register (void) ;	// SOS control message
-	bool is_sos_associate (void) ;		// SOS control message
+	bool is_sos_associate (void) ;	// SOS control message
 
     protected:
-	std::chrono::system_clock::time_point expire_ ;	// all msg
-	int ntrans_ ;				// # of transmissions (CON/NON)
-	std::chrono::milliseconds timeout_ ;	// current timeout (CON)
-	std::chrono::system_clock::time_point next_timeout_ ;	// (CON)
+	timepoint_t expire_ ;		// all msg
+	int ntrans_ ;			// # of transmissions (CON/NON)
+	duration_t timeout_ ;		// current timeout (CON)
+	timepoint_t next_timeout_ ;	// (CON)
 
 	reply_handler_t handler_ ;
 
@@ -81,23 +81,23 @@ class msg
 
     private:
 	// Formatted message, as it appears on the cable/over the air
-	byte *msg_ ;				// NULL when reset
-	int msglen_ ;				// len of msg
+	byte *msg_ ;			// NULL when reset
+	int msglen_ ;			// len of msg
 	pktype_t pktype_ ;
 
 	// Peer
-	slave *peer_ ;				// if found associated slave
+	slave *peer_ ;			// if found associated slave
 
 	// CoAP specific variables
-	unsigned char *payload_ ;		// nul added at the end
+	unsigned char *payload_ ;	// nul added at the end
 	int paylen_ ;
 	unsigned char *token_ ;
 	int toklen_ ;
 	msgtype_t type_ ;
 	int code_ ;
-	int id_ ;				// message id
+	int id_ ;			// message id
 
-	msg *reqrep_ ;				// "request of" or "response of"
+	msg *reqrep_ ;			// "request of" or "response of"
 	sostype_t sostype_ ;
 
 	static int global_message_id ;

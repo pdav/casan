@@ -6,12 +6,13 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <chrono>
 
 #include "sos.h"
 #include "l2.h"
 #include "slave.h"
 #include "msg.h"
+
+typedef long int slavettl_t ;
 
 struct receiver ;
 
@@ -24,6 +25,9 @@ class engine
 	// start sender thread
 	void init (void) ;
 
+	void ttl (slavettl_t t) ;
+	slavettl_t ttl (void) ;
+
 	// start and stop receiver thread
 	void start_net (l2net *l2) ;
 	void stop_net (l2net *l2) ;
@@ -35,13 +39,15 @@ class engine
 	void add_request (msg *m) ;
 
     private:
-	std::list <receiver> rlist_ ;
-	std::list <slave> slist_ ;
-	std::list <msg *> mlist_ ;
+	std::list <receiver> rlist_ ;	// connected networks
+	std::list <slave> slist_ ;	// registered slaves
+	std::list <msg *> mlist_ ;	// messages sent by SOS
 
 	std::thread *tsender_ ;
 	std::mutex mtx_ ;
 	std::condition_variable condvar_ ;
+
+	slavettl_t ttl_ ;		// default slave ttl
 
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;

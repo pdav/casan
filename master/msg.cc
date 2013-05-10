@@ -30,7 +30,7 @@ int msg::global_message_id = 1 ;
 			    msg_ = 0     ; msglen_ = 0 ; \
 			    payload_ = 0 ; paylen_ = 0 ; \
 			    token_ = 0   ; toklen_ = 0 ; \
-			    timeout_ = std::chrono::milliseconds (0) ; \
+			    timeout_ = duration_t (0) ; \
 			    ntrans_ = 0 ; sostype_ = SOS_UNKNOWN ; \
 			    id_ = 0 ; \
 			} while (false)			// no ";"
@@ -306,7 +306,7 @@ int msg::send (void)
 		    r = random_value (int ((ACK_RANDOM_FACTOR - 1.0) * 1000)) ;
 		    nmilli = ACK_TIMEOUT * (r + 1) ;
 		    nmilli = nmilli / 1000 ;
-		    timeout_ = std::chrono::milliseconds (nmilli) ;
+		    timeout_ = duration_t (nmilli) ;
 		    expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (maxlat)) ;
 		}
 		else
@@ -388,7 +388,7 @@ l2addr *msg::recv (l2net *l2)
     return a ;
 }
 
-void msg::complete (void)
+void msg::stop_retransmit (void)
 {
     ntrans_ = MAX_RETRANSMIT ;
 }

@@ -64,6 +64,6 @@ int main (int argc, char *argv [])
     m2.code (COAP_MKCODE (2, 5)) ;
     m2.peer (&s) ;
     m2.payload (buf, strlen (buf)) ;
-    m2.id (0) ;
+    m2.id (5) ;
     m2.send () ;
 }
