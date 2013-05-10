@@ -10,26 +10,21 @@
 #include "slave.h"
 #include "engine.h"
 
+#define	SET_INACTIVE	do { \
+			    status_ = SL_INACTIVE ; \
+			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
+			} while (false)			// no ";"
 /*
  * Constructor and destructor
  */
 
-slave::slave ()
-{
-    reset () ;
-}
-
-slave::~slave ()
-{
-}
-
 void slave::reset (void)
 {
-    status_ = SL_INACTIVE ;
-    slaveid_ = 0 ;
+    if (addr_)
+	delete addr_ ;			// XXX should be lock-protected
     l2_ = 0 ;
     addr_ = 0 ;
-    handler_ = 0 ;
+    SET_INACTIVE ;
 }
 
 /******************************************************************************
@@ -44,11 +39,6 @@ l2net *slave::l2 (void)
 l2addr *slave::addr (void)
 {
     return addr_ ;
-}
-
-int slave::ttl (void)
-{
-    return ttl_ ;
 }
 
 slaveid_t slave::slaveid (void)
@@ -70,11 +60,6 @@ void slave::addr (l2addr *a)
     addr_ = a ;
 }
 
-void slave::ttl (int ttl)
-{
-    ttl_ = ttl ;
-}
-
 void slave::slaveid (slaveid_t sid)
 {
     slaveid_ = sid ;
@@ -87,6 +72,9 @@ void slave::handler (reply_handler_t h)
 
 /******************************************************************************
  * SOS protocol handling
+ *
+ * e: current engine
+ * m: received message
  */
 
 void slave::process_sos (engine *e, msg *m)
@@ -111,6 +99,15 @@ void slave::process_sos (engine *e, msg *m)
 	    break ;
 	case msg::SOS_ASSOC_ANSWER :
 	    D ("Received ASSOC ANSWER") ;
+	    // has answer been correlated to a request?
+	    if (m->reqrep ())
+	    {
+		/*
+		 * ADD RESOURCES FROM THE ANSWER
+		 */
+		status_ = SL_RUNNING ;
+		next_timeout_ = DATE_TIMEOUT (e->ttl ()) ;
+	    }
 	    break ;
 	case msg::SOS_HELLO :
 	    D ("Received HELLO from another master") ;

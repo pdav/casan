@@ -52,7 +52,9 @@ class engine
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
 	void clean_deduplist (receiver *r) ;
+	msg *deduplicate (receiver *r, msg *m) ;
 	bool find_peer (msg *m, l2addr *a, receiver *r) ;
+	msg *correlate (msg *m) ;
 
 	void send_hello (receiver *r) ;
 } ;

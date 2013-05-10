@@ -23,6 +23,9 @@
 #include <cstdio>
 #include <cstring>
 
+// don't define NDEBUG
+#include <cassert>
+
 #include "engine.h"
 #include "sos.h"
 #include "utils.h"
@@ -126,7 +129,7 @@ void engine::add_slave (slave *s)
 {
     std::lock_guard <std::mutex> lk (mtx_) ;
 
-    s->status_ = slave::SL_INACTIVE ;
+    s->reset () ;
     slist_.push_front (*s) ;
 }
 
@@ -191,6 +194,8 @@ void engine::sender_thread (void)
 	{
 	    auto delay = next_timeout - now ;	// needed precision for delay
 
+	    assert (std::chrono::duration_cast<duration_t> (delay).count() >= 0) ;
+
 	    D ("WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
 	    condvar_.wait_for (lk, delay) ;
 	}
@@ -233,6 +238,17 @@ void engine::sender_thread (void)
 	}
 
 	/*
+	 * Traverse slave list to check ttl
+	 */
+
+	for (auto &s : slist_)
+	{
+	    // must current timeout be the next hello?
+	    if (s.status_ == slave::SL_RUNNING && now >= s.next_timeout_)
+		s.reset () ;
+	}
+
+	/*
 	 * Traverse message list to check new messages to send or older
 	 * messages to retransmit
 	 */
@@ -240,6 +256,7 @@ void engine::sender_thread (void)
 	mi = mlist_.begin () ;
 	while (mi != mlist_.end ())
 	{
+	    msg *m ;
 	    auto newmi = mi ;		// backup mi since we may erase it
 	    newmi++ ;
 
@@ -247,12 +264,12 @@ void engine::sender_thread (void)
 	     * New message to transmit or old message to retransmit
 	     */
 
-	    if ((*mi)->ntrans_ == 0 ||
-		    ((*mi)->ntrans_ < MAX_RETRANSMIT && now >= (*mi)->next_timeout_)
+	    m = *mi ;
+	    if (m->ntrans_ == 0 ||
+		    (m->ntrans_ < MAX_RETRANSMIT && now >= m->next_timeout_)
 		    )
 	    {
-		D ("Found a " << ((*mi)->ntrans_==0?"new ":"") << "request to handle") ;
-		if ((*mi)->send () == -1)
+		if (m->send () == -1)
 		{
 		    std::cout << "ERROR DURING TRANSMISSION\n" ;
 		}
@@ -262,10 +279,10 @@ void engine::sender_thread (void)
 	     * Message expired
 	     */
 
-	    if (now > (*mi)->expire_)
+	    if (now >= m->expire_)
 	    {
-		D ("ERASE id=" << (*mi)->id ()) ;
-		delete *mi ;
+		D ("ERASE id=" << m->id ()) ;
+		delete m ;
 		mlist_.erase (mi) ;
 	    }
 
@@ -285,10 +302,17 @@ void engine::sender_thread (void)
 		next_timeout = r.next_hello ;
 	}
 
+	for (auto &s : slist_)
+	{
+	    // must current timeout be the next hello?
+	    if (next_timeout > s.next_timeout_)
+		next_timeout = s.next_timeout_ ;
+	}
+
 	for (auto &m : mlist_)
 	{
 	    // must current timeout be the next retransmission of this message?
-	    if (next_timeout > m->next_timeout_)
+	    if (m->ntrans_ < MAX_RETRANSMIT && next_timeout > m->next_timeout_)
 		next_timeout = m->next_timeout_ ;
 	}
     }
@@ -355,6 +379,59 @@ bool engine::find_peer (msg *m, l2addr *a, receiver *r)
     return found ;
 }
 
+/*
+ * Message correlation: see CoAP spec, section 4.4
+ * Is the received message a reply to an already sent request?
+ * For this, we need to perform a search in the message list
+ * for a request message with this id.
+ */
+
+msg *engine::correlate (msg *m)
+{
+    msg::msgtype mt ;
+    msg *orgmsg ;
+
+    orgmsg = 0 ;
+    mt = m->type () ;
+    if (mt == msg::MT_ACK || mt == msg::MT_RST)
+    {
+	std::lock_guard <std::mutex> lk (mtx_) ;
+	int id ;
+
+	id = m->id () ;
+	for (auto &mr : mlist_)
+	{
+	    if (mr->id () == id)
+	    {
+		/* Got it! Original request found */
+		D ("Found original request for id=" << id) ;
+		orgmsg = &*mr ;
+		break ;
+	    }
+	}
+
+	if (orgmsg && orgmsg->reqrep () == 0)
+	{
+	    /*
+	     * The request has not yet been answered. Register
+	     * this answer, and stop further retransmissions
+	     * of the same request.
+	     */
+	    orgmsg->link_reqrep (m) ;
+	    orgmsg->stop_retransmit () ;
+	}
+
+	/*
+	 * At this point, if the received message was an answer to
+	 * a sent message, we made the link between the two messages,
+	 * and the process_it variable is set only if the answer was
+	 * never received.
+	 */
+    }
+
+    return orgmsg ;
+}
+
 void engine::clean_deduplist (receiver *r)
 {
     std::list <msg *>::iterator di ;
@@ -378,15 +455,59 @@ void engine::clean_deduplist (receiver *r)
     }
 }
 
+/*
+ * Check if a message is a duplicate
+ * Returns the original message if found.
+ * If an answer has already been sent (the message is marked as such with
+ * the reqrep method), send it back again
+ */
+
+msg *engine::deduplicate (receiver *r, msg *m)
+{
+    msg::msgtype mt ;
+    msg *orgmsg ;
+
+    orgmsg = 0 ;			// no duplicate
+    mt = m->type () ;
+    if (mt == msg::MT_CON || mt == msg::MT_NON)
+    {
+	for (auto &d : r->deduplist)
+	{
+	    if (*m == *d)
+	    {
+		orgmsg = *(&d) ;
+		break ;
+	    }
+	}
+
+	if (orgmsg && orgmsg->reqrep ())
+	{
+	    /*
+	     * Found a duplicated message (and an answer). Just send
+	     * back the already sent answer.
+	     */
+	    D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
+	    (void) orgmsg->reqrep ()->send () ;
+	}
+	else
+	{
+	    // store the new message on deduplist with a timeout
+	    m->expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
+	    r->deduplist.push_front (m) ;
+	}
+    }
+
+    return orgmsg ;
+}
+
 void engine::receiver_thread (receiver *r)
 {
     for (;;)
     {
-	msg *m ;
-	l2addr *a ;
-	bool process_it ;
-	msg *orgmsg ;			// original message in case of duplicate
-	msg::msgtype mt ;
+	msg *m ;			// received message
+	l2addr *a ;			// source address of received message
+	msg *orgreq ;			// message correlation result
+	msg *dupmsg ;			// original message in case of duplicate
 
 	/*
 	 * Wait for a new message
@@ -394,8 +515,6 @@ void engine::receiver_thread (receiver *r)
 
 	m = new msg ;
 	a = m->recv (r->l2) ;
-	mt = m->type () ;
-	process_it = true ;
 
 	/*
 	 * House cleaning: remove obsolete messages from deduplication list
@@ -404,95 +523,34 @@ void engine::receiver_thread (receiver *r)
 	clean_deduplist (r) ;
 
 	/*************************************************************
-	 * CoAP message pre-processing (dedup, correlation, etc.)
+	 * CoAP message pre-processing (deduplication, correlation, etc.)
 	 */
 
 	/*
-	 * Find slave
+	 * Find slave. If not found, the message is ignored
 	 */
 
 	if (! find_peer (m, a, r))
-	{
-	    process_it = false ;
 	    continue ;
-	}
 
 	/*
-	 * Message correlation: see CoAP spec, section 4.4
-	 * Is the received message a reply to an already sent request?
-	 * For this, we need to perform a search in the message list
-	 * for a request message with this id.
+	 * Is the received message a reply to a pending request?
+	 * Ignore it if an answer has already been received
 	 */
 
-	if (process_it && (mt == msg::MT_ACK || mt == msg::MT_RST))
-	{
-	    std::lock_guard <std::mutex> lk (mtx_) ;
-	    int id ;
-
-	    id = m->id () ;
-	    for (auto &mr : mlist_)
-	    {
-		if (mr->id () == id)
-		{
-		    /* Got it! Original request found */
-		    if (mr->reqrep ())
-		    {
-			// answer already received : ignore this new message
-			process_it = false ;
-		    }
-		    else
-		    {
-			// new (unseen) answer to the original message
-			// register 
-			mr->link_reqrep (m) ;
-			// no more re-transmission needed
-			mr->stop_retransmit () ;
-		    }
-		    break ;
-		}
-	    }
-	    
-	    /*
-	     * At this point, if the received message was an answer to
-	     * a sent message, we made the link between the two messages,
-	     * and the process_it variable is set only if the answer was
-	     * never received.
-	     */
-	}
+	orgreq = correlate (m) ;
+	if (orgreq && orgreq->reqrep ())
+	    continue ;
 
 	/*
-	 * Message deduplication: see CoAP spec, section 4.5
 	 * Is this the same request as already seen?
+	 * Ignore it if an answer has already been sent (in which
+	 * case the deduplicate function send it back again).
 	 */
 
-	orgmsg = 0 ;			// no duplicate
-	if (process_it && (mt == msg::MT_CON || mt == msg::MT_NON))
-	{
-	    for (auto &d : r->deduplist)
-	    {
-		if (*m == *d)
-		{
-		    orgmsg = *(&d) ;
-		    break ;
-		}
-	    }
-	    if (orgmsg && orgmsg->reqrep ())
-	    {
-		/*
-		 * Found a duplicated message (and an answer). Just send
-		 * back the already sent answer.
-		 */
-		D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
-		process_it = false ;
-		(void) orgmsg->reqrep ()->send () ;
-	    }
-	    else
-	    {
-		// store the new message on deduplist with a timeout
-		m->expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
-		r->deduplist.push_front (m) ;
-	    }
-	}
+	dupmsg = deduplicate (r, m) ;
+	if (dupmsg && dupmsg->reqrep ())
+	    continue ;
 
 	/*************************************************************
 	 * Message processing
@@ -502,13 +560,13 @@ void engine::receiver_thread (receiver *r)
 	 * Check SOS control messages first
 	 */
 
-	if (process_it && m->sos_type () != msg::SOS_NONE)
+	if (m->sos_type () != msg::SOS_NONE)
 	{
 	    m->peer ()->process_sos (this, m) ;
-	    process_it = false ;		// already processed
+	    continue ;
 	}
 
-	if (process_it && m->peer ()->status_ == slave::SL_RUNNING)
+	if (m->peer ()->status_ == slave::SL_RUNNING)
 	{
 	    /*
 	     * Is this message a duplicated one?

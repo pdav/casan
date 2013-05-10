@@ -15,12 +15,10 @@ int main (int argc, char *argv [])
     l2net *l ;
     slave s ;				// slave
     engine e ;
-    msg m, m2 ;
-    char buf [] = "coucou\n" ;
 
     // start SOS engine machinery
-    e.init () ;
     e.ttl (DEFAULT_SLAVE_TTL) ;
+    e.init () ;
 
     // start new interface
     l = new l2net_eth ;
@@ -37,23 +35,4 @@ int main (int argc, char *argv [])
     e.add_slave (&s) ;
 
     sleep (100000) ;
-    sleep (10) ;
-    
-    // register new message
-    m.type (msg::MT_CON) ;
-    m.code (msg::MC_GET) ;
-    m.peer (&s) ;
-    m.token ((void *) "ABCD", 4) ;
-    m.payload (buf, sizeof buf) ;
-    e.add_request (&m) ;
-
-    sleep (10) ;
-
-    // register another NON message
-    m2 = m ;
-    m2.type (msg::MT_NON) ;
-    m2.id (0) ;
-    e.add_request (&m2) ;
-
-    sleep (1000) ;
 }

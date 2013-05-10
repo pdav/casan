@@ -20,21 +20,16 @@ class slave
 	    SL_RUNNING,
 	} ;
 
-	slave () ;			// constructor
-	~slave () ;			// destructor
-
-	void reset (void) ;		// reset state to void
+	void reset (void) ;		// reset state to inactive
 
 	// Mutators
 	void l2 (l2net *l2) ;		// set l2 network
 	void addr (l2addr *a) ;		// set address
-	void ttl (int ttl) ;		// set ttl
 	void slaveid (slaveid_t sid) ;	// set slave id
 
 	// Accessors
 	l2net *l2 (void) ;
 	l2addr *addr (void) ;
-	int ttl (void) ;
 	slaveid_t slaveid (void) ;
 
 	// SOS protocol handling
@@ -56,7 +51,7 @@ class slave
     private:
 	l2net *l2_ ;			// l2 network this slave is on
 	l2addr *addr_ ;			// slave address
-	int ttl_ ;			// remaining ttl
+	timepoint_t next_timeout_ ;	// remaining ttl
 } ;
 
 #endif

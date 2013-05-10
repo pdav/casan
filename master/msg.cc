@@ -31,8 +31,14 @@ int msg::global_message_id = 1 ;
 			    payload_ = 0 ; paylen_ = 0 ; \
 			    token_ = 0   ; toklen_ = 0 ; \
 			    timeout_ = duration_t (0) ; \
-			    ntrans_ = 0 ; sostype_ = SOS_UNKNOWN ; \
+			    ntrans_ = 0 ; \
+			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
+			    expire_ = std::chrono::system_clock::time_point::max () ; \
+			    sostype_ = SOS_UNKNOWN ; \
 			    id_ = 0 ; \
+			} while (false)			// no ";"
+#define	STOP_TRANSMIT	do { \
+			    ntrans_ = MAX_RETRANSMIT ; \
 			} while (false)			// no ";"
 
 #define	FORMAT_BYTE0(ver,type,toklen) \
@@ -231,9 +237,7 @@ bool msg::coap_decode (void)
 
 	    /* get option value */
 	    // XXXX
-#ifdef DEBUG
-	    std::cout << "OPTION " << opt_nb << "\n" ;
-#endif
+	    D ("OPTION " << opt_nb) ;
 
 	    i += opt_len ;
 	}
@@ -264,9 +268,7 @@ int msg::send (void)
     if (! msg_)
 	coap_encode () ;
 
-#ifdef DEBUG
-    std::cout << "TRANSMIT id=" << id_ << " ntrans_=" << ntrans_ << "\n" ;
-#endif
+    D ("TRANSMIT id=" << id_ << " ntrans_=" << ntrans_) ;
     r = peer_->l2 ()->send (peer_->addr (), msg_, msglen_) ;
     if (r == -1)
     {
@@ -318,7 +320,7 @@ int msg::send (void)
 		ntrans_++ ;
 		break ;
 	    case MT_NON :
-		ntrans_ = MAX_RETRANSMIT ;
+		STOP_TRANSMIT ;
 		expire_ = DATE_TIMEOUT (NON_LIFETIME (maxlat)) ;
 		break ;
 	    case MT_ACK :
@@ -328,7 +330,7 @@ int msg::send (void)
 		 * counter in order to skip further retransmissions.
 		 */
 
-		ntrans_ = MAX_RETRANSMIT ;
+		STOP_TRANSMIT ;
 		expire_ = DATE_TIMEOUT (MAX_RTT (maxlat)) ;	// arbitrary
 		break ;
 	    default :
@@ -377,12 +379,9 @@ l2addr *msg::recv (l2net *l2)
 	if (pktype_ == PK_ME) p = "me" ;
 	if (pktype_ == PK_BCAST) p = "bcast" ;
 
-	std::cout << "VALID RECV -> " << p << ", id=" << id_ << ", len=" << msglen_ << "\n" ;
+	D ("VALID RECV -> " << p << ", id=" << id_ << ", len=" << msglen_) ;
     }
-    else
-    {
-	std::cout << "INVALID RECV pkt=" << pktype_ << ", len=" << len << "\n" ;
-    }
+    else D ("INVALID RECV pkt=" << pktype_ << ", len=" << len) ;
 #endif
 
     return a ;
@@ -390,7 +389,7 @@ l2addr *msg::recv (l2net *l2)
 
 void msg::stop_retransmit (void)
 {
-    ntrans_ = MAX_RETRANSMIT ;
+    STOP_TRANSMIT ;
 }
 
 /******************************************************************************

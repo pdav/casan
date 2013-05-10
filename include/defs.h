@@ -16,7 +16,8 @@
 #define	ETHMTU		1536
 // Ethernet maximum latency (ms). Even a very conservative value is far
 // more realistic than the default CoAP value (100 s)
-#define	ETHMAXLATENCY	10
+// #define	ETHMAXLATENCY	10
+#define	ETHMAXLATENCY	1000
 
 // SOS is based on this CoAP version
 #define	SOS_VERSION	1
