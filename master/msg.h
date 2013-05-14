@@ -4,8 +4,10 @@
 #include <list>
 #include <chrono>
 
+#include "defs.h"
 #include "sos.h"
 #include "l2.h"
+#include "option.h"
 
 class msg ;
 class slave ;
@@ -28,7 +30,6 @@ class msg
 	// SOS_HELLO is never used
 	typedef enum sostype { SOS_NONE=0, SOS_REGISTER, SOS_ASSOC_REQUEST,
 		    SOS_ASSOC_ANSWER, SOS_HELLO, SOS_UNKNOWN} sostype_t ;
-
 
 	msg () ;			// constructor
 	msg (const msg &m) ;		// copy constructor
@@ -89,9 +90,9 @@ class msg
 	slave *peer_ ;			// if found associated slave
 
 	// CoAP specific variables
-	unsigned char *payload_ ;	// nul added at the end
+	byte *payload_ ;		// nul added at the end
 	int paylen_ ;
-	unsigned char *token_ ;
+	byte token_ [COAP_MAX_TOKLEN] ;
 	int toklen_ ;
 	msgtype_t type_ ;
 	int code_ ;

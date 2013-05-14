@@ -22,16 +22,14 @@ int msg::global_message_id = 1 ;
 #define	RESET_POINTERS	do { \
 			    RESET_PL (msg_, msglen_) ; \
 			    RESET_PL (payload_, paylen_) ; \
-			    RESET_PL (token_, toklen_) ; \
 			} while (false)			// no ";"
 // reset all values and pointers (but don't deallocate them)
 #define	RESET_VALUES	do { \
 			    peer_ = 0 ; reqrep_ = 0 ; \
 			    msg_ = 0     ; msglen_ = 0 ; \
 			    payload_ = 0 ; paylen_ = 0 ; \
-			    token_ = 0   ; toklen_ = 0 ; \
+			    toklen_ = 0 ; ntrans_ = 0 ; \
 			    timeout_ = duration_t (0) ; \
-			    ntrans_ = 0 ; \
 			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
 			    expire_ = std::chrono::system_clock::time_point::max () ; \
 			    sostype_ = SOS_UNKNOWN ; \
@@ -63,7 +61,6 @@ int msg::global_message_id = 1 ;
 				    f [(l)]=0 ; \
 				} while (false)		// no ";"
 
-
 // default constructor
 msg::msg ()
 {
@@ -76,8 +73,6 @@ msg::msg (const msg &m)
     *this = m ;
     if (msg_)
 	ALLOC_COPY (msg_, m.msg_, msglen_) ;
-    if (token_)
-	ALLOC_COPY (token_, m.token_, toklen_) ;
     if (payload_)
 	ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
 }
@@ -91,8 +86,6 @@ msg &msg::operator= (const msg &m)
 	*this = m ;
 	if (msg_)
 	    ALLOC_COPY (msg_, m.msg_, msglen_) ;
-	if (token_)
-	    ALLOC_COPY (token_, m.token_, toklen_) ;
 	if (payload_)
 	    ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
     }
@@ -104,7 +97,6 @@ msg::~msg ()
 {
     RESET_POINTERS ;
 }
-
 
 /******************************************************************************
  * Operators
@@ -160,8 +152,11 @@ void msg::coap_encode (void)
 	i += toklen_ ;
     }
     // XXX NO OPTION HANDLING FOR THE MOMENT
-    msg_ [i++] = 0xff ;			// start of payload
-    std::memcpy (msg_ + i, payload_, paylen_) ;
+    if (paylen_ > 0)
+    {
+	msg_ [i++] = 0xff ;			// start of payload
+	std::memcpy (msg_ + i, payload_, paylen_) ;
+    }
 }
 
 /* returns true if message is decoding was successful */
@@ -188,7 +183,7 @@ bool msg::coap_decode (void)
 
 	if (toklen_ > 0)
 	{
-	    ALLOC_COPY (token_, msg_ + i, toklen_) ;
+	    std::memcpy (token_, msg_ + i, toklen_) ;
 	    i += toklen_ ;
 	}
 
@@ -197,7 +192,7 @@ bool msg::coap_decode (void)
 	 */
 
 	opt_nb = 0 ;
-	while (msg_ [i] != 0xff && i < msglen_)
+	while (i < msglen_ && msg_ [i] != 0xff)
 	{
 	    int opt_delta, opt_len ;
 
@@ -242,16 +237,20 @@ bool msg::coap_decode (void)
 	    i += opt_len ;
 	}
 
-	if (msg_ [i] != 0xff)
+	paylen_ = msglen_ - i - 1 ;
+	if (paylen_ > 0)
 	{
-	    success = false ;
+	    if (msg_ [i] != 0xff)
+	    {
+		success = false ;
+	    }
+	    else
+	    {
+		i++ ;
+		ALLOC_COPYNUL (payload_, msg_ + i, paylen_) ;
+	    }
 	}
-	else
-	{
-	    i++ ;
-	    paylen_ = msglen_ - i ;
-	    ALLOC_COPYNUL (payload_, msg_ + i, paylen_) ;
-	}
+	else paylen_ = 0 ;			// protect further operations
     }
 
     return success ;
@@ -403,10 +402,7 @@ void msg::peer (slave *p)
 
 void msg::token (void *data, int len)
 {
-    if (token_)
-	delete token_ ;
-
-    ALLOC_COPY (token_, data, len) ;
+    std::memcpy (token_, data, len) ;
     toklen_ = len ;
     RESET_BINARY ;
 }

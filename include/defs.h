@@ -4,7 +4,7 @@
  */
 
 // number of elements in an array
-#define NTAB(t)		(sizeof (t)/sizeof (t)[0])
+#define NTAB(t)		(int (sizeof (t)/sizeof (t)[0]))
 
 
 // http://stackoverflow.com/questions/3366812/linux-raw-ethernet-socket-bind-to-specific-protocol
@@ -23,6 +23,9 @@
 #define	SOS_VERSION	1
 
 #define	COAP_MKCODE(class,detail)	((((class)&0x7)<<5)|((detail)&0x1f))
+
+// maximum token length
+#define	COAP_MAX_TOKLEN	8
 
 /*
  * CoAP constants

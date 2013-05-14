@@ -5,8 +5,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#define	NTAB(t)		(sizeof (t)/sizeof (t)[0])
-
 #include "l2.h"
 #include "l2eth.h"
 #include "engine.h"
