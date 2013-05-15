@@ -18,6 +18,7 @@ class l2addr_eth: public l2addr
 		bool operator== (const l2addr &) ;
 		bool operator!= (const l2addr &) ;
 		bool operator!= (const unsigned char* mac_addr);
+		void print();
 
 		void set_addr(const unsigned char* mac_addr);
 		unsigned char * get_raw_addr(void) ;

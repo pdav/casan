@@ -42,6 +42,7 @@ class Coap {
 		void get_mac_src(l2addr * mac_src);
 
 	private:
+		uint8_t get_payload_offset(void);
 		EthernetRaw *_eth;
 };
 
