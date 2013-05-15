@@ -7,6 +7,7 @@
 #include "coap.h"
 #include "message.h"
 #include "l2eth.h"
+#include "memory_free.h"
 
 #define DEFAULT_TIMER 4000
 

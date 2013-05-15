@@ -9,9 +9,12 @@
 #include "retransmit.h"
 #include "rmanager.h"
 #include "enum.h"
+#include "memory_free.h"
 
 
 #define SOS_BUF_LEN			50
+#define SOS_DELAY_INCR		500
+#define SOS_DELAY_MAX		10000
 #define SOS_DELAY			1000
 #define SOS_DEFAULT_TTL		30000
 #define SOS_RANDOM_UUID()	1337
@@ -20,7 +23,7 @@
 class Sos {
 	public:
 
-		Sos(l2addr *mac_addr, int eth_type, uint8_t uuid);
+		Sos(l2addr *mac_addr, uint8_t uuid);
 		~Sos();
 
 		void set_master_addr (l2addr *a) ;	// set address

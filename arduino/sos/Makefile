@@ -13,3 +13,6 @@ UPLOAD_RATE		= 9600
 ARDUINO_LIBS	= sos sos/utility SPI
 
 include /usr/share/arduino/Arduino.mk
+
+test : all upload
+	screen -s 9600 /dev/ttyACM0
