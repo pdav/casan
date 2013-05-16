@@ -11,38 +11,42 @@
 int msg::global_message_id = 1 ;
 
 // reset pointer and length
-#define	RESET_PL(p,l)	do { \
-			    if (p) { delete p ; p = 0 ; l = 0 ; } \
-			} while (false)			// no ";"
+#define	RESET_PL(p,l)	do {					\
+			    if (p)				\
+			    {					\
+				delete p ; p = 0 ; l = 0 ;	\
+			    }					\
+			} while (false)				// no ";"
 // reset encoded message
-#define	RESET_BINARY	do { \
-			    RESET_PL (msg_, msglen_) ; \
-			} while (false)			// no ";"
+#define	RESET_BINARY	do {					\
+			    RESET_PL (msg_, msglen_) ;		\
+			} while (false)				// no ";"
 // reset all pointers
-#define	RESET_POINTERS	do { \
-			    RESET_PL (msg_, msglen_) ; \
-			    RESET_PL (payload_, paylen_) ; \
-			} while (false)			// no ";"
+#define	RESET_POINTERS	do {					\
+			    RESET_PL (msg_, msglen_) ;		\
+			    RESET_PL (payload_, paylen_) ;	\
+			    optlist_.clear () ;			\
+			} while (false)				// no ";"
 // reset all values and pointers (but don't deallocate them)
-#define	RESET_VALUES	do { \
-			    peer_ = 0 ; reqrep_ = 0 ; \
-			    msg_ = 0     ; msglen_ = 0 ; \
-			    payload_ = 0 ; paylen_ = 0 ; \
-			    toklen_ = 0 ; ntrans_ = 0 ; \
-			    timeout_ = duration_t (0) ; \
+#define	RESET_VALUES	do {					\
+			    peer_ = 0 ; reqrep_ = 0 ;		\
+			    msg_ = 0     ; msglen_ = 0 ;	\
+			    payload_ = 0 ; paylen_ = 0 ;	\
+			    toklen_ = 0 ; ntrans_ = 0 ;		\
+			    timeout_ = duration_t (0) ;		\
 			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
 			    expire_ = std::chrono::system_clock::time_point::max () ; \
-			    sostype_ = SOS_UNKNOWN ; \
-			    id_ = 0 ; \
-			} while (false)			// no ";"
-#define	STOP_TRANSMIT	do { \
-			    ntrans_ = MAX_RETRANSMIT ; \
-			} while (false)			// no ";"
+			    sostype_ = SOS_UNKNOWN ;		\
+			    id_ = 0 ;				\
+			} while (false)				// no ";"
+#define	STOP_TRANSMIT	do {					\
+			    ntrans_ = MAX_RETRANSMIT ;		\
+			} while (false)				// no ";"
 
-#define	FORMAT_BYTE0(ver,type,toklen) \
-			((((unsigned int) (ver) & 0x3) << 6) | \
-			 (((unsigned int) (type) & 0x3) << 4) | \
-			 (((unsigned int) (toklen) & 0x7)) \
+#define	FORMAT_BYTE0(ver,type,toklen)				\
+			((((unsigned int) (ver) & 0x3) << 6) |	\
+			 (((unsigned int) (type) & 0x3) << 4) |	\
+			 (((unsigned int) (toklen) & 0x7))	\
 			 )
 #define	COAP_VERSION(b)	(((b) [0] >> 6) & 0x3)
 #define	COAP_TYPE(b)	(((b) [0] >> 4) & 0x3)
@@ -50,16 +54,16 @@ int msg::global_message_id = 1 ;
 #define	COAP_CODE(b)	(((b) [1]))
 #define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
 
-#define	ALLOC_COPY(f,m,l)	do { \
-				    f = new byte [(l)] ; \
-				    std::memcpy (f, (m), (l)) ; \
-				} while (false)		// no ";"
+#define	ALLOC_COPY(f,m,l)	do {				\
+				    f = new byte [(l)] ;	\
+				    std::memcpy (f, (m), (l)) ;	\
+				} while (false)			// no ";"
 // add a nul byte to ease string operations
-#define	ALLOC_COPYNUL(f,m,l)	do { \
-				    f = new byte [(l) + 1] ; \
-				    std::memcpy (f, (m), (l)) ; \
-				    f [(l)]=0 ; \
-				} while (false)		// no ";"
+#define	ALLOC_COPYNUL(f,m,l)	do {				\
+				    f = new byte [(l) + 1] ;	\
+				    std::memcpy (f, (m), (l)) ;	\
+				    f [(l)]=0 ;			\
+				} while (false)			// no ";"
 
 // default constructor
 msg::msg ()
@@ -120,13 +124,40 @@ int msg::operator == (msg &m)
 void msg::coap_encode (void)
 {
     int i ;
+    int opt_nb ;
 
     /*
      * Format message, part 1 : compute message size
      */
 
     msglen_ = 5 + toklen_ + paylen_ ;
-    // XXX NO OPTION HANDLING FOR THE MOMENT
+
+    optlist_.sort () ;			// sort option list
+    opt_nb = 0 ;
+    for (auto &o : optlist_)
+    {
+	int opt_delta, opt_len ;
+
+	msglen_++ ;			// 1 byte for opt delta & len
+
+	opt_delta = o.optcode_ - opt_nb ;
+	if (opt_delta >= 269)		// delta >= 269 => 2 bytes
+	    msglen_ += 2 ;
+	else if (opt_delta >= 13)	// delta \in [13..268] => 1 byte
+	    msglen_ += 1 ;
+	opt_nb = o.optcode_ ;
+
+	opt_len = o.optlen_ ;
+	if (opt_len >= 269)		// len >= 269 => 2 bytes
+	    msglen_ += 2 ;
+	else if (opt_len >= 13)		// len \in [13..268] => 1 byte
+	    msglen_ += 1 ;
+	msglen_ += o.optlen_ ;
+    }
+
+    /*
+     * Format message, part 2 : compute a default id
+     */
 
     if (id_ == 0)
     {
@@ -136,22 +167,74 @@ void msg::coap_encode (void)
     }
 
     /*
-     * Format message, part 2 : build message
+     * Format message, part 3 : build message
      */
 
     msg_ = new byte [msglen_] ;
 
     i = 0 ;
+    // header
     msg_ [i++] = FORMAT_BYTE0 (SOS_VERSION, type_, toklen_) ;
     msg_ [i++] = code_ ;
     msg_ [i++] = (id_ & 0xff00) >> 8 ;
     msg_ [i++] = id_ & 0xff ;
+    // token
     if (toklen_ > 0)
     {
 	std::memcpy (msg_ + i, token_, toklen_) ;
 	i += toklen_ ;
     }
-    // XXX NO OPTION HANDLING FOR THE MOMENT
+    // options
+    opt_nb = 0 ;
+    for (auto &o : optlist_)
+    {
+	int opt_delta, opt_len ;
+	int posoptheader = i ;
+
+	msg_ [posoptheader] = 0 ;
+
+	i++ ;
+	opt_delta = int (o.optcode_) - opt_nb ;
+	if (opt_delta >= 269)		// delta >= 269 => 2 bytes
+	{
+	    opt_delta -= 269 ;
+	    msg_ [i++] = (opt_delta >> 8) & 0xff ;
+	    msg_ [i++] = (opt_delta)      & 0xff ;
+	    msg_ [posoptheader] |= 0xe0 ;
+	}
+	else if (opt_delta >= 13)	// delta \in [13..268] => 1 byte
+	{
+	    opt_delta -= 13 ;
+	    msg_ [i++] = (opt_delta)      & 0xff ;
+	    msg_ [posoptheader] |= 0xd0 ;
+	}
+	else
+	{
+	    msg_ [posoptheader] |= (opt_delta << 4) ;
+	}
+	opt_nb = o.optcode_ ;
+
+	opt_len = o.optlen_ ;
+	if (opt_len >= 269)		// len >= 269 => 2 bytes
+	{
+	    opt_len -= 269 ;
+	    msg_ [i++] = (opt_len >> 8) & 0xff ;
+	    msg_ [i++] = (opt_len)      & 0xff ;
+	    msg_ [posoptheader] |= 0x0e ;
+	}
+	else if (opt_len >= 13)		// len \in [13..268] => 1 byte
+	{
+	    msg_ [i++] = (opt_len)      & 0xff ;
+	    msg_ [posoptheader] |= 0x0d ;
+	}
+	else
+	{
+	    msg_ [posoptheader] |= opt_len ;
+	}
+	std::memcpy (msg_ + i, (o.optval_?o.optval_:o.staticval_), o.optlen_) ;
+	i += o.optlen_ ;
+    }
+    // payload
     if (paylen_ > 0)
     {
 	msg_ [i++] = 0xff ;			// start of payload
@@ -171,7 +254,7 @@ bool msg::coap_decode (void)
     else
     {
 	int i ;
-	int opt_nb ;
+	byte opt_nb ;
 
 	success = true ;
 
@@ -188,13 +271,14 @@ bool msg::coap_decode (void)
 	}
 
 	/*
-	 * Options XXXXXXXXXXXXXXXX
+	 * Options analysis
 	 */
 
 	opt_nb = 0 ;
 	while (i < msglen_ && msg_ [i] != 0xff)
 	{
 	    int opt_delta, opt_len ;
+	    option o ;
 
 	    opt_delta = (msg_ [i] >> 4) & 0x0f ;
 	    opt_len   = (msg_ [i]     ) & 0x0f ;
@@ -230,9 +314,11 @@ bool msg::coap_decode (void)
 		    break ;
 	    }
 
-	    /* get option value */
-	    // XXXX
+	    /* register option */
 	    D ("OPTION " << opt_nb) ;
+	    o.optcode (option::optcode_t (opt_nb)) ;
+	    o.optval ((void *)(msg_ + i), opt_len) ;
+	    pushoption (o) ;
 
 	    i += opt_len ;
 	}
@@ -435,6 +521,11 @@ void msg::payload (void *data, int len)
     RESET_BINARY ;
 }
 
+void msg::pushoption (option &o)
+{
+    optlist_.push_back (o) ;
+}
+
 void msg::link_reqrep (msg *m)
 {
     if (m == 0)
@@ -499,6 +590,15 @@ void *msg::payload (int *paylen)
 msg *msg::reqrep (void)
 {
     return reqrep_ ;
+}
+
+option msg::popoption (void)
+{
+    option o ;
+
+    o = optlist_.front () ;
+    optlist_.pop_front () ;
+    return o ;
 }
 
 #define	SOS_REGISTER_STRING	"POST /.well-known/sos?register="

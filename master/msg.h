@@ -50,6 +50,7 @@ class msg
 	void type (msgtype_t type) ;
 	void code (int code) ;
 	void payload (void *data, int len) ;
+	void pushoption (option &o) ;
 
 	void stop_retransmit (void) ;	// no need for more retransmits
 	void handler (reply_handler_t h) ;	// for answers to requests
@@ -62,6 +63,7 @@ class msg
 	msgtype_t type (void) ;
 	int code (void) ;
 	void *payload (int *paylen) ;
+	option popoption (void) ;
 	msg *reqrep (void) ;
 
 	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
@@ -97,6 +99,7 @@ class msg
 	msgtype_t type_ ;
 	int code_ ;
 	int id_ ;			// message id
+	std::list <option> optlist_ ;	// list of all options
 
 	msg *reqrep_ ;			// "request of" or "response of"
 	sostype_t sostype_ ;

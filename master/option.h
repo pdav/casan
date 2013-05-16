@@ -38,6 +38,10 @@ class option
 	option &operator= (const option &o) ;	// copy assignment constructor
 	~option () ;				// destructor
 
+	bool operator< (const option &o) ;	// for list sorting in msg.cc
+
+	void reset (void) ;
+
 	// accessors
 	optcode_t optcode (void) ;
 	void *optval (int *len) ;
@@ -65,8 +69,7 @@ class option
 	    int minlen ;
 	    int maxlen ;
 	} ;
-	static optdesc optdesc_ [256] ;
-	static bool initialized_ ;
+	static optdesc *optdesc_ ;
 
 	void static_init (void) ;
 } ;

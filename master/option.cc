@@ -6,12 +6,13 @@
 #include "option.h"
 #include "utils.h"
 
-bool option::initialized_ = false ;
-struct option::optdesc option::optdesc_ [256] ;
+#define	MAXOPT	256
+
+struct option::optdesc * option::optdesc_ = 0 ;
 
 
 #define	OPTION_INIT		do { \
-				    if (! initialized_) \
+				    if (optdesc_ == 0) \
 					static_init () ; \
 				} while (false)			// no ";"
 #define	RESET			do { \
@@ -35,7 +36,7 @@ struct option::optdesc option::optdesc_ [256] ;
 				    std::memcpy (b, (p), optlen_) ; \
 				} while (false)			// no ";"
 #define	CHECK_OPTCODE(c)	do { \
-				    if ((c) < 0 || (c) >= NTAB (optdesc_) || optdesc_ [c].format == OF_NONE) \
+				    if ((c) < 0 || (c) >= MAXOPT || optdesc_ [c].format == OF_NONE) \
 					throw 20 ; \
 				} while (false)			// no ";"
 #define	CHECK_OPTLEN(c,l)	do { \
@@ -76,6 +77,14 @@ stbin *uint_to_byte (option::uint val)
 /******************************************************************************
  * Constructors and destructors
  */
+
+void option::reset (void)
+{
+    OPTION_INIT ;
+    if (optval_)
+	delete optval_ ;
+    RESET ;
+}
 
 // default constructor
 option::option ()
@@ -132,7 +141,7 @@ option &option::operator= (const option &o)
     OPTION_INIT ;
     if (this != &o)
     {
-	*this = o ;
+	std::memcpy (this, &o, sizeof *this) ;
 	if (optval_)
 	    COPY_VAL (o.optval_) ;
     }
@@ -149,9 +158,9 @@ option::~option ()
 
 void option::static_init (void)
 {
-    initialized_ = true ;
+    optdesc_ = new struct optdesc [MAXOPT] ;
 
-    for (int i = 0 ; i < NTAB (optdesc_) ; i++)
+    for (int i = 0 ; i < MAXOPT ; i++)
 	optdesc_ [i].format = OF_NONE ;
 
     optdesc_ [MO_Content_Format].format = OF_OPAQUE ;
@@ -209,6 +218,15 @@ void option::static_init (void)
     optdesc_ [MO_If_Match].format = OF_OPAQUE ;
     optdesc_ [MO_If_Match].minlen = 0 ;
     optdesc_ [MO_If_Match].maxlen = 8 ;
+}
+
+/******************************************************************************
+ * Operator used for list sorting (cf msg.cc)
+ */
+
+bool option::operator< (const option &o)
+{
+    return this->optcode_ < o.optcode_ ;
 }
 
 /******************************************************************************
