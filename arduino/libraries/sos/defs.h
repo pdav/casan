@@ -37,4 +37,17 @@
 
 #define ALEA(x) x
 
+#define PRINT_FREE_MEM \
+	Serial.print(F("\tfreeMemory() = \033[36m")); \
+	Serial.print(freeMemory()); \
+	Serial.println("\033[00m");
+
+// to print a dynamic value (everything but strings)
+#define PRINT_DEBUG_DYNAMIC(x) \
+	Serial.println(x);
+
+// to print a static value (string)
+#define PRINT_DEBUG_STATIC(x) \
+	Serial.println(F(x));
+
 #endif

@@ -14,7 +14,8 @@ void Coap::send(l2addr &mac_addr_dest, Message &m) {
 	sbuf[COAP_OFFSET_TKL] |= (m.get_token_length() & 0xF);
 	sbuf[COAP_OFFSET_CODE] = m.get_code();
 	int id = m.get_id();
-	memcpy(sbuf + COAP_OFFSET_ID, &id, 2);
+	memcpy(sbuf + COAP_OFFSET_ID, &id + 1, 1);
+	memcpy(sbuf + COAP_OFFSET_ID +1, &id, 1);
 	memcpy(sbuf + COAP_OFFSET_TOKEN, m.get_token(), m.get_token_length());
 	{
 		uint8_t payload_offset = 0;
@@ -78,35 +79,101 @@ uint8_t * Coap::get_token(void) {
 }
 
 uint8_t Coap::get_payload_length(void) {
-	// return _eth->get_payload_length() - (payload_offset + COAP_OFFSET_TOKEN + *token_length);
-	return 5 ; //_payload_length; FIXME
+	return _eth->get_payload_length() - 
+		(get_payload_offset() + COAP_OFFSET_TOKEN + get_token_length());
 }
 
-uint8_t * Coap::get_payload(void) {
+uint8_t Coap::get_payload_offset(void) {
 	uint8_t payload_offset = 0;
 	uint8_t tmp = 0;
 	uint8_t tkl = get_token_length();
-	payload_offset = (tkl == 0 || tkl == 4) ? COAP_OFFSET_TOKEN + tkl : COAP_OFFSET_TOKEN + tkl + (4 - (tkl % 4));
+	payload_offset = (tkl == 0 || tkl == 4) 
+		? COAP_OFFSET_TOKEN + tkl : COAP_OFFSET_TOKEN + tkl + (4 - (tkl % 4));
 	tmp = *(_eth->get_offset_payload(payload_offset));
 	while(tmp != 0xFF && payload_offset < _eth->get_payload_length()) {
 		payload_offset++;
 		tmp = *(_eth->get_offset_payload(payload_offset)); 
 	}
 	++payload_offset;
-	return _eth->get_offset_payload(payload_offset);
+	return payload_offset;
 }
 
-uint8_t Coap::get_options_length(void) { // FIXME : It's not the way it works
-	uint8_t tkl = get_token_length();
-	uint8_t complement = (tkl%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
-	return get_payload() - (get_token() + tkl + complement) - 1; 
+uint8_t * Coap::get_payload(void) {
+	return _eth->get_offset_payload(get_payload_offset());
 }
 
-uint8_t * Coap::get_options(void) { // FIXME : it's not the way it works
-	uint8_t options_offset = 0;
-	uint8_t tkl = get_token_length();
-	uint8_t complement = (tkl%4) == 0 ? 0 : 4 - (tkl%4); // TODO : check if we can use xor
-	options_offset =  COAP_OFFSET_TOKEN + tkl + complement;
+// FIXME : probably not working for now
+uint8_t Coap::get_options_length(void) { 
+	bool success;
+	int i = get_token_length() + 4;
+	int opt_nb = 0 ;
+	uint8_t * msg_ = _eth->get_offset_payload(0);
+	int msglen_ = _eth->get_payload_length();
+
+	while (msg_[i] != 0xff && i < msglen_)
+	{
+		int opt_delta, opt_len ;
+
+		opt_delta = (msg_ [i] >> 4) & 0x0f ;
+		opt_len   = (msg_ [i]     ) & 0x0f ;
+		i++ ;
+		switch (opt_delta)
+		{
+			case 13 :
+				opt_delta = msg_ [i] - 13 ;
+				i += 1 ;
+				break ;
+			case 14 :
+				opt_delta = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+				i += 2 ;
+				break ;
+			case 15 :
+				PRINT_DEBUG_STATIC("\033[31mreceive error : opt delta\033[00m")
+				success = false;
+				break ;
+		}
+		opt_nb += opt_delta ;
+
+		switch (opt_len)
+		{
+			case 13 :
+				opt_len = msg_ [i] - 13 ;
+				i += 1 ;
+				break ;
+			case 14 :
+				opt_len = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+				i += 2 ;
+				break ;
+			case 15 :
+				PRINT_DEBUG_STATIC("\033[31mreceive error : opt len\033[00m ")
+				success = false;
+				break ;
+		}
+
+		// get option value
+		// XXXX
+		PRINT_DEBUG_STATIC("OPTION ")
+		PRINT_DEBUG_DYNAMIC(opt_nb)
+
+		i += opt_len ;
+	}
+
+	if (msg_ [i] != 0xff)
+	{
+		PRINT_DEBUG_STATIC("\033[31mreceive error : msg[i] != 0xff")
+	}
+	i++ ;
+	if(! success) {
+		PRINT_DEBUG_STATIC( "\033[31m ! SUCCESS opt \033[00m");
+		return 0;
+	}
+	else {
+		return i - get_token_length() - 4; // option length
+	}
+}
+
+uint8_t * Coap::get_options(void) { // TODO : is it the way it works ?
+	uint8_t options_offset = 4 + get_token_length();
 	return _eth->get_offset_payload(options_offset);
 }
 

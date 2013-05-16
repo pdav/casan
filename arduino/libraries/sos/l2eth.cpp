@@ -44,8 +44,8 @@ l2addr_eth::l2addr_eth (const char *a)
 		}
 		a++ ;
 	}
-	if (i < ETHADDRLEN)
-		addr [i] = b ;
+	if(i < ETHADDRLEN)
+		addr [i] = b;
 }
 
 // copy constructor
@@ -95,6 +95,17 @@ void l2addr_eth::set_addr(const unsigned char* mac_addr)
 unsigned char * l2addr_eth::get_raw_addr(void) 
 {
 	return this->addr;
+}
+
+void l2addr_eth::print() {
+	Serial.print(F("IP : "));
+	for (int i(0) ; i < ETHADDRLEN ; i++) {
+		Serial.print("\033[32m");
+		Serial.print(addr[i], HEX);
+		if(i != ETHADDRLEN -1)
+			Serial.print(':');
+	}
+	Serial.println("\033[00m");
 }
 
 // destructor

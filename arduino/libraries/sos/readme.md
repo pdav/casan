@@ -12,4 +12,14 @@
 	* the payload -- done
 	* the options 
 * complete the Retransmit class
+	* do timers
+* complete the Rmanager class
+	* add the return of the .well-known/ (list all resources)
 * complete the Sos class
+
+* do tests on
+	* recording packet to retransmit
+	* receiving hello message
+	* switch between different states
+	* timers (retransmit & so)
+	* listing all resources that we record

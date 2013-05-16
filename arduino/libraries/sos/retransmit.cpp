@@ -3,6 +3,7 @@
 Retransmit::Retransmit(Coap *c, l2addr **master) {
 	_c = c;
 	_master_addr = master;
+	_retransmit = NULL;
 }
 
 Retransmit::~Retransmit() {
@@ -54,6 +55,9 @@ retransmit_s * Retransmit::get_retransmit(Message *m) {
 // TODO
 void Retransmit::loop_retransmit(void) {
 	//enum coap_message_type coap_mes_type = in.get_coap_type();
+	Serial.println(F("retransmit loop"));
+	PRINT_FREE_MEM
+
 	retransmit_s * tmp = _retransmit;
 	while(tmp != NULL) {
 		if( tmp->nb >= MAX_RETRANSMIT ) {

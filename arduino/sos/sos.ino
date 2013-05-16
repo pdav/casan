@@ -28,13 +28,18 @@ void setup() {
 	Serial.begin (9600) ;
 	Serial.println(F("start"));
 
-	sos = new Sos(mac_addr, SOS_ETH_TYPE, SOS_RANDOM_UUID());
+	sos = new Sos(mac_addr, SOS_RANDOM_UUID());
 	sos->register_resource("/light", process_light);
 	sos->register_resource("/temp", process_temp);
 }
 
 void loop() {
-	Serial.println(F("loop"));
+	Serial.println(F("\033[36m\tloop \033[00m "));
+
+	/*
+	Serial.print(F("freeMemory()="));
+	Serial.println(freeMemory());
+	*/
 
 	sos->loop();
 

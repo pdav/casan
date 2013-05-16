@@ -4,6 +4,7 @@
 #include "l2eth.h"
 #include "utility/w5100.h"
 #include "defs.h"
+#include "memory_free.h"
 
 #define		BUFFER_SIZE			127
 #define		OFFSET_DEST_ADDR	(0)
