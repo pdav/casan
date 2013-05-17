@@ -67,6 +67,10 @@ int msg::global_message_id = 1 ;
 				} while (false)			// no ";"
 #define	OPTVAL(o)	((o).optval_ ? (o).optval_ : (o).staticval_)
 
+#define	BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
+#define	BYTE_LOW(n)	((n) & 0xff)
+#define	INT16(h,l)	((h) << 8 || (l))
+
 // default constructor
 msg::msg ()
 {
@@ -132,7 +136,7 @@ void msg::coap_encode (void)
      * Format message, part 1 : compute message size
      */
 
-    msglen_ = 4 + toklen_ ;
+    msglen_ = 6 + toklen_ ;
 
     optlist_.sort () ;			// sort option list
     opt_nb = 0 ;
@@ -177,11 +181,16 @@ void msg::coap_encode (void)
     msg_ = new byte [msglen_] ;
 
     i = 0 ;
+
+    // SOS specific: message size
+    msg_ [i++] = BYTE_HIGH (msglen_) ;
+    msg_ [i++] = BYTE_LOW  (msglen_) ;
+
     // header
     msg_ [i++] = FORMAT_BYTE0 (SOS_VERSION, type_, toklen_) ;
     msg_ [i++] = code_ ;
-    msg_ [i++] = (id_ & 0xff00) >> 8 ;
-    msg_ [i++] = id_ & 0xff ;
+    msg_ [i++] = BYTE_HIGH (id_) ;
+    msg_ [i++] = BYTE_LOW  (id_) ;
     // token
     if (toklen_ > 0)
     {
@@ -202,14 +211,14 @@ void msg::coap_encode (void)
 	if (opt_delta >= 269)		// delta >= 269 => 2 bytes
 	{
 	    opt_delta -= 269 ;
-	    msg_ [i++] = (opt_delta >> 8) & 0xff ;
-	    msg_ [i++] = (opt_delta)      & 0xff ;
+	    msg_ [i++] = BYTE_HIGH (opt_delta) ;
+	    msg_ [i++] = BYTE_LOW  (opt_delta) ;
 	    msg_ [posoptheader] |= 0xe0 ;
 	}
 	else if (opt_delta >= 13)	// delta \in [13..268] => 1 byte
 	{
 	    opt_delta -= 13 ;
-	    msg_ [i++] = (opt_delta)      & 0xff ;
+	    msg_ [i++] = BYTE_LOW (opt_delta) ;
 	    msg_ [posoptheader] |= 0xd0 ;
 	}
 	else
@@ -222,13 +231,13 @@ void msg::coap_encode (void)
 	if (opt_len >= 269)		// len >= 269 => 2 bytes
 	{
 	    opt_len -= 269 ;
-	    msg_ [i++] = (opt_len >> 8) & 0xff ;
-	    msg_ [i++] = (opt_len)      & 0xff ;
+	    msg_ [i++] = BYTE_HIGH (opt_len) ;
+	    msg_ [i++] = BYTE_LOW  (opt_len) ;
 	    msg_ [posoptheader] |= 0x0e ;
 	}
 	else if (opt_len >= 13)		// len \in [13..268] => 1 byte
 	{
-	    msg_ [i++] = (opt_len)      & 0xff ;
+	    msg_ [i++] = BYTE_LOW (opt_len) ;
 	    msg_ [posoptheader] |= 0x0d ;
 	}
 	else
@@ -258,15 +267,18 @@ bool msg::coap_decode (void)
     else
     {
 	int i ;
-	byte opt_nb ;
+	int opt_nb ;
 
 	success = true ;
 
-	type_ = msgtype_t (COAP_TYPE (msg_)) ;
-	toklen_ = COAP_TOKLEN (msg_) ;
-	code_ = COAP_CODE (msg_) ;
-	id_ = COAP_ID (msg_) ;
-	i = 4 ;
+	msglen_ = INT16 (msg_ [0], msg_ [1]) ;
+	i = 2 ;
+
+	type_ = msgtype_t (COAP_TYPE (msg_ + i)) ;
+	toklen_ = COAP_TOKLEN (msg_ + i) ;
+	code_ = COAP_CODE (msg_ + i) ;
+	id_ = COAP_ID (msg_ + i) ;
+	i += 4 ;
 
 	if (toklen_ > 0)
 	{
@@ -279,7 +291,7 @@ bool msg::coap_decode (void)
 	 */
 
 	opt_nb = 0 ;
-	while (i < msglen_ && msg_ [i] != 0xff)
+	while (success && i < msglen_ && msg_ [i] != 0xff)
 	{
 	    int opt_delta, opt_len ;
 	    option o ;
@@ -319,16 +331,21 @@ bool msg::coap_decode (void)
 	    }
 
 	    /* register option */
-	    D ("OPTION " << opt_nb) ;
-	    o.optcode (option::optcode_t (opt_nb)) ;
-	    o.optval ((void *)(msg_ + i), opt_len) ;
-	    pushoption (o) ;
+	    if (success)
+	    {
+		D ("OPTION opt=" << opt_nb << ", len=" << opt_len) ;
+		o.optcode (option::optcode_t (opt_nb)) ;
+		o.optval ((void *)(msg_ + i), opt_len) ;
+		pushoption (o) ;
 
-	    i += opt_len ;
+		i += opt_len ;
+	    }
+	    else
+		D ("OPTION unrecognized") ;
 	}
 
 	paylen_ = msglen_ - i - 1 ;
-	if (paylen_ > 0)
+	if (success && paylen_ > 0)
 	{
 	    if (msg_ [i] != 0xff)
 	    {
