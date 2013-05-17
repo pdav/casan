@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <cstdio>
 
 #include "defs.h"
 #include "sos.h"
@@ -64,6 +65,7 @@ int msg::global_message_id = 1 ;
 				    std::memcpy (f, (m), (l)) ;	\
 				    f [(l)]=0 ;			\
 				} while (false)			// no ";"
+#define	OPTVAL(o)	((o).optval_ ? (o).optval_ : (o).staticval_)
 
 // default constructor
 msg::msg ()
@@ -130,7 +132,7 @@ void msg::coap_encode (void)
      * Format message, part 1 : compute message size
      */
 
-    msglen_ = 5 + toklen_ + paylen_ ;
+    msglen_ = 4 + toklen_ ;
 
     optlist_.sort () ;			// sort option list
     opt_nb = 0 ;
@@ -154,6 +156,8 @@ void msg::coap_encode (void)
 	    msglen_ += 1 ;
 	msglen_ += o.optlen_ ;
     }
+    if (paylen_ > 0)
+	msglen_ += 1 + paylen_ ;	// don't forget 0xff byte
 
     /*
      * Format message, part 2 : compute a default id
@@ -231,7 +235,7 @@ void msg::coap_encode (void)
 	{
 	    msg_ [posoptheader] |= opt_len ;
 	}
-	std::memcpy (msg_ + i, (o.optval_?o.optval_:o.staticval_), o.optlen_) ;
+	std::memcpy (msg_ + i, OPTVAL (o), o.optlen_) ;
 	i += o.optlen_ ;
     }
     // payload
@@ -601,38 +605,108 @@ option msg::popoption (void)
     return o ;
 }
 
-#define	SOS_REGISTER_STRING	"POST /.well-known/sos?register="
-#define	SOS_ASSOCIATE_STRING	"POST /.well-known/sos?associate="
+/******************************************************************************
+ * SOS control messages
+ */
 
-slaveid_t msg::is_sos_register (void)
+#define	SOS_NAMESPACE1		".well-known"
+#define	SOS_NAMESPACE2		"sos"
+#define	SOS_SLAVE		"slave=%d"
+#define	SOS_ASSOC		"assoc=%ld"
+
+static struct
 {
-    int len = sizeof SOS_REGISTER_STRING - 1 ;
+    const char *path ;
+    int len ;
+}
+sos_namespace [] =
+{
+    {  SOS_NAMESPACE1, sizeof SOS_NAMESPACE1 - 1 },
+    {  SOS_NAMESPACE2, sizeof SOS_NAMESPACE2 - 1 },
+} ;
+
+bool msg::is_sos_ctl_msg (void)
+{
+    int i = 0;
+
+    for (auto &o : optlist_)
+    {
+	if (o.optcode_ == option::MO_Uri_Path)
+	{
+	    if (i >= NTAB (sos_namespace))
+		return false ;
+	    if (sos_namespace [i].len != o.optlen_)
+		return false ;
+	    if (std::memcmp (sos_namespace [i].path, OPTVAL (o), o.optlen_))
+		return false ;
+	    i++ ;
+	}
+    }
+    if (i != NTAB (sos_namespace))
+	return false ;
+    return true ;
+}
+
+slaveid_t msg::is_sos_discover (void)
+{
     slaveid_t sid = 0 ;
 
-    if (type_ == MT_NON && code_ == MC_POST
-	    && paylen_ > len
-	    && std::memcmp (payload_, SOS_REGISTER_STRING, len) == 0
-	    )
+    if (type_ == MT_NON && code_ == MC_POST && is_sos_ctl_msg ())
     {
-	// we benefit from the implicit nul byte at the end
-	sid = std::atol ((const char *) payload_ + len) ;
-	sostype_ = SOS_REGISTER ;
+	for (auto &o : optlist_)
+	{
+	    if (o.optcode_ == option::MO_Uri_Query)
+	    {
+		int n ;
+
+		// we benefit from the added nul byte at the end of optval
+		if (std::sscanf ((char *) OPTVAL (o), SOS_SLAVE, &n) == 1)
+		{
+		    sid = n ;
+		    // continue, just in case there are other query strings
+		}
+		else
+		{
+		    sid = 0 ;
+		    break ;
+		}
+	    }
+	}
     }
+    if (sid > 0)
+	sostype_ = SOS_REGISTER ;
     return sid ;
 }
 
 bool msg::is_sos_associate (void)
 {
+    bool found = false ;
+
     if (sostype_ == SOS_UNKNOWN)
     {
-	int len = sizeof SOS_ASSOCIATE_STRING - 1 ;
-
-	if (type_ == MT_CON && code_ == MC_POST
-		&& paylen_ > len
-		&& std::memcmp (payload_, SOS_ASSOCIATE_STRING, len) == 0
-		)
+	if (type_ == MT_CON && code_ == MC_POST && is_sos_ctl_msg ())
 	{
-	    sostype_ = SOS_ASSOC_REQUEST ;
+	    for (auto &o : optlist_)
+	    {
+		if (o.optcode_ == option::MO_Uri_Query)
+		{
+		    long int n ;
+
+		    // we benefit from the added nul byte at the end of optval
+		    if (std::sscanf ((char *) OPTVAL (o), SOS_ASSOC, &n) == 1)
+		    {
+			found = true ;
+			// continue, just in case there are other query strings
+		    }
+		    else
+		    {
+			found = false ;
+			break ;
+		    }
+		}
+	    }
+	    if (found)
+		sostype_ = SOS_ASSOC_REQUEST ;
 	}
     }
     return sostype_ == SOS_ASSOC_REQUEST ;
@@ -643,7 +717,7 @@ msg::sostype_t msg::sos_type (void)
     if (sostype_ == SOS_UNKNOWN)
     {
 	sostype_ = SOS_NONE ;
-	if (is_sos_register () == 0 && ! is_sos_associate ())
+	if (is_sos_discover () == 0 && ! is_sos_associate ())
 	{
 	    if (reqrep_ != 0)
 	    {

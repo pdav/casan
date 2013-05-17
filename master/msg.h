@@ -69,7 +69,7 @@ class msg
 	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
 	sostype_t sos_type (void) ;
 
-	slaveid_t is_sos_register (void) ;	// SOS control message
+	slaveid_t is_sos_discover (void) ;	// SOS control message
 	bool is_sos_associate (void) ;	// SOS control message
 
     protected:
@@ -108,6 +108,8 @@ class msg
 
 	void coap_encode (void) ;
 	bool coap_decode (void) ;
+
+	bool is_sos_ctl_msg (void) ;
 } ;
 
 #endif

@@ -355,7 +355,7 @@ bool engine::find_peer (msg *m, l2addr *a, receiver *r)
 	{
 	    slaveid_t sid ;
 
-	    sid = m->is_sos_register () ;
+	    sid = m->is_sos_discover () ;
 	    if (sid)
 	    {
 		for (auto &s : slist_)

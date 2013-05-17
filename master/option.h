@@ -56,7 +56,7 @@ class option
 	optcode_t optcode_ ;
 	int optlen_ ;
 	byte *optval_ ;			// 0 if staticval is used
-	byte staticval_ [8] ;
+	byte staticval_ [8 + 1] ;	// keep a \0 after, just in case
 
 	friend class msg ;
 

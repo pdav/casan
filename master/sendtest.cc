@@ -12,8 +12,8 @@
 
 #define IFACE		"eth0"
 // #define ADDR		"90:a2:da:80:0a:d4"		// arduino
-// #define ADDR		"e8:e0:b7:29:03:63"		// vagabond
-#define ADDR		"52:54:00:f5:7b:46"		// lognet
+#define ADDR		"e8:e0:b7:29:03:63"		// vagabond
+// #define ADDR		"52:54:00:f5:7b:46"		// lognet
 
 #define	PATH_CONTROL_1	".well-known"
 #define	PATH_CONTROL_2	"sos"

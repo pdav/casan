@@ -11,39 +11,37 @@
 struct option::optdesc * option::optdesc_ = 0 ;
 
 
-#define	OPTION_INIT		do { \
-				    if (optdesc_ == 0) \
-					static_init () ; \
-				} while (false)			// no ";"
-#define	RESET			do { \
-				    optcode_ = MO_None ; \
-				    optlen_ = 0 ; \
-				    optval_ = 0 ; \
-				} while (false)			// no ";"
-#define	ALLOC_COPY(f,m,l)	do { \
-				    f = new byte [(l)] ; \
-				    std::memcpy (f, (m), (l)) ; \
-				} while (false)			// no ";"
-#define	COPY_VAL(p)		do { \
-				    byte *b ; \
-				    if (optlen_ > (int) sizeof staticval_) \
-					b = optval_ = new byte [optlen_] ; \
-				    else \
-				    { \
-					optval_ = 0 ; \
-					b = staticval_ ; \
-				    } \
-				    std::memcpy (b, (p), optlen_) ; \
-				} while (false)			// no ";"
-#define	CHECK_OPTCODE(c)	do { \
-				    if ((c) < 0 || (c) >= MAXOPT || optdesc_ [c].format == OF_NONE) \
-					throw 20 ; \
-				} while (false)			// no ";"
-#define	CHECK_OPTLEN(c,l)	do { \
-				    if ((l) < optdesc_ [(c)].minlen \
-					    || (l) > optdesc_ [(c)].maxlen) \
-					throw 20 ; \
-				} while (false)			// no ";"
+#define	OPTION_INIT	do {					\
+			    if (optdesc_ == 0)			\
+				static_init () ;		\
+			} while (false)				// no ";"
+#define	RESET		do {					\
+			    optcode_ = MO_None ;		\
+			    optlen_ = 0 ;			\
+			    optval_ = 0 ;			\
+			} while (false)				// no ";"
+#define	COPY_VAL(p)	do {					\
+			    byte *b ;				\
+			    if (optlen_ + 1> (int) sizeof staticval_) \
+				b = optval_ = new byte [optlen_+ 1] ; \
+			    else				\
+			    {					\
+				optval_ = 0 ;			\
+				b = staticval_ ;		\
+			    }					\
+			    std::memcpy (b, (p), optlen_) ;	\
+			    b [optlen_] = 0 ;			\
+			} while (false)				// no ";"
+#define	CHK_OPTCODE(c)	do {					\
+			    if ((c) < 0 || (c) >= MAXOPT	\
+				|| optdesc_ [c].format == OF_NONE) \
+				throw 20 ;			\
+			} while (false)				// no ";"
+#define	CHK_OPTLEN(c,l)	do {					\
+			    if ((l) < optdesc_ [(c)].minlen	\
+				    || (l) > optdesc_ [(c)].maxlen) \
+				throw 20 ;			\
+			} while (false)				// no ";"
 
 
 /******************************************************************************
@@ -96,7 +94,7 @@ option::option ()
 option::option (optcode_t optcode)
 {
     OPTION_INIT ;
-    CHECK_OPTCODE (optcode) ;
+    CHK_OPTCODE (optcode) ;
     RESET ;
     optcode_ = optcode ;
 }
@@ -104,8 +102,8 @@ option::option (optcode_t optcode)
 option::option (optcode_t optcode, void *optval, int optlen)
 {
     OPTION_INIT ;
-    CHECK_OPTCODE (optcode) ;
-    CHECK_OPTLEN (optcode, optlen) ;
+    CHK_OPTCODE (optcode) ;
+    CHK_OPTLEN (optcode, optlen) ;
     RESET ;
     optcode_ = optcode ;
     optlen_ = optlen ;
@@ -118,8 +116,8 @@ option::option (optcode_t optcode, option::uint optval)
 
     stbin = uint_to_byte (optval) ;
     OPTION_INIT ;
-    CHECK_OPTCODE (optcode) ;
-    CHECK_OPTLEN (optcode, stbin->len) ;
+    CHK_OPTCODE (optcode) ;
+    CHK_OPTLEN (optcode, stbin->len) ;
     RESET ;
     optcode_ = optcode ;
     optlen_ = stbin->len ;
@@ -277,7 +275,7 @@ void option::optval (option::uint val)
     stbin *stbin ;
 
     stbin = uint_to_byte (val) ;
-    CHECK_OPTLEN (optcode_, stbin->len) ;
+    CHK_OPTLEN (optcode_, stbin->len) ;
     optlen_ = stbin->len ;
     COPY_VAL (stbin->bin) ;
 }
