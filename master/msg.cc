@@ -69,7 +69,7 @@ int msg::global_message_id = 1 ;
 
 #define	BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
 #define	BYTE_LOW(n)	((n) & 0xff)
-#define	INT16(h,l)	((h) << 8 || (l))
+#define	INT16(h,l)	((h) << 8 | (l))
 
 // default constructor
 msg::msg ()
@@ -253,6 +253,8 @@ void msg::coap_encode (void)
 	msg_ [i++] = 0xff ;			// start of payload
 	std::memcpy (msg_ + i, payload_, paylen_) ;
     }
+
+    ntrans_ = 0 ;
 }
 
 /* returns true if message is decoding was successful */
@@ -260,7 +262,7 @@ bool msg::coap_decode (void)
 {
     bool success ;
 
-    if (COAP_VERSION (msg_) != SOS_VERSION)
+    if (COAP_VERSION (msg_ + 2) != SOS_VERSION)
     {
 	success = false ;
     }
@@ -628,7 +630,8 @@ option msg::popoption (void)
 
 #define	SOS_NAMESPACE1		".well-known"
 #define	SOS_NAMESPACE2		"sos"
-#define	SOS_SLAVE		"slave=%d"
+#define	SOS_HELLO		"hello=%ld"
+#define	SOS_SLAVE		"slave=%ld"
 #define	SOS_ASSOC		"assoc=%ld"
 
 static struct
@@ -674,7 +677,7 @@ slaveid_t msg::is_sos_discover (void)
 	{
 	    if (o.optcode_ == option::MO_Uri_Query)
 	    {
-		int n ;
+		long int n ;
 
 		// we benefit from the added nul byte at the end of optval
 		if (std::sscanf ((char *) OPTVAL (o), SOS_SLAVE, &n) == 1)
@@ -743,6 +746,41 @@ msg::sostype_t msg::sos_type (void)
 		    sostype_ = SOS_ASSOC_ANSWER ;
 	    }
 	}
+	if (sostype_ != SOS_NONE)
+	    D ("CTL MSG " << sostype_) ;
     }
     return sostype_ ;
+}
+
+void msg::add_path_ctl (void)
+{
+    int i ;
+
+    for (i = 0 ; i < NTAB (sos_namespace) ; i++)
+    {
+	option o (option::MO_Uri_Path,
+			(void *) sos_namespace [i].path,
+			sos_namespace [i].len) ;
+	pushoption (o) ;
+    }
+}
+
+void msg::mk_ctl_hello (long int hid)
+{
+    char buf [MAXBUF] ;
+
+    add_path_ctl () ;
+    snprintf (buf, sizeof buf, SOS_HELLO, hid) ;
+    option o (option::MO_Uri_Query, buf, strlen (buf)) ;
+    pushoption (o) ;
+}
+
+void msg::mk_ctl_assoc (slavettl_t ttl)
+{
+    char buf [MAXBUF] ;
+
+    add_path_ctl () ;
+    snprintf (buf, sizeof buf, SOS_ASSOC, ttl) ;
+    option o (option::MO_Uri_Query, buf, strlen (buf)) ;
+    pushoption (o) ;
 }

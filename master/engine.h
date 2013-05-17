@@ -55,8 +55,6 @@ class engine
 	msg *deduplicate (receiver *r, msg *m) ;
 	bool find_peer (msg *m, l2addr *a, receiver *r) ;
 	msg *correlate (msg *m) ;
-
-	void send_hello (receiver *r) ;
 } ;
 
 #endif

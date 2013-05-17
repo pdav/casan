@@ -38,6 +38,7 @@ struct receiver
     long int hid ; 			// hello id, initialized at start time
     slave broadcast ;
     std::list <msg *> deduplist ;	// received messages
+    msg *hellomsg ;
     timepoint_t next_hello ;
     std::thread *thr ;
 } ;
@@ -106,6 +107,13 @@ void engine::start_net (l2net *l2)
 
 	now = std::chrono::system_clock::now () ;
 	r->hid = std::chrono::system_clock::to_time_t (now) ;
+
+	r->hellomsg = new msg () ;
+	r->hellomsg->peer (& r->broadcast) ;
+	r->hellomsg->type (msg::MT_NON) ;
+	r->hellomsg->code (msg::MC_POST) ;
+	r->hellomsg->mk_ctl_hello (r->hid) ;
+
 	r->next_hello = now + random_timeout (DELAY_FIRST_HELLO)  ;
 
 	rlist_.push_front (*r) ;
@@ -143,25 +151,6 @@ void engine::add_request (msg *m)
 
     mlist_.push_front (m) ;
     condvar_.notify_one () ;
-}
-
-/******************************************************************************
- * SOS autodiscovery handling
- */
-
-void engine::send_hello (receiver *r)
-{
-    msg m ;
-    char buf [MAXBUF] ;
-
-    m.peer (& r->broadcast) ;		// send to broadcast address
-    m.type (msg::MT_NON) ;
-    m.code (msg::MC_POST) ;
-    snprintf (buf, MAXBUF, "POST /.well-known/sos?uuid=%ld", r->hid) ;
-    m.payload (buf, std::strlen (buf)) ;
-
-    D ("Send Hello") ;
-    m.send () ;
 }
 
 /******************************************************************************
@@ -230,8 +219,9 @@ void engine::sender_thread (void)
 	    // is it time to send a new hello ?
 	    if (now >= ri->next_hello)
 	    {
-		engine::send_hello (&*ri) ;
-
+		// send the pre-prepared hello message
+		ri->hellomsg->id (0) ;		// don't reuse the same msg id
+		ri->hellomsg->send () ;
 		// schedule next hello packet
 		ri->next_hello = now + duration_t (INTERVAL_HELLO) ;
 	    }

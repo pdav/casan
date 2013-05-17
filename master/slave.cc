@@ -90,8 +90,7 @@ void slave::process_sos (engine *e, msg *m)
 	    answer->peer (m->peer ()) ;
 	    answer->type (msg::MT_CON) ;
 	    answer->code (msg::MC_POST) ;
-	    snprintf (buf, MAXBUF, "POST /.well-known/sos?associate=%ld", e->ttl ()) ;
-	    answer->payload (buf, std::strlen (buf)) ;
+	    answer->mk_ctl_assoc (e->ttl ()) ;
 	    e->add_request (answer) ;
 	    break ;
 	case msg::SOS_ASSOC_REQUEST :

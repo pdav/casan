@@ -67,10 +67,14 @@ class msg
 	msg *reqrep (void) ;
 
 	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
-	sostype_t sos_type (void) ;
 
+	// control messages
+	sostype_t sos_type (void) ;
 	slaveid_t is_sos_discover (void) ;	// SOS control message
-	bool is_sos_associate (void) ;	// SOS control message
+	bool is_sos_associate (void) ;		// SOS control message
+	void add_path_ctl (void) ;
+	void mk_ctl_hello (long int hid) ;	// options for ctl mssage
+	void mk_ctl_assoc (slavettl_t ttl) ;	// options for ctl mssage
 
     protected:
 	timepoint_t expire_ ;		// all msg
