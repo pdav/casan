@@ -10,7 +10,7 @@
 #include "engine.h"
 #include "defs.h"
 
-#define IFACE		"eth1"
+#define IFACE		"eth0"
 // #define ADDR		"90:a2:da:80:0a:d4"		// arduino
 #define ADDR		"e8:e0:b7:29:03:63"		// vagabond
 // #define ADDR		"52:54:00:f5:7b:46"		// lognet
@@ -23,7 +23,6 @@
 int main (int argc, char *argv [])
 {
     l2net *l ;
-    // l2addr *la ;
     l2addr_eth *sa ;			// slave address
     slave s ;				// slave
     slave sb ;				// pseudo-slave for broadcast

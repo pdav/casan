@@ -136,6 +136,7 @@ int l2net_eth::init (const char *iface)
 
     /* Bind the socket to the interface */
 
+    std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
     sll.sll_protocol = htons (ETHTYPE_SOS) ;
     sll.sll_ifindex = ifidx_ ;

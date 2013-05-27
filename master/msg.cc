@@ -15,7 +15,7 @@ int msg::global_message_id = 1 ;
 #define	RESET_PL(p,l)	do {					\
 			    if (p)				\
 			    {					\
-				delete p ; p = 0 ; l = 0 ;	\
+				delete [] p ; p = 0 ; l = 0 ;	\
 			    }					\
 			} while (false)				// no ";"
 // reset encoded message
@@ -476,7 +476,7 @@ l2addr *msg::recv (l2net *l2)
 	 * Packet reception failed, not addressed to me, or not a SOS packet
 	 */
 
-	delete a ;			// remove address created by l2->recv ()
+	delete [] a ;			// remove address created by l2->recv ()
 	a = 0 ;
     }
 
@@ -537,7 +537,7 @@ void msg::code (int code)
 void msg::payload (void *data, int len)
 {
     if (payload_)
-	delete payload_ ;
+	delete [] payload_ ;
 
     ALLOC_COPYNUL (payload_, data, len) ;
     paylen_ = len ;

@@ -22,7 +22,7 @@ struct option::optdesc * option::optdesc_ = 0 ;
 			} while (false)				// no ";"
 #define	COPY_VAL(p)	do {					\
 			    byte *b ;				\
-			    if (optlen_ + 1> (int) sizeof staticval_) \
+			    if (optlen_ + 1 > (int) sizeof staticval_) \
 				b = optval_ = new byte [optlen_+ 1] ; \
 			    else				\
 			    {					\
@@ -80,7 +80,7 @@ void option::reset (void)
 {
     OPTION_INIT ;
     if (optval_)
-	delete optval_ ;
+	delete [] optval_ ;
     RESET ;
 }
 
@@ -128,7 +128,7 @@ option::option (optcode_t optcode, option::uint optval)
 option::option (const option &o)
 {
     OPTION_INIT ;
-    *this = o ;
+    std::memcpy (this, &o, sizeof o) ;
     if (optval_)
 	COPY_VAL (o.optval_) ;
 }
@@ -150,7 +150,7 @@ option &option::operator= (const option &o)
 option::~option ()
 {
     if (optval_)
-	delete optval_ ;
+	delete [] optval_ ;
 }
 
 
