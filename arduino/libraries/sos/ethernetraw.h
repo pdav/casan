@@ -4,13 +4,15 @@
 #include "l2eth.h"
 #include "utility/w5100.h"
 #include "defs.h"
+#include "enum.h"
 #include "memory_free.h"
 
 #define		BUFFER_SIZE			127
 #define		OFFSET_DEST_ADDR	(0)
 #define		OFFSET_SRC_ADDR		(6)
 #define		OFFSET_ETHTYPE		(12)
-#define		OFFSET_DATA			(14)
+#define		OFFSET_SIZE			(14)
+#define		OFFSET_DATA			(16)
 #define		OFFSET_RECEPTION	(2)
 
 /*******
@@ -24,12 +26,12 @@ class EthernetRaw {
 		int available();
 		size_t send(l2addr &addr, uint8_t b);
 		size_t send(l2addr &mac_dest, const uint8_t *data, size_t len);
-		uint8_t recv(void);
-		uint8_t recv(uint8_t *data, int *len);
+		eth_recv_t recv(void);
+		eth_recv_t recv(uint8_t *data, size_t *len);
 
 		void get_mac_src(l2addr * mac_src);
 		uint8_t * get_offset_payload(int offset);
-		int get_payload_length(void);
+		size_t get_payload_length(void);
 
 		void set_master_addr(l2addr * master_addr);
 		void set_mac(l2addr *mac_address);
@@ -45,6 +47,7 @@ class EthernetRaw {
 
 		void print_eth_addr (byte addr []);
 		void print_packet (byte pkt [], int len);
+		eth_recv_t check_received(void);
 };
 
 #endif

@@ -4,11 +4,12 @@
 #include "Arduino.h"
 #include "util.h"
 #include "defs.h"
+#include "enum.h"
+#include "option.h"
 #include "ethernetraw.h"
 #include "coap.h"
 #include "retransmit.h"
 #include "rmanager.h"
-#include "enum.h"
 #include "memory_free.h"
 
 

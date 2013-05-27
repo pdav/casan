@@ -5,12 +5,14 @@ extern l2addr_eth l2addr_eth_broadcast ;
 // TODO : set all variables
 Sos::Sos(l2addr *mac_addr, uint8_t uuid) 
 : _ttl(SOS_DEFAULT_TTL), _status(SL_COLDSTART), _uuid(uuid) {
-	_eth = new EthernetRaw();
 	_master_addr = NULL;
+	_current_message_id = 1;
+
+	_eth = new EthernetRaw();
 	_eth->set_master_addr(_master_addr);
 	_eth->set_mac(mac_addr);
 	_eth->set_ethtype((int) SOS_ETH_TYPE);
-	_current_message_id = 1;
+
 	_coap = new Coap(_eth);
 	_rmanager = new Rmanager();
 	_retransmition_handler = new Retransmit(_coap, &_master_addr);

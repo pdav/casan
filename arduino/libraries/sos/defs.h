@@ -50,4 +50,15 @@
 #define PRINT_DEBUG_STATIC(x) \
 	Serial.println(F(x));
 
+#define		BYTE_LOW(n)		((n) & 0xff)
+#define		BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
+#define FORMAT_BYTE0(ver,type,toklen)               \                                                                                                                                                                                      
+	(												\
+		 (((unsigned int) (ver) & 0x3) << 6) |		\                                   
+		 (((unsigned int) (type) & 0x3) << 4) |		\                                   
+		 (((unsigned int) (toklen) & 0x7))			\                                       
+	)                                                                           
+
+#define	OPTVAL(o)	((o)->optval_ ? (o)->optval_ : (o)->staticval_)
+
 #endif

@@ -24,11 +24,10 @@ Message & Message::operator=(const Message &m) {
 
 Message::~Message() {
 	if(_token != NULL)
-		free(_token);
+		delete _token;
 	if(_payload != NULL)
-		free(_payload);
-	if(_options != NULL)
-		free(_options);
+		delete _payload;
+	free_options();
 }
 
 uint8_t Message::get_type(void) {
@@ -41,70 +40,6 @@ uint8_t Message::get_code(void) {
 
 int Message::get_id(void) {
 	return _id;
-}
-
-char * Message::get_method_copy(void) {
-	uint8_t size;
-	char * name;
-	{
-		uint8_t * payload = get_payload();
-		uint8_t plen = get_payload_length();
-
-		while(size < plen && payload[size] != ' ') {
-			size++;
-		}
-	}
-
-	name = (char *) malloc(sizeof(char) * size +1);
-	memcpy(name, get_payload(), size);
-	name[size] = '\0';
-
-	return name;
-}
-
-uint8_t Message::get_method_id(void) {
-	char * type = get_method_copy();
-	uint8_t res;
-	// TODO
-	if(strcmp(type, "POST") == 0) {
-		res = COAP_METHOD_POST;
-	} else if(strcmp(type, "PUT") == 0) {
-		res = COAP_METHOD_PUT;
-	} else if(strcmp(type, "GET") == 0) {
-		res = COAP_METHOD_GET;
-	} else if(strcmp(type, "DELETE") == 0) {
-		res = COAP_METHOD_DELETE;
-	} else {
-		res = 0;
-	}
-	free(type);
-	return res;
-}
-
-char * Message::get_name_copy(void) {
-	uint8_t size;
-	// to avoid the method's name
-	uint8_t start;
-	char * name;
-	{
-		uint8_t * payload = get_payload();
-		uint8_t plen = get_payload_length();
-
-		while(size < plen && payload[size] != '?') {
-			size++;
-		}
-
-		while(start < plen && payload[start] != ' ') {
-			start++;
-		}
-	}
-	start++; // to take the space into account
-
-	name = (char *) malloc(sizeof(char) * size - start + 1);
-	memcpy(name, get_payload() + start, size - start);
-	name[size] = '\0';
-
-	return name;
 }
 
 uint8_t Message::get_token_length(void) {
@@ -135,18 +70,19 @@ uint8_t * Message::get_payload_copy(void) {
 	return copy;
 }
 
-uint8_t Message::get_options_length(void) {
-	return _options_length ;
-}
-
-uint8_t * Message::get_options(void) {
-	return _options;
-}
-
-uint8_t * Message::get_options_copy(void) {
-	uint8_t * copy = (uint8_t*) malloc(_options_length);
-	memcpy(copy, _options, _options_length);
-	return copy;
+// TODO : check
+option * Message::pop_option(void) {
+	option * res;
+	if(NULL == _opt_list) {
+		res = NULL;
+	}
+	else {
+		res = _opt_list->o;
+		opt_list_s * tmp = _opt_list->s;
+		delete _opt_list;
+		_opt_list = tmp;
+	}
+	return res;
 }
 
 void Message::set_type(uint8_t t) {
@@ -173,8 +109,96 @@ void Message::set_payload(uint8_t payload_length, uint8_t * payload) {
 	memcpy(_payload, payload, payload_length);
 }
 
-void Message::set_options(uint8_t options_length, uint8_t * options) {
-	_options_length = options_length;
-	_options = (uint8_t*) malloc(options_length);
-	memcpy(_options, options, options_length);
+// TODO : check
+void Message::push_option(option &o) {
+	opt_list_s * tmp = (opt_list_s*) malloc(sizeof(opt_list_s));
+	opt_list_s * tmp2 = _opt_list;
+	tmp->o = new option(o);
+	if(_opt_list == NULL) {
+		PRINT_DEBUG_STATIC("\033[32mpush_option : _opt_list == NULL\033[00m");
+		tmp->s = NULL;
+		_opt_list = tmp;
+	} else if(*(tmp->o) < *(_opt_list->o)) {
+		PRINT_DEBUG_STATIC("\033[32mpush_option : tmp->o < tmp2->o\033[00m");
+		tmp->s = _opt_list;
+		_opt_list = tmp;
+	} else {
+		opt_list_s * tmp3 = tmp2;
+		while(!(*(tmp->o) < *(tmp2->o)) && tmp2->s != NULL) {
+			PRINT_DEBUG_STATIC("boucle");
+			tmp3 = tmp2;
+			tmp2 = tmp2->s;
+		}
+		if(*(tmp->o) < *(tmp2->o)) {
+			PRINT_DEBUG_STATIC("\033[32mpush_option :\033[00m *(tmp->o) < *(tmp2->o)");
+			tmp3->s = tmp;
+			tmp->s = tmp2;
+		} else if(tmp2->s == NULL) {
+			PRINT_DEBUG_STATIC("\033[32mpush_option : \033[00mtmp2->s == NULL");
+			tmp2->s = tmp;
+			tmp->s = NULL;
+		} else {
+			PRINT_DEBUG_STATIC("\033[31merror push_option\033[00m");
+		}
+	}
+}
+
+// TODO : check
+void Message::free_options(void) {
+	while(_opt_list != NULL) {
+		PRINT_DEBUG_STATIC("free_options");
+		delete pop_option();
+	}
+}
+
+// TODO : check
+option * Message::get_option(void) {
+	static opt_list_s * ptr = _opt_list;
+	if(ptr == NULL) {
+		ptr = _opt_list;
+		return NULL;
+	}
+	opt_list_s * tmp = ptr;
+	ptr = ptr->s;
+	return tmp->o;
+}
+
+void Message::print(void) {
+	PRINT_FREE_MEM;
+	{
+		Serial.print(F("msg\tid = "));
+		Serial.println(get_id());
+		Serial.print(F("msg\ttype = "));
+		Serial.println(get_type());
+		/*
+		   Serial.print(F("msg\tversion = "));
+		   Serial.println(get_version());
+		   */
+		Serial.print(F("msg\ttoken_length = "));
+		Serial.println(get_token_length());
+		Serial.print(F("msg\ttoken = "));
+		uint8_t * token = get_token();
+		for(int i(0) ; i < get_token_length() ; i++)
+			Serial.print(token[i], HEX);
+		Serial.println();
+	}
+
+	{
+		Serial.print(F("msg\tpayload_length = "));
+		Serial.println(get_payload_length());
+		Serial.print(F("msg\tpayload = "));
+		uint8_t * payload = get_payload();
+		for(int i(0) ; i < get_payload_length() ; i++)
+			Serial.print(payload[i], HEX);
+		Serial.println();
+	}
+
+	{
+
+		option *o = NULL;
+		for(o = get_option() ; o != NULL ; o = get_option()) {
+			Serial.println(F("msg option\toptcode : "));
+		}
+	}
+
 }

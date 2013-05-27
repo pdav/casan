@@ -5,6 +5,7 @@
 #include "defs.h"
 #include "ethernetraw.h"
 #include "l2.h"
+#include "option.h"
 #include "message.h"
 
 
@@ -22,26 +23,26 @@ class Coap {
 
 		Coap(EthernetRaw *e);
 		~Coap();
+
 		uint8_t coap_available();
-		uint8_t fetch(void);
 		void send(l2addr &mac_addr_dest, Message &m);
 		uint8_t recv(Message &m);
 
+		// TODO : tests
+		// TODO : handle errors
+		bool encode (Message &m, uint8_t sbuf[], size_t &sbuflen);
+		bool decode (Message &m, uint8_t rbuf[], size_t rbuflen);
+
+		void get_mac_src(l2addr * mac_src);
+
+	private:
+
+		uint8_t fetch(void);
 		uint8_t get_type(void);
 		uint8_t get_code(void);
 		int get_id(void);
 		uint8_t get_token_length(void);
 		uint8_t * get_token(void);
-
-		// TODO / FIXME
-		uint8_t get_payload_length(void);
-		uint8_t * get_payload(void);
-		uint8_t get_options_length(void);
-		uint8_t * get_options(void);
-
-		void get_mac_src(l2addr * mac_src);
-
-	private:
 		uint8_t get_payload_offset(void);
 		EthernetRaw *_eth;
 };
