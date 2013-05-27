@@ -5,6 +5,7 @@
 #include "sos.h"
 #include <avr/wdt.h>
 
+
 Sos *sos;
 l2addr *mac_addr = new l2addr_eth("00:01:02:03:04:05");
 l2addr *mac_master = new l2addr_eth("00:22:68:32:10:f7");
