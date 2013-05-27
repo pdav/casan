@@ -24,9 +24,8 @@ class Coap {
 		Coap(EthernetRaw *e);
 		~Coap();
 
-		uint8_t coap_available();
 		void send(l2addr &mac_addr_dest, Message &m);
-		uint8_t recv(Message &m);
+		eth_recv_t recv(Message &m);
 
 		// TODO : tests
 		// TODO : handle errors
@@ -37,7 +36,6 @@ class Coap {
 
 	private:
 
-		uint8_t fetch(void);
 		uint8_t get_type(void);
 		uint8_t get_code(void);
 		int get_id(void);

@@ -9,7 +9,7 @@ typedef enum coap_request_method {
 } coap_req_meth_t;
 
 typedef enum coap_message_type {
-	COAP_TYPE_CON = 1,
+	COAP_TYPE_CON = 0,
 	COAP_TYPE_NON,
 	COAP_TYPE_ACK,
 	COAP_TYPE_RST

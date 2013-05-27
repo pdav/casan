@@ -97,36 +97,34 @@ void Sos::loop() {
 				Serial.println(F("coldstart loop"));
 				// TODO : we can check the coap recv return code
 				// if we want to know how it fails
-				while(_coap->coap_available()) {
-					if (_coap->recv(in) == 0 ) {
-						Serial.println(F("Recv message"));
-						uint8_t * payload = in.get_payload();
-						// FIXME : 
-						// I don't really know how the hello mes. will be sent
-						if(strncmp((const char*)payload, 
-									"POST /.well-known/sos?hello=", 
-									strlen("POST /.well-known/sos?hello=") 
-								  ) == 0) {
-							Serial.println(F("Recv HELLO"));
+				while(_coap->recv(in) == ETH_RECV_RECV_OK ) {
+					Serial.println(F("Recv message"));
+					uint8_t * payload = in.get_payload();
+					// FIXME : 
+					// I don't really know how the hello mes. will be sent
+					if(strncmp((const char*)payload, 
+								"POST /.well-known/sos?hello=", 
+								strlen("POST /.well-known/sos?hello=") 
+							  ) == 0) {
+						Serial.println(F("Recv HELLO"));
+						_master_addr = new l2addr_eth();
+						_coap->get_mac_src(_master_addr);
+						_current_message_id = in.get_id() + 1;
+						set_status(SL_WAITING_KNOWN);
+					} else if (strncmp((const char*) payload, 
+								"POST /.well-known/sos?associate=", 
+								strlen("POST /.well-known/sos?associate=")
+								) == 0) {
+						Serial.println(F("Recv ASSOC"));
+						// FIXME : maybe we should do some other tests
+						if(in.get_id() == _current_message_id) {
 							_master_addr = new l2addr_eth();
 							_coap->get_mac_src(_master_addr);
-							_current_message_id = in.get_id() + 1;
-							set_status(SL_WAITING_KNOWN);
-						} else if (strncmp((const char*) payload, 
-									"POST /.well-known/sos?associate=", 
-									strlen("POST /.well-known/sos?associate=")
-									) == 0) {
-							Serial.println(F("Recv ASSOC"));
-							// FIXME : maybe we should do some other tests
-							if(in.get_id() == _current_message_id) {
-								_master_addr = new l2addr_eth();
-								_coap->get_mac_src(_master_addr);
-								_current_message_id++;
-								set_status(SL_RUNNING);
-							}
-						} else {
-							Serial.println(F("Recv error"));
+							_current_message_id++;
+							set_status(SL_RUNNING);
 						}
+					} else {
+						Serial.println(F("Recv error"));
 					}
 				}
 				time_to_wait = 
@@ -154,8 +152,7 @@ void Sos::loop() {
 
 		case SL_RUNNING :
 			// TODO
-			if(_coap->coap_available()) {
-				_coap->recv(in);
+			if( _coap->recv(in) == ETH_RECV_RECV_OK) {
 				Serial.println(F("On vient de fetch"));
 			}
 			if(in.get_type() == COAP_TYPE_ACK) {

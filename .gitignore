@@ -1,0 +1,15 @@
+.*
+*/*.[ao]
+*/*/*.[ao]
+*.swp
+*/build-cli/
+*/*/build-cli/
+*/*/*/build-cli/
+*/build-uno/
+*/*/build-uno/
+*/*/*/build-uno/
+send
+recv
+*.out
+*/*.out
+*/*/*.out

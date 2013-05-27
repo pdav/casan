@@ -65,12 +65,12 @@ uint8_t * Message::get_payload(void) {
 }
 
 uint8_t * Message::get_payload_copy(void) {
-	uint8_t * copy = (uint8_t*) malloc(_payload_length);
+	uint8_t * copy = (uint8_t*) malloc(_payload_length +1);
 	memcpy(copy, _payload, _payload_length);
+	copy[_payload_length] = '\0';
 	return copy;
 }
 
-// TODO : check
 option * Message::pop_option(void) {
 	option * res;
 	if(NULL == _opt_list) {
@@ -105,27 +105,24 @@ void Message::set_token(uint8_t token_length, uint8_t *token){
 
 void Message::set_payload(uint8_t payload_length, uint8_t * payload) {
 	_payload_length = payload_length;
+	if(_payload != NULL)
+		free(_payload);
 	_payload = (uint8_t*) malloc(payload_length);
 	memcpy(_payload, payload, payload_length);
 }
 
-// TODO : check
 void Message::push_option(option &o) {
 	opt_list_s * tmp = (opt_list_s*) malloc(sizeof(opt_list_s));
 	opt_list_s * tmp2 = _opt_list;
 	tmp->o = new option(o);
-	if(_opt_list == NULL) {
-		PRINT_DEBUG_STATIC("\033[32mpush_option : _opt_list == NULL\033[00m");
-		tmp->s = NULL;
-		_opt_list = tmp;
-	} else if(*(tmp->o) < *(_opt_list->o)) {
-		PRINT_DEBUG_STATIC("\033[32mpush_option : tmp->o < tmp2->o\033[00m");
+	if(_opt_list == NULL || *(tmp->o) < *(tmp2->o)) {
+		PRINT_DEBUG_STATIC("\033[33mpush_option : _opt_list == NULL || *(tmp->o) < *(tmp2->o)\033[00m");
 		tmp->s = _opt_list;
 		_opt_list = tmp;
 	} else {
 		opt_list_s * tmp3 = tmp2;
-		while(!(*(tmp->o) < *(tmp2->o)) && tmp2->s != NULL) {
-			PRINT_DEBUG_STATIC("boucle");
+		while((!(*(tmp->o) < *(tmp2->o))) && tmp2->s != NULL) {
+			PRINT_DEBUG_STATIC("\033[33m	boucle\033[00m");
 			tmp3 = tmp2;
 			tmp2 = tmp2->s;
 		}
@@ -143,7 +140,6 @@ void Message::push_option(option &o) {
 	}
 }
 
-// TODO : check
 void Message::free_options(void) {
 	while(_opt_list != NULL) {
 		PRINT_DEBUG_STATIC("free_options");
@@ -151,54 +147,70 @@ void Message::free_options(void) {
 	}
 }
 
-// TODO : check
 option * Message::get_option(void) {
-	static opt_list_s * ptr = _opt_list;
-	if(ptr == NULL) {
-		ptr = _opt_list;
-		return NULL;
+	option * o ;
+	if (! _current_opt_list_is_initialized) {
+		_current_opt_list = _opt_list;
+		_current_opt_list_is_initialized = true ;
 	}
-	opt_list_s * tmp = ptr;
-	ptr = ptr->s;
-	return tmp->o;
+	if (_current_opt_list == NULL) {
+		o = NULL ;
+		_current_opt_list_is_initialized = false ;
+	} else {
+		o = _current_opt_list->o;
+		_current_opt_list = _current_opt_list->s;
+
+	}
+	return o;
 }
 
 void Message::print(void) {
-	PRINT_FREE_MEM;
 	{
-		Serial.print(F("msg\tid = "));
-		Serial.println(get_id());
-		Serial.print(F("msg\ttype = "));
-		Serial.println(get_type());
+		Serial.print(F("\033[36mmsg\033[00m\tid="));
+		Serial.print(get_id());
+		Serial.print(F("  type="));
+		switch(get_type()) {
+			case COAP_TYPE_CON : Serial.print("CON"); break;
+			case COAP_TYPE_NON : Serial.print("NON"); break;
+			case COAP_TYPE_ACK : Serial.print("ACK"); break;
+			case COAP_TYPE_RST : Serial.print("RST"); break;
+			default : Serial.print("\033[31mERROR\033[00m");
+		}
+		Serial.print(F("  code="));
+		Serial.print(get_code() >> 5, HEX);
+		Serial.print(".");
+		Serial.print(get_code() & 0x1f, HEX);
 		/*
 		   Serial.print(F("msg\tversion = "));
 		   Serial.println(get_version());
 		   */
-		Serial.print(F("msg\ttoken_length = "));
-		Serial.println(get_token_length());
-		Serial.print(F("msg\ttoken = "));
-		uint8_t * token = get_token();
-		for(int i(0) ; i < get_token_length() ; i++)
-			Serial.print(token[i], HEX);
-		Serial.println();
-	}
+		Serial.print(F("  token_length="));
+		Serial.print(get_token_length());
 
-	{
-		Serial.print(F("msg\tpayload_length = "));
-		Serial.println(get_payload_length());
-		Serial.print(F("msg\tpayload = "));
-		uint8_t * payload = get_payload();
-		for(int i(0) ; i < get_payload_length() ; i++)
-			Serial.print(payload[i], HEX);
-		Serial.println();
-	}
-
-	{
-
-		option *o = NULL;
-		for(o = get_option() ; o != NULL ; o = get_option()) {
-			Serial.println(F("msg option\toptcode : "));
+		if(get_token_length() > 0) {
+			Serial.print(F("  token="));
+			uint8_t * token = get_token();
+			for(int i(0) ; i < get_token_length() ; i++)
+				Serial.print(token[i], HEX);
+			Serial.println();
 		}
 	}
 
+	{
+		Serial.print(F("  payload_length="));
+		Serial.print(get_payload_length());
+		if(get_payload_length() > 0) {
+			Serial.print(F("  payload="));
+			uint8_t * pcopy = get_payload_copy();
+			Serial.print((char*)pcopy);
+			free(pcopy);
+		}
+		Serial.println();
+	}
+
+	{
+		for(option *o = get_option() ; o != NULL ; o = get_option()) {
+			o->print();
+		}
+	}
 }

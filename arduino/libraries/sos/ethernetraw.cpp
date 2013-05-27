@@ -28,8 +28,8 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 	int sbuflen;
 	size_t reste;
 
-	reste = BUFFER_SIZE < len ? len - BUFFER_SIZE - OFFSET_DATA: 0;
-	sbuflen = BUFFER_SIZE < len + OFFSET_DATA ? BUFFER_SIZE : len + OFFSET_DATA;
+	reste = ETH_MAX_SIZE < len ? len - ETH_MAX_SIZE - OFFSET_DATA: 0;
+	sbuflen = ETH_MAX_SIZE < len + OFFSET_DATA ? ETH_MAX_SIZE : len + OFFSET_DATA;
 	sbuf = (byte*) malloc(sbuflen);
 
 	memcpy(sbuf + OFFSET_DEST_ADDR, m->get_raw_addr(), 6);
@@ -66,7 +66,7 @@ eth_recv_t EthernetRaw::recv(void) {
 }
 
 eth_recv_t EthernetRaw::recv(uint8_t *data, size_t *len) {
-	PRINT_DEBUG_STATIC("Recv !");
+	size_t l ;
 	if ( available() ) {
 		eth_recv_t ret = check_received();
 
@@ -74,35 +74,36 @@ eth_recv_t EthernetRaw::recv(uint8_t *data, size_t *len) {
 			return ret;
 		}
 
-		if(data != NULL) {
-			*len = get_payload_length();
-			memcpy(data, _rbuf + OFFSET_RECEPTION + OFFSET_DATA, *len);
-		}
-	} else {
-		return ETH_RECV_EMPTY;
+		l = get_payload_length() ;
+		if (len != NULL)
+			*len = l ;
+		if(data != NULL)
+			memcpy(data, _rbuf + OFFSET_RECEPTION + OFFSET_DATA, l);
+		return ETH_RECV_RECV_OK;
 	}
-	return ETH_RECV_RECV_OK;
+	return ETH_RECV_EMPTY;
 }
 
 eth_recv_t EthernetRaw::check_received(void) {
 	W5100.recv_data_processing(_s, _rbuf, _rbuflen);
 	W5100.execCmdSn(_s, Sock_RECV);
+	recv_len_above_threshold = false;
 	// There is an offset in the reception (2 bytes, see the w5100 datasheet)
 	byte * packet = _rbuf + OFFSET_RECEPTION;
 	// we check the source address (only the master must send informations)
 	// TODO : we don't use it for now, but we will use this feature later
 	if(_master_addr != NULL && *_master_addr != packet + OFFSET_SRC_ADDR ) {
-		PRINT_DEBUG_STATIC("Recv : ne provient pas du master");
+		PRINT_DEBUG_STATIC("\033[31m\tRecv : don't come from master\033[00m");
 		return ETH_RECV_WRONG_SENDER;
 	}
 	// we check the destination address
 	if( *_mac_addr != (packet +OFFSET_DEST_ADDR)) {
-		PRINT_DEBUG_STATIC("Recv : ne nous est pas destiné");
+		Serial.print(F("\033[36m\tRecv : not explicitly for us\033[00m"));
 		if(l2addr_eth_broadcast != (packet + OFFSET_DEST_ADDR)) {
-			PRINT_DEBUG_STATIC("\033[31m Recv : not even broadcast \033[00m");
+			PRINT_DEBUG_STATIC("\033[31m : not even broadcast\033[00m");
 			return ETH_RECV_WRONG_DEST;
 		}
-		PRINT_DEBUG_STATIC("\033[32m Recv : broadcast = ok \033[00m ");
+		PRINT_DEBUG_STATIC("\033[32m : broadcast\033[00m ");
 	}
 	// we check the ethernet type
 
@@ -111,14 +112,21 @@ eth_recv_t EthernetRaw::check_received(void) {
 		uint8_t b = *(packet + OFFSET_ETHTYPE + 1);
 		if( a != (uint8_t) (_eth_type >> 8) || 
 				b != (uint8_t) (_eth_type & 0xFF)) {
-			PRINT_DEBUG_STATIC("\033[31m Recv : ethtype\033[00m, received : ");
-			Serial.println(a, HEX);
-			Serial.println(b, HEX);
+			// DEBUG
+			// Serial.print(F("\033[31m\tRecv : ethtype\033[00m, received : \033[31m"));
+			// Serial.print(a, HEX);
+			// Serial.print(" ");
+			// Serial.println(b, HEX);
+			// Serial.print("\033[00m");
 			return ETH_RECV_WRONG_ETHTYPE;
 		}
 	}
-	//PRINT_DEBUG_STATIC("Reçoi : ");
-	//print_packet(packet, _rbuflen);
+	// PRINT_DEBUG_STATIC("Received : ");
+	// print_packet(packet, get_payload_length());
+	if(get_payload_length() > ETH_MAX_SIZE) {
+		recv_len_above_threshold = true;
+		_rbuflen = ETH_MAX_SIZE;
+	}
 	return ETH_RECV_RECV_OK;
 }
 
@@ -129,16 +137,13 @@ void EthernetRaw::get_mac_src(l2addr * mac_src) {
 
 uint8_t * EthernetRaw::get_offset_payload(int offset) {
 	uint8_t off = OFFSET_RECEPTION + OFFSET_DATA + offset;
-	//Serial.print(F("OFFSET : "));
-	//Serial.println(off);
 	return _rbuf + off;
 }
 
 // we add 2 bytes to know the real payload
 size_t EthernetRaw::get_payload_length(void) {
 	size_t rlen = 0;
-	// memcpy(&rlen, _rbuf + OFFSET_SIZE, 2);
-	rlen = *(_rbuf + OFFSET_RECEPTION + OFFSET_SIZE) << 8 & 0xFF00;
+	rlen = (*(_rbuf + OFFSET_RECEPTION + OFFSET_SIZE) << 8) & 0xFF00;
 	rlen = rlen | (*(_rbuf + OFFSET_RECEPTION + OFFSET_SIZE + 1) & 0xFF);
 	return rlen;
 }
@@ -152,14 +157,6 @@ void EthernetRaw::set_master_addr(l2addr * master_addr) {
 void EthernetRaw::set_mac(l2addr *mac_address) {
 	_mac_addr = (l2addr_eth *) mac_address;
 	W5100.setMACAddress(_mac_addr->get_raw_addr());
-	/*
-	   Serial.print(F("mac : "));
-	   for(int i = 0 ; i < 6 ; i++)
-	   {
-	   Serial.print(_mac_addr[i]);
-	   }
-	   Serial.println();
-	   */
 }
 
 void EthernetRaw::set_ethtype(int eth_type) {
@@ -193,7 +190,7 @@ void EthernetRaw::print_packet (byte pkt [], int len) {
 
 	Serial.print (" ") ;
 
-	for (int z = 0 ; z < 10 ; z++)
+	for (int z = 0 ; z < len ; z++)
 	{
 		Serial.print (' ') ;
 		Serial.print (pkt [z + OFFSET_ETHTYPE + 2], HEX) ;

@@ -3,6 +3,7 @@
 
 #include "message.h"
 #include "coap.h"
+#include "option.h"
 
 typedef struct _rmanager_s {
 	uint8_t (*h)(Message &in, Message &out);

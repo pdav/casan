@@ -8,6 +8,9 @@
 #define OPT_ERR_OPTLEN		2
 #define OPT_ERR_RST			0
 
+// this should be the number of enums in optcode_t
+#define	MAXOPT				14
+
 /*
  * Option
  */
@@ -57,11 +60,14 @@ class option
 	void optcode (optcode_t c) ;
 	void optval (void *v, int len) ;
 	void optval (uint v) ;
+	void print(void);
+
+	static void reset_errno(void);
 
     protected:
-	optcode_t optcode_ ;
-	int optlen_ ;
-	byte *optval_ ;			// 0 if staticval is used
+	optcode_t optcode_ = MO_None;
+	int optlen_ = 0;
+	byte *optval_ = NULL;			// 0 if staticval is used
 	byte staticval_ [8 + 1] ;	// keep a \0 after, just in case
 
     private:
@@ -69,12 +75,13 @@ class option
 	    				OF_EMPTY, OF_UINT } optfmt_t ;
 	struct optdesc
 	{
+		optcode_t code;
 	    optfmt_t format ;
 	    int minlen ;
 	    int maxlen ;
 	} ;
-	static optdesc *optdesc_ ;
-	static uint8_t errno_ ;
+	static optdesc *optdesc_;
+	static uint8_t errno_;
 
 	void static_init (void) ;
 

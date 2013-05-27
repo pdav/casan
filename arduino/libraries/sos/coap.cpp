@@ -9,23 +9,10 @@ Coap::~Coap(void) {
 }
 
 void Coap::send(l2addr &mac_addr_dest, Message &m) {
-	uint8_t sbuf[BUFFER_SIZE] = {0};
+	uint8_t sbuf[ETH_MAX_SIZE] = {0};
 	size_t sbuflen(0);
 	encode(m, sbuf, sbuflen);
 	_eth->send( mac_addr_dest, sbuf, sbuflen);
-}
-
-// mac_addr of the master or broadcast, the message we get
-uint8_t Coap::recv(Message &m) {
-	uint8_t ret = fetch();
-	if(ret != 0)
-		return ret;
-	decode(m, _eth->get_offset_payload(0), (size_t) _eth->get_payload_length());
-	return 0;
-}
-
-uint8_t Coap::coap_available() {
-	return _eth->available(); // returns the payload
 }
 
 /*
@@ -34,8 +21,12 @@ uint8_t Coap::coap_available() {
  * returns 3 if it's the wrong eth type
  * return 0 if ok
  */
-uint8_t Coap::fetch() {
-	return _eth->recv(); 
+eth_recv_t Coap::recv(Message &m) {
+	eth_recv_t ret = _eth->recv();
+	if(ret == ETH_RECV_RECV_OK)
+		decode(m, _eth->get_offset_payload(0), 
+				_eth->get_payload_length() - 2);
+	return ret;
 }
 
 uint8_t Coap::get_type(void) {
@@ -47,8 +38,8 @@ uint8_t Coap::get_code(void) {
 }
 
 int Coap::get_id(void) {
-	int ret;
-	memcpy(&ret, _eth->get_offset_payload(COAP_OFFSET_ID), 2);
+	uint8_t *idp = _eth->get_offset_payload(COAP_OFFSET_ID);
+	int ret = ((*(idp) & 0xff) << 8) | (*(idp+1) & 0xff);
 	return ret;
 }
 
@@ -71,15 +62,18 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 	m.set_id(get_id());
 	m.set_token(get_token_length(), get_token());
 
-	bool success ;
+	// DEBUG
+	// Serial.print ("rbuflen = ") ;
+	// Serial.print (rbuflen) ;
+	// Serial.println () ;
+
+	bool success(true);
 
 	int i ;
-	int opt_nb ;
-	rbuflen = _eth->get_payload_length();
-	int paylen_;
+	int opt_nb(0);
+	int paylen_(0);
 
-	success = true ;
-	i = 6 + get_token_length();
+	i = 4 + get_token_length();
 
 	/*
 	 * Options analysis
@@ -88,8 +82,16 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 	opt_nb = 0 ;
 	while (success && i < rbuflen && rbuf [i] != 0xff)
 	{
-		int opt_delta, opt_len ;
+		int opt_delta(0), opt_len(0) ;
 		option o ;
+
+		Serial.print ("rbuflen = ") ;
+		Serial.print (rbuflen) ;
+		Serial.print (", i = ") ;
+		Serial.print (i) ;
+
+		Serial.print (", OPT: ") ;
+		Serial.print (rbuf [i], HEX) ; Serial.println () ;
 
 		opt_delta = (rbuf [i] >> 4) & 0x0f ;
 		opt_len   = (rbuf [i]     ) & 0x0f ;
@@ -128,34 +130,59 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 		/* register option */
 		if (success)
 		{
-			Serial.print(F("OPTION opt=")); 
-			Serial.print(opt_nb); 
-			Serial.print(F(", len="));
-			Serial.println(opt_len);
+			// DEBUG
+			// {
+			//     char *buf = (char*) malloc(opt_len +1);
+			//     memcpy(buf, rbuf+i,opt_len);
+			//     buf[opt_len] = '\0';
+
+			//     Serial.print(F("\t\t\033[33mOPTION optnb\033[00m=")); 
+			//     Serial.print(opt_nb); 
+			//     Serial.print(F(", \033[33mlen\033[00m="));
+			//     Serial.print(opt_len);
+			//     Serial.print(F("  \033[33mval\033[00m="));
+			//     Serial.println(buf);
+			//     free (buf) ;
+			// }
+
 			o.optcode (option::optcode_t (opt_nb)) ;
-			o.optval ((void *)(rbuf + i), opt_len) ;
+			o.optval ((void *)(rbuf + i), (int)opt_len) ;
 			m.push_option (o) ;
 
 			i += opt_len ;
 		}
 		else
-			PRINT_DEBUG_STATIC ("OPTION unrecognized") ;
-
-		paylen_ = rbuflen - i - 1 ;
-		if (success && paylen_ > 0)
-		{
-			if (rbuf [i] != 0xff)
-			{
-				success = false ;
-			}
-			else
-			{
-				i++ ;
-				m.set_payload(paylen_, rbuf + i);
-			}
-		}
-		else paylen_ = 0 ;			// protect further operations
+			PRINT_DEBUG_STATIC ("\033[31mOPTION unrecognized\033[00m") ;
 	}
+
+	paylen_ = rbuflen - i - 1 ;
+	if (success && paylen_ > 0)
+	{
+		if (rbuf [i] != 0xff)
+		{
+			success = false ;
+		}
+		else
+		{
+			i++ ;
+
+			// DEBUG
+			// {
+			// 	char *buf = (char*) malloc(sizeof(char) * paylen_ + 1);
+			// 	memcpy(buf, rbuf + i, paylen_);
+			// 	buf[paylen_] = '\0';
+
+			// 	Serial.print(F("\033[33mWe have a payload, len : \033[00m"));
+			// 	Serial.print(paylen_);
+			// 	Serial.print(F(" \033[36mcontent \033[00m: "));
+			// 	Serial.println(buf);
+			// 	free(buf);
+			// }
+
+			m.set_payload(paylen_, rbuf + i);
+		}
+	}
+	else paylen_ = 0 ;			// protect further operations
 
 	return success ;
 }
@@ -173,10 +200,10 @@ bool Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen) {
 		uint8_t payload_offset = 0;
 		payload_offset = m.get_token_length() + (4 - (m.get_token_length() % 4));
 		/*
-		sbuf[COAP_OFFSET_TOKEN + payload_offset] = 0xFF;
-		memcpy(sbuf + COAP_OFFSET_TOKEN + payload_offset + 1, 
-				m.get_payload(), (unsigned int) m.get_payload_length());
-				*/
+		   sbuf[COAP_OFFSET_TOKEN + payload_offset] = 0xFF;
+		   memcpy(sbuf + COAP_OFFSET_TOKEN + payload_offset + 1, 
+		   m.get_payload(), (unsigned int) m.get_payload_length());
+		   */
 	}
 
 	int i ;

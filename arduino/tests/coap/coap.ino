@@ -39,27 +39,29 @@ void setup() {
 void test_coap(void) {
 	Message in;
 	Message out;
-	while(coap->coap_available()) {
-		PRINT_DEBUG_STATIC("Recv ? ");
-		if (coap->recv(in) == 0 ) {
-			PRINT_DEBUG_STATIC("Recv message, payload : ");
-			PRINT_DEBUG_DYNAMIC((char *)in.get_payload());
-			PRINT_DEBUG_STATIC("token : ");
-			PRINT_DEBUG_DYNAMIC((char *)in.get_token());
-			/*
-			PRINT_DEBUG_STATIC("option : ");
-			PRINT_DEBUG_DYNAMIC(in.get_options());
-			*/
-		}
+	enum eth_recv r ;
+	int n ;
+
+	n = 0 ;
+	while((r = coap->recv(in)) != ETH_RECV_EMPTY) {
+		n++ ;
+		if (r == ETH_RECV_RECV_OK)
+			in.print();
+	}
+	if (n > 0)
+	{
+		Serial.print (n) ;
+		Serial.println (" msg absorbed") ;
 	}
 }
 
 void loop() {
-	PRINT_DEBUG_STATIC("\033[36m\tloop \033[00m ");
+	// Serial.print(F("\033[36m\tloop \033[00m "));
 	// to check if we have memory leak
 	PRINT_FREE_MEM;
 
 	test_coap();
 
-	delay(1000);
+	// delay(1000);
+	delay(500);
 }

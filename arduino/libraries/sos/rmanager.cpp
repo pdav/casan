@@ -7,7 +7,8 @@ Rmanager::~Rmanager() {
 	reset();
 }
 
-void Rmanager::add_resource(char *name, uint8_t (*handler)(Message &in, Message &out)) {
+void Rmanager::add_resource(char *name, 
+		uint8_t (*handler)(Message &in, Message &out)) {
 	rmanager_s * newresource = (rmanager_s *) malloc(sizeof(rmanager_s));
 	newresource->name = (char *) malloc(strlen(name) + 1);
 	memcpy(newresource->name, name, strlen(name) + 1);
@@ -49,18 +50,6 @@ uint8_t Rmanager::request_resource(Message &in, Message &out) {
 
 // TODO
 rmanager_s * Rmanager::get_resource_instance(Message &in) {
-	char *name = in.get_name_copy();
-	// TODO : get the resource name
-
-	rmanager_s * tmp = _resources;
-	while(tmp != NULL) {
-		if(strcmp(tmp->name, name) == 0) {
-			free(name);
-			return tmp;
-		}
-		tmp = tmp->s;
-	}
-	free(name);
 	return NULL;
 }
 

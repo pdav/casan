@@ -7,7 +7,7 @@
 #include "enum.h"
 #include "memory_free.h"
 
-#define		BUFFER_SIZE			127
+#define		ETH_MAX_SIZE		127
 #define		OFFSET_DEST_ADDR	(0)
 #define		OFFSET_SRC_ADDR		(6)
 #define		OFFSET_ETHTYPE		(12)
@@ -42,8 +42,9 @@ class EthernetRaw {
 		l2addr_eth *_mac_addr = NULL;
 		l2addr_eth *_master_addr = NULL;	// l2 network this slave is on
 		int _eth_type;
-		byte _rbuf[BUFFER_SIZE]; // receive buffer
+		byte _rbuf[ETH_MAX_SIZE]; // receive buffer
 		int _rbuflen; // length of data received
+		bool recv_len_above_threshold = false;
 
 		void print_eth_addr (byte addr []);
 		void print_packet (byte pkt [], int len);

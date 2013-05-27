@@ -1,8 +1,0 @@
-.*
-*.o
-*.swp
-*/build-cli/
-*/*/build-cli/
-send
-recv
-*.out

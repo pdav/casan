@@ -69,6 +69,8 @@ class Message {
 		uint8_t _options_length = 0;
 		uint8_t *_options = NULL;
 		opt_list_s * _opt_list = NULL;	// the option's list
+		opt_list_s * _current_opt_list = NULL ;	// position in opt list
+		bool _current_opt_list_is_initialized = false ;
 };
 
 #endif
