@@ -4,15 +4,10 @@
 #include <list>
 #include <chrono>
 
-#include "defs.h"
-#include "sos.h"
-#include "l2.h"
+#include "coap.h"
 #include "option.h"
 
-class msg ;
 class slave ;
-
-typedef void (*reply_handler_t) (msg *request, msg *reply) ;
 
 /*
  * Message encoder/decoder
@@ -84,7 +79,7 @@ class msg
 
 	reply_handler_t handler_ ;
 
-	friend class engine ;
+	friend class sos ;
 
     private:
 	// Formatted message, as it appears on the cable/over the air

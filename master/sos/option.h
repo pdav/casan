@@ -1,9 +1,6 @@
 #ifndef SOS_OPTION_H
 #define SOS_OPTION_H
 
-#include "defs.h"
-#include "sos.h"
-
 /*
  * Option
  */

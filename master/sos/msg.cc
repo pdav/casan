@@ -2,7 +2,8 @@
 #include <cstring>
 #include <cstdio>
 
-#include "defs.h"
+#include "global.h"
+
 #include "sos.h"
 #include "l2.h"
 #include "msg.h"

@@ -1,5 +1,5 @@
-#ifndef SOS_ENGINE_H
-#define	SOS_ENGINE_H
+#ifndef SOS_SOS_H
+#define	SOS_SOS_H
 
 #include <list>
 
@@ -7,20 +7,21 @@
 #include <mutex>
 #include <condition_variable>
 
-#include "sos.h"
-#include "l2.h"
 #include "slave.h"
-#include "msg.h"
 
 typedef long int slavettl_t ;
 
+class msg ;
+class slave ;
+class l2net ;
+
 struct receiver ;
 
-class engine
+class sos
 {
     public:
-	engine () ;
-	~engine () ;
+	sos () ;
+	~sos () ;
 
 	// start sender thread
 	void init (void) ;

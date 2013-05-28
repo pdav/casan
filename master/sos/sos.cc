@@ -26,11 +26,12 @@
 // don't define NDEBUG
 #include <cassert>
 
-#include "engine.h"
-#include "sos.h"
+#include "global.h"
 #include "utils.h"
 
-#include "defs.h"
+#include "l2.h"
+#include "msg.h"
+#include "sos.h"
 
 struct receiver
 {
@@ -49,34 +50,34 @@ struct receiver
  * Constructor and destructor
  */
 
-engine::engine ()
+sos::sos ()
 {
     tsender_ = NULL ;
 }
 
-engine::~engine ()
+sos::~sos ()
 {
     rlist_.clear () ;
     slist_.clear () ;
     mlist_.clear () ;
 }
 
-void engine::init (void)
+void sos::init (void)
 {
     std::srand (std::time (0)) ;
 
     if (tsender_ == NULL)
     {
-	tsender_ = new std::thread (&engine::sender_thread, this) ;
+	tsender_ = new std::thread (&sos::sender_thread, this) ;
     }
 }
 
-void engine::ttl (slavettl_t t)
+void sos::ttl (slavettl_t t)
 {
     ttl_ = t ;
 }
 
-slavettl_t engine::ttl (void)
+slavettl_t sos::ttl (void)
 {
     return ttl_ ;
 }
@@ -88,7 +89,7 @@ slavettl_t engine::ttl (void)
  * - notifiy the sender thread in order to create a new receiver thread
  */
 
-void engine::start_net (l2net *l2)
+void sos::start_net (l2net *l2)
 {
     if (tsender_ != NULL)
     {
@@ -121,7 +122,7 @@ void engine::start_net (l2net *l2)
     }
 }
 
-void engine::stop_net (l2net *l2)
+void sos::stop_net (l2net *l2)
 {
     std::cout << sizeof *l2 << "\n" ;	// calm down -Wall
 }
@@ -133,7 +134,7 @@ void engine::stop_net (l2net *l2)
  * - (no need to notify the sender thread)
  */
 
-void engine::add_slave (slave *s)
+void sos::add_slave (slave *s)
 {
     std::lock_guard <std::mutex> lk (mtx_) ;
 
@@ -145,7 +146,7 @@ void engine::add_slave (slave *s)
  * Add a new message to send
  */
 
-void engine::add_request (msg *m)
+void sos::add_request (msg *m)
 {
     std::lock_guard <std::mutex> lk (mtx_) ;
 
@@ -161,7 +162,7 @@ void engine::add_request (msg *m)
  * - a new request is added (from an exterior thread)
  */
 
-void engine::sender_thread (void)
+void sos::sender_thread (void)
 {
     std::unique_lock <std::mutex> lk (mtx_) ;
     timepoint_t now, next_timeout ;
@@ -213,7 +214,7 @@ void engine::sender_thread (void)
 	    if (ri->thr == NULL)
 	    {
 		D ("Found a receiver to start") ;
-		ri->thr = new std::thread (&engine::receiver_thread, this, &*ri) ;
+		ri->thr = new std::thread (&sos::receiver_thread, this, &*ri) ;
 	    }
 
 	    // is it time to send a new hello ?
@@ -313,7 +314,7 @@ void engine::sender_thread (void)
  * Block on packet reception on the given interface
  */
 
-bool engine::find_peer (msg *m, l2addr *a, receiver *r)
+bool sos::find_peer (msg *m, l2addr *a, receiver *r)
 {
     bool found ;
 
@@ -376,7 +377,7 @@ bool engine::find_peer (msg *m, l2addr *a, receiver *r)
  * for a request message with this id.
  */
 
-msg *engine::correlate (msg *m)
+msg *sos::correlate (msg *m)
 {
     msg::msgtype mt ;
     msg *orgmsg ;
@@ -422,7 +423,7 @@ msg *engine::correlate (msg *m)
     return orgmsg ;
 }
 
-void engine::clean_deduplist (receiver *r)
+void sos::clean_deduplist (receiver *r)
 {
     std::list <msg *>::iterator di ;
     timepoint_t now ;
@@ -452,7 +453,7 @@ void engine::clean_deduplist (receiver *r)
  * the reqrep method), send it back again
  */
 
-msg *engine::deduplicate (receiver *r, msg *m)
+msg *sos::deduplicate (receiver *r, msg *m)
 {
     msg::msgtype mt ;
     msg *orgmsg ;
@@ -490,7 +491,7 @@ msg *engine::deduplicate (receiver *r, msg *m)
     return orgmsg ;
 }
 
-void engine::receiver_thread (receiver *r)
+void sos::receiver_thread (receiver *r)
 {
     for (;;)
     {

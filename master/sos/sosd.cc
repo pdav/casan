@@ -4,15 +4,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "global.h"
+
 #include "l2.h"
 #include "l2eth.h"
-#include "engine.h"
+#include "sos.h"
 
 int main (int argc, char *argv [])
 {
     l2net *l ;
     slave s ;				// slave
-    engine e ;
+    sos e ;
 
     // start SOS engine machinery
     e.ttl (DEFAULT_SLAVE_TTL) ;

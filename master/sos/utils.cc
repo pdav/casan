@@ -1,7 +1,8 @@
 #include <chrono>
 #include <cstdlib>
 
-#include "sos.h"
+#include "global.h"
+
 #include "utils.h"
 
 /******************************************************************************

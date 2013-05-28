@@ -1,14 +1,10 @@
 #ifndef SOS_SLAVE_H
 #define	SOS_SLAVE_H
 
-#include <mutex>
-
-#include "sos.h"
-#include "l2.h"
-#include "msg.h"
-
-class engine ;
+class sos ;
 class msg ;
+class l2net ;
+class l2addr ;
 
 class slave
 {
@@ -33,7 +29,7 @@ class slave
 	slaveid_t slaveid (void) ;
 
 	// SOS protocol handling
-	void process_sos (engine *e, msg *m) ;
+	void process_sos (sos *e, msg *m) ;
 
 	void handler (reply_handler_t h) ;// handler for incoming requests
 
@@ -46,7 +42,7 @@ class slave
 	enum status status_ ;		// current status of slave
 	reply_handler_t handler_ ;	// handler to process answers
 
-	friend class engine ;
+	friend class sos ;
 
     private:
 	l2net *l2_ ;			// l2 network this slave is on

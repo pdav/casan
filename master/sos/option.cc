@@ -1,7 +1,8 @@
 #include <iostream>
 #include <cstring>
 
-#include "defs.h"
+#include "global.h"
+
 #include "sos.h"
 #include "option.h"
 #include "utils.h"

@@ -1,3 +1,4 @@
+#include "global.h"
 #include "l2.h"
 
 int l2net::mtu (void)

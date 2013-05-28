@@ -5,10 +5,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include "global.h"
+
 #include "l2.h"
 #include "l2eth.h"
-#include "engine.h"
-#include "defs.h"
+#include "msg.h"
+#include "sos.h"
 
 #define IFACE		"eth0"
 // #define ADDR		"90:a2:da:80:0a:d4"		// arduino

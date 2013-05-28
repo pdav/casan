@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "global.h"
+
 #include "l2.h"
 #include "l2eth.h"
-
-#include "defs.h"
 
 /******************************************************************************
  * l2addr_eth methods

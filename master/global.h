@@ -1,17 +1,22 @@
-#ifndef	SOS_SOS_H
-#define	SOS_SOS_H
+#ifndef	GLOBAL_H
+#define	GLOBAL_H
 
 #include <chrono>
+
+// number of elements in an array
+#define NTAB(t)		(int (sizeof (t)/sizeof (t)[0]))
+
 
 #define	MAXBUF		1024
 
 typedef unsigned char byte ;
 typedef unsigned int uint32 ;
 
-// ME:          packet addressed to me
-// BCAST:       packet broadcasted
-// NONE:        not a packet (or not for me)
-typedef enum pktype { PK_ME, PK_BCAST, PK_NONE } pktype_t ;
+typedef long int slaveid_t ;
+typedef long int slavettl_t ;
+
+typedef	std::chrono::system_clock::time_point timepoint_t ;
+typedef std::chrono::milliseconds duration_t ;
 
 // delays (in milliseconds)
 #define	INTERVAL_HELLO		10000
@@ -19,15 +24,11 @@ typedef enum pktype { PK_ME, PK_BCAST, PK_NONE } pktype_t ;
 
 #define	DEFAULT_SLAVE_TTL	3600000			// 1 hour
 
-typedef long int slaveid_t ;
-
-typedef long int slavettl_t ;
-
-typedef	std::chrono::system_clock::time_point timepoint_t ;
-typedef std::chrono::milliseconds duration_t ;
-
 #define	DATE_TIMEOUT(ms)	(std::chrono::system_clock::now () + \
 				    duration_t (ms))
+
+class msg ;
+typedef void (*reply_handler_t) (msg *request, msg *reply) ;
 
 #ifdef DEBUG
 #define	D(s)	do { std::cout << s << "\n" ; } while (false)	// no ";"

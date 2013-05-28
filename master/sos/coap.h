@@ -1,23 +1,10 @@
+#ifndef	SOS_COAP_H
+#define	SOS_COAP_H
+
 /*
- * SOS common definitions
+ * SOS common CoAP definitions
  *
  */
-
-// number of elements in an array
-#define NTAB(t)		(int (sizeof (t)/sizeof (t)[0]))
-
-
-// http://stackoverflow.com/questions/3366812/linux-raw-ethernet-socket-bind-to-specific-protocol
-#define	ETHTYPE_SOS	0x88b5		// public use for prototype
-
-// Ethernet address length
-#define	ETHADDRLEN	6
-// Ethernet default MTU
-#define	ETHMTU		1536
-// Ethernet maximum latency (ms). Even a very conservative value is far
-// more realistic than the default CoAP value (100 s)
-// #define	ETHMAXLATENCY	10
-#define	ETHMAXLATENCY	1000
 
 // SOS is based on this CoAP version
 #define	SOS_VERSION	1
@@ -36,7 +23,7 @@
 // ACK random factor to compute initial timeout for CON messages
 #define	ACK_RANDOM_FACTOR	1.5
 // maximum number of retransmissions
-#define MAX_RETRANSMIT	4
+#define	MAX_RETRANSMIT	4
 // maximum number of outstanding interactions (see coap draft 4.7)
 // (outstanding interact. = CON without ACK or request without ACK or response)
 #define	NSTART		1
@@ -58,3 +45,5 @@
 #define	EXCHANGE_LIFETIME(maxlat)	(MAX_TRANSMIT_SPAN+(2*(maxlat))+PROCESSING_DELAY)
 // time from sending a Non-confirmable message to the time its Message ID can be safely reused
 #define	NON_LIFETIME(maxlat)	(MAX_TRANSMIT_SPAN+(maxlat))
+
+#endif

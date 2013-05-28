@@ -7,8 +7,12 @@
 #include <iostream>
 #include <cstring>
 
+#include "global.h"
+
+#include "l2.h"
+#include "msg.h"
 #include "slave.h"
-#include "engine.h"
+#include "sos.h"
 
 #define	SET_INACTIVE	do { \
 			    status_ = SL_INACTIVE ; \
@@ -73,13 +77,12 @@ void slave::handler (reply_handler_t h)
 /******************************************************************************
  * SOS protocol handling
  *
- * e: current engine
+ * e: current sos engine
  * m: received message
  */
 
-void slave::process_sos (engine *e, msg *m)
+void slave::process_sos (sos *e, msg *m)
 {
-    char buf [MAXBUF] ;
     msg *answer = 0 ;
 
     switch (m->sos_type ())
