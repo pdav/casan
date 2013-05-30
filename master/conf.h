@@ -25,7 +25,7 @@ class conf
     public:
 	bool init (void) ;
 	bool init (const std::string &file) ;
-	sos &start (void) ;
+	sos *start (void) ;
 
 	friend std::ostream& operator<< (std::ostream &os, const conf &cf) ;
 

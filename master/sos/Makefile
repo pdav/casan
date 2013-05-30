@@ -8,10 +8,7 @@ LIBS = libsos.a
 HDRS = coap.h sos.h l2.h l2eth.h option.h msg.h slave.h utils.h ../global.h
 OBJS = l2eth.o l2.o option.o msg.o slave.o sos.o utils.o
 
-all:	sosd sendtest
-
-sosd:	sosd.o $(LIBS)
-	c++ $(CXXFLAGS) -o sosd sosd.o $(LDFLAGS)
+all:	sendtest
 
 sendtest: sendtest.o $(LIBS)
 	c++ $(CXXFLAGS) -o sendtest sendtest.o $(LDFLAGS)
@@ -22,4 +19,4 @@ libsos.a: $(OBJS)
 *.o: $(HDRS)
 
 clean:
-	rm -f *.o sosd sendtest libsos.a
+	rm -f *.o sendtest libsos.a

@@ -19,6 +19,7 @@ class l2addr
 class l2net
 {
     public:
+	virtual ~l2net () {} ;
 	virtual int	  init (const char *iface) = 0 ;
 	virtual void	  term (void) = 0 ;
 	virtual int	  send (l2addr *daddr, void *data, int len) = 0 ;

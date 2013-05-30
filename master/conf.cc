@@ -6,6 +6,8 @@
 #include <iterator>
 
 #include "conf.h"
+#include "l2.h"
+#include "l2eth.h"
 #include "sos.h"
 
 bool conf::init (void)
@@ -20,13 +22,60 @@ bool conf::init (const std::string &file)
     return conf::parse_file () ;
 }
 
-sos &conf::start (void)
+sos *conf::start (void)
 {
     sos *e ;
 
-    e = new sos ;
+    if (done_)
+    {
+	e = new sos ;
 
-    return *e ;
+	// Start SOS engine machinery
+	e->ttl (def_ttl_) ;
+	e->init () ;
+
+	// Start interfaces
+	for (auto &n : netlist_)
+	{
+	    l2net *l ;
+
+	    switch (n.type)
+	    {
+		case NET_ETH :
+		    l = new l2net_eth ;
+		    if (l->init (n.net_eth.iface.c_str ()) == -1)
+		    {
+			perror ("init") ;
+			delete l ;
+			delete e ;
+			return 0 ;
+		    }
+		    e->start_net (l) ;
+		    std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
+		    break ;
+		case NET_802154 :
+		    std::cerr << "802.15.4 not supported\n" ;
+		    break ;
+		default :
+		    std::cerr << "(unrecognized network)\n" ;
+		    break ;
+	    }
+	}
+
+	// Add registered slaves
+	for (auto &s : slavelist_)
+	{
+	    slave *v ;
+
+	    v = new slave ;
+	    v->slaveid (s.id) ;
+	    e->add_slave (v) ;
+	    std::cout << "Slave " << s.id << " added\n" ;
+	}
+    }
+    else e = 0 ;
+
+    return e ;
 }
 
 

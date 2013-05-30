@@ -7,18 +7,18 @@ LDFLAGS = -Lsos -lsos -lpthread
 
 LIBS = sos/libsos.a
 HDRS = conf.h global.h
-OBJS = x.o conf.o
+OBJS = sosd.o conf.o
 
-all:	libs x
+all:	libs sosd
 
 libs:
 	cd sos ; make
 
-x:	$(OBJS) $(LIBS)
-	c++ $(CXXFLAGS) -o x $(OBJS) $(LDFLAGS)
+sosd:	$(OBJS) $(LIBS)
+	c++ $(CXXFLAGS) -o sosd $(OBJS) $(LDFLAGS)
 
 *.o: $(HDRS)
 
 clean:
 	cd sos ; make clean
-	rm -f *.o x
+	rm -f *.o sosd

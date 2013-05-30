@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <unistd.h>
+
 #include "conf.h"
 #include "sos.h"
 
@@ -23,6 +25,10 @@ int main (int argc, char *argv [])
     }
 
     std::cout << cf ;
+
+    cf.start () ;
+
+    sleep (10000) ;
 
     exit (0) ;
 }

@@ -53,6 +53,7 @@ extern l2addr_eth l2addr_eth_broadcast ;
 class l2net_eth: public l2net
 {
     public:
+	~l2net_eth () {} ;
 	int init (const char *iface) ;
 	void term (void) ;
 	int send (l2addr *daddr, void *data, int len) ;
