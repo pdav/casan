@@ -4,4 +4,3 @@ This directory is structured as follows:
 
 master			code for the master processor
 arduino			code for the slave processor running on Arduino
-include			common definitions for all SOS elements
