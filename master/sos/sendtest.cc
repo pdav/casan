@@ -24,15 +24,15 @@
 
 int main (int argc, char *argv [])
 {
-    l2net *l ;
-    l2addr_eth *sa ;			// slave address
-    slave s ;				// slave
-    slave sb ;				// pseudo-slave for broadcast
-    msg m1, m2 ;
+    sos::l2net *l ;
+    sos::l2addr_eth *sa ;		// slave address
+    sos::slave s ;			// slave
+    sos::slave sb ;			// pseudo-slave for broadcast
+    sos::msg m1, m2 ;
     char buf [512] = "" ;
 
     // start new interface
-    l = new l2net_eth ;
+    l = new sos::l2net_eth ;
     if (l->init (IFACE) == -1)
     {
 	perror ("init") ;
@@ -40,29 +40,29 @@ int main (int argc, char *argv [])
     }
 
     // register new slave
-    sa = new l2addr_eth (ADDR) ;
+    sa = new sos::l2addr_eth (ADDR) ;
     s.addr (sa) ;
     s.l2 (l) ;
 
     // pseudo-slave for broadcast address
-    sb.addr (&l2addr_eth_broadcast) ;
+    sb.addr (&sos::l2addr_eth_broadcast) ;
     sb.l2 (l) ;
 
     std::cout << IFACE << " initialized for " << ADDR << "\n" ;
 
     // sleep (1) ;
 
-    option uri_path1 (option::MO_Uri_Path, (void *) PATH_1, sizeof PATH_1 - 1) ;
-    option uri_path2 (option::MO_Uri_Path, (void *) PATH_2, sizeof PATH_2 - 1) ;
+    sos::option uri_path1 (sos::option::MO_Uri_Path, (void *) PATH_1, sizeof PATH_1 - 1) ;
+    sos::option uri_path2 (sos::option::MO_Uri_Path, (void *) PATH_2, sizeof PATH_2 - 1) ;
 
     // REGISTER message
-    m1.type (msg::MT_NON) ;
-    m1.code (msg::MC_POST) ;
+    m1.type (sos::msg::MT_NON) ;
+    m1.code (sos::msg::MC_POST) ;
     m1.peer (&sb) ;
     m1.id (10) ;
     m1.pushoption (uri_path1) ;
     m1.pushoption (uri_path2) ;
-    option os (option::MO_Uri_Query, (void *) SLAVE169, sizeof SLAVE169 - 1) ;
+    sos::option os (sos::option::MO_Uri_Query, (void *) SLAVE169, sizeof SLAVE169 - 1) ;
     m1.pushoption (os) ;
     m1.send () ;
 
@@ -70,12 +70,12 @@ int main (int argc, char *argv [])
 
     // ASSOCIATE answer message
     std::strcpy (buf, "<resource list>") ;
-    m2.type (msg::MT_ACK) ;		// will not be retransmitted
+    m2.type (sos::msg::MT_ACK) ;		// will not be retransmitted
     m2.code (COAP_MKCODE (2, 5)) ;
     m2.peer (&s) ;
     m2.payload (buf, strlen (buf)) ;
     m2.id (3) ;
-    option ocf (option::MO_Content_Format, (void *) "abc", sizeof "abc" - 1) ;
+    sos::option ocf (sos::option::MO_Content_Format, (void *) "abc", sizeof "abc" - 1) ;
     m2.pushoption (ocf) ;
     m2.send () ;
 }

@@ -25,6 +25,8 @@
 #include "l2.h"
 #include "l2eth.h"
 
+namespace sos {
+
 /******************************************************************************
  * l2addr_eth methods
  */
@@ -291,3 +293,5 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     return pktype ;
 #endif
 }
+
+}					// end of namespace sos

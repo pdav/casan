@@ -7,6 +7,8 @@
 #include "coap.h"
 #include "option.h"
 
+namespace sos {
+
 class slave ;
 
 /*
@@ -111,4 +113,5 @@ class msg
 	bool is_sos_ctl_msg (void) ;
 } ;
 
+}					// end of namespace sos
 #endif

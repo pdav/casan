@@ -1,6 +1,8 @@
 #ifndef	SOS_L2_H
 #define	SOS_L2_H
 
+namespace sos {
+
 // ME:          packet addressed to me
 // BCAST:       packet broadcasted
 // NONE:        not a packet (or not for me)
@@ -33,4 +35,5 @@ class l2net
 	int maxlatency_ ;		// initialized in the init method
 } ;
 
+}					// end of namespace sos
 #endif

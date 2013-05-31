@@ -9,6 +9,8 @@
 
 #include "slave.h"
 
+namespace sos {
+
 typedef long int slavettl_t ;
 
 class msg ;
@@ -58,4 +60,5 @@ class sos
 	msg *correlate (msg *m) ;
 } ;
 
+}					// end of namespace sos
 #endif

@@ -9,6 +9,7 @@
 
 #define	MAXOPT	256
 
+namespace sos {
 struct option::optdesc * option::optdesc_ = 0 ;
 
 
@@ -280,3 +281,5 @@ void option::optval (option::uint val)
     optlen_ = stbin->len ;
     COPY_VAL (stbin->bin) ;
 }
+
+}					// end of namespace sos

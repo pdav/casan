@@ -33,6 +33,8 @@
 #include "msg.h"
 #include "sos.h"
 
+namespace sos {
+
 struct receiver
 {
     l2net *l2 ;
@@ -570,3 +572,5 @@ void sos::receiver_thread (receiver *r)
 	}
     }
 }
+
+}					// end of namespace sos

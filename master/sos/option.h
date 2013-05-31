@@ -1,6 +1,8 @@
 #ifndef SOS_OPTION_H
 #define SOS_OPTION_H
 
+namespace sos {
+
 /*
  * Option
  */
@@ -71,4 +73,5 @@ class option
 	void static_init (void) ;
 } ;
 
+}					// end of namespace sos
 #endif

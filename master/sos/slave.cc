@@ -14,6 +14,8 @@
 #include "slave.h"
 #include "sos.h"
 
+namespace sos {
+
 #define	SET_INACTIVE	do { \
 			    status_ = SL_INACTIVE ; \
 			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
@@ -139,3 +141,5 @@ void slave::process (void *data, int len)
 	std::cout << "got a timeout\n" ;
     }
 }
+
+}					// end of namespace sos

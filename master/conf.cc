@@ -22,13 +22,13 @@ bool conf::init (const std::string &file)
     return conf::parse_file () ;
 }
 
-sos *conf::start (void)
+sos::sos *conf::start (void)
 {
-    sos *e ;
+    sos::sos *e ;
 
     if (done_)
     {
-	e = new sos ;
+	e = new sos::sos ;
 
 	// Start SOS engine machinery
 	e->ttl (def_ttl_) ;
@@ -37,12 +37,12 @@ sos *conf::start (void)
 	// Start interfaces
 	for (auto &n : netlist_)
 	{
-	    l2net *l ;
+	    sos::l2net *l ;
 
 	    switch (n.type)
 	    {
 		case NET_ETH :
-		    l = new l2net_eth ;
+		    l = new sos::l2net_eth ;
 		    if (l->init (n.net_eth.iface.c_str ()) == -1)
 		    {
 			perror ("init") ;
@@ -65,9 +65,9 @@ sos *conf::start (void)
 	// Add registered slaves
 	for (auto &s : slavelist_)
 	{
-	    slave *v ;
+	    sos::slave *v ;
 
-	    v = new slave ;
+	    v = new sos::slave ;
 	    v->slaveid (s.id) ;
 	    e->add_slave (v) ;
 	    std::cout << "Slave " << s.id << " added\n" ;

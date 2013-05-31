@@ -28,6 +28,8 @@
 #define	ETHMAXLATENCY	1000
 
 
+namespace sos {
+
 class l2net_eth ;
 
 class l2addr_eth: public l2addr
@@ -72,4 +74,5 @@ class l2net_eth: public l2net
 #endif
 } ;
 
+}					// end of namespace sos
 #endif

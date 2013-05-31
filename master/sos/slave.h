@@ -1,6 +1,8 @@
 #ifndef SOS_SLAVE_H
 #define	SOS_SLAVE_H
 
+namespace sos {
+
 class sos ;
 class msg ;
 class l2net ;
@@ -50,4 +52,5 @@ class slave
 	timepoint_t next_timeout_ ;	// remaining ttl
 } ;
 
+}					// end of namespace sos
 #endif

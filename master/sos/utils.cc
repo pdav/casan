@@ -2,8 +2,9 @@
 #include <cstdlib>
 
 #include "global.h"
-
 #include "utils.h"
+
+namespace sos {
 
 /******************************************************************************
  * Some utility functions
@@ -31,3 +32,4 @@ duration_t random_timeout (int maxmilli)
     return duration_t (delay) ;
 }
 
+}					// end of namespace sos

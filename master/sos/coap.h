@@ -1,6 +1,8 @@
 #ifndef	SOS_COAP_H
 #define	SOS_COAP_H
 
+namespace sos {
+
 /*
  * SOS common CoAP definitions
  *
@@ -46,4 +48,5 @@
 // time from sending a Non-confirmable message to the time its Message ID can be safely reused
 #define	NON_LIFETIME(maxlat)	(MAX_TRANSMIT_SPAN+(maxlat))
 
+}					// end of namespace sos
 #endif

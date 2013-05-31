@@ -10,6 +10,8 @@
 #include "slave.h"
 #include "utils.h"
 
+namespace sos {
+
 int msg::global_message_id = 1 ;
 
 // reset pointer and length
@@ -785,3 +787,5 @@ void msg::mk_ctl_assoc (slavettl_t ttl)
     option o (option::MO_Uri_Query, buf, strlen (buf)) ;
     pushoption (o) ;
 }
+
+}					// end of namespace sos
