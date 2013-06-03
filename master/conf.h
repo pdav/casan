@@ -41,7 +41,7 @@ class conf
 	struct cf_http
 	{
 	    std::string listen ;	// listen address (v4 or v6)
-	    int port ;			// tcp port
+	    std::string port ;		// tcp port number or name
 	} ;
 	std::list <cf_http> httplist_ ;
 

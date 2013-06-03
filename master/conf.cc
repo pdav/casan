@@ -88,10 +88,12 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
     if (cf.done_)
     {
 	for (auto &h : cf.httplist_)
-	    os << "http-server listen " << (h.listen == "" ? "*" : h.listen)
-	    	<< " port " << (h.port == 0 ? 80 : h.port) << "\n" ;
+	    os << "http-server"
+		<< " listen " << (h.listen == "" ? "*" : h.listen)
+	    	<< " port " << (h.port == "" ? "80" : h.port) << "\n" ;
 	for (auto &n : cf.nslist_)
-	    os << "namespace " << (n.type == conf::NS_ADMIN ? "admin" : "sos")
+	    os << "namespace "
+		<< (n.type == conf::NS_ADMIN ? "admin" : "sos")
 	    	<< n.prefix << "\n" ;
 	for (auto &n : cf.netlist_)
 	{
@@ -218,7 +220,7 @@ bool conf::parse_line (std::string &line)
 	    cf_http c ;
 
 	    c.listen = "" ;
-	    c.port = -1 ;
+	    c.port = "" ;
 
 	    i++ ;
 	    for ( ; i + 1 < asize ; i += 2)
@@ -235,13 +237,13 @@ bool conf::parse_line (std::string &line)
 		}
 		else if (tokens [i] == "port")
 		{
-		    if (c.port != -1)
+		    if (c.port != "")
 		    {
 			parse_error_dup_token (tokens [i], HELP_HTTP) ;
 			r = false ;
 			break ;
 		    }
-		    else c.port = std::stoi (tokens [i+1]) ;
+		    else c.port = tokens [i+1] ;
 		}
 		else
 		{
