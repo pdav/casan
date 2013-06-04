@@ -22,6 +22,13 @@ struct option::optdesc * option::optdesc_ = 0 ;
 			    optlen_ = 0 ;			\
 			    optval_ = 0 ;			\
 			} while (false)				// no ";"
+#define	DELETE_VAL(p)	do {					\
+			    if (p)				\
+			    {					\
+				delete [] p ;			\
+				p = 0 ;				\
+			    }					\
+			} while (false)				// no ";"
 #define	COPY_VAL(p)	do {					\
 			    byte *b ;				\
 			    if (optlen_ + 1 > (int) sizeof staticval_) \
@@ -81,8 +88,7 @@ stbin *uint_to_byte (option::uint val)
 void option::reset (void)
 {
     OPTION_INIT ;
-    if (optval_)
-	delete [] optval_ ;
+    DELETE_VAL (optval_) ;
     RESET ;
 }
 
@@ -141,7 +147,8 @@ option &option::operator= (const option &o)
     OPTION_INIT ;
     if (this != &o)
     {
-	std::memcpy (this, &o, sizeof *this) ;
+	DELETE_VAL (optval_) ;
+	std::memcpy (this, &o, sizeof o) ;
 	if (optval_)
 	    COPY_VAL (o.optval_) ;
     }
@@ -151,8 +158,7 @@ option &option::operator= (const option &o)
 // default destructor
 option::~option ()
 {
-    if (optval_)
-	delete [] optval_ ;
+    DELETE_VAL (optval_) ;
 }
 
 
@@ -268,6 +274,7 @@ void option::optcode (optcode_t c)
 
 void option::optval (void *val, int len)
 {
+    DELETE_VAL (optval_) ;
     optlen_ = len ;
     COPY_VAL (val) ;
 }
@@ -276,6 +283,7 @@ void option::optval (option::uint val)
 {
     stbin *stbin ;
 
+    DELETE_VAL (optval_) ;
     stbin = uint_to_byte (val) ;
     CHK_OPTLEN (optcode_, stbin->len) ;
     optlen_ = stbin->len ;

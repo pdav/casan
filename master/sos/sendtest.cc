@@ -53,7 +53,11 @@ int main (int argc, char *argv [])
     // sleep (1) ;
 
     sos::option uri_path1 (sos::option::MO_Uri_Path, (void *) PATH_1, sizeof PATH_1 - 1) ;
-    sos::option uri_path2 (sos::option::MO_Uri_Path, (void *) PATH_2, sizeof PATH_2 - 1) ;
+    // sos::option uri_path2 (sos::option::MO_Uri_Path, (void *) PATH_2, sizeof PATH_2 - 1) ;
+    sos::option uri_path2 ;
+
+    uri_path2 = uri_path1 ;
+    uri_path2.optval ((void *) PATH_2, sizeof PATH_2 - 1) ;
 
     // REGISTER message
     m1.type (sos::msg::MT_NON) ;
@@ -78,4 +82,7 @@ int main (int argc, char *argv [])
     sos::option ocf (sos::option::MO_Content_Format, (void *) "abc", sizeof "abc" - 1) ;
     m2.pushoption (ocf) ;
     m2.send () ;
+
+    delete sa ;
+    delete l ;
 }

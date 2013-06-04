@@ -52,9 +52,9 @@ class option
 	void optval (uint v) ;
 
     protected:
-	optcode_t optcode_ ;
-	int optlen_ ;
-	byte *optval_ ;			// 0 if staticval is used
+	optcode_t optcode_ = MO_None ;
+	int optlen_ = 0 ;
+	byte *optval_ = 0 ;		// 0 if staticval is used
 	byte staticval_ [8 + 1] ;	// keep a \0 after, just in case
 
 	friend class msg ;
