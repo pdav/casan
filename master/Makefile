@@ -12,8 +12,8 @@ OBJS = sosd.o conf.o request_handler.o
 all:	libs $(LIBS) sosd
 
 libs:
-	cd sos ; make
-	cd http ; make
+	cd sos ; make libsos.a
+	cd http ; make libhttp.a
 
 sosd:	$(OBJS) $(LIBS)
 	c++ $(CXXFLAGS) -o sosd $(OBJS) $(LDFLAGS)

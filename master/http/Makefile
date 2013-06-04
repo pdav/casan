@@ -20,11 +20,7 @@ OBJS = \
 	request_parser.o \
 	server.o \
 
-#	request_handler.hpp \
-#	request_handler.o \
-
-
-all:	libhttp.a	# testhttp
+all:	libhttp.a testhttp
 
 libhttp.a: $(OBJS)
 	ar r libhttp.a $(OBJS)
