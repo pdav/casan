@@ -2,23 +2,27 @@
 // request_handler.hpp
 // ~~~~~~~~~~~~~~~~~~~
 //
+// Modified by Pierre David from the Boost "http server2"
+// example by Christopher M. Kohlhoff
+//
 // Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef HTTP_SERVER2_REQUEST_HANDLER_HPP
-#define HTTP_SERVER2_REQUEST_HANDLER_HPP
+#ifndef REQUEST_HANDLER_HPP
+#define REQUEST_HANDLER_HPP
 
 #include <string>
 #include <boost/noncopyable.hpp>
 
 namespace http {
 namespace server2 {
-
 struct reply;
 struct request;
+}
+}
 
 /// The common handler for all incoming requests.
 class request_handler
@@ -29,7 +33,7 @@ public:
   explicit request_handler(const std::string& doc_root);
 
   /// Handle a request and produce a reply.
-  void handle_request(const request& req, reply& rep);
+  void handle_request(const http::server2::request& req, http::server2::reply& rep);
 
 private:
   /// The directory containing the files to be served.
@@ -40,7 +44,4 @@ private:
   static bool url_decode(const std::string& in, std::string& out);
 };
 
-} // namespace server2
-} // namespace http
-
-#endif // HTTP_SERVER2_REQUEST_HANDLER_HPP
+#endif // REQUEST_HANDLER_HPP

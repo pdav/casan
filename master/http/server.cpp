@@ -15,12 +15,13 @@ namespace http {
 namespace server2 {
 
 server::server(const std::string& address, const std::string& port,
-    const std::string& doc_root, std::size_t io_service_pool_size)
+    /* const std::string& doc_root, */ std::size_t io_service_pool_size)
   : io_service_pool_(io_service_pool_size),
     acceptor_(io_service_pool_.get_io_service()),
     new_connection_(new connection(
           io_service_pool_.get_io_service(), request_handler_)),
-    request_handler_(doc_root)
+    /* request_handler_(doc_root) */
+    request_handler_("/admin")
 {
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
   asio::ip::tcp::resolver resolver(acceptor_.io_service());

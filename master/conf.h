@@ -29,6 +29,8 @@ class conf
 
 	friend std::ostream& operator<< (std::ostream &os, const conf &cf) ;
 
+	std::string html_debug (void) ;
+
 	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_SOS } ;
 
     private:

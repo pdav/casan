@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -g -DDEBUG -std=c++11 -Wall -W -pedantic
+CXXFLAGS = -g -DDEBUG -std=c++11 -Wall -W -pedantic -I..
 LDFLAGS = -L. -lhttp -lpthread
 
 HDRS = \
@@ -8,7 +8,6 @@ HDRS = \
 	io_service_pool.hpp \
 	mime_types.hpp \
 	reply.hpp \
-	request_handler.hpp \
 	request.hpp \
 	request_parser.hpp \
 	server.hpp
@@ -18,11 +17,14 @@ OBJS = \
 	io_service_pool.o \
 	mime_types.o \
 	reply.o \
-	request_handler.o \
 	request_parser.o \
 	server.o \
 
-all:	libhttp.a testhttp
+#	request_handler.hpp \
+#	request_handler.o \
+
+
+all:	libhttp.a	# testhttp
 
 libhttp.a: $(OBJS)
 	ar r libhttp.a $(OBJS)

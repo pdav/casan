@@ -119,6 +119,15 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
     return os ;
 }
 
+std::string conf::html_debug (void)
+{
+    std::ostringstream oss ;
+
+    oss << "<html><body><pre>\n" << *this << "</pre></body></html>\n" ;
+
+    return oss.str () ;
+}
+
 /******************************************************************************
  * Configuration file parser
  */
