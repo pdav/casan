@@ -44,6 +44,7 @@ class conf
 	{
 	    std::string listen ;	// listen address (v4 or v6)
 	    std::string port ;		// tcp port number or name
+	    int threads ;		// number of threads for this server
 	} ;
 	std::list <cf_http> httplist_ ;
 

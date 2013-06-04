@@ -90,7 +90,9 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	for (auto &h : cf.httplist_)
 	    os << "http-server"
 		<< " listen " << (h.listen == "" ? "*" : h.listen)
-	    	<< " port " << (h.port == "" ? "80" : h.port) << "\n" ;
+	    	<< " port " << (h.port == "" ? "80" : h.port)
+		<< " threads " << h.threads
+		<< "\n" ;
 	for (auto &n : cf.nslist_)
 	    os << "namespace "
 		<< (n.type == conf::NS_ADMIN ? "admin" : "sos")
@@ -101,20 +103,24 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	    switch (n.type)
 	    {
 		case conf::NET_ETH :
-		    os << "ethernet " << n.net_eth.iface << "\n" ;
+		    os << "ethernet " << n.net_eth.iface ;
 		    break ;
 		case conf::NET_802154 :
-		    os << "802.15.4 " << n.net_eth.iface << "\n" ;
+		    os << "802.15.4 " << n.net_eth.iface ;
 		    break ;
 		default :
 		    os << "(unrecognized network)\n" ;
 		    break ;
 	    }
+	    os << " mtu " << n.mtu << "\n" ;
 	}
 	if (cf.def_ttl_ != 0)
 	    os << "slave-ttl " << cf.def_ttl_ << "\n" ;
 	for (auto &s : cf.slavelist_)
-	    os << "slave id " << s.id << " ttl " << s.ttl << "\n" ;
+	    os << "slave id " << s.id
+		<< " ttl " << s.ttl
+		<< " mtu " << s.mtu
+		<< "\n" ;
     }
     return os ;
 }
@@ -145,7 +151,7 @@ static const char *syntax_help [] =
 {
     "http-server, namespace, slave-ttl, network, or slave",
 
-    "http-server [listen <addr>] [port <num>]",
+    "http-server [listen <addr>] [port <num>] [threads <num>]",
     "namespace <admin|sos> <path>",
     "slave-ttl <timeout in s>",
     "network <ethernet|802.15.4> ...",
@@ -230,6 +236,7 @@ bool conf::parse_line (std::string &line)
 
 	    c.listen = "" ;
 	    c.port = "" ;
+	    c.threads = 0 ;
 
 	    i++ ;
 	    for ( ; i + 1 < asize ; i += 2)
@@ -253,6 +260,16 @@ bool conf::parse_line (std::string &line)
 			break ;
 		    }
 		    else c.port = tokens [i+1] ;
+		}
+		else if (tokens [i] == "threads")
+		{
+		    if (c.threads != 0)
+		    {
+			parse_error_dup_token (tokens [i], HELP_HTTP) ;
+			r = false ;
+			break ;
+		    }
+		    else c.threads = std::stoi (tokens [i+1]) ;
 		}
 		else
 		{
@@ -439,7 +456,7 @@ bool conf::parse_line (std::string &line)
 	{
 	    cf_slave c ;
 
-	    c.id = -1 ;
+	    c.id = 0 ;
 	    c.ttl = 0 ;
 	    c.mtu = 0 ;
 
@@ -448,7 +465,7 @@ bool conf::parse_line (std::string &line)
 	    {
 		if (tokens [i] == "id")
 		{
-		    if (c.id != -1)
+		    if (c.id != 0)
 		    {
 			parse_error_dup_token (tokens [i], HELP_SLAVE) ;
 			r = false ;
