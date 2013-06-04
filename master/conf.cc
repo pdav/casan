@@ -149,10 +149,10 @@ static const char *syntax_help [] =
     "namespace <admin|sos> <path>",
     "slave-ttl <timeout in s>",
     "network <ethernet|802.15.4> ...",
-    "slave id <id> [ttl <timeout in s>]",
+    "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
 
-    "network ethernet <iface> [mtu <num>]",
-    "network 802.15.4 <iface> ???",
+    "network ethernet <iface> [mtu <bytes>]",
+    "network 802.15.4 <iface> [mtu <bytes>] ???",
 } ;
 
 bool conf::parse_file (void)
@@ -326,6 +326,7 @@ bool conf::parse_line (std::string &line)
 	    cf_network c ;
 
 	    c.type = NET_NONE ;
+	    c.mtu = 0 ;
 
 	    i++ ;
 	    if (i < asize)
@@ -339,6 +340,40 @@ bool conf::parse_line (std::string &line)
 		    {
 			c.net_eth.iface = tokens [i] ;
 			i++ ;
+
+			for ( ; i + 1 < asize ; i += 2)
+			{
+			    if (tokens [i] == "mtu")
+			    {
+				if (c.mtu != 0)
+				{
+				    parse_error_dup_token (tokens [i], HELP_NETETH) ;
+				    r = false ;
+				    break ;
+				}
+				else c.mtu = std::stoi (tokens [i+1]) ;
+			    }
+			    else
+			    {
+				parse_error_unk_token (tokens [i], HELP_NETETH) ;
+				r = false ;
+				break ;
+			    }
+			}
+		    }
+		    else
+		    {
+			parse_error_num_token (asize, HELP_NETETH) ;
+			r = false ;
+		    }
+
+		    if (r)
+		    {
+			if (i != asize)		// odd number of parameters
+			{
+			    parse_error_num_token (asize, HELP_NETETH) ;
+			    r = false ;
+			}
 		    }
 		}
 		else if (tokens [i] == "802.15.4")
@@ -350,6 +385,40 @@ bool conf::parse_line (std::string &line)
 		    {
 			c.net_802154.iface = tokens [i] ;
 			i++ ;
+
+			for ( ; i + 1 < asize ; i += 2)
+			{
+			    if (tokens [i] == "mtu")
+			    {
+				if (c.mtu != 0)
+				{
+				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    r = false ;
+				    break ;
+				}
+				else c.mtu = std::stoi (tokens [i+1]) ;
+			    }
+			    else
+			    {
+				parse_error_unk_token (tokens [i], HELP_NET802154) ;
+				r = false ;
+				break ;
+			    }
+			}
+		    }
+		    else
+		    {
+			parse_error_num_token (asize, HELP_NET802154) ;
+			r = false ;
+		    }
+
+		    if (r)
+		    {
+			if (i != asize)		// odd number of parameters
+			{
+			    parse_error_num_token (asize, HELP_NET802154) ;
+			    r = false ;
+			}
 		    }
 
 		    // XXX
@@ -372,6 +441,7 @@ bool conf::parse_line (std::string &line)
 
 	    c.id = -1 ;
 	    c.ttl = 0 ;
+	    c.mtu = 0 ;
 
 	    i++ ;
 	    for ( ; i + 1 < asize ; i += 2)
@@ -395,6 +465,16 @@ bool conf::parse_line (std::string &line)
 			break ;
 		    }
 		    else c.ttl = std::stoi (tokens [i+1]) ;
+		}
+		else if (tokens [i] == "mtu")
+		{
+		    if (c.mtu != 0)
+		    {
+			parse_error_dup_token (tokens [i], HELP_SLAVE) ;
+			r = false ;
+			break ;
+		    }
+		    else c.mtu = std::stoi (tokens [i+1]) ;
 		}
 		else
 		{

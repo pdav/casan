@@ -68,6 +68,7 @@ class conf
 	struct cf_network
 	{
 	    net_type type ;
+	    int mtu ;
 	    // not using an union since C++ cannot know how to initialize it
 	    cf_net_eth    net_eth ;
 	    cf_net_802154 net_802154 ;
@@ -80,6 +81,7 @@ class conf
 	{
 	    int id ;
 	    int ttl ;
+	    int mtu ;
 	} ;
 	std::list <cf_slave> slavelist_ ;
 
