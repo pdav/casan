@@ -187,33 +187,19 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 	return success ;
 }
 
-bool Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen) {
-	bool success;
-	sbuf[COAP_OFFSET_TYPE] |= (m.get_type() & 0x3) << 4;
-	sbuf[COAP_OFFSET_TKL] |= (m.get_token_length() & 0xF);
-	sbuf[COAP_OFFSET_CODE] = m.get_code();
-	int id = m.get_id();
-	memcpy(sbuf + COAP_OFFSET_ID, &id + 1, 1);
-	memcpy(sbuf + COAP_OFFSET_ID +1, &id, 1);
-	memcpy(sbuf + COAP_OFFSET_TOKEN, m.get_token(), m.get_token_length());
-	{
-		uint8_t payload_offset = 0;
-		payload_offset = m.get_token_length() + (4 - (m.get_token_length() % 4));
-		/*
-		   sbuf[COAP_OFFSET_TOKEN + payload_offset] = 0xFF;
-		   memcpy(sbuf + COAP_OFFSET_TOKEN + payload_offset + 1, 
-		   m.get_payload(), (unsigned int) m.get_payload_length());
-		   */
-	}
-
+void Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen) {
 	int i ;
 	int opt_nb ;
+	int toklen = m.get_token_length();
+	int id = m.get_id();
+	int paylen = m.get_payload_length();
+
 
 	/*
 	 * Format message, part 1 : compute message size
 	 */
 
-	i = 6 + m.get_token_length();
+	sbuflen = 4 + toklen;
 
 	opt_nb = 0 ;
 	for(option * o = m.get_option() ; o != NULL ; o = m.get_option()) {
@@ -235,8 +221,8 @@ bool Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen) {
 			sbuflen += 1 ;
 		sbuflen += o->optlen_ ;
 	}
-	if (sbuflen > 0)
-		sbuflen += 1 + sbuflen ;	// don't forget 0xff byte
+	if ( paylen > 0)
+		sbuflen += 1 + paylen ;	// don't forget 0xff byte
 
 	/*
 	 * Format message, part 2 : build message
@@ -245,15 +231,16 @@ bool Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen) {
 	i = 0 ;
 
 	// header
-	sbuf [i++] = FORMAT_BYTE0 (SOS_VERSION, m.get_type(), m.get_token_length()) ;
+	sbuf [i++] = FORMAT_BYTE0 (SOS_VERSION, m.get_type(), toklen) ;
 	sbuf [i++] = m.get_code() ;
-	sbuf [i++] = BYTE_HIGH (m.get_id()) ;
-	sbuf [i++] = BYTE_LOW  (m.get_id()) ;
+	sbuf [i++] = BYTE_HIGH (id) ;
+	sbuf [i++] = BYTE_LOW  (id) ;
+
 	// token
-	if (m.get_token_length() > 0)
+	if (toklen > 0)
 	{
-		memcpy (sbuf + i, m.get_token(), m.get_token_length()) ;
-		i += m.get_token_length() ;
+		memcpy (sbuf + i, m.get_token(), toklen) ;
+		i += toklen ;
 	}
 	// options
 	opt_nb = 0 ;
@@ -305,12 +292,9 @@ bool Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen) {
 		i += o->optlen_ ;
 	}
 	// payload
-	if (sbuflen > 0)
+	if (paylen > 0)
 	{
 		sbuf [i++] = 0xff ;			// start of payload
-		memcpy (sbuf + i, m.get_payload(), sbuflen) ;
+		memcpy (sbuf + i, m.get_payload(), paylen) ;
 	}
-
-	success = true;
-	return success;
 }

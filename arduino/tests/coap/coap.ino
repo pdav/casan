@@ -5,21 +5,14 @@
 #include "sos.h"
 #include <avr/wdt.h>
 
+#define	PATH_1		".well-known"
+#define	PATH_2		"sos"
+
 Coap *coap;
 EthernetRaw * eth ;
 
 l2addr *mac_addr = new l2addr_eth("00:01:02:03:04:05");
 l2addr *mac_master = new l2addr_eth("00:22:68:32:10:f7");
-
-uint8_t process_light(Message &in, Message &out) {
-	Serial.println(F("process_light"));
-	return 0;
-}
-
-uint8_t process_temp(Message &in, Message &out) {
-	Serial.println(F("process_temp"));
-	return 0;
-}
 
 void setup() {
 	/*
@@ -36,23 +29,34 @@ void setup() {
 
 }
 
-void test_coap(void) {
+void test_reception(void) {
 	Message in;
-	Message out;
 	enum eth_recv r ;
-	int n ;
 
-	n = 0 ;
 	while((r = coap->recv(in)) != ETH_RECV_EMPTY) {
-		n++ ;
 		if (r == ETH_RECV_RECV_OK)
 			in.print();
 	}
-	if (n > 0)
-	{
-		Serial.print (n) ;
-		Serial.println (" msg absorbed") ;
-	}
+}
+
+void test_emission(void) {
+	Message m1;
+	Message m2;
+	option uri_path1 (option::MO_Uri_Path, (void *) PATH_1, sizeof PATH_1 - 1) ;
+	option uri_path2 (option::MO_Uri_Path, (void *) PATH_2, sizeof PATH_2 - 1) ;
+    option ocf (option::MO_Content_Format, (void *) "abc", sizeof "abc" - 1) ;
+
+	m1.set_id(103);
+	m1.set_type(COAP_TYPE_NON);
+	m1.push_option(uri_path1);
+	m1.push_option(uri_path2);
+	coap->send(l2addr_eth_broadcast, m1);
+
+	m2.set_id(32);
+	m2.set_type(COAP_TYPE_CON);
+	m2.push_option(ocf);
+	coap->send(l2addr_eth_broadcast, m2);
+
 }
 
 void loop() {
@@ -60,8 +64,9 @@ void loop() {
 	// to check if we have memory leak
 	PRINT_FREE_MEM;
 
-	test_coap();
+	//test_reception();
+	test_emission();
 
-	// delay(1000);
-	delay(500);
+	delay(1000);
+	//delay(500);
 }

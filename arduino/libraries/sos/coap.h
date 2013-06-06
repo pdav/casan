@@ -29,7 +29,7 @@ class Coap {
 
 		// TODO : tests
 		// TODO : handle errors
-		bool encode (Message &m, uint8_t sbuf[], size_t &sbuflen);
+		void encode (Message &m, uint8_t sbuf[], size_t &sbuflen);
 		bool decode (Message &m, uint8_t rbuf[], size_t rbuflen);
 
 		void get_mac_src(l2addr * mac_src);

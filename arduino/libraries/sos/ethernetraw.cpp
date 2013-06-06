@@ -28,6 +28,14 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 	int sbuflen;
 	size_t reste;
 
+	// to include the two size bytes
+	len += 2;
+
+	Serial.print(F("\033[33mLEN \033[00m: "));
+	Serial.println(len);
+	Serial.print(F("\033[33mETH TYPE \033[00m: "));
+	Serial.println(_eth_type, HEX);
+
 	reste = ETH_MAX_SIZE < len ? len - ETH_MAX_SIZE - OFFSET_DATA: 0;
 	sbuflen = ETH_MAX_SIZE < len + OFFSET_DATA ? ETH_MAX_SIZE : len + OFFSET_DATA;
 	sbuf = (byte*) malloc(sbuflen);
@@ -35,8 +43,8 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 	memcpy(sbuf + OFFSET_DEST_ADDR, m->get_raw_addr(), 6);
 	memcpy(sbuf + OFFSET_SRC_ADDR, _mac_addr->get_raw_addr(), 6);
 	{
-		*(sbuf + OFFSET_ETHTYPE   ) = (char) _eth_type >> 8;
-		*(sbuf + OFFSET_ETHTYPE +1) = (char) _eth_type & 0xFF;
+		sbuf[OFFSET_ETHTYPE   ] = (char) (_eth_type >> 8) & 0xFF;
+		sbuf[OFFSET_ETHTYPE +1] = (char) _eth_type & 0xFF;
 	}
 
 	// message size
