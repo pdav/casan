@@ -29,18 +29,18 @@ uint8_t option::errno_ = 0;
 	b [optlen_] = 0 ;								\
 } while (false)				// no ";"
 #define	CHK_OPTCODE(c,err)	do {					\
-	if ((c) < 0 || (c) >= MAXOPT)					\
-		err = true;									\
+	err = false;									\
 	for(int i(0) ; !err && i < MAXOPT ; i++)		\
 		if(optdesc_[i].code == c &&					\
 				optdesc_ [i].format == OF_NONE)		\
 			err = true;\
 } while (false)				// no ";"
 #define	CHK_OPTLEN(c,l,err)	do {					\
+	err = false;									\
 	for(int i(0) ; !err && i < MAXOPT ; i++) {		\
 		if (optdesc_[i].code == c && (				\
 				(l) < optdesc_ [i].minlen			\
-				|| (l) > optdesc_ [c].maxlen))		\
+				|| (l) > optdesc_ [i].maxlen))		\
 		err = true;									\
 	}												\
 } while (false)				// no ";"
@@ -289,6 +289,11 @@ void *option::optval (int *len)
 	return (optval_ == 0) ? staticval_ : optval_ ;
 }
 
+void * option::val (void)
+{
+	return (void *) (optval_ == 0) ? staticval_ : optval_ ;
+}
+
 option::uint option::optval (void)
 {
 	option::uint v ;
@@ -331,6 +336,10 @@ void option::optval (option::uint val)
 	}
 	optlen_ = stbin->len ;
 	COPY_VAL (stbin->bin) ;
+}
+
+int option::optlen(void) {
+	return optlen_;
 }
 
 uint8_t option::get_errno(void) {

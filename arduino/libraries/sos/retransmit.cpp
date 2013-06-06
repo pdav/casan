@@ -1,16 +1,19 @@
 #include "retransmit.h"
 
-Retransmit::Retransmit(Coap *c, l2addr **master) {
+Retransmit::Retransmit(Coap *c, l2addr **master) 
+{
 	_c = c;
 	_master_addr = master;
 	_retransmit = NULL;
 }
 
-Retransmit::~Retransmit() {
+Retransmit::~Retransmit() 
+{
 	reset();
 }
 
-void Retransmit::add(Message *m, ulong_t time_first_transmit) {
+void Retransmit::add(Message *m, ulong_t time_first_transmit) 
+{
 	retransmit_s * n = (retransmit_s *) malloc(sizeof(retransmit_s));
 	n->m = m ;
 	// next retransmit
@@ -21,11 +24,13 @@ void Retransmit::add(Message *m, ulong_t time_first_transmit) {
 	_retransmit = n;
 }
 
-void Retransmit::del(Message *m) {
+void Retransmit::del(Message *m) 
+{
 	del(get_retransmit(m));
 }
 
-void Retransmit::del(retransmit_s *r) {
+void Retransmit::del(retransmit_s *r) 
+{
 	if(r == NULL) {
 		return;
 	}
@@ -41,7 +46,8 @@ void Retransmit::del(retransmit_s *r) {
 	free(r);
 }
 
-retransmit_s * Retransmit::get_retransmit(Message *m) {
+retransmit_s * Retransmit::get_retransmit(Message *m) 
+{
 	retransmit_s *tmp = _retransmit;
 	while(tmp != NULL) {
 		// TODO : maybe check the token too
@@ -53,10 +59,10 @@ retransmit_s * Retransmit::get_retransmit(Message *m) {
 }
 
 // TODO
-void Retransmit::loop_retransmit(void) {
+void Retransmit::loop_retransmit(void) 
+{
 	//enum coap_message_type coap_mes_type = in.get_coap_type();
 	Serial.println(F("retransmit loop"));
-	PRINT_FREE_MEM
 
 	retransmit_s * tmp = _retransmit;
 	while(tmp != NULL) {
@@ -77,13 +83,33 @@ void Retransmit::loop_retransmit(void) {
 	}
 }
 
-void Retransmit::reset(void) {
+void Retransmit::reset(void) 
+{
 	while(_retransmit != NULL)
 		del(_retransmit);
 }
 
-void Retransmit::check_message(Message &in) {
-	if( in.get_type() == COAP_TYPE_ACK ) {
-		del(&in);
+void Retransmit::check_msg_received(Message &in) 
+{
+	switch(in.get_type())
+	{
+		case COAP_TYPE_ACK :
+			del(&in);
+			break;
+		default :
+			break;
 	}
 }
+
+void Retransmit::check_msg_sent(Message &in) 
+{
+	switch(in.get_type())
+	{
+		case COAP_TYPE_CON :
+			add(&in, (ulong_t) millis);
+			break;
+		default :
+			break;
+	}
+}
+

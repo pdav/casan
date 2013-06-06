@@ -22,11 +22,16 @@ void Coap::send(l2addr &mac_addr_dest, Message &m) {
  * return 0 if ok
  */
 eth_recv_t Coap::recv(Message &m) {
+	m.reset();
 	eth_recv_t ret = _eth->recv();
 	if(ret == ETH_RECV_RECV_OK)
 		decode(m, _eth->get_offset_payload(0), 
 				_eth->get_payload_length() - 2);
 	return ret;
+}
+
+void Coap::set_master_addr(l2addr *master_addr) {
+	_eth->set_master_addr(master_addr);
 }
 
 uint8_t Coap::get_type(void) {

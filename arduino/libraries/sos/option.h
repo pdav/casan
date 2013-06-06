@@ -48,11 +48,14 @@ class option
 	bool operator< (const option &o) ;	// for list sorting in msg.cc
 
 	void reset (void) ;
+	void print(void);
 
 	// accessors
 	optcode_t optcode (void) ;
 	void *optval (int *len) ;
+	void *val (void);
 	uint optval (void) ;
+	int optlen (void) ;
 
 	static uint8_t get_errno(void);
 
@@ -60,7 +63,6 @@ class option
 	void optcode (optcode_t c) ;
 	void optval (void *v, int len) ;
 	void optval (uint v) ;
-	void print(void);
 
 	static void reset_errno(void);
 

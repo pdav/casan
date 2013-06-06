@@ -33,6 +33,7 @@ class Coap {
 		bool decode (Message &m, uint8_t rbuf[], size_t rbuflen);
 
 		void get_mac_src(l2addr * mac_src);
+		void set_master_addr(l2addr *master_addr);
 
 	private:
 

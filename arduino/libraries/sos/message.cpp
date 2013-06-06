@@ -1,7 +1,8 @@
 #include "message.h"
 
 Message::Message() : _id(0), _token_length(0), 
-	_payload_length(0), _options_length(0) {
+	_payload_length(0), _options_length(0) 
+{
 	_payload = NULL;
 	_options = NULL;
 }
@@ -9,20 +10,28 @@ Message::Message() : _id(0), _token_length(0),
 Message::Message( Message & c) 
 	: _id(c._id),  _type(c._type), _code(c._code), 
 	_token_length(c._token_length), 
-	_payload_length(c._payload_length) {
+	_payload_length(c._payload_length) 
+{
 		_token = c.get_token_copy();
 		_payload = c.get_payload_copy();
 }
 
-Message & Message::operator=(const Message &m) {
-	Message * ret = new Message();
-	ret->set_id(m._id);
-	ret->set_token(m._token_length, m._token);
-	ret->set_payload(m._payload_length, m._payload);
-	return *ret;
+Message & Message::operator=(const Message &m) 
+{
+	Message ret;
+	ret.set_id(m._id);
+	ret.set_token(m._token_length, m._token);
+	ret.set_payload(m._payload_length, m._payload);
+	return ret;
 }
 
-Message::~Message() {
+bool Message::operator==(const Message &n)
+{
+	return this->_id == n._id;
+}
+
+Message::~Message() 
+{
 	if(_token != NULL)
 		delete _token;
 	if(_payload != NULL)
@@ -30,48 +39,58 @@ Message::~Message() {
 	free_options();
 }
 
-uint8_t Message::get_type(void) {
+uint8_t Message::get_type(void) 
+{
 	return _type;
 }
 
-uint8_t Message::get_code(void) {
+uint8_t Message::get_code(void) 
+{
 	return _code;
 }
 
-int Message::get_id(void) {
+int Message::get_id(void) 
+{
 	return _id;
 }
 
-uint8_t Message::get_token_length(void) {
+uint8_t Message::get_token_length(void) 
+{
 	return _token_length ;
 }
 
-uint8_t * Message::get_token(void){
+uint8_t * Message::get_token(void)
+{
 	return _token ;
 }
 
-uint8_t * Message::get_token_copy(void) {
+uint8_t * Message::get_token_copy(void) 
+{
 	uint8_t * copy = (uint8_t*) malloc(_token_length);
 	memcpy(copy, _token, _token_length);
 	return copy;
 }
 
-uint8_t Message::get_payload_length(void) {
+uint8_t Message::get_payload_length(void) 
+{
 	return _payload_length ;
 }
 
-uint8_t * Message::get_payload(void) {
+uint8_t * Message::get_payload(void) 
+{
 	return _payload;
 }
 
-uint8_t * Message::get_payload_copy(void) {
+uint8_t * Message::get_payload_copy(void) 
+{
 	uint8_t * copy = (uint8_t*) malloc(_payload_length +1);
 	memcpy(copy, _payload, _payload_length);
 	copy[_payload_length] = '\0';
 	return copy;
 }
 
-option * Message::pop_option(void) {
+option * Message::pop_option(void) 
+{
 	option * res;
 	if(NULL == _opt_list) {
 		res = NULL;
@@ -85,25 +104,30 @@ option * Message::pop_option(void) {
 	return res;
 }
 
-void Message::set_type(uint8_t t) {
+void Message::set_type(uint8_t t) 
+{
 	_type = t;
 }
 
-void Message::set_code(uint8_t c) {
+void Message::set_code(uint8_t c) 
+{
 	_code = c;
 }
 
-void Message::set_id(int id) {
+void Message::set_id(int id) 
+{
 	_id = id;
 }
 
-void Message::set_token(uint8_t token_length, uint8_t *token){
+void Message::set_token(uint8_t token_length, uint8_t *token)
+{
 	_token_length = token_length;
 	_token = (uint8_t*) malloc(token_length);
 	memcpy(_token, token, token_length);
 }
 
-void Message::set_payload(uint8_t payload_length, uint8_t * payload) {
+void Message::set_payload(uint8_t payload_length, uint8_t * payload) 
+{
 	_payload_length = payload_length;
 	if(_payload != NULL)
 		free(_payload);
@@ -111,7 +135,8 @@ void Message::set_payload(uint8_t payload_length, uint8_t * payload) {
 	memcpy(_payload, payload, payload_length);
 }
 
-void Message::push_option(option &o) {
+void Message::push_option(option &o) 
+{
 	opt_list_s * tmp = (opt_list_s*) malloc(sizeof(opt_list_s));
 	opt_list_s * tmp2 = _opt_list;
 	tmp->o = new option(o);
@@ -140,13 +165,42 @@ void Message::push_option(option &o) {
 	}
 }
 
-void Message::free_options(void) {
+void Message::free_options(void) 
+{
 	while(_opt_list != NULL) {
 		delete pop_option();
 	}
 }
 
-option * Message::get_option(void) {
+void Message::reset_get_option(void) 
+{
+	_current_opt_list_is_initialized = false;
+}
+
+// TODO : finish this function
+void Message::reset(void)
+{
+	if(_token != NULL)
+		delete _token;
+	if(_payload != NULL)
+		delete _payload;
+	free_options();
+	this->_type = 0;
+	this->_code = 0;
+	this->_id = 0;
+	this->_token_length = 0;
+	this->_token = NULL;
+	this->_payload_length = 0;
+	this->_payload = NULL;
+	this->_options_length = 0;
+	_opt_list = NULL;
+	_current_opt_list = NULL ;
+	_current_opt_list_is_initialized = false ;
+	reset_get_option();
+}
+
+option * Message::get_option(void) 
+{
 	option * o ;
 	if (! _current_opt_list_is_initialized) {
 		_current_opt_list = _opt_list;
@@ -163,7 +217,8 @@ option * Message::get_option(void) {
 	return o;
 }
 
-void Message::print(void) {
+void Message::print(void) 
+{
 	{
 		Serial.print(F("\033[36mmsg\033[00m\tid="));
 		Serial.print(get_id());

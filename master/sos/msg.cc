@@ -781,6 +781,8 @@ void msg::mk_ctl_hello (long int hid)
 {
     char buf [MAXBUF] ;
 
+    bzero(buf, MAXBUF);
+
     add_path_ctl () ;
     snprintf (buf, sizeof buf, SOS_HELLO, hid) ;
     option o (option::MO_Uri_Query, buf, strlen (buf)) ;

@@ -16,6 +16,7 @@ class Message {
 		~Message();
 
 		Message & operator=(const Message &m);
+		bool operator==(const Message &m);
 
 		// accessors (for received messages)
 		uint8_t get_type(void);
@@ -28,12 +29,13 @@ class Message {
 		uint8_t * get_payload(void);
 		uint8_t * get_payload_copy(void);
 
-		// TODO : check
 		// give an option, and delete the entry in _opt_list
 		option * pop_option (void) ;
 		// give options one by one but without delete the entry in _opt_list
 		// only use case : foreach option
 		option * get_option (void) ;
+		void reset_get_option(void);
+		void reset(void);
 
 		// mutators (to send messages)
 		void set_type(uint8_t t);
@@ -41,13 +43,11 @@ class Message {
 		void set_id(int id);
 		void set_token(uint8_t token_length, uint8_t *token);
 		void set_payload(uint8_t payload_length, uint8_t *payload);
-		// TODO : check
-		// I copy the option
-		// we have to think to delete the copy after sending (free_options)
-		// this function needs to add option in the right order
+
+		// don't forget to delete the copy after sending (free_options)
+		// this function adds options in the right order
 		void push_option(option &o);
 
-		// TODO : check
 		void free_options(void);
 
 		void print(void);

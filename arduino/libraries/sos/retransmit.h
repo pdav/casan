@@ -29,7 +29,8 @@ class Retransmit {
 		void del(retransmit_s *r);
 		void loop_retransmit(void); // TODO
 		void reset(void);
-		void check_message(Message &in);
+		void check_msg_received(Message &in);
+		void check_msg_sent(Message &in);
 
 	private:
 		retransmit_s * get_retransmit(Message *m);

@@ -128,7 +128,7 @@ void sos::start_net (l2net *l2)
 	r->broadcast.addr (l2->bcastaddr ()) ;
 
 	now = std::chrono::system_clock::now () ;
-	r->hid = std::chrono::system_clock::to_time_t (now) ;
+	r->hid = std::chrono::system_clock::to_time_t (now) % 1000 ;
 
 	r->hellomsg = new msg () ;
 	r->hellomsg->peer (& r->broadcast) ;
@@ -525,7 +525,10 @@ void sos::receiver_thread (receiver *r)
 	 */
 
 	if (! find_peer (m, a, r))
+	{
+		D("\033[31m ! find_peer\033[00m");
 	    continue ;
+	}
 
 	/*
 	 * Is the received message a reply to a pending request?

@@ -15,6 +15,8 @@ EthernetRaw::~EthernetRaw() {
 
 int EthernetRaw::available() {
 	_rbuflen = W5100.getRXReceivedSize(_s);
+	//Serial.print(F("\t\t\033[33mRBUFLEN : "));
+	//Serial.println(_rbuflen);
 	return _rbuflen ; 
 }
 
@@ -86,6 +88,11 @@ eth_recv_t EthernetRaw::recv(uint8_t *data, size_t *len) {
 }
 
 eth_recv_t EthernetRaw::check_received(void) {
+	bool error_size = false;
+	if(_rbuflen > ETH_MAX_SIZE) {
+		error_size = true;
+		_rbuflen = ETH_MAX_SIZE;
+	}
 	W5100.recv_data_processing(_s, _rbuf, _rbuflen);
 	W5100.execCmdSn(_s, Sock_RECV);
 	recv_len_above_threshold = false;
@@ -99,12 +106,12 @@ eth_recv_t EthernetRaw::check_received(void) {
 	}
 	// we check the destination address
 	if( *_mac_addr != (packet +OFFSET_DEST_ADDR)) {
-		Serial.print(F("\033[36m\tRecv : not explicitly for us\033[00m"));
+		// Serial.print(F("\033[36m\tRecv : not explicitly for us\033[00m"));
 		if(l2addr_eth_broadcast != (packet + OFFSET_DEST_ADDR)) {
-			PRINT_DEBUG_STATIC("\033[31m : not even broadcast\033[00m");
+			// PRINT_DEBUG_STATIC("\033[31m : not even broadcast\033[00m");
 			return ETH_RECV_WRONG_DEST;
 		}
-		PRINT_DEBUG_STATIC("\033[32m : broadcast\033[00m ");
+		// PRINT_DEBUG_STATIC("\033[32m : broadcast\033[00m ");
 	}
 	// we check the ethernet type
 
@@ -116,9 +123,12 @@ eth_recv_t EthernetRaw::check_received(void) {
 			return ETH_RECV_WRONG_ETHTYPE;
 		}
 	}
-	if(get_payload_length() > ETH_MAX_SIZE) {
+
+	// if this is a real coap message
+	if(error_size || get_payload_length() > ETH_MAX_SIZE)
+	{
 		recv_len_above_threshold = true;
-		_rbuflen = ETH_MAX_SIZE;
+		return ETH_RECV_WRONG_SIZE;
 	}
 	return ETH_RECV_RECV_OK;
 }

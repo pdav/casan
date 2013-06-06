@@ -35,6 +35,14 @@
 // To sleep between 2 occurs of the loop, to prevent bugs from arduino (ms)
 #define DELAY_TO_SLEEP	50
 
+#define MAX_TRANSMIT_SPAN	 45		// seconds
+#define MAX_TRANSMIT_WAIT	 93		// seconds
+#define MAX_LATENCY      	100		// seconds
+#define PROCESSING_DELAY 	  2		// seconds
+#define MAX_RTT          	202		// seconds
+#define EXCHANGE_LIFETIME	247		// seconds
+#define NON_LIFETIME     	145		// seconds
+
 #define ALEA(x) x
 
 #define PRINT_FREE_MEM \
@@ -50,8 +58,8 @@
 #define PRINT_DEBUG_STATIC(x) \
 	Serial.println(F(x));
 
-#define		BYTE_LOW(n)		((n) & 0xff)
-#define		BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
+#define	BYTE_LOW(n)		((n) & 0xff)
+#define	BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
 #define FORMAT_BYTE0(ver,type,toklen)               \                                                                                                                                                                                      
 	(												\
 		 (((unsigned int) (ver) & 0x3) << 6) |		\                                   
