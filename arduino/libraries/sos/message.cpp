@@ -116,22 +116,22 @@ void Message::push_option(option &o) {
 	opt_list_s * tmp2 = _opt_list;
 	tmp->o = new option(o);
 	if(_opt_list == NULL || *(tmp->o) < *(tmp2->o)) {
-		PRINT_DEBUG_STATIC("\033[33mpush_option : _opt_list == NULL || *(tmp->o) < *(tmp2->o)\033[00m");
+		// PRINT_DEBUG_STATIC("\033[33mpush_option : _opt_list == NULL || *(tmp->o) < *(tmp2->o)\033[00m");
 		tmp->s = _opt_list;
 		_opt_list = tmp;
 	} else {
 		opt_list_s * tmp3 = tmp2;
 		while((!(*(tmp->o) < *(tmp2->o))) && tmp2->s != NULL) {
-			PRINT_DEBUG_STATIC("\033[33m	boucle\033[00m");
+			// PRINT_DEBUG_STATIC("\033[33m	boucle\033[00m");
 			tmp3 = tmp2;
 			tmp2 = tmp2->s;
 		}
 		if(*(tmp->o) < *(tmp2->o)) {
-			PRINT_DEBUG_STATIC("\033[32mpush_option :\033[00m *(tmp->o) < *(tmp2->o)");
+			// PRINT_DEBUG_STATIC("\033[32mpush_option :\033[00m *(tmp->o) < *(tmp2->o)");
 			tmp3->s = tmp;
 			tmp->s = tmp2;
 		} else if(tmp2->s == NULL) {
-			PRINT_DEBUG_STATIC("\033[32mpush_option : \033[00mtmp2->s == NULL");
+			// PRINT_DEBUG_STATIC("\033[32mpush_option : \033[00mtmp2->s == NULL");
 			tmp2->s = tmp;
 			tmp->s = NULL;
 		} else {
@@ -142,7 +142,6 @@ void Message::push_option(option &o) {
 
 void Message::free_options(void) {
 	while(_opt_list != NULL) {
-		PRINT_DEBUG_STATIC("free_options");
 		delete pop_option();
 	}
 }

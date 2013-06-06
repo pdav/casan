@@ -62,11 +62,6 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 	m.set_id(get_id());
 	m.set_token(get_token_length(), get_token());
 
-	// DEBUG
-	// Serial.print ("rbuflen = ") ;
-	// Serial.print (rbuflen) ;
-	// Serial.println () ;
-
 	bool success(true);
 
 	int i ;
@@ -84,14 +79,6 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 	{
 		int opt_delta(0), opt_len(0) ;
 		option o ;
-
-		Serial.print ("rbuflen = ") ;
-		Serial.print (rbuflen) ;
-		Serial.print (", i = ") ;
-		Serial.print (i) ;
-
-		Serial.print (", OPT: ") ;
-		Serial.print (rbuf [i], HEX) ; Serial.println () ;
 
 		opt_delta = (rbuf [i] >> 4) & 0x0f ;
 		opt_len   = (rbuf [i]     ) & 0x0f ;
@@ -130,20 +117,6 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 		/* register option */
 		if (success)
 		{
-			// DEBUG
-			// {
-			//     char *buf = (char*) malloc(opt_len +1);
-			//     memcpy(buf, rbuf+i,opt_len);
-			//     buf[opt_len] = '\0';
-
-			//     Serial.print(F("\t\t\033[33mOPTION optnb\033[00m=")); 
-			//     Serial.print(opt_nb); 
-			//     Serial.print(F(", \033[33mlen\033[00m="));
-			//     Serial.print(opt_len);
-			//     Serial.print(F("  \033[33mval\033[00m="));
-			//     Serial.println(buf);
-			//     free (buf) ;
-			// }
 
 			o.optcode (option::optcode_t (opt_nb)) ;
 			o.optval ((void *)(rbuf + i), (int)opt_len) ;
@@ -165,20 +138,6 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 		else
 		{
 			i++ ;
-
-			// DEBUG
-			// {
-			// 	char *buf = (char*) malloc(sizeof(char) * paylen_ + 1);
-			// 	memcpy(buf, rbuf + i, paylen_);
-			// 	buf[paylen_] = '\0';
-
-			// 	Serial.print(F("\033[33mWe have a payload, len : \033[00m"));
-			// 	Serial.print(paylen_);
-			// 	Serial.print(F(" \033[36mcontent \033[00m: "));
-			// 	Serial.println(buf);
-			// 	free(buf);
-			// }
-
 			m.set_payload(paylen_, rbuf + i);
 		}
 	}

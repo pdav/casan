@@ -31,11 +31,6 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 	// to include the two size bytes
 	len += 2;
 
-	Serial.print(F("\033[33mLEN \033[00m: "));
-	Serial.println(len);
-	Serial.print(F("\033[33mETH TYPE \033[00m: "));
-	Serial.println(_eth_type, HEX);
-
 	reste = ETH_MAX_SIZE < len ? len - ETH_MAX_SIZE - OFFSET_DATA: 0;
 	sbuflen = ETH_MAX_SIZE < len + OFFSET_DATA ? ETH_MAX_SIZE : len + OFFSET_DATA;
 	sbuf = (byte*) malloc(sbuflen);
@@ -48,15 +43,13 @@ size_t EthernetRaw::send(l2addr &mac_dest, const uint8_t *data, size_t len) {
 	}
 
 	// message size
-	sbuf [OFFSET_SIZE] = BYTE_HIGH (len) ;
-	sbuf [OFFSET_SIZE] = BYTE_LOW  (len) ;
+	sbuf [OFFSET_SIZE   ] = BYTE_HIGH (len) ;
+	sbuf [OFFSET_SIZE +1] = BYTE_LOW  (len) ;
 
 	memcpy(sbuf + OFFSET_DATA, data, len);
 
 	W5100.send_data_processing(_s, sbuf, sbuflen);
 	W5100.execCmdSn(_s, Sock_SEND_MAC);
-	//Serial.print(F("Envoi : "));
-	//print_packet(sbuf, sbuflen);
 
 	free(sbuf);
 	return reste;
@@ -120,17 +113,9 @@ eth_recv_t EthernetRaw::check_received(void) {
 		uint8_t b = *(packet + OFFSET_ETHTYPE + 1);
 		if( a != (uint8_t) (_eth_type >> 8) || 
 				b != (uint8_t) (_eth_type & 0xFF)) {
-			// DEBUG
-			// Serial.print(F("\033[31m\tRecv : ethtype\033[00m, received : \033[31m"));
-			// Serial.print(a, HEX);
-			// Serial.print(" ");
-			// Serial.println(b, HEX);
-			// Serial.print("\033[00m");
 			return ETH_RECV_WRONG_ETHTYPE;
 		}
 	}
-	// PRINT_DEBUG_STATIC("Received : ");
-	// print_packet(packet, get_payload_length());
 	if(get_payload_length() > ETH_MAX_SIZE) {
 		recv_len_above_threshold = true;
 		_rbuflen = ETH_MAX_SIZE;

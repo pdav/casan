@@ -7,6 +7,7 @@
 
 #define	PATH_1		".well-known"
 #define	PATH_2		"sos"
+#define	PATH_3		"path3"
 
 Coap *coap;
 EthernetRaw * eth ;
@@ -44,15 +45,18 @@ void test_emission(void) {
 	Message m2;
 	option uri_path1 (option::MO_Uri_Path, (void *) PATH_1, sizeof PATH_1 - 1) ;
 	option uri_path2 (option::MO_Uri_Path, (void *) PATH_2, sizeof PATH_2 - 1) ;
+	option uri_path3 (option::MO_Uri_Path, (void *) PATH_3, sizeof PATH_3 - 1) ;
     option ocf (option::MO_Content_Format, (void *) "abc", sizeof "abc" - 1) ;
 
-	m1.set_id(103);
+	m1.set_id(258);
 	m1.set_type(COAP_TYPE_NON);
+	m1.push_option(ocf);
 	m1.push_option(uri_path1);
 	m1.push_option(uri_path2);
+	m1.push_option(uri_path3);
 	coap->send(l2addr_eth_broadcast, m1);
 
-	m2.set_id(32);
+	m2.set_id(33);
 	m2.set_type(COAP_TYPE_CON);
 	m2.push_option(ocf);
 	coap->send(l2addr_eth_broadcast, m2);
