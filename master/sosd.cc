@@ -8,10 +8,11 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "server.hpp"
+
 #include "conf.h"
 #include "sos.h"
-
-#include "server.hpp"
+#include "master.h"
 
 conf cf ;
 
@@ -44,7 +45,7 @@ void wait_for_signal (void)
 
 int main (int argc, char *argv [])
 {
-    // http::server2::server *hs ;		// XXXXXXXXXXXXX
+    master master ;
     char *conffile ;
     sigset_t mask ;
 
@@ -57,10 +58,10 @@ int main (int argc, char *argv [])
 	}
 	conffile = argv [1] ;
 
-	if (! cf.init (conffile))
+	if (! cf.parse (conffile))
 	{
-	    std::cout << "Read error for " << conffile << "\n" ;
-	    std::cout << "Abort\n" ;
+	    std::cerr << "Read error for " << conffile << "\n" ;
+	    std::cerr << "Abort\n" ;
 	    exit (1) ;
 	}
 
@@ -68,19 +69,20 @@ int main (int argc, char *argv [])
 
 	block_all_signals (&mask) ;
 
-	// start SOS engine
-	cf.start () ;
-
-	// start HTTP server
-	std::size_t nthreads = 5 ;	// XXX should be in sos.conf
-	http::server2::server hs ("127.0.0.1", "8000", nthreads) ;
-	asio::thread ht (boost::bind (&http::server2::server::run, &hs)) ;
+	if (! master.start (cf))
+	{
+	    std::cerr << "Cannot start\n" ;
+	    exit (1) ;
+	}
 
 	undo_block_all_signals (&mask) ;
 	wait_for_signal () ;
 
-	hs.stop () ;
-	ht.join () ;
+	if (! master.stop ())
+	{
+	    std::cerr << "Cannot stop\n" ;
+	    exit (1) ;
+	}
     }
     catch (std::exception &e)
     {

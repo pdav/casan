@@ -6,78 +6,19 @@
 #include <iterator>
 
 #include "conf.h"
-#include "l2.h"
-#include "l2eth.h"
 #include "sos.h"
 
-bool conf::init (void)
+bool conf::parse (void)
 {
     file_ = CONF_PATH ;
     return conf::parse_file () ;
 }
 
-bool conf::init (const std::string &file)
+bool conf::parse (const std::string &file)
 {
     file_ = file ;
     return conf::parse_file () ;
 }
-
-sos::sos *conf::start (void)
-{
-    sos::sos *e ;
-
-    if (done_)
-    {
-	e = new sos::sos ;
-
-	// Start SOS engine machinery
-	e->ttl (def_ttl_) ;
-	e->init () ;
-
-	// Start interfaces
-	for (auto &n : netlist_)
-	{
-	    sos::l2net *l ;
-
-	    switch (n.type)
-	    {
-		case NET_ETH :
-		    l = new sos::l2net_eth ;
-		    if (l->init (n.net_eth.iface.c_str ()) == -1)
-		    {
-			perror ("init") ;
-			delete l ;
-			delete e ;
-			return 0 ;
-		    }
-		    e->start_net (l) ;
-		    std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
-		    break ;
-		case NET_802154 :
-		    std::cerr << "802.15.4 not supported\n" ;
-		    break ;
-		default :
-		    std::cerr << "(unrecognized network)\n" ;
-		    break ;
-	    }
-	}
-
-	// Add registered slaves
-	for (auto &s : slavelist_)
-	{
-	    sos::slave *v ;
-
-	    v = new sos::slave ;
-	    v->slaveid (s.id) ;
-	    e->add_slave (v) ;
-	    std::cout << "Slave " << s.id << " added\n" ;
-	}
-    }
-    else e = 0 ;
-
-    return e ;
-}
-
 
 /******************************************************************************
  * Configuration file dumper

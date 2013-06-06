@@ -23,9 +23,8 @@
 class conf
 {
     public:
-	bool init (void) ;
-	bool init (const std::string &file) ;
-	sos::sos *start (void) ;
+	bool parse (void) ;
+	bool parse (const std::string &file) ;
 
 	friend std::ostream& operator<< (std::ostream &os, const conf &cf) ;
 
@@ -33,11 +32,10 @@ class conf
 
 	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_SOS } ;
 
-    private:
-	bool done_ = false ;		// configuration file already read
+    protected:
+	friend class master ;
 
-	std::string file_ ;		// parsed file
-	int lineno_ ;			// parsed line
+	bool done_ = false ;		// configuration file already read
 
 	// HTTP server configuration
 	struct cf_http
@@ -85,6 +83,10 @@ class conf
 	    int mtu ;
 	} ;
 	std::list <cf_slave> slavelist_ ;
+
+    private:
+	std::string file_ ;		// parsed file
+	int lineno_ ;			// parsed line
 
 	bool parse_file (void) ;
 	bool parse_line (std::string &line) ;
