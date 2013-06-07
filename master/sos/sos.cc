@@ -18,6 +18,7 @@
 
 
 #include <iostream>
+#include <sstream>
 #include <chrono>
 #include <cstdlib>
 #include <cstdio>
@@ -82,6 +83,25 @@ void sos::ttl (slavettl_t t)
 slavettl_t sos::ttl (void)
 {
     return ttl_ ;
+}
+
+/******************************************************************************
+ * Displays (in a string) dynamic data structures
+ */
+
+std::string sos::html_debug (void)
+{
+    std::ostringstream oss ;
+
+    oss << "<html><body><pre>\n" ;
+
+    oss << "Slaves:\n" ;
+    for (auto &s : slist_)
+	oss << s ;
+
+    oss << "</pre></body></html>\n" ;
+
+    return oss.str () ;
 }
 
 /******************************************************************************

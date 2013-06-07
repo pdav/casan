@@ -1,7 +1,15 @@
+#include <iostream>
+
 #include "global.h"
 #include "l2.h"
 
 namespace sos {
+
+std::ostream& operator<< (std::ostream &os, const l2addr &a)
+{
+    a.print (os) ;
+    return os ;
+}
 
 int l2net::mtu (void)
 {

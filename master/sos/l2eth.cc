@@ -101,6 +101,24 @@ l2addr_eth::~l2addr_eth ()
 }
 
 /******************************************************************************
+ * Dump address
+ */
+
+void l2addr_eth::print (std::ostream &os) const
+{
+    if (addr_)
+    {
+	for (int i = 0  ; i < ETHADDRLEN ; i++)
+	{
+	    if (i > 0)
+		os << ":" ;
+	    os << std::hex << addr_ [i] ;
+	}
+    }
+    else os << "(null)" ;
+}
+
+/******************************************************************************
  * l2net_eth methods
  */
 

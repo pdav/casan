@@ -19,6 +19,15 @@
 #include "master.h"
 
 /******************************************************************************
+ * Debug
+ */
+
+std::string master::html_debug (void)
+{
+    return engine_.html_debug () ;
+}
+
+/******************************************************************************
  * Start the whole SOS machinery
  * - master SOS code
  * - http server
@@ -104,15 +113,3 @@ bool master::stop (void)
 
     return r ;
 }
-
-#if 0
-
-masterhttp::~masterhttp ()
-{
-    if (server_)
-	delete server_ ;
-    if (threads_)
-	delete threads_ ;
-}
-
-#endif

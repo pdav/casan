@@ -7,6 +7,10 @@
 #include <iostream>
 #include <cstring>
 
+#include <ctime>
+#include <chrono>
+#include <iomanip>			// put_tiime
+
 #include "global.h"
 
 #include "l2.h"
@@ -31,6 +35,36 @@ void slave::reset (void)
     l2_ = 0 ;
     addr_ = 0 ;
     SET_INACTIVE ;
+}
+
+/******************************************************************************
+ * Debug
+ */
+
+std::ostream& operator<< (std::ostream &os, const slave &s)
+{
+    l2addr *a ;
+    std::time_t nt ;
+
+    os << "slave " << s.slaveid_ << " " ;
+    switch (s.status_)
+    {
+	case slave::SL_INACTIVE:
+	    os << "INACTIVE" ;
+	    break ;
+	case slave::SL_RUNNING:
+	    nt = std::chrono::system_clock::to_time_t (s.next_timeout_) ;
+	    os << "RUNNING (ttl=" << std::ctime (&nt) << ")" ;
+	    break ;
+	default:
+	    os << "(unknown state)" ;
+	    break ;
+    }
+    a = ((slave *) (&s))->addr () ;	// why "a = s.addr ()" doesn't work?
+    if (a)
+	os << " mac=" << *a ;
+    os << "\n" ;
+    return os ;
 }
 
 /******************************************************************************

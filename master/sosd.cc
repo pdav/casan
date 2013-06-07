@@ -1,9 +1,5 @@
 #include <iostream>
 #include <string>
-#include <asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
-#include <thread>
 
 #include <unistd.h>
 #include <signal.h>
@@ -15,6 +11,11 @@
 #include "master.h"
 
 conf cf ;
+master master ;
+
+/******************************************************************************
+ * Signal blocking/unblocking
+ */
 
 void block_all_signals (sigset_t *old)
 {
@@ -43,9 +44,17 @@ void wait_for_signal (void)
     sigwait (&m, &signo) ;
 }
 
+/******************************************************************************
+ * Main function
+ *
+ * - check arguments
+ * - read/parse configuration file
+ * - start master: start threads for SOS engine, HTTP servers, etc.
+ * - wait for a signal and stop all master threads
+ */
+
 int main (int argc, char *argv [])
 {
-    master master ;
     char *conffile ;
     sigset_t mask ;
 

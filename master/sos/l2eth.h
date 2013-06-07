@@ -47,7 +47,8 @@ class l2addr_eth: public l2addr
 
 	friend class l2net_eth ;
 
-	// friend ostream &operator << (ostream &o, const l2addr_eth &addr) ;
+    protected:
+	void print (std::ostream &os) const ;
 } ;
 
 extern l2addr_eth l2addr_eth_broadcast ;

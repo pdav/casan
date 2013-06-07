@@ -16,13 +16,16 @@
 #include <sstream>
 #include <string>
 #include <boost/lexical_cast.hpp>
-#include "mime_types.hpp"
-#include "reply.hpp"
-#include "request.hpp"
+#include "http/mime_types.hpp"
+#include "http/reply.hpp"
+#include "http/request.hpp"
+#include "http/server.hpp"
 
 #include "conf.h"
+#include "master.h"
 
 extern conf cf ;
+extern master master ;
 
 request_handler::request_handler(const std::string& doc_root)
   : doc_root_(doc_root)
@@ -59,7 +62,34 @@ void request_handler::handle_request(const http::server2::request& req, http::se
   {
       // Fill out the reply to be sent to the client.
       rep.status = http::server2::reply::ok;
+      rep.content = "<html><body><ul>"
+		"<li><a href=\"/debug/conf\">conf</a>"
+		"<li><a href=\"/debug/run\">run</a>"
+		"</ul></body></html>" ;
+
+      rep.headers.resize(2);
+      rep.headers[0].name = "Content-Length";
+      rep.headers[0].value = boost::lexical_cast<std::string>(rep.content.size());
+      rep.headers[1].name = "Content-Type";
+      rep.headers[1].value = "text/html" ;
+  }
+  else if (request_path == "/debug/conf")
+  {
+      // Fill out the reply to be sent to the client.
+      rep.status = http::server2::reply::ok;
       rep.content = cf.html_debug () ;
+
+      rep.headers.resize(2);
+      rep.headers[0].name = "Content-Length";
+      rep.headers[0].value = boost::lexical_cast<std::string>(rep.content.size());
+      rep.headers[1].name = "Content-Type";
+      rep.headers[1].value = "text/html" ;
+  }
+  else if (request_path == "/debug/run")
+  {
+      // Fill out the reply to be sent to the client.
+      rep.status = http::server2::reply::ok;
+      rep.content = master.html_debug () ;
 
       rep.headers.resize(2);
       rep.headers[0].name = "Content-Length";

@@ -2,6 +2,7 @@
 #define	SOS_SOS_H
 
 #include <list>
+#include <string>
 
 #include <thread>
 #include <mutex>
@@ -40,6 +41,9 @@ class sos
 
 	// add a request
 	void add_request (msg *m) ;
+
+	// dump data structures
+	std::string html_debug (void) ;
 
     private:
 	std::list <receiver> rlist_ ;	// connected networks

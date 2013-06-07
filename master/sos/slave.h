@@ -35,6 +35,8 @@ class slave
 
 	void handler (reply_handler_t h) ;// handler for incoming requests
 
+	friend std::ostream& operator<< (std::ostream &os, const slave &s) ;
+
     protected:
 	// process a message from this slave
 	// data is NULL if this is timeout
@@ -46,10 +48,12 @@ class slave
 
 	friend class sos ;
 
+	// needed for operator<<
+	timepoint_t next_timeout_ ;	// remaining ttl
+
     private:
 	l2net *l2_ ;			// l2 network this slave is on
 	l2addr *addr_ ;			// slave address
-	timepoint_t next_timeout_ ;	// remaining ttl
 } ;
 
 }					// end of namespace sos

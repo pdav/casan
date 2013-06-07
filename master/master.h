@@ -7,6 +7,8 @@ class master
 	bool start (conf &cf) ;
 	bool stop (void) ;
 
+	std::string html_debug (void) ;
+
     private:
 	sos::sos engine_ ;
 
