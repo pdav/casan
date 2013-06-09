@@ -30,17 +30,11 @@
 
 namespace sos {
 
-class l2net_eth ;
-
 class l2addr_eth: public l2addr
 {
     public:
-	l2addr_eth () ;				// constructor
-	l2addr_eth (const char *) ;		// constructor
-	l2addr_eth (const l2addr_eth &) ;	// copy constructor
-	l2addr_eth &operator= (const l2addr_eth &) ; // copy assignment
-
-	~l2addr_eth () ;			// destructor
+	l2addr_eth () ;			// default constructor
+	l2addr_eth (const char *) ;	// constructor
 
 	int operator== (const l2addr &) ;
 	int operator!= (const l2addr &) ;
@@ -49,6 +43,9 @@ class l2addr_eth: public l2addr
 
     protected:
 	void print (std::ostream &os) const ;
+
+    private:
+	byte addr_ [ETHADDRLEN] ;
 } ;
 
 extern l2addr_eth l2addr_eth_broadcast ;

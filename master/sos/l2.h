@@ -19,8 +19,6 @@ class l2addr
 	friend std::ostream& operator<< (std::ostream &os, const l2addr &a) ;
 
     protected:
-	byte *addr_ ;
-
 	virtual void print (std::ostream &os) const = 0 ;
 } ;
 

@@ -31,10 +31,9 @@ namespace sos {
  * l2addr_eth methods
  */
 
-// constructor
+// default constructor
 l2addr_eth::l2addr_eth ()
 {
-    addr_ = new byte [ETHADDRLEN] ;
 }
 
 // constructor
@@ -42,8 +41,6 @@ l2addr_eth::l2addr_eth (const char *a)
 {
     int i = 0 ;
     byte b = 0 ;
-
-    addr_ = new byte [ETHADDRLEN] ;
 
     while (*a != '\0' && i < ETHADDRLEN)
     {
@@ -75,31 +72,6 @@ l2addr_eth::l2addr_eth (const char *a)
 
 l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 
-// copy constructor
-l2addr_eth::l2addr_eth (const l2addr_eth &x)
-{
-    addr_ = new byte [ETHADDRLEN] ;
-    std::memcpy (addr_, x.addr_, ETHADDRLEN) ;
-}
-
-// assignment operator
-l2addr_eth & l2addr_eth::operator = (const l2addr_eth &x)
-{
-    if (addr_ == x.addr_)
-	return *this ;
-
-    if (addr_ == NULL)
-	addr_ = new byte [ETHADDRLEN] ;
-    std::memcpy (addr_, x.addr_, ETHADDRLEN) ;
-    return *this ;
-}
-
-// destructor
-l2addr_eth::~l2addr_eth ()
-{
-    delete [] addr_ ;
-}
-
 /******************************************************************************
  * Dump address
  */
@@ -130,8 +102,7 @@ int l2addr_eth::operator== (const l2addr &other)
 
 int l2addr_eth::operator!= (const l2addr &other)
 {
-    l2addr_eth *oe = (l2addr_eth *) &other ;
-    return std::memcmp (this->addr_, oe->addr_, ETHADDRLEN) != 0 ;
+    return ! (*this == other) ;
 }
 
 int l2net_eth::init (const char *iface)
