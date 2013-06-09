@@ -93,13 +93,9 @@ std::string sos::html_debug (void)
 {
     std::ostringstream oss ;
 
-    oss << "<html><body><pre>\n" ;
-
     oss << "Slaves:\n" ;
     for (auto &s : slist_)
 	oss << s ;
-
-    oss << "</pre></body></html>\n" ;
 
     return oss.str () ;
 }

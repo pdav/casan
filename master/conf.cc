@@ -70,8 +70,7 @@ std::string conf::html_debug (void)
 {
     std::ostringstream oss ;
 
-    oss << "<html><body><pre>\n" << *this << "</pre></body></html>\n" ;
-
+    oss << *this ;
     return oss.str () ;
 }
 

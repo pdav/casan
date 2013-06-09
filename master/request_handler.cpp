@@ -77,7 +77,9 @@ void request_handler::handle_request(const http::server2::request& req, http::se
   {
       // Fill out the reply to be sent to the client.
       rep.status = http::server2::reply::ok;
-      rep.content = cf.html_debug () ;
+      rep.content = "<html><body><pre>"
+			+ cf.html_debug ()
+			+ "</pre></body></html>" ;
 
       rep.headers.resize(2);
       rep.headers[0].name = "Content-Length";
@@ -89,7 +91,9 @@ void request_handler::handle_request(const http::server2::request& req, http::se
   {
       // Fill out the reply to be sent to the client.
       rep.status = http::server2::reply::ok;
-      rep.content = master.html_debug () ;
+      rep.content = "<html><body><pre>"
+			+ master.html_debug () ;
+			+ "</pre></body></html>" ;
 
       rep.headers.resize(2);
       rep.headers[0].name = "Content-Length";
