@@ -24,7 +24,7 @@ void request_parser::reset()
   state_ = method_start;
 }
 
-boost::tribool request_parser::consume(request& req, char input)
+boost::tribool request_parser::consume(request& req, char input, int remaining)
 {
   switch (state_)
   {
@@ -287,7 +287,22 @@ boost::tribool request_parser::consume(request& req, char input)
       return false;
     }
   case expecting_newline_3:
-    return (input == '\n');
+    if (input == '\n')
+    {
+	if (remaining > 0)
+	{
+	    state_ = expecting_post_args;
+	    return boost::indeterminate;
+	}
+	return true ;
+    }
+    else return false ;
+  case expecting_post_args:
+    req.rawargs += input;
+    if (remaining > 0)
+	return boost::indeterminate;
+    else
+	return true ;
   default:
     return false;
   }
@@ -300,7 +315,7 @@ bool request_parser::is_char(int c)
 
 bool request_parser::is_ctl(int c)
 {
-  return c >= 0 && c <= 31 || c == 127;
+  return (c >= 0 && c <= 31) || c == 127;
 }
 
 bool request_parser::is_tspecial(int c)
@@ -320,6 +335,173 @@ bool request_parser::is_tspecial(int c)
 bool request_parser::is_digit(int c)
 {
   return c >= '0' && c <= '9';
+}
+
+int request_parser::hex_value (int c)
+{
+    int r = -1 ;
+    if (c >= '0' && c <= '9')
+	r = c - '0' ;
+    if (c >= 'a' && c <= 'f')
+	r = c - 'a' + 10 ;
+    if (c >= 'A' && c <= 'F')
+	r = c - 'A' + 10 ;
+    return r ;
+}
+
+bool request_parser::query_decode (request &req)
+{
+    enum { undetermined, www_form_urlencoded } encoding  = undetermined ;
+    bool r = true ;
+
+    // Look for Content-Type header
+    for (auto &h : req.headers)
+    {
+	if (h.name == "Content-Type")
+	{
+	    if (h.value == "application/x-www-form-urlencoded")
+	    {
+		encoding = www_form_urlencoded ;
+		break ;
+	    }
+	}
+    }
+
+    if (encoding == www_form_urlencoded)
+    {
+	enum { name_start,
+		name,
+		name_pcent1,
+		name_pcent2,
+		value,
+		value_pcent1,
+		value_pcent2,
+		error,
+	    } state = name_start ;
+	unsigned char pcentchar ;
+
+	for (auto c : req.rawargs)
+	{
+	    int x ;			// current hex value
+
+	    switch (state)
+	    {
+		case name_start:
+		    req.postargs.push_back (post_arg ()) ;
+		    if (c == '%')
+		    {
+			state = name_pcent1 ;
+			pcentchar = 0 ;
+		    }
+		    else if (c == '=')
+		    {
+			state = error ;
+		    }
+		    else if (c == '&')
+		    {
+			state = error ;
+		    }
+		    else
+		    {
+			if (c == '+')
+			    c = ' ' ;
+			state = name ;
+			req.postargs.back ().name.push_back (c) ;
+		    }
+		    break ;
+		case name:
+		    if (c == '%')
+		    {
+			state = name_pcent1 ;
+			pcentchar = 0 ;
+		    }
+		    else if (c == '=')
+		    {
+			state = value ;
+		    }
+		    else if (c == '&')
+		    {
+			state = error ;
+		    }
+		    else
+		    {
+			if (c == '+')
+			    c = ' ' ;
+			req.postargs.back ().name.push_back (c) ;
+		    }
+		    break ;
+		case name_pcent1:
+		    x = hex_value (c) ;
+		    if (x == -1)
+			state = error ;
+		    else
+		    {
+			pcentchar = pcentchar * 16 + x ;
+			state = name_pcent2 ;
+		    }
+		    break ;
+		case name_pcent2:
+		    x = hex_value (c) ;
+		    if (x == -1)
+			state = error ;
+		    else
+		    {
+			pcentchar = pcentchar * 16 + x ;
+			req.postargs.back ().name.push_back (pcentchar) ;
+			state = name ;
+		    }
+		    break ;
+		case value:
+		    if (c == '%')
+		    {
+			state = value_pcent1 ;
+			pcentchar = 0 ;
+		    }
+		    else if (c == '&')
+		    {
+			state = name_start ;
+		    }
+		    else
+		    {
+			if (c == '+')
+			    c = ' ' ;
+			req.postargs.back ().value.push_back (c) ;
+		    }
+		    break ;
+		case value_pcent1:
+		    x = hex_value (c) ;
+		    if (x == -1)
+			state = error ;
+		    else
+		    {
+			pcentchar = pcentchar * 16 + x ;
+			state = value_pcent2 ;
+		    }
+		    break ;
+		case value_pcent2:
+		    x = hex_value (c) ;
+		    if (x == -1)
+			state = error ;
+		    else
+		    {
+			pcentchar = pcentchar * 16 + x ;
+			req.postargs.back ().value.push_back (pcentchar) ;
+			state = value ;
+		    }
+		    break ;
+		case error:
+		    // silently skip remaining characters
+		    break ;
+		default:
+		    state = error ;
+		    break ;
+	    }
+	}
+	if (state != value)
+	    r = false ;
+    }
+
+    return r ;
 }
 
 } // namespace server2

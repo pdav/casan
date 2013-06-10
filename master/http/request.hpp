@@ -18,6 +18,12 @@
 namespace http {
 namespace server2 {
 
+struct post_arg
+{
+    std::string name ;
+    std::string value ;
+} ;
+
 /// A request received from a client.
 struct request
 {
@@ -26,6 +32,8 @@ struct request
   int http_version_major;
   int http_version_minor;
   std::vector<header> headers;
+  std::string rawargs;				// raw encoded POST query
+  std::vector <post_arg> postargs;		// decoded POST query
 };
 
 } // namespace server2

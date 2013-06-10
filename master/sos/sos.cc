@@ -160,6 +160,20 @@ void sos::add_slave (slave *s)
     slist_.push_front (*s) ;
 }
 
+bool sos::force_slave_status (slaveid_t sid, int stat)
+{
+    bool r = false ;
+    for (auto &s : slist_)
+    {
+	if (s.slaveid_ == sid)
+	{
+	    r = true ;
+	    s.status_ = (slave::status) stat ;
+	}
+    }
+    return r ;
+}
+
 /******************************************************************************
  * Add a new message to send
  */

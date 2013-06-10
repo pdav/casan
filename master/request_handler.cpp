@@ -43,6 +43,21 @@ void request_handler::handle_request(const http::server2::request& req, http::se
     return;
   }
 
+{
+  std::cout << "req.method=" << req.method << "\n" ;
+  std::cout << "req.uri=" << req.uri
+  		<< " => request_path=" << request_path << "\n" ;
+  for (auto &h : req.headers)
+  {
+    std::cout << "header <" << h.name << "," << h.value << ">\n" ;
+  }
+  std::cout << "args=" << req.rawargs << "\n" ;
+  for (auto &h : req.postargs)
+  {
+    std::cout << "arg= <" << h.name << "," << h.value << ">\n" ;
+  }
+}
+
   // Request path must be absolute and not contain "..".
   if (request_path.empty() || request_path[0] != '/'
       || request_path.find("..") != std::string::npos)
@@ -63,8 +78,9 @@ void request_handler::handle_request(const http::server2::request& req, http::se
       // Fill out the reply to be sent to the client.
       rep.status = http::server2::reply::ok;
       rep.content = "<html><body><ul>"
-		"<li><a href=\"/debug/conf\">conf</a>"
-		"<li><a href=\"/debug/run\">run</a>"
+		"<li><a href=\"/debug/conf\">configuration</a>"
+		"<li><a href=\"/debug/run\">running status</a>"
+		"<li><a href=\"/debug/slave\">slave status</a>"
 		"</ul></body></html>" ;
 
       rep.headers.resize(2);
@@ -92,8 +108,80 @@ void request_handler::handle_request(const http::server2::request& req, http::se
       // Fill out the reply to be sent to the client.
       rep.status = http::server2::reply::ok;
       rep.content = "<html><body><pre>"
-			+ master.html_debug () ;
+			+ master.html_debug ()
 			+ "</pre></body></html>" ;
+
+      rep.headers.resize(2);
+      rep.headers[0].name = "Content-Length";
+      rep.headers[0].value = boost::lexical_cast<std::string>(rep.content.size());
+      rep.headers[1].name = "Content-Type";
+      rep.headers[1].value = "text/html" ;
+  }
+  else if (request_path == "/debug/slave")
+  {
+      // check which slave is concerned
+      if (req.method == "POST")
+      {
+        enum sos::slave::status newstatus = sos::slave::SL_INACTIVE ;
+	slaveid_t sid = -1 ;
+
+	for (auto &a : req.postargs)
+	{
+	    if (a.name == "slaveid")
+		sid = std::stoi (a.value) ;
+	    else if (a.name == "status")
+	    {
+		if (a.value == "inactive")
+		    newstatus = sos::slave::SL_INACTIVE ;
+		else if (a.value == "runnning")
+		    newstatus = sos::slave::SL_RUNNING ;
+	    }
+	}
+	if (sid != -1)
+	{
+	  bool r ;
+
+	  r = master.force_slave_status (sid, newstatus) ;
+	  if (r)
+	  {
+	      // Fill out the reply to be sent to the client.
+	      rep.status = http::server2::reply::ok;
+	      rep.content = "<html><body><pre>"
+				"ok"
+				"</pre></body></html>" ;
+	  }
+	  else
+	  {
+	      // Fill out the reply to be sent to the client.
+	      rep.status = http::server2::reply::not_modified;
+	      rep.content = "<html><body><pre>"
+				"not modified, really"
+				"</pre></body></html>" ;
+	  }
+	}
+	else
+	{
+	  // Fill out the reply to be sent to the client.
+	  rep.status = http::server2::reply::bad_request;
+	  rep.content = "<html><body><pre>"
+			    "so bad request..."
+			    "</pre></body></html>" ;
+	}
+      }
+      else
+      {
+	  // Fill out the reply to be sent to the client.
+	  rep.status = http::server2::reply::ok;
+	  rep.content = "<html><body>"
+			    "<form method=\"post\" action=\"/debug/slave\">"
+				"slave id <input type=text name=slaveid><p>"
+				"status <select size=1 name=status>"
+				    "<option value=\"inactive\">INACTIVE"
+				    "<option value=\"running\">RUNNING"
+				"</select>"
+				"<input type=submit value=set>"
+			    "</pre></body></html>" ;
+      }
 
       rep.headers.resize(2);
       rep.headers[0].name = "Content-Length";

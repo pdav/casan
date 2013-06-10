@@ -39,7 +39,10 @@ public:
   {
     while (begin != end)
     {
-      boost::tribool result = consume(req, *begin++);
+      boost::tribool result = consume(req, *begin, end-begin-1);
+      begin++;
+      if (result)
+	result = query_decode (req) ;
       if (result || !result)
         return boost::make_tuple(result, begin);
     }
@@ -49,7 +52,7 @@ public:
 
 private:
   /// Handle the next character of input.
-  boost::tribool consume(request& req, char input);
+  boost::tribool consume(request& req, char input, int remaining);
 
   /// Check if a byte is an HTTP character.
   static bool is_char(int c);
@@ -62,6 +65,13 @@ private:
 
   /// Check if a byte is a digit.
   static bool is_digit(int c);
+
+  /// hex digit value or -1
+  static int hex_value (int c) ;
+
+  /// Decode Query string
+  static bool query_decode (request &req) ;
+
 
   /// The current state of the parser.
   enum state
@@ -86,7 +96,8 @@ private:
     space_before_header_value,
     header_value,
     expecting_newline_2,
-    expecting_newline_3
+    expecting_newline_3,
+    expecting_post_args,
   } state_;
 };
 
