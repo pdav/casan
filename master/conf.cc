@@ -5,6 +5,10 @@
 #include <algorithm>
 #include <iterator>
 
+#include <string>
+#include <list>
+#include <vector>
+
 #include "conf.h"
 #include "sos.h"
 

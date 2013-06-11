@@ -1,23 +1,13 @@
 #ifndef CONF_H
 #define CONF_H
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include "global.h"
-#include "sos.h"
 
 // #define	CONF_PATH	"/etc/sosd.conf"
 #define	CONF_PATH	"./sosd.conf"
 
 /*
  * Configuration file handling
- */
-
-
-/*
- * Main class
  */
 
 class conf

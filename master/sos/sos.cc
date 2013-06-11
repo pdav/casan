@@ -20,6 +20,7 @@
 #include <iostream>
 #include <sstream>
 #include <chrono>
+#include <vector>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -32,6 +33,7 @@
 
 #include "l2.h"
 #include "msg.h"
+#include "resource.h"
 #include "sos.h"
 
 namespace sos {
@@ -160,20 +162,6 @@ void sos::add_slave (slave *s)
     slist_.push_front (*s) ;
 }
 
-bool sos::force_slave_status (slaveid_t sid, int stat)
-{
-    bool r = false ;
-    for (auto &s : slist_)
-    {
-	if (s.slaveid_ == sid)
-	{
-	    r = true ;
-	    s.status_ = (slave::status) stat ;
-	}
-    }
-    return r ;
-}
-
 /******************************************************************************
  * Add a new message to send
  */
@@ -267,7 +255,7 @@ void sos::sender_thread (void)
 	for (auto &s : slist_)
 	{
 	    // must current timeout be the next hello?
-	    if (s.status_ == slave::SL_RUNNING && now >= s.next_timeout_)
+	    if (s.status () == slave::SL_RUNNING && now >= s.next_timeout_)
 		s.reset () ;
 	}
 
@@ -383,7 +371,7 @@ bool sos::find_peer (msg *m, l2addr *a, receiver *r)
 	    {
 		for (auto &s : slist_)
 		{
-		    if (sid == s.slaveid_)
+		    if (sid == s.slaveid ())
 		    {
 			s.l2 (r->l2) ;
 			s.addr (a) ; free_a = false ;
@@ -589,7 +577,7 @@ void sos::receiver_thread (receiver *r)
 	    continue ;
 	}
 
-	if (m->peer ()->status_ == slave::SL_RUNNING)
+	if (m->peer ()->status () == slave::SL_RUNNING)
 	{
 	    /*
 	     * Is this message a duplicated one?

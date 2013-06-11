@@ -6,6 +6,8 @@
 
 #include <iostream>
 #include <cstring>
+#include <vector>
+#include <list>
 
 #include <ctime>
 #include <chrono>
@@ -15,15 +17,12 @@
 
 #include "l2.h"
 #include "msg.h"
+#include "resource.h"
 #include "slave.h"
 #include "sos.h"
 
 namespace sos {
 
-#define	SET_INACTIVE	do { \
-			    status_ = SL_INACTIVE ; \
-			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
-			} while (false)			// no ";"
 /*
  * Constructor and destructor
  */
@@ -34,7 +33,9 @@ void slave::reset (void)
 	delete addr_ ;			// XXX should be lock-protected
     l2_ = 0 ;
     addr_ = 0 ;
-    SET_INACTIVE ;
+    reslist_.clear () ;
+    status_ = SL_INACTIVE ;
+    next_timeout_ = std::chrono::system_clock::time_point::max () ;
 }
 
 /******************************************************************************
@@ -64,6 +65,11 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
     if (a)
 	os << " mac=" << *a ;
     os << "\n" ;
+
+    // Display resources
+    for (auto &r : s.reslist_)
+	os << r << "\n" ;
+
     return os ;
 }
 
@@ -84,6 +90,11 @@ l2addr *slave::addr (void)
 slaveid_t slave::slaveid (void)
 {
     return slaveid_ ;
+}
+
+enum slave::status_code slave::status (void)
+{
+    return status_ ;
 }
 
 /******************************************************************************
@@ -140,9 +151,12 @@ void slave::process_sos (sos *e, msg *m)
 	    // has answer been correlated to a request?
 	    if (m->reqrep ())
 	    {
-		/*
-		 * ADD RESOURCES FROM THE ANSWER
-		 */
+		byte *pload ; int plen ;
+
+		 // Add ressource list from the answer
+		pload = (byte *) m->payload (&plen) ;
+		(void) parse_resource_list (pload, plen) ;
+
 		status_ = SL_RUNNING ;
 		next_timeout_ = DATE_TIMEOUT (e->ttl ()) ;
 	    }
@@ -155,6 +169,150 @@ void slave::process_sos (sos *e, msg *m)
 	    break ;
     }
     delete m ;
+}
+
+bool slave::parse_resource_list (const byte *b, int len)
+{
+    enum { s_start,			// potential terminal state
+	    s_resource,
+	    s_endres,			// potential terminal state
+	    s_attrname,			// potential terminal state
+	    s_attrval_start,		// potential terminal state
+	    s_attrval_nquoted,		// potential terminal state
+	    s_attrval_quoted,
+	    s_error
+	} state = s_start ;
+    std::string current ;		// string currently being built
+    std::string attrname ;		// attribute name
+
+    // Ref: RFC 6690
+
+    // XXX : this code does not check syntax of link-param and values
+    // XXX : this code does nothing with link-param and values
+
+    for ( ; len > 0 ; len--, b++)
+    {
+	switch (state)
+	{
+	    case s_start :
+		if (*b == '<')
+		{
+		    current = "" ;
+		    state = s_resource ;
+		}
+		else state = s_error ;
+		break ;
+	    case s_resource :
+		if (*b == '>')
+		{
+		    reslist_.push_back (resource (current)) ;
+		    state = s_endres ; 
+		}
+		else current += *b ;
+		break ;
+	    case s_endres :
+		attrname = "" ;
+		if (*b == ';')
+		    state = s_attrname ;
+		else if (*b == ',')
+		    state = s_start ;
+		else state = s_error ;
+		break ;
+	    case s_attrname :
+		if (*b == '=')
+		{
+		    if (attrname == "")
+			state = s_error ;
+		    else
+			state = s_attrval_start ;
+		}
+		else if (*b == ';')
+		{
+		    reslist_.back ().add_attribute (attrname, "") ;
+		    attrname = "" ;
+		    state = s_attrname ;	// stay in current state
+		}
+		else if (*b == ',')
+		{
+		    reslist_.back ().add_attribute (attrname, "") ;
+		    state = s_start ;
+		}
+		else attrname += *b ;
+		break ;
+	    case s_attrval_start :
+		current = "" ;
+		if (*b == '"')
+		    state = s_attrval_quoted ;
+		else if (*b == ',')
+		{
+		    reslist_.back ().add_attribute (attrname, "") ;
+		    state = s_start ;
+		}
+		else if (*b == ';')
+		{
+		    reslist_.back ().add_attribute (attrname, "") ;
+		    attrname = "" ;
+		    state = s_attrname ;
+		}
+		else
+		{
+		    state = s_attrval_nquoted ;
+		    current += *b ;
+		}
+		break ;
+	    case s_attrval_quoted :
+		if (*b == '"')
+		{
+		    reslist_.back ().add_attribute (attrname, current) ;
+		    state = s_endres ;
+		}
+		else current += *b ;
+		break ;
+	    case s_attrval_nquoted :
+		if (*b == ',')
+		{
+		    reslist_.back ().add_attribute (attrname, current) ;
+		    state = s_start ;
+		}
+		else if (*b == ';')
+		{
+		    reslist_.back ().add_attribute (attrname, current) ;
+		    attrname = "" ;
+		    state = s_attrname ;
+		}
+		else current += *b ;
+		break ;
+	    default :
+		state = s_error ;
+		break ;
+	}
+    }
+    
+    // take care of terminal states
+    switch (state)
+    {
+	case s_start :
+	    // nothing to do
+	    break ;
+	case s_endres :
+	    break ;
+	case s_attrname :
+	    if (attrname == "")
+		reslist_.back ().add_attribute (attrname, "") ;
+	    break ;
+	case s_attrval_start :
+	    reslist_.back ().add_attribute (attrname, "") ;
+	    break ;
+	case s_attrval_nquoted :
+	    reslist_.back ().add_attribute (attrname, current) ;
+	    break ;
+	default :
+	    // nothing to do
+	    state = s_error ;
+	    break ;
+    }
+
+    return state != s_error ;
 }
 
 

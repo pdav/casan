@@ -7,10 +7,6 @@ class master
 	bool start (conf &cf) ;
 	bool stop (void) ;
 
-	bool force_slave_status (slaveid_t sid, int stat) {
-	    return engine_.force_slave_status (sid, stat) ;
-	}
-
 	std::string html_debug (void) ;
 
     private:

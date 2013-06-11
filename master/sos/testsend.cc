@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -10,6 +11,7 @@
 #include "l2.h"
 #include "l2eth.h"
 #include "msg.h"
+#include "resource.h"
 #include "sos.h"
 
 #define IFACE		"eth0"
@@ -73,7 +75,7 @@ int main (int argc, char *argv [])
     sleep (2) ;
 
     // ASSOCIATE answer message
-    std::strcpy (buf, "<resource list>") ;
+    std::strcpy (buf, "</test>;title=\"My test\";ct=0,</foo>;if=\"clock\";rt=\"Ticks;title=\"My clock\";ct=0;obs") ;
     m2.type (sos::msg::MT_ACK) ;		// will not be retransmitted
     m2.code (COAP_MKCODE (2, 5)) ;
     m2.peer (&s) ;

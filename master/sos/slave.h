@@ -7,11 +7,12 @@ class sos ;
 class msg ;
 class l2net ;
 class l2addr ;
+class resource ;
 
 class slave
 {
     public:
-	enum status
+	enum status_code
 	{
 	    SL_INACTIVE = 0,
 	    SL_ASSOCIATING = 0,
@@ -29,6 +30,7 @@ class slave
 	l2net *l2 (void) ;
 	l2addr *addr (void) ;
 	slaveid_t slaveid (void) ;
+	enum status_code status (void) ;
 
 	// SOS protocol handling
 	void process_sos (sos *e, msg *m) ;
@@ -42,8 +44,6 @@ class slave
 	// data is NULL if this is timeout
 	void process (void *data, int len) ;
 
-	slaveid_t slaveid_ ;		// slave id
-	enum status status_ ;		// current status of slave
 	reply_handler_t handler_ ;	// handler to process answers
 
 	friend class sos ;
@@ -52,8 +52,15 @@ class slave
 	timepoint_t next_timeout_ ;	// remaining ttl
 
     private:
+	slaveid_t slaveid_ ;		// slave id
 	l2net *l2_ ;			// l2 network this slave is on
 	l2addr *addr_ ;			// slave address
+	enum status_code status_ ;	// current status of slave
+	std::vector <resource> reslist_ ;	// resource list
+
+	// parse a resource list returned by this slave
+	// at the slave auto-discovery time
+	bool parse_resource_list (const byte *b, int len) ;
 } ;
 
 }					// end of namespace sos

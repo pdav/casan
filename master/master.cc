@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <list>
+#include <vector>
 #include <asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
@@ -13,6 +15,8 @@
 #include "conf.h"			// configuration file
 #include "l2.h"
 #include "l2eth.h"
+#include "option.h"
+#include "resource.h"
 #include "sos.h"			// master engine
 #include "server.hpp"			// http server
 

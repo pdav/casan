@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 #include "global.h"
 
@@ -107,7 +108,7 @@ option::option (optcode_t optcode)
     optcode_ = optcode ;
 }
 
-option::option (optcode_t optcode, void *optval, int optlen)
+option::option (optcode_t optcode, const void *optval, int optlen)
 {
     OPTION_INIT ;
     CHK_OPTCODE (optcode) ;
@@ -233,6 +234,29 @@ void option::static_init (void)
 bool option::operator< (const option &o)
 {
     return this->optcode_ < o.optcode_ ;
+}
+
+/******************************************************************************
+ * Operator used for option matching
+ */
+
+int option::operator== (const option &o)
+{
+    int r ;
+
+    r = 0 ;
+    if (optcode_ == o.optcode_ && optlen_ == o.optlen_)
+    {
+	if (optval_ && o.optval_)
+	    r = std::memcmp (optval_, o.optval_, optlen_) ;
+	else r = std::memcmp (staticval_, o.staticval_, optlen_) ;
+    }
+    return r ;
+}
+
+int option::operator!= (const option &o)
+{
+    return ! (*this == o) ;
 }
 
 /******************************************************************************

@@ -22,6 +22,10 @@
 #include "http/server.hpp"
 
 #include "conf.h"
+#include "option.h"
+#include "resource.h"
+#include "slave.h"
+#include "sos.h"
 #include "master.h"
 
 extern conf cf ;
@@ -122,7 +126,7 @@ void request_handler::handle_request(const http::server2::request& req, http::se
       // check which slave is concerned
       if (req.method == "POST")
       {
-        enum sos::slave::status newstatus = sos::slave::SL_INACTIVE ;
+        enum sos::slave::status_code newstatus = sos::slave::SL_INACTIVE ;
 	slaveid_t sid = -1 ;
 
 	for (auto &a : req.postargs)
@@ -139,15 +143,15 @@ void request_handler::handle_request(const http::server2::request& req, http::se
 	}
 	if (sid != -1)
 	{
-	  bool r ;
+	  bool r = true ;
 
-	  r = master.force_slave_status (sid, newstatus) ;
+	  // r = master.force_slave_status (sid, newstatus) ;
 	  if (r)
 	  {
 	      // Fill out the reply to be sent to the client.
 	      rep.status = http::server2::reply::ok;
 	      rep.content = "<html><body><pre>"
-				"ok"
+				"ok (but not implemented)"
 				"</pre></body></html>" ;
 	  }
 	  else

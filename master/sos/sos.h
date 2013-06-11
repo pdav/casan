@@ -45,9 +45,6 @@ class sos
 	// dump data structures
 	std::string html_debug (void) ;
 
-	// force a slave status (mainly for debug purposes)
-	bool force_slave_status (slaveid_t sid, int stat) ;
-
     private:
 	std::list <receiver> rlist_ ;	// connected networks
 	std::list <slave> slist_ ;	// registered slaves

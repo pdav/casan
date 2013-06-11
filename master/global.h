@@ -27,8 +27,11 @@ typedef std::chrono::milliseconds duration_t ;
 #define	DATE_TIMEOUT(ms)	(std::chrono::system_clock::now () + \
 				    duration_t (ms))
 
-class msg ;
-typedef void (*reply_handler_t) (msg *request, msg *reply) ;
+namespace sos {
+    class msg ;
+}
+
+typedef void (*reply_handler_t) (sos::msg *request, sos::msg *reply) ;
 
 #ifdef DEBUG
 #define	D(s)	do { std::cout << s << "\n" ; } while (false)	// no ";"

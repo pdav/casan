@@ -31,13 +31,16 @@ class option
 
 	option () ;				// constructor
 	option (optcode_t c) ;			// constructor
-	option (optcode_t c, void *v, int l) ;	// constructor
+	option (optcode_t c, const void *v, int l) ; // constructor
 	option (optcode_t c, uint v) ;		// constructor
 	option (const option &o) ;		// copy constructor
 	option &operator= (const option &o) ;	// copy assignment constructor
 	~option () ;				// destructor
 
 	bool operator< (const option &o) ;	// for list sorting in msg.cc
+
+	int operator== (const option &o) ;
+	int operator!= (const option &o) ;
 
 	void reset (void) ;
 
