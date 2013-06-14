@@ -2,6 +2,7 @@
 #define	GLOBAL_H
 
 #include <chrono>
+#include <cstdint>
 
 // number of elements in an array
 #define NTAB(t)		(int (sizeof (t)/sizeof (t)[0]))
@@ -9,8 +10,8 @@
 
 #define	MAXBUF		1024
 
-typedef unsigned char byte ;
-typedef unsigned int uint32 ;
+typedef std::uint8_t byte ;
+typedef std::uint32_t uint32 ;
 
 typedef long int slaveid_t ;
 typedef long int slavettl_t ;
