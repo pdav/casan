@@ -421,7 +421,7 @@ int msg::send (void)
 		    nmilli = ACK_TIMEOUT * (r + 1) ;
 		    nmilli = nmilli / 1000 ;
 		    timeout_ = duration_t (nmilli) ;
-		    expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (maxlat)) ;
+		    expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (maxlat)) ;
 		}
 		else
 		{
@@ -433,7 +433,7 @@ int msg::send (void)
 		break ;
 	    case MT_NON :
 		STOP_TRANSMIT ;
-		expire_ = DATE_TIMEOUT (NON_LIFETIME (maxlat)) ;
+		expire_ = DATE_TIMEOUT_MS (NON_LIFETIME (maxlat)) ;
 		break ;
 	    case MT_ACK :
 	    case MT_RST :
@@ -443,7 +443,7 @@ int msg::send (void)
 		 */
 
 		STOP_TRANSMIT ;
-		expire_ = DATE_TIMEOUT (MAX_RTT (maxlat)) ;	// arbitrary
+		expire_ = DATE_TIMEOUT_MS (MAX_RTT (maxlat)) ;	// arbitrary
 		break ;
 	    default :
 		std::cout << "Can't happen (msg type == " << type_ << ")\n" ;
@@ -555,14 +555,15 @@ void msg::pushoption (option &o)
 
 void msg::link_reqrep (msg *m)
 {
-    if (m == 0)
+    if (m != 0)
     {
-	// unlink
+	// link messages
 	reqrep_ = m ;
 	m->reqrep_ = this ;
     }
     else
     {
+	// unlink
 	m->reqrep_ = 0 ;
 	reqrep_ = 0 ;
     }
@@ -652,23 +653,29 @@ sos_namespace [] =
 bool msg::is_sos_ctl_msg (void)
 {
     int i = 0;
+    bool r = true ;
 
     for (auto &o : optlist_)
     {
 	if (o.optcode_ == option::MO_Uri_Path)
 	{
+	    r = false ;
 	    if (i >= NTAB (sos_namespace))
-		return false ;
+		break ;
 	    if (sos_namespace [i].len != o.optlen_)
-		return false ;
+		break ;
 	    if (std::memcmp (sos_namespace [i].path, OPTVAL (o), o.optlen_))
-		return false ;
+		break ;
+	    r = true ;
 	    i++ ;
 	}
     }
-    if (i != NTAB (sos_namespace))
-	return false ;
-    return true ;
+    if (r && i == NTAB (sos_namespace))
+	r = true ;
+    else
+	r = false ;
+    D ((r ? "It's a control message" : "It's not a control message")) ;
+    return r ;
 }
 
 slaveid_t msg::is_sos_discover (void)
@@ -740,7 +747,6 @@ msg::sostype_t msg::sos_type (void)
 {
     if (sostype_ == SOS_UNKNOWN)
     {
-	sostype_ = SOS_NONE ;
 	if (is_sos_discover () == 0 && ! is_sos_associate ())
 	{
 	    if (reqrep_ != 0)
@@ -750,6 +756,8 @@ msg::sostype_t msg::sos_type (void)
 		    sostype_ = SOS_ASSOC_ANSWER ;
 	    }
 	}
+	if (sostype_ == SOS_UNKNOWN)
+	    sostype_ = SOS_NONE ;
 	if (sostype_ != SOS_NONE)
 	    D ("CTL MSG " << sostype_) ;
     }

@@ -95,6 +95,7 @@ std::string sos::html_debug (void)
 {
     std::ostringstream oss ;
 
+    oss << "Default TTL = " << ttl_ << "\n" ;
     oss << "Slaves:\n" ;
     for (auto &s : slist_)
 	oss << s ;
@@ -420,24 +421,6 @@ msg *sos::correlate (msg *m)
 		break ;
 	    }
 	}
-
-	if (orgmsg && orgmsg->reqrep () == 0)
-	{
-	    /*
-	     * The request has not yet been answered. Register
-	     * this answer, and stop further retransmissions
-	     * of the same request.
-	     */
-	    orgmsg->link_reqrep (m) ;
-	    orgmsg->stop_retransmit () ;
-	}
-
-	/*
-	 * At this point, if the received message was an answer to
-	 * a sent message, we made the link between the two messages,
-	 * and the process_it variable is set only if the answer was
-	 * never received.
-	 */
     }
 
     return orgmsg ;
@@ -503,7 +486,7 @@ msg *sos::deduplicate (receiver *r, msg *m)
 	else
 	{
 	    // store the new message on deduplist with a timeout
-	    m->expire_ = DATE_TIMEOUT (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
+	    m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
 	    r->deduplist.push_front (m) ;
 	}
     }
@@ -546,12 +529,27 @@ void sos::receiver_thread (receiver *r)
 
 	/*
 	 * Is the received message a reply to a pending request?
-	 * Ignore it if an answer has already been received
 	 */
 
 	orgreq = correlate (m) ;
-	if (orgreq && orgreq->reqrep ())
-	    continue ;
+	if (orgreq)
+	{
+	    /*
+	     * Ignore the message if an answer has already been received
+	     */
+
+	    if (orgreq->reqrep ())
+		continue ;
+
+	    /*
+	     * This is the first reply we get.
+	     * Stop further retransmissions and link the received answer to
+	     * the original request we sent.
+	     */
+
+	    orgreq->link_reqrep (m) ;
+	    orgreq->stop_retransmit () ;
+	}
 
 	/*
 	 * Is this the same request as already seen?

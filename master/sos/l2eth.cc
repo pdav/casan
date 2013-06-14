@@ -25,6 +25,8 @@
 #include "l2.h"
 #include "l2eth.h"
 
+#define	PRINT_HEX_DIGIT(os,c)	do { char d = (c) & 0xf ; d =  d < 10 ? d + '0' : d - 10 + 'a' ; (os) << d ; } while (false)
+
 namespace sos {
 
 /******************************************************************************
@@ -84,7 +86,9 @@ void l2addr_eth::print (std::ostream &os) const
 	{
 	    if (i > 0)
 		os << ":" ;
-	    os << std::hex << addr_ [i] ;
+
+	    PRINT_HEX_DIGIT (os, addr_ [i] >> 4) ;
+	    PRINT_HEX_DIGIT (os, addr_ [i]     ) ;
 	}
     }
     else os << "(null)" ;

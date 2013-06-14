@@ -147,18 +147,20 @@ void slave::process_sos (sos *e, msg *m)
 	    D ("Received ASSOC_REQUEST from another master") ;
 	    break ;
 	case msg::SOS_ASSOC_ANSWER :
-	    D ("Received ASSOC ANSWER") ;
 	    // has answer been correlated to a request?
 	    if (m->reqrep ())
 	    {
 		byte *pload ; int plen ;
 
+		D ("Received ASSOC ANSWER for slave" << slaveid_) ;
+
 		 // Add ressource list from the answer
 		pload = (byte *) m->payload (&plen) ;
 		(void) parse_resource_list (pload, plen) ;
 
+		D ("Slave " << slaveid_ << " status set to RUNNING") ;
 		status_ = SL_RUNNING ;
-		next_timeout_ = DATE_TIMEOUT (e->ttl ()) ;
+		next_timeout_ = DATE_TIMEOUT_S (e->ttl ()) ;
 	    }
 	    break ;
 	case msg::SOS_HELLO :

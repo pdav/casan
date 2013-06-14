@@ -47,6 +47,7 @@ void request_handler::handle_request(const http::server2::request& req, http::se
     return;
   }
 
+#if 0
 {
   std::cout << "req.method=" << req.method << "\n" ;
   std::cout << "req.uri=" << req.uri
@@ -61,6 +62,7 @@ void request_handler::handle_request(const http::server2::request& req, http::se
     std::cout << "arg= <" << h.name << "," << h.value << ">\n" ;
   }
 }
+#endif
 
   // Request path must be absolute and not contain "..".
   if (request_path.empty() || request_path[0] != '/'

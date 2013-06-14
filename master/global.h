@@ -24,8 +24,10 @@ typedef std::chrono::milliseconds duration_t ;
 
 #define	DEFAULT_SLAVE_TTL	3600000			// 1 hour
 
-#define	DATE_TIMEOUT(ms)	(std::chrono::system_clock::now () + \
-				    duration_t (ms))
+#define	DATE_TIMEOUT_MS(ms)	(std::chrono::system_clock::now () + \
+				    std::chrono::milliseconds (ms))
+#define	DATE_TIMEOUT_S(s)	(std::chrono::system_clock::now () + \
+				    std::chrono::seconds (s))
 
 namespace sos {
     class msg ;

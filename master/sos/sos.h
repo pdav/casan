@@ -54,7 +54,7 @@ class sos
 	std::mutex mtx_ ;
 	std::condition_variable condvar_ ;
 
-	slavettl_t ttl_ ;		// default slave ttl
+	slavettl_t ttl_ ;		// default slave ttl (in sec)
 
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
