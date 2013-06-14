@@ -78,9 +78,15 @@ bool master::start (conf &cf)
 	for (auto &s : cf.slavelist_)
 	{
 	    sos::slave *v ;
+	    int ttl ;
 
 	    v = new sos::slave ;
 	    v->slaveid (s.id) ;
+	    if (s.ttl == 0)
+		ttl = engine_.ttl () ;
+	    else
+		ttl = s.ttl ;
+	    v->initttl (ttl) ;
 	    engine_.add_slave (v) ;
 	    std::cout << "Slave " << s.id << " added\n" ;
 	}

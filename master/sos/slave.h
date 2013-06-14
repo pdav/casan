@@ -25,12 +25,14 @@ class slave
 	void l2 (l2net *l2) ;		// set l2 network
 	void addr (l2addr *a) ;		// set address
 	void slaveid (slaveid_t sid) ;	// set slave id
+	void initttl (int t) ;		// set initial slave ttl
 
 	// Accessors
 	l2net *l2 (void) ;
 	l2addr *addr (void) ;
 	slaveid_t slaveid (void) ;
 	enum status_code status (void) ;
+	int initttl (void) ;
 
 	// SOS protocol handling
 	void process_sos (sos *e, msg *m) ;
@@ -55,6 +57,7 @@ class slave
 	slaveid_t slaveid_ ;		// slave id
 	l2net *l2_ ;			// l2 network this slave is on
 	l2addr *addr_ ;			// slave address
+	int initttl_ ;			// initial ttl (in sec)
 	enum status_code status_ ;	// current status of slave
 	std::vector <resource> reslist_ ;	// resource list
 

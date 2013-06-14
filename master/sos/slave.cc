@@ -36,6 +36,7 @@ void slave::reset (void)
     reslist_.clear () ;
     status_ = SL_INACTIVE ;
     next_timeout_ = std::chrono::system_clock::time_point::max () ;
+    D ("Slave " << slaveid_ << " status set to INACTIVE") ;
 }
 
 /******************************************************************************
@@ -99,6 +100,11 @@ enum slave::status_code slave::status (void)
     return status_ ;
 }
 
+int slave::initttl (void)
+{
+    return initttl_ ;
+}
+
 /******************************************************************************
  * Mutators
  */
@@ -116,6 +122,11 @@ void slave::addr (l2addr *a)
 void slave::slaveid (slaveid_t sid)
 {
     slaveid_ = sid ;
+}
+
+void slave::initttl (int t)
+{
+    initttl_ = t ;
 }
 
 void slave::handler (reply_handler_t h)
@@ -142,7 +153,7 @@ void slave::process_sos (sos *e, msg *m)
 	    answer->peer (m->peer ()) ;
 	    answer->type (msg::MT_CON) ;
 	    answer->code (msg::MC_POST) ;
-	    answer->mk_ctl_assoc (e->ttl ()) ;
+	    answer->mk_ctl_assoc (initttl_) ;
 	    e->add_request (answer) ;
 	    break ;
 	case msg::SOS_ASSOC_REQUEST :
@@ -162,7 +173,7 @@ void slave::process_sos (sos *e, msg *m)
 
 		D ("Slave " << slaveid_ << " status set to RUNNING") ;
 		status_ = SL_RUNNING ;
-		next_timeout_ = DATE_TIMEOUT_S (e->ttl ()) ;
+		next_timeout_ = DATE_TIMEOUT_S (initttl_) ;
 	    }
 	    break ;
 	case msg::SOS_HELLO :
