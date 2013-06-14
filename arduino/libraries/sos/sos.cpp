@@ -22,7 +22,7 @@ extern l2addr_eth l2addr_eth_broadcast ;
 
 // TODO : set all variables
 	Sos::Sos(l2addr *mac_addr, long int uuid) 
-: _nttl(SOS_DEFAULT_TTL), _status(SL_COLDSTART), _uuid(uuid) 
+: _ttl(SOS_DEFAULT_TTL), _nttl(SOS_DEFAULT_TTL), _status(SL_COLDSTART), _uuid(uuid) 
 {
 	_master_addr = NULL;
 	_current_message_id = 1;
@@ -59,6 +59,7 @@ void Sos::reset (void)
 	_status = SL_COLDSTART;
 	_current_message_id = 0;
 	_nttl = SOS_DEFAULT_TTL;
+	_ttl = _nttl;
 	_rmanager->reset();
 	_retransmition_handler->reset();
 	// This have to be the only time we delete the instance of master addr
@@ -94,11 +95,18 @@ void Sos::loop()
 		case SL_WAITING_UNKNOWN :
 			Serial.println(F("\033[33mSL_WAITING_UNKNOWN\033[00m"));
 
+			// compute the next waiting time laps for a message
+			_time_to_wait = 
+				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
+				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
+
 			while(  _status == SL_WAITING_UNKNOWN &&
 					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
 			{
+				PRINT_DEBUG_STATIC("MSG RECEIVED");
 				if(ret == ETH_RECV_RECV_OK) 
 				{
+					PRINT_DEBUG_STATIC("MSG RECEIVED OK");
 					_retransmition_handler->check_msg_received(in); 
 					if(is_hello(in)) 
 					{
@@ -108,6 +116,8 @@ void Sos::loop()
 						_coap->get_mac_src(_master_addr);
 						_current_message_id = in.get_id() + 1;
 						_status = SL_WAITING_KNOWN;
+
+		//				_old_cur_time = millis();
 
 						//((l2addr_eth *) _master_addr)->print();
 						_time_to_wait = SOS_DELAY;
@@ -121,6 +131,8 @@ void Sos::loop()
 						_coap->get_mac_src(_master_addr);
 						_current_message_id = in.get_id() + 1;
 						_status = SL_RUNNING;
+
+		//				_old_cur_time = millis();
 
 						PRINT_DEBUG_STATIC("ASSOCIATE IN UNKNOWN");
 
@@ -137,10 +149,6 @@ void Sos::loop()
 			}
 			mk_registration();
 
-			// compute the next waiting time laps for a message
-			_time_to_wait = 
-				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
-				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
 			//Serial.print(F("time to wait : "));
 			//Serial.println(_time_to_wait);
 			delay(_time_to_wait);
@@ -149,6 +157,11 @@ void Sos::loop()
 		case SL_WAITING_KNOWN :
 			Serial.println(F("\033[33mSL_WAITING_KNOWN\033[00m"));
 			PRINT_DEBUG_STATIC("MSG RECEIVED");
+
+			_time_to_wait = 
+				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
+				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
+
 			while(  _status == SL_WAITING_KNOWN &&
 					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
 			{
@@ -165,6 +178,9 @@ void Sos::loop()
 						_current_message_id = in.get_id() + 1;
 						_time_to_wait = SOS_DELAY;
 
+						// ttl restart
+						_ttl = SOS_DEFAULT_TTL;
+
 					} 
 					else if (is_associate(in)) 
 					{
@@ -174,6 +190,8 @@ void Sos::loop()
 						_coap->get_mac_src(_master_addr);
 						_current_message_id = in.get_id() + 1;
 						_status = SL_RUNNING ;
+
+			//			_old_cur_time = millis();
 
 						mk_ack_assoc(in, out);
 						out.print();
@@ -187,9 +205,13 @@ void Sos::loop()
 				}
 			}
 
-			_time_to_wait = 
-				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
-				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
+			// mk_ttl_compute();
+			// if(_ttl < 0)
+			// {
+			// 	PRINT_DEBUG_STATIC("ttl < 0 → status = waiting unknown");
+			// 	_status = SL_WAITING_UNKNOWN;
+			// }
+
 			//Serial.print(F("time to wait : "));
 			//Serial.println(_time_to_wait);
 			delay(_time_to_wait);
@@ -242,7 +264,9 @@ void Sos::loop()
 						_master_addr = new l2addr_eth();
 						_coap->get_mac_src(_master_addr);
 						_current_message_id = in.get_id() + 1;
-						_status = SL_RUNNING;
+						_status = SL_RUNNING ;
+
+				//		_old_cur_time = millis();
 
 						mk_ack_assoc(in, out);
 						out.print();
@@ -254,10 +278,14 @@ void Sos::loop()
 					{
 						Serial.println(F("\033[31mrecv error\033[00m"));
 					}
-					//_ttl = 
 				}
-			}
 
+				// mk_ttl_compute();
+				// if(_ttl < (_nttl / 2))
+				// {
+				// 	_status = SL_RENEW;
+				// }
+			}
 
 			//	deduplicate();
 			_rmanager->request_resource(in, out);
@@ -270,6 +298,17 @@ void Sos::loop()
 			break;
 	}
 	delay(_time_to_wait);
+}
+
+void Sos::mk_ttl_compute(void)
+{
+	long int current_time = millis();
+	_ttl -= ( current_time - _old_cur_time);
+	_old_cur_time = current_time;
+	PRINT_DEBUG_STATIC("OLD CUR TIME : ");
+	PRINT_DEBUG_DYNAMIC(_old_cur_time);
+	PRINT_DEBUG_STATIC("TTL : ");
+	PRINT_DEBUG_DYNAMIC(_ttl);
 }
 
 void Sos::mk_assoc(Message &out)
@@ -382,8 +421,9 @@ bool Sos::is_associate (Message &m)
 				if (sscanf ((const char *) o->val(), SOS_ASSOC, &n) == 1)
 				{
 					_nttl = n;
-					PRINT_DEBUG_STATIC("NTTL : ");
-					PRINT_DEBUG_DYNAMIC(_nttl);
+					_ttl = n;
+					PRINT_DEBUG_STATIC("\033[31m TTL recv \033[00m ");
+					PRINT_DEBUG_DYNAMIC(_ttl);
 					found = true ;
 					// continue, just in case there are other query strings
 				}
@@ -394,8 +434,6 @@ bool Sos::is_associate (Message &m)
 				}
 			}
 		}
-		if (found)
-			_status = SL_RUNNING ;
 	}
 	return found ;
 }

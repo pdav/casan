@@ -44,14 +44,16 @@ class Sos {
 		void mk_ack_assoc(Message &in, Message &out);
 		bool is_associate (Message &m);
 		bool is_hello(Message &m);
+		void mk_ttl_compute(void);
 
 		Retransmit * _retransmition_handler = NULL;
 		Coap *_coap = NULL;
 		l2addr *_master_addr;
 		EthernetRaw *_eth = NULL;
 		uint8_t _status;
-		long int _nttl;		// TTL 
-		long int _ttl;		// TTL 
+		long int _nttl;				// TTL get by assoc msg
+		long int _ttl;				// TTL often recomputed
+		long int _old_cur_time;		// last time ttl calcul
 		long int _hlid;		// hello ID
 		int _current_message_id;
 		long int _uuid;
