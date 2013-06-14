@@ -11,6 +11,7 @@
 #include "retransmit.h"
 #include "rmanager.h"
 #include "memory_free.h"
+#include "time.h"
 
 
 #define SOS_BUF_LEN			50
@@ -61,7 +62,11 @@ class Sos {
 		long int _hlid;		// hello ID
 		int _current_message_id;
 		long int _uuid;
-		int _time_to_wait = SOS_DELAY;
+		unsigned long _next_time_increment = SOS_DELAY;
+		time _current_time;
+		time _next_register;
+		time _ttl_timeout;
+		time _ttl_timeout_mid; // nttl /2
 };
 
 #endif

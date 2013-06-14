@@ -9,16 +9,10 @@ For information on installing libraries, see: http://arduino.cc/en/Guide/Librari
 
 * complete the Retransmit class
 	* check if the main loop is complete
-* complete the Rmanager class
-	* add the return of the .well-known/ (list all resources)
 * complete the Sos class
 	* do the code in other SOS states (Running & so)
 
 * do tests on
-	* receiving hello message (with sendtest)
-	* answer to hello message (with sendtest)
-
-	* listing all resources that we record
 	* timers in the retransmit class
 	* recording packet to retransmit
 	* switch between different states
