@@ -46,6 +46,7 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
 {
     l2addr *a ;
     std::time_t nt ;
+    char buf [MAXBUF] ;
 
     os << "slave " << s.slaveid_ << " " ;
     switch (s.status_)
@@ -55,7 +56,8 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
 	    break ;
 	case slave::SL_RUNNING:
 	    nt = std::chrono::system_clock::to_time_t (s.next_timeout_) ;
-	    os << "RUNNING (ttl=" << std::ctime (&nt) << ")" ;
+	    strftime (buf, sizeof buf, "%F %T", std::localtime (&nt)) ;
+	    os << "RUNNING (ttl=" << buf << ")" ;
 	    break ;
 	default:
 	    os << "(unknown state)" ;
@@ -68,7 +70,7 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
 
     // Display resources
     for (auto &r : s.reslist_)
-	os << r << "\n" ;
+	os << r ;
 
     return os ;
 }

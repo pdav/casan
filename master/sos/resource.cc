@@ -62,7 +62,7 @@ resource::resource (const std::string path)
 
 std::ostream& operator<< (std::ostream &os, const resource &r)
 {
-    os << "resource <" << r.path_ << ">" ;
+    os << "resource " << r.path_ ;
     for (auto &a : r.attributes_)
 	for (auto &v : a.values)
 	    os << ";" << a.name << "=\"" << v << "\"" ;
