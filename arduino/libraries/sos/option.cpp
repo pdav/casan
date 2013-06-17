@@ -348,7 +348,7 @@ uint8_t option::get_errno(void) {
 
 void option::print(void) {
 	Serial.print(F("\033[33mOPTION\033[00m : \033[36m optcode\033[00m="));
-	switch(optcode_) {
+	switch((unsigned char) optcode_) {
 		case MO_None			: Serial.print(F("MO_None")); break;
 		case MO_Content_Format	: Serial.print(F("MO_Content_Format")); break;
 		case MO_Etag			: Serial.print(F("MO_Etag")); break;
@@ -366,7 +366,7 @@ void option::print(void) {
 		case MO_If_Match		: Serial.print(F("MO_If_Match")); break;
 		default :
 			Serial.print(F("\033[31mERROR\033[00m"));
-			Serial.print(optcode_);
+			Serial.print((unsigned char)optcode_);
 			break;
 	}
 	Serial.print(F("\033[36m optlen\033[00m="));

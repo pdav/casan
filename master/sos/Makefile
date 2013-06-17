@@ -8,7 +8,7 @@ LIBS = libsos.a
 HDRS = coap.h sos.h l2.h l2eth.h option.h msg.h slave.h resource.h utils.h ../global.h
 OBJS = l2eth.o l2.o option.o msg.o slave.o resource.o sos.o utils.o
 
-all:	libsos.a testsend
+all:	libsos.a testsend testarduino
 
 libsos.a: $(OBJS)
 	ar r libsos.a $(OBJS)
@@ -16,7 +16,10 @@ libsos.a: $(OBJS)
 testsend: testsend.o $(LIBS)
 	c++ $(CXXFLAGS) -o testsend testsend.o $(LDFLAGS)
 
+testarduino: testarduino.o $(LIBS)
+	c++ $(CXXFLAGS) -o testarduino testarduino.o $(LDFLAGS)
+
 *.o: $(HDRS)
 
 clean:
-	rm -f *.o libsos.a testsend
+	rm -f *.o libsos.a testsend testarduino

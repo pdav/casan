@@ -46,10 +46,17 @@ void Sos::set_master_addr(l2addr *a)
 	_eth->set_master_addr(_master_addr);
 }
 
-void Sos::register_resource(char *name, int namelen,
+void Sos::register_resource(
+		char *name, int namelen,
+		char *title, int titlelen,
+		char *rt, int rtlen,
 		uint8_t (*handler)(Message &in, Message &out) ) 
 {
-	_rmanager->add_resource(name, namelen, handler);
+	_rmanager->add_resource(
+			name, namelen, 
+			title, titlelen, 
+			rt, rtlen, 
+			handler);
 }
 
 // TODO : we need to restart all the application, 
@@ -80,7 +87,7 @@ void Sos::loop()
 
 		case SL_COLDSTART :
 			Serial.println(F("SL_COLDSTART"));
-			delay(_time_to_wait);
+			//delay(_time_to_wait);
 			mk_registration();
 
 			// compute the next waiting time laps for a message
@@ -96,111 +103,150 @@ void Sos::loop()
 			Serial.println(F("\033[33mSL_WAITING_UNKNOWN\033[00m"));
 
 			// compute the next waiting time laps for a message
-			_time_to_wait = 
-				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
-				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
+			//_time_to_wait = 
+				//(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
+				//_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
 
 			while(  _status == SL_WAITING_UNKNOWN &&
 					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
 			{
-				PRINT_DEBUG_STATIC("MSG RECEIVED");
+
+				print_coap_ret_type(ret);
+
+
 				if(ret == ETH_RECV_RECV_OK) 
 				{
-					PRINT_DEBUG_STATIC("MSG RECEIVED OK");
 					_retransmition_handler->check_msg_received(in); 
-					if(is_hello(in)) 
+					if(is_ctl_msg(in))
 					{
-						if(_master_addr)
-							delete _master_addr;
-						_master_addr = new l2addr_eth();
-						_coap->get_mac_src(_master_addr);
-						_current_message_id = in.get_id() + 1;
-						_status = SL_WAITING_KNOWN;
+						if(is_hello(in)) 
+						{
+							if(_master_addr)
+								delete _master_addr;
+							_master_addr = new l2addr_eth();
+							_coap->get_mac_src(_master_addr);
+							_current_message_id = in.get_id() + 1;
+							_status = SL_WAITING_KNOWN;
 
-		//				_old_cur_time = millis();
+							//				_old_cur_time = millis();
 
-						//((l2addr_eth *) _master_addr)->print();
-						_time_to_wait = SOS_DELAY;
+							//((l2addr_eth *) _master_addr)->print();
+							_time_to_wait = SOS_DELAY;
 
-					} 
-					else if (is_associate(in)) 
-					{
-						if(_master_addr)
-							delete _master_addr;
-						_master_addr = new l2addr_eth();
-						_coap->get_mac_src(_master_addr);
-						_current_message_id = in.get_id() + 1;
-						_status = SL_RUNNING;
+						} 
+						else if (is_associate(in)) 
+						{
+							if(_master_addr)
+								delete _master_addr;
+							_master_addr = new l2addr_eth();
+							_coap->get_mac_src(_master_addr);
+							_current_message_id = in.get_id() + 1;
+							_status = SL_RUNNING;
 
-		//				_old_cur_time = millis();
+							//				_old_cur_time = millis();
 
-						PRINT_DEBUG_STATIC("ASSOCIATE IN UNKNOWN");
+							PRINT_DEBUG_STATIC("ASSOCIATE IN UNKNOWN");
 
-						mk_ack_assoc(in, out);
-						out.print();
-						_coap->send(*_master_addr, out);
-						_time_to_wait = SOS_DELAY;
-					} 
-					else 
-					{
-						Serial.println(F("\033[31mrecv error\033[00m"));
+							mk_ack_assoc(in, out);
+							out.print();
+							_coap->send(*_master_addr, out);
+							_time_to_wait = SOS_DELAY;
+						} 
+						else 
+						{
+							Serial.println(F("\033[31mctl msg but not took into account\033[00m"));
+						}
 					}
+					else
+					{
+						uint8_t ret = _rmanager->request_resource(in, out);
+						out.print();
+						if(ret > 0)
+						{
+							Serial.println(F("\033[31mThere is a problem with the request\033[00m"));
+						}
+						else
+						{
+							Serial.println(F("\033[36mWe sent the answer\033[00m"));
+							out.print();
+							if(_master_addr)
+								_coap->send(*_master_addr, out);
+							else
+								_coap->send(l2addr_eth_broadcast, out);
+						}
+					}
+
 				}
 			}
-			mk_registration();
+			//mk_registration();
 
 			//Serial.print(F("time to wait : "));
 			//Serial.println(_time_to_wait);
-			delay(_time_to_wait);
+			//delay(_time_to_wait);
 			break;
 
 		case SL_WAITING_KNOWN :
 			Serial.println(F("\033[33mSL_WAITING_KNOWN\033[00m"));
-			PRINT_DEBUG_STATIC("MSG RECEIVED");
 
-			_time_to_wait = 
-				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
-				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
+			//_time_to_wait = 
+			//(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
+			//_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
 
 			while(  _status == SL_WAITING_KNOWN &&
 					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
 			{
+
 				if(ret == ETH_RECV_RECV_OK) 
 				{
 					_retransmition_handler->check_msg_received(in); 
 
-					if(is_hello(in)) 
+					if(is_ctl_msg(in))
 					{
-						if(_master_addr)
-							delete _master_addr;
-						_master_addr = new l2addr_eth();
-						_coap->get_mac_src(_master_addr);
-						_current_message_id = in.get_id() + 1;
-						_time_to_wait = SOS_DELAY;
+						PRINT_DEBUG_STATIC("\033[31m CTL MSG \033[00m ");
+						in.print();
+						if(is_hello(in)) 
+						{
+							if(_master_addr)
+								delete _master_addr;
+							_master_addr = new l2addr_eth();
+							_coap->get_mac_src(_master_addr);
+							_current_message_id = in.get_id() + 1;
+							_time_to_wait = SOS_DELAY;
 
-						// ttl restart
-						_ttl = SOS_DEFAULT_TTL;
+							// ttl restart
+							_ttl = _nttl;
 
-					} 
-					else if (is_associate(in)) 
+						} 
+						else if (is_associate(in)) 
+						{
+							if(_master_addr)
+								delete _master_addr;
+							_master_addr = new l2addr_eth();
+							_coap->get_mac_src(_master_addr);
+							_current_message_id = in.get_id() + 1;
+							_status = SL_RUNNING ;
+
+							//			_old_cur_time = millis();
+
+							mk_ack_assoc(in, out);
+							out.print();
+							_coap->send(*_master_addr, out);
+							_time_to_wait = SOS_DELAY;
+						} 
+						else 
+						{
+							Serial.println(F("\033[31mctl msg but not took into account\033[00m"));
+						}
+					}
+					else
 					{
-						if(_master_addr)
-							delete _master_addr;
-						_master_addr = new l2addr_eth();
-						_coap->get_mac_src(_master_addr);
-						_current_message_id = in.get_id() + 1;
-						_status = SL_RUNNING ;
 
-			//			_old_cur_time = millis();
+						uint8_t ret = _rmanager->request_resource(in, out);
+						if(ret > 0)
+						{
+							Serial.println(F("\033[31mThere is a problem with the request\033[00m"));
+						}
 
-						mk_ack_assoc(in, out);
-						out.print();
-						_coap->send(*_master_addr, out);
-						_time_to_wait = SOS_DELAY;
-					} 
-					else 
-					{
-						Serial.println(F("\033[31mrecv error\033[00m"));
 					}
 				}
 			}
@@ -214,8 +260,8 @@ void Sos::loop()
 
 			//Serial.print(F("time to wait : "));
 			//Serial.println(_time_to_wait);
-			delay(_time_to_wait);
-			mk_registration();
+			//delay(_time_to_wait);
+			//mk_registration();
 
 			// like SL_WAITING_UNKNOWN we do not take into account
 			// other messages than ALLOC & HELLO
@@ -228,55 +274,73 @@ void Sos::loop()
 			// w. unknown & wait SOS_DELAY then broadcast a registration
 			// if reception HELLO w. known then directed registration
 
-			_time_to_wait = 
-				(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
-				_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
+			//	_time_to_wait = 
+			//	(_time_to_wait + SOS_DELAY_INCR) < SOS_DELAY_MAX ? 
+			//_time_to_wait + SOS_DELAY_INCR : _time_to_wait ;
 			//Serial.print(F("time to wait : "));
 			//Serial.println(_time_to_wait);
-			delay(_time_to_wait);
+			//delay(_time_to_wait);
 			break;
 
 		case SL_RUNNING :	// TODO
 			Serial.println(F("\033[33mSL_RUNNING\033[00m"));
 
-			PRINT_DEBUG_STATIC("MSG RECEIVED");
 			while(  _status == SL_RUNNING &&
 					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
 			{
+
 				if(ret == ETH_RECV_RECV_OK) 
 				{
 					_retransmition_handler->check_msg_received(in); 
 
-					if(is_hello(in)) 
+					if(is_ctl_msg(in))
 					{
-						if(_master_addr)
-							delete _master_addr;
-						_master_addr = new l2addr_eth();
-						_coap->get_mac_src(_master_addr);
-						_current_message_id = in.get_id() + 1;
-						_status = SL_WAITING_KNOWN;
-						_time_to_wait = SOS_DELAY;
-					} 
-					else if (is_associate(in)) 
+						if(is_hello(in)) 
+						{
+							if(_master_addr)
+								delete _master_addr;
+							_master_addr = new l2addr_eth();
+							_coap->get_mac_src(_master_addr);
+							_current_message_id = in.get_id() + 1;
+							_status = SL_WAITING_KNOWN;
+							_time_to_wait = SOS_DELAY;
+						} 
+						else if (is_associate(in)) 
+						{
+							if(_master_addr)
+								delete _master_addr;
+							_master_addr = new l2addr_eth();
+							_coap->get_mac_src(_master_addr);
+							_current_message_id = in.get_id() + 1;
+							_status = SL_RUNNING ;
+
+							//		_old_cur_time = millis();
+
+							mk_ack_assoc(in, out);
+							out.print();
+							_coap->send(*_master_addr, out);
+
+							_time_to_wait = SOS_DELAY;
+						} 
+						else 
+						{
+							Serial.println(F("\033[31mctl msg but not took into account\033[00m"));
+						}
+					}
+					else
 					{
-						if(_master_addr)
-							delete _master_addr;
-						_master_addr = new l2addr_eth();
-						_coap->get_mac_src(_master_addr);
-						_current_message_id = in.get_id() + 1;
-						_status = SL_RUNNING ;
-
-				//		_old_cur_time = millis();
-
-						mk_ack_assoc(in, out);
-						out.print();
-						_coap->send(*_master_addr, out);
-
-						_time_to_wait = SOS_DELAY;
-					} 
-					else 
-					{
-						Serial.println(F("\033[31mrecv error\033[00m"));
+						Serial.println(F("\033[31m NOT A CTRL MSG \033[00m"));
+						uint8_t ret = _rmanager->request_resource(in, out);
+						if(ret > 0)
+						{
+							Serial.println(F("\033[31mThere is a problem with the request\033[00m"));
+						}
+						else
+						{
+							Serial.println(F("\033[36mWe sent the answer\033[00m"));
+							out.print();
+							_coap->send(*_master_addr, out);
+						}
 					}
 				}
 
@@ -285,6 +349,7 @@ void Sos::loop()
 				// {
 				// 	_status = SL_RENEW;
 				// }
+
 			}
 
 			//	deduplicate();
@@ -297,7 +362,7 @@ void Sos::loop()
 			PRINT_DEBUG_DYNAMIC(_status);
 			break;
 	}
-	delay(_time_to_wait);
+	delay(10);
 }
 
 void Sos::mk_ttl_compute(void)
@@ -331,12 +396,8 @@ void Sos::mk_ack_assoc(Message &in, Message &out)
 	out.set_code(COAP_RETURN_CODE(2,5));
 	out.set_id(in.get_id());
 	mk_ctl_msg(out);
-	out.set_payload(
-			sizeof SOS_ASSOC_RETURN_PAYLOAD -1,
-			(uint8_t *) SOS_ASSOC_RETURN_PAYLOAD 
-			);
 
-	//_rmanager->get_all_resources(out);
+	_rmanager->get_all_resources(out);
 }
 
 /******************************************************************************
@@ -347,6 +408,7 @@ bool Sos::is_ctl_msg (Message &m)
 {
 	int i = 0;
 
+	m.print();
 	m.reset_get_option();
 	for(option * o = m.get_option() ; o != NULL ; o = m.get_option()) {
 		if (o->optcode() == option::MO_Uri_Path)
@@ -363,6 +425,7 @@ bool Sos::is_ctl_msg (Message &m)
 	m.reset_get_option();
 	if (i != NTAB (sos_namespace))
 		return false ;
+
 	return true ;
 }
 
@@ -406,10 +469,11 @@ bool Sos::is_associate (Message &m)
 {
 	bool found = false ;
 
+	m.print();
+
 	m.reset_get_option();
 	if (	m.get_type() == COAP_TYPE_CON && 
-			m.get_code() == COAP_CODE_POST && 
-			is_ctl_msg (m))
+			m.get_code() == COAP_CODE_POST)
 	{
 		for(option * o = m.get_option() ; o != NULL ; o = m.get_option()) 
 		{
@@ -444,11 +508,11 @@ bool Sos::is_hello(Message &m)
 	bool found = false ;
 
 	if (	m.get_type() == COAP_TYPE_NON && 
-			m.get_code() == COAP_CODE_POST && 
-			is_ctl_msg (m))
+			m.get_code() == COAP_CODE_POST)
 	{
 
 		m.reset_get_option();
+
 		for(option * o = m.get_option() ; o != NULL ; o = m.get_option()) 
 		{
 			if (o->optcode() == option::MO_Uri_Query)
@@ -474,3 +538,25 @@ void check_msg(Message &in, Message &out)
 {
 }
 
+
+void Sos::print_coap_ret_type(eth_recv_t ret)
+{
+	switch(ret)
+	{
+		case ETH_RECV_WRONG_SENDER :
+				PRINT_DEBUG_STATIC("ETH_RECV_WRONG_SENDER");
+			break;
+		case ETH_RECV_WRONG_DEST :
+				PRINT_DEBUG_STATIC("ETH_RECV_WRONG_DEST");
+			break;
+		case ETH_RECV_WRONG_ETHTYPE :
+				PRINT_DEBUG_STATIC("ETH_RECV_WRONG_ETHTYPE");
+			break ;
+		case ETH_RECV_RECV_OK :
+				PRINT_DEBUG_STATIC("ETH_RECV_RECV_OK");
+			break;
+		default :
+				PRINT_DEBUG_STATIC("ERROR RECV");
+			break;
+	}
+}

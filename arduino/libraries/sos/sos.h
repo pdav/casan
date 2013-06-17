@@ -30,7 +30,9 @@ class Sos {
 		void set_master_addr (l2addr *a) ;	// set address
 
 		void register_resource(char *name, int namelen,
-			uint8_t (*handler)(Message &in, Message &out) );
+				char *title, int titlelen,
+				char *rt, int rtlen,
+				uint8_t (*handler)(Message &in, Message &out) );
 
 		void reset (void);
 		void loop();
@@ -45,6 +47,8 @@ class Sos {
 		bool is_associate (Message &m);
 		bool is_hello(Message &m);
 		void mk_ttl_compute(void);
+
+		void print_coap_ret_type(eth_recv_t ret);
 
 		Retransmit * _retransmition_handler = NULL;
 		Coap *_coap = NULL;
