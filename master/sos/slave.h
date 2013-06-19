@@ -33,6 +33,7 @@ class slave
 	slaveid_t slaveid (void) ;
 	enum status_code status (void) ;
 	int initttl (void) ;
+	resource *find_resource (const std::vector <std::string> &v) ;
 
 	// SOS protocol handling
 	void process_sos (sos *e, msg *m) ;

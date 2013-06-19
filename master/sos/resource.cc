@@ -11,6 +11,8 @@
 
 #include "global.h"
 
+#include "utils.h"
+
 #include "l2.h"
 #include "msg.h"
 #include "slave.h"
@@ -26,34 +28,9 @@ namespace sos {
 
 resource::resource (const std::string path)
 {
-    enum { s_start, s_loop } state = s_start ;
-    std::string component ;
-
-    path_ = path ;
-    component = "" ;
-    for (auto &c : path)
-    {
-	switch (state)
-	{
-	    case s_start :
-		if (c != '/')
-		{
-		    component += c ;
-		    state = s_loop ;
-		}
-		break ;
-	    case s_loop :
-		if (c == '/')
-		{
-		    pathopt_.push_back (option (option::MO_Uri_Path, component.c_str (), component.length ())) ;
-		    state = s_start ;
-		}
-		else component += c ;
-		break ;
-	}
-    }
-    if (component != "")
-	pathopt_.push_back (option (option::MO_Uri_Path, component.c_str (), component.length ())) ;
+    vpath_ = split_path (path) ;
+    for (auto &p : vpath_)
+	pathopt_.push_back (option (option::MO_Uri_Path, p.c_str (), p.length ())) ;
 }
 
 /******************************************************************************
@@ -62,7 +39,7 @@ resource::resource (const std::string path)
 
 std::ostream& operator<< (std::ostream &os, const resource &r)
 {
-    os << "resource " << r.path_ ;
+    os << "resource " << join_path (r.vpath_) ;
     for (auto &a : r.attributes_)
 	for (auto &v : a.values)
 	    os << ";" << a.name << "=\"" << v << "\"" ;
@@ -76,12 +53,40 @@ std::ostream& operator<< (std::ostream &os, const resource &r)
 
 int resource::operator== (const std::string path)
 {
-    return path_ == path ;
+    std::vector <std::string> v = split_path (path) ;
+
+    return *this == v ;
 }
 
 int resource::operator!= (const std::string path)
 {
     return ! (*this == path) ;
+}
+
+int resource::operator== (const std::vector <std::string> &vpath)
+{
+    int r ;
+ 
+    if (vpath.size () == vpath_.size ())
+    {
+	r = 0 ;				// by default : equal
+	for (std::string::size_type i = 0 ; i < vpath.size () ; i++)
+	{
+	    if (vpath [i] != vpath_ [i])
+	    {
+		r = 1 ;			// not equal
+		break ;
+	    }
+	}
+    }
+    else r = 1 ;
+
+    return r ;
+}
+
+int resource::operator!= (const std::vector <std::string> &vpath)
+{
+    return ! (*this == vpath) ;
 }
 
 int resource::operator== (const std::vector <option> &pathopt)
@@ -146,6 +151,12 @@ void resource::add_attribute (const std::string name, const std::string value)
 	attributes_.back ().name = name ;
 	attributes_.back ().values.push_back (value) ;
     }
+}
+
+void resource::add_to_message (msg &m)
+{
+    for (auto &o : pathopt_)
+	m.pushoption (o) ;
 }
 
 }					// end of namespace sos

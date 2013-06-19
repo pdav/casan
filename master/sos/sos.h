@@ -42,6 +42,9 @@ class sos
 	// add a request
 	void add_request (msg *m) ;
 
+	// find a slave by it's slave id
+	slave *find_slave (slaveid_t sid) ;
+
 	// dump data structures
 	std::string html_debug (void) ;
 

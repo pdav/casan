@@ -39,7 +39,7 @@ class conf
 	// namespace configuration
 	struct cf_namespace
 	{
-	    std::string prefix ;	// namespace prefix
+	    std::vector <std::string> prefix ;	// namespace prefix
 	    cf_ns_type type ;
 	} ;
 	std::list <cf_namespace> nslist_ ;

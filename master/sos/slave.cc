@@ -105,6 +105,21 @@ int slave::initttl (void)
     return initttl_ ;
 }
 
+resource *slave::find_resource (const std::vector <std::string> &v)
+{
+    resource *r = nullptr ;
+
+    for (auto &res : reslist_)
+    {
+	if (res == v)
+	{
+	    r = &res ;
+	    break ;
+	}
+    }
+    return r ;
+}
+
 /******************************************************************************
  * Mutators
  */

@@ -4,6 +4,7 @@
 namespace sos {
 
 class option ;
+class mesg ;
 
 class resource
 {
@@ -12,11 +13,14 @@ class resource
 
 	int operator== (const std::string path) ;
 	int operator!= (const std::string path) ;
+	int operator== (const std::vector <std::string> &vpath) ;
+	int operator!= (const std::vector <std::string> &vpath) ;
 	int operator== (const std::vector <option> &pathopt) ;
 	int operator!= (const std::vector <option> &pathopt) ;
 
 	// Mutators
 	void add_attribute (const std::string name, const std::string value) ;
+	void add_to_message (msg &m) ;
 
 	// Accessors
 	// return attribute values (or NULL if not found) for an attribute name
@@ -25,7 +29,7 @@ class resource
 	friend std::ostream& operator<< (std::ostream &os, const resource &r) ;
 
     private:
-	std::string path_ ;		// resource name / path
+	std::vector <std::string> vpath_ ;
 	std::vector <option> pathopt_ ;	// path a a series of SOS options
 
 	struct attr_t

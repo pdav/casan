@@ -164,6 +164,26 @@ void sos::add_slave (slave *s)
 }
 
 /******************************************************************************
+ * Locate a slave by its slave id
+ */
+
+slave *sos::find_slave (slaveid_t sid)
+{
+    slave *r ;
+
+    r = nullptr ;
+    for (auto &s : slist_)
+    {
+	if (s.slaveid () == sid)
+	{
+	    r = &s ;
+	    break ;
+	}
+    }
+    return r ;
+}
+
+/******************************************************************************
  * Add a new message to send
  */
 

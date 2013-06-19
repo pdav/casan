@@ -9,6 +9,9 @@
 #include <list>
 #include <vector>
 
+#include "global.h"
+#include "utils.h"
+
 #include "conf.h"
 #include "sos.h"
 
@@ -39,9 +42,16 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 		<< " threads " << h.threads
 		<< "\n" ;
 	for (auto &n : cf.nslist_)
+	{
 	    os << "namespace "
 		<< (n.type == conf::NS_ADMIN ? "admin" : "sos")
-	    	<< n.prefix << "\n" ;
+		<< " " ;
+	    if (n.prefix.size () == 0)
+		os << '/' ;
+	    for (auto &p : n.prefix)
+	    	os << '/' << p ;
+	    os << "\n" ;
+	}
 	for (auto &n : cf.netlist_)
 	{
 	    os << "network " ;
@@ -237,7 +247,6 @@ bool conf::parse_line (std::string &line)
 	    cf_namespace c ;
 
 	    c.type = NS_NONE ;
-	    c.prefix = "" ;
 
 	    // "namespace <admin|sos> <path>",
 
@@ -249,7 +258,7 @@ bool conf::parse_line (std::string &line)
 	    }
 	    else
 	    {
-		c.prefix = tokens [i+1] ;
+		c.prefix = sos::split_path (tokens [i+1]) ;
 		if (tokens [i] == "admin")
 		    c.type = NS_ADMIN ;
 		else if (tokens [i] == "sos")

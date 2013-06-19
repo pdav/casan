@@ -12,9 +12,11 @@
 #include <signal.h>
 
 #include "global.h"
+#include "utils.h"
 #include "conf.h"			// configuration file
 #include "l2.h"
 #include "l2eth.h"
+#include "msg.h"
 #include "option.h"
 #include "resource.h"
 #include "sos.h"			// master engine
@@ -46,6 +48,8 @@ bool master::start (conf &cf)
 	// Start SOS engine machinery
 	engine_.ttl (cf.def_ttl_) ;
 	engine_.init () ;
+
+	conf_ = &cf ;
 
 	// Start interfaces
 	for (auto &n : cf.netlist_)
@@ -122,4 +126,298 @@ bool master::stop (void)
     // engine_.stop () ;
 
     return r ;
+}
+
+/******************************************************************************
+ * Parse a PATH to extract namespace type, slave and resource on this slave
+ */
+
+bool master::parse_path (const std::string path, master::parse_result &res)
+{
+    bool r = false ;
+    std::string buf = "" ;
+    slaveid_t sid ;
+
+    res.type_ = conf::NS_NONE ;
+    r = true ;				// success, unless exception
+    try
+    {
+	std::vector <std::string> vp = sos::split_path (path) ;
+
+	for (auto &ns : conf_->nslist_)
+	{
+	    std::vector <std::string>::size_type i ;
+
+	    // Search the prefix
+	    for (i = 0 ; i < ns.prefix.size () ; i++)
+		if (i >= vp.size () || vp [i] != ns.prefix [i])
+		    break ;
+
+	    // Is prefix found?
+	    if (i == ns.prefix.size ())
+	    {
+		res.base_ = sos::join_path (ns.prefix) ;
+
+		switch (ns.type)
+		{
+		    case conf::NS_ADMIN :
+		    {
+			// remaining path
+			if (i == vp.size ())
+			    res.str_ = "/" ;
+			else {
+			    res.str_ = "" ;
+			    for ( ; i < vp.size () ; i++)
+				res.str_ += "/" + vp [i] ;
+			}
+
+			D ("HTTP request for admin namespace: " << res.base_ << ", remainder=" << res.str_) ;
+			break ;
+		    }
+		    case conf::NS_SOS :
+		    {
+			/*
+			 * Find designated slave
+			 */
+
+			if (i >= vp.size ())
+			    throw int (42) ;
+
+			res.base_ += "/" + vp [i] ;
+			sid = std::stoi (vp [i]) ;
+			i++ ;
+
+			res.slave_ = engine_.find_slave (sid) ;
+			if (res.slave_ == nullptr ||
+				res.slave_->status () != sos::slave::SL_RUNNING)
+			    throw int (42) ;
+
+			/*
+			 * Find designated resource
+			 */
+
+			std::vector <std::string> vp2 ;
+			for ( ; i < vp.size () ; i++)
+			    vp2.push_back (vp [i]) ;
+
+			res.res_ = res.slave_->find_resource (vp2) ;
+			if (res.res_ == nullptr)
+			    throw int (42) ;
+
+			D ("HTTP request for sos namespace: " << res.base_ << ", slave id=" << res.slave_->slaveid ()) ;
+
+			break ;
+		    }
+		    case conf::NS_NONE :
+		    default :
+		    {
+			throw int (42) ;
+			break ;
+		    }
+		}
+
+		// type
+		res.type_ = ns.type ;
+	    }
+	}
+    } catch (int e) {
+	r = false ;
+    }
+
+    return r ;
+}
+
+/******************************************************************************
+ * Handle a HTTP request
+ */
+
+void master::handle_http (const std::string request_path, const http::server2::request & req, http::server2::reply & rep)
+{
+    parse_result res ;
+
+    if (! parse_path (request_path, res))
+    {
+	rep = http::server2::reply::stock_reply (http::server2::reply::not_found) ;
+	return ;
+    }
+
+    switch (res.type_)
+    {
+	case conf::NS_ADMIN :
+	    http_admin (res, req, rep) ;
+	    break ;
+	case conf::NS_SOS :
+	    http_sos (res, req, rep) ;
+	    break ;
+	case conf::NS_NONE :
+	default :
+	    rep = http::server2::reply::stock_reply (http::server2::reply::not_found) ;
+	    break ;
+    }
+}
+
+/******************************************************************************
+ * Handle a HTTP request for admin namespace
+ */
+
+void master::http_admin (const parse_result & res, const http::server2::request & req, http::server2::reply & rep)
+{
+    if (res.str_ == "/")
+    {
+	rep.status = http::server2::reply::ok ;
+	rep.content = "<html><body><ul>"
+	    "<li><a href=\"" + res.base_ + "/conf\">configuration</a>"
+	    "<li><a href=\"" + res.base_ + "/run\">running status</a>"
+	    "<li><a href=\"" + res.base_ + "/slave\">slave status</a>"
+	    "</ul></body></html>" ;
+
+	rep.headers.resize (2) ;
+	rep.headers[0].name = "Content-Length" ;
+	rep.headers[0].value =
+	    boost::lexical_cast < std::string > (rep.content.size ()) ;
+	rep.headers[1].name = "Content-Type" ;
+	rep.headers[1].value = "text/html" ;
+    }
+    else if (res.str_ == "/conf")
+    {
+	rep.status = http::server2::reply::ok ;
+	rep.content = "<html><body><pre>"
+	    + conf_->html_debug () + "</pre></body></html>" ;
+
+	rep.headers.resize (2) ;
+	rep.headers[0].name = "Content-Length" ;
+	rep.headers[0].value = boost::lexical_cast < std::string > (rep.content.size ()) ;
+	rep.headers[1].name = "Content-Type" ;
+	rep.headers[1].value = "text/html" ;
+    }
+    else if (res.str_ == "/run")
+    {
+	rep.status = http::server2::reply::ok ;
+	rep.content = "<html><body><pre>"
+	    + html_debug () + "</pre></body></html>" ;
+
+	rep.headers.resize (2) ;
+	rep.headers[0].name = "Content-Length" ;
+	rep.headers[0].value = boost::lexical_cast < std::string > (rep.content.size ()) ;
+	rep.headers[1].name = "Content-Type" ;
+	rep.headers[1].value = "text/html" ;
+    }
+    else if (res.str_ == "/slave")
+    {
+	// check which slave is concerned
+	if (req.method == "POST")
+	{
+	    enum sos::slave::status_code newstatus = sos::slave::SL_INACTIVE ;
+	    slaveid_t sid = -1 ;
+
+	    for (auto &a:req.postargs)
+	    {
+		if (a.name == "slaveid")
+		{
+		    try
+		    {
+			sid = std::stoi (a.value) ;
+		    }
+		    catch (std::exception & e)
+		    {
+			sid = -1 ;
+		    }
+		}
+		else if (a.name == "status")
+		{
+		    if (a.value == "inactive")
+			newstatus = sos::slave::SL_INACTIVE ;
+		    else if (a.value == "runnning")
+			newstatus = sos::slave::SL_RUNNING ;
+		}
+	    }
+	    if (sid != -1)
+	    {
+		bool r = true ;
+
+		// r = master.force_slave_status (sid, newstatus)  ;
+		if (r)
+		{
+		    rep.status = http::server2::reply::ok ;
+		    rep.content = "<html><body><pre>"
+			"ok (but not implemented)" "</pre></body></html>" ;
+		}
+		else
+		{
+		    rep.status = http::server2::reply::not_modified ;
+		    rep.content = "<html><body><pre>"
+			"not modified, really" "</pre></body></html>" ;
+		}
+	    }
+	    else
+	    {
+		rep.status = http::server2::reply::bad_request ;
+		rep.content = "<html><body><pre>"
+		    "so bad request..." "</pre></body></html>" ;
+	    }
+	}
+	else
+	{
+	    rep.status = http::server2::reply::ok ;
+	    rep.content = "<html><body>"
+		"<form method=\"post\" action=\"" + res.base_ + "/slave\">"
+		"slave id <input type=text name=slaveid><p>"
+		"status <select size=1 name=status>"
+		"<option value=\"inactive\">INACTIVE"
+		"<option value=\"running\">RUNNING"
+		"</select>"
+		"<input type=submit value=set>" "</pre></body></html>" ;
+	}
+
+	rep.headers.resize (2) ;
+	rep.headers[0].name = "Content-Length" ;
+	rep.headers[0].value =
+	    boost::lexical_cast < std::string > (rep.content.size ()) ;
+	rep.headers[1].name = "Content-Type" ;
+	rep.headers[1].value = "text/html" ;
+    }
+    else
+    {
+	rep = http::server2::reply::stock_reply (http::server2::reply::not_found) ;
+    }
+}
+
+/******************************************************************************
+ * Handle a HTTP request for sos namespace
+ */
+
+struct
+{
+    const char *text ;
+    const sos::msg::msgcode code ;
+} tabmethod[] = {
+    { "GET",    sos::msg::MC_GET },
+    { "POST",   sos::msg::MC_POST },
+    { "PUT",    sos::msg::MC_PUT },
+    { "DELETE", sos::msg::MC_DELETE },
+} ;
+
+void master::http_sos (const parse_result & res, const http::server2::request & req, http::server2::reply & rep)
+{
+    sos::msg m ;
+    sos::msg::msgcode_t code ;
+
+    code = sos::msg::MC_GET ;
+    for (int i = 0 ; i < NTAB (tabmethod); i++)
+	if (tabmethod[i].text == req.method)
+	    code = tabmethod[i].code ;
+
+    m.peer (res.slave_) ;
+    m.type (sos::msg::MT_CON) ;
+    m.code (code) ;
+    res.res_->add_to_message (m) ;
+
+    if (m.send () == -1)
+    {
+	rep = http::server2::reply::stock_reply (http::server2::reply::service_unavailable) ;
+    }
+    else
+    {
+	/* nothing */
+    }
 }
