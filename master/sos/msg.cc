@@ -308,11 +308,11 @@ bool msg::coap_decode (void)
 	    switch (opt_delta)
 	    {
 		case 13 :
-		    opt_delta = msg_ [i] - 13 ;
+		    opt_delta = msg_ [i] + 13 ;
 		    i += 1 ;
 		    break ;
 		case 14 :
-		    opt_delta = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+		    opt_delta = (msg_ [i] << 8) + msg_ [i+1] + 269 ;
 		    i += 2 ;
 		    break ;
 		case 15 :
@@ -324,11 +324,11 @@ bool msg::coap_decode (void)
 	    switch (opt_len)
 	    {
 		case 13 :
-		    opt_len = msg_ [i] - 13 ;
+		    opt_len = msg_ [i] + 13 ;
 		    i += 1 ;
 		    break ;
 		case 14 :
-		    opt_len = (msg_ [i] << 8) + msg_ [i+1] - 269 ;
+		    opt_len = (msg_ [i] << 8) + msg_ [i+1] + 269 ;
 		    i += 2 ;
 		    break ;
 		case 15 :

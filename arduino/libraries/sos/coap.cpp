@@ -95,7 +95,7 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 				i += 1 ;
 				break ;
 			case 14 : // the opt_delta is on two bytes (the next)
-				opt_delta = (rbuf [i] << 8) + rbuf [i+1] - 269 ;
+				opt_delta = (rbuf [i] << 8) + rbuf [i+1] + 269 ;
 				i += 2 ;
 				break ;
 			case 15 :
@@ -111,7 +111,7 @@ bool Coap::decode(Message &m, uint8_t rbuf[], size_t rbuflen) {
 				i += 1 ;
 				break ;
 			case 14 : // the length is encoded on two bytes (after opt_delta)
-				opt_len = (rbuf [i] << 8) + rbuf [i+1] - 269 ;
+				opt_len = (rbuf [i] << 8) + rbuf [i+1] + 269 ;
 				i += 2 ;
 				break ;
 			case 15 :
