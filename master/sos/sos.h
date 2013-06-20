@@ -12,8 +12,6 @@
 
 namespace sos {
 
-typedef long int slavettl_t ;
-
 class msg ;
 class slave ;
 class l2net ;
@@ -29,8 +27,13 @@ class sos
 	// start sender thread
 	void init (void) ;
 
-	void ttl (slavettl_t t) ;
-	slavettl_t ttl (void) ;
+	// accessors and mutators
+	sostimer_t timer_slave_ttl (void) ;
+	sostimer_t timer_first_hello (void) ;
+	sostimer_t timer_interval_hello (void) ;
+	void timer_slave_ttl (sostimer_t t) ;
+	void timer_first_hello (sostimer_t t) ;
+	void timer_interval_hello (sostimer_t t) ;
 
 	// start and stop receiver thread
 	void start_net (l2net *l2) ;
@@ -57,7 +60,9 @@ class sos
 	std::mutex mtx_ ;
 	std::condition_variable condvar_ ;
 
-	slavettl_t ttl_ ;		// default slave ttl (in sec)
+	sostimer_t first_hello_ ;	// delay before first hello message
+	sostimer_t interval_hello_ ;	// hello message interval
+	sostimer_t slave_ttl_ ;		// default slave ttl (in sec)
 
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;

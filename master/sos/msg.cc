@@ -789,7 +789,7 @@ void msg::mk_ctl_hello (long int hid)
     pushoption (o) ;
 }
 
-void msg::mk_ctl_assoc (slavettl_t ttl)
+void msg::mk_ctl_assoc (sostimer_t ttl)
 {
     char buf [MAXBUF] ;
 

@@ -71,7 +71,7 @@ class msg
 	bool is_sos_associate (void) ;		// SOS control message
 	void add_path_ctl (void) ;
 	void mk_ctl_hello (long int hid) ;	// options for ctl mssage
-	void mk_ctl_assoc (slavettl_t ttl) ;	// options for ctl mssage
+	void mk_ctl_assoc (sostimer_t ttl) ;	// options for ctl mssage
 
     protected:
 	timepoint_t expire_ ;		// all msg

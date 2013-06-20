@@ -46,7 +46,9 @@ bool master::start (conf &cf)
     if (cf.done_)
     {
 	// Start SOS engine machinery
-	engine_.ttl (cf.def_ttl_) ;
+	engine_.timer_first_hello (cf.timers [conf::I_FIRST_HELLO]) ;
+	engine_.timer_interval_hello (cf.timers [conf::I_INTERVAL_HELLO]) ;
+	engine_.timer_slave_ttl (cf.timers [conf::I_SLAVE_TTL]) ;
 	engine_.init () ;
 
 	conf_ = &cf ;
@@ -82,15 +84,15 @@ bool master::start (conf &cf)
 	for (auto &s : cf.slavelist_)
 	{
 	    sos::slave *v ;
-	    int ttl ;
+	    sostimer_t ttl ;
 
 	    v = new sos::slave ;
 	    v->slaveid (s.id) ;
 	    if (s.ttl == 0)
-		ttl = engine_.ttl () ;
+		ttl = engine_.timer_slave_ttl () ;
 	    else
 		ttl = s.ttl ;
-	    v->initttl (ttl) ;
+	    v->init_ttl (ttl) ;
 	    engine_.add_slave (v) ;
 	    std::cout << "Slave " << s.id << " added\n" ;
 	}

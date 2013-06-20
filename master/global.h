@@ -14,16 +14,10 @@ typedef std::uint8_t byte ;
 typedef std::uint32_t uint32 ;
 
 typedef long int slaveid_t ;
-typedef long int slavettl_t ;
+typedef long int sostimer_t ;
 
 typedef	std::chrono::system_clock::time_point timepoint_t ;
 typedef std::chrono::milliseconds duration_t ;
-
-// delays (in milliseconds)
-#define	INTERVAL_HELLO		10000
-#define	DELAY_FIRST_HELLO	3000
-
-#define	DEFAULT_SLAVE_TTL	3600000			// 1 hour
 
 #define	DATE_TIMEOUT_MS(ms)	(std::chrono::system_clock::now () + \
 				    std::chrono::milliseconds (ms))

@@ -77,14 +77,38 @@ void sos::init (void)
     }
 }
 
-void sos::ttl (slavettl_t t)
+/******************************************************************************
+ * Accessors & mutators
+ */
+
+sostimer_t sos::timer_first_hello (void)
 {
-    ttl_ = t ;
+    return first_hello_ ;
 }
 
-slavettl_t sos::ttl (void)
+sostimer_t sos::timer_interval_hello (void)
 {
-    return ttl_ ;
+    return interval_hello_ ;
+}
+
+sostimer_t sos::timer_slave_ttl (void)
+{
+    return slave_ttl_ ;
+}
+
+void sos::timer_first_hello (sostimer_t t)
+{
+    first_hello_ = t ;
+}
+
+void sos::timer_interval_hello (sostimer_t t)
+{
+    interval_hello_ = t ;
+}
+
+void sos::timer_slave_ttl (sostimer_t t)
+{
+    slave_ttl_ = t ;
 }
 
 /******************************************************************************
@@ -95,7 +119,9 @@ std::string sos::html_debug (void)
 {
     std::ostringstream oss ;
 
-    oss << "Default TTL = " << ttl_ << "\n" ;
+    oss << "Delay for first HELLO message = " << first_hello_ << " s\n" ;
+    oss << "HELLO interval = " << interval_hello_ << " s\n" ;
+    oss << "Default TTL = " << slave_ttl_ << " s\n" ;
     oss << "Slaves:\n" ;
     for (auto &s : slist_)
 	oss << s ;
@@ -136,7 +162,7 @@ void sos::start_net (l2net *l2)
 	r->hellomsg->code (msg::MC_POST) ;
 	r->hellomsg->mk_ctl_hello (r->hid) ;
 
-	r->next_hello = now + random_timeout (DELAY_FIRST_HELLO)  ;
+	r->next_hello = now + random_timeout (first_hello_ * 1000)  ;
 
 	rlist_.push_front (*r) ;
 	condvar_.notify_one () ;
@@ -265,7 +291,7 @@ void sos::sender_thread (void)
 		ri->hellomsg->id (0) ;		// don't reuse the same msg id
 		ri->hellomsg->send () ;
 		// schedule next hello packet
-		ri->next_hello = now + duration_t (INTERVAL_HELLO) ;
+		ri->next_hello = now + duration_t (interval_hello_ * 1000) ;
 	    }
 	}
 

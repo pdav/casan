@@ -27,6 +27,15 @@ class conf
 
 	bool done_ = false ;		// configuration file already read
 
+	// timer values
+	enum cf_timer_index {
+	    I_FIRST_HELLO = 0,		// default slave ttl
+	    I_INTERVAL_HELLO = 1,	// interval between hello
+	    I_SLAVE_TTL = 2,		// default slave ttl
+	    I_HTTP = 3,			// http replies timeout
+	} ;
+	sostimer_t timers [I_HTTP+1] ;
+
 	// HTTP server configuration
 	struct cf_http
 	{
@@ -65,7 +74,6 @@ class conf
 	std::list <cf_network> netlist_ ;
 
 	// slave configuration
-	int def_ttl_ = 0 ;		// default ttl
 	struct cf_slave
 	{
 	    int id ;
@@ -85,6 +93,11 @@ class conf
 	void parse_error_dup_token (const std::string tok, int help) ;
 	void parse_error_unk_token (const std::string tok, int help) ;
 	void parse_error_mis_token (int help) ;
+	
+	const sostimer_t DEFAULT_FIRST_HELLO	= 3 ;		// 3 s
+	const sostimer_t DEFAULT_INTERVAL_HELLO	= 10 ;		// 10 s
+	const sostimer_t DEFAULT_SLAVE_TTL	= 3600 ;	// 1 h
+	const sostimer_t DEFAULT_HTTP		= 120 ;		// 2 m
 } ;
 
 #endif

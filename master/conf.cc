@@ -52,6 +52,23 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	    	os << '/' << p ;
 	    os << "\n" ;
 	}
+	for (int i = 0 ; i < NTAB (cf.timers) ; i++)
+	{
+	    const char *p ;
+	    switch (i)
+	    {
+		case conf::I_FIRST_HELLO :
+		    p = "firsthello" ;
+		    break ;
+		case conf::I_INTERVAL_HELLO :
+		    p = "hello" ;
+		    break ;
+		case conf::I_SLAVE_TTL :
+		    p = "slavettl" ;
+		    break ;
+	    }
+	    os << "timer " << p << " " << cf.timers [i] << "\n" ;
+	}
 	for (auto &n : cf.netlist_)
 	{
 	    os << "network " ;
@@ -69,8 +86,6 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	    }
 	    os << " mtu " << n.mtu << "\n" ;
 	}
-	if (cf.def_ttl_ != 0)
-	    os << "slave-ttl " << cf.def_ttl_ << "\n" ;
 	for (auto &s : cf.slavelist_)
 	    os << "slave id " << s.id
 		<< " ttl " << s.ttl
@@ -95,7 +110,7 @@ std::string conf::html_debug (void)
 #define	HELP_ALL	0
 #define	HELP_HTTP	1
 #define	HELP_NAMESPACE	2
-#define	HELP_SLAVETTL	3
+#define	HELP_TIMER	3
 #define	HELP_NETWORK	4
 #define	HELP_SLAVE	5
 #define	HELP_NETETH	(HELP_SLAVE+1)
@@ -103,11 +118,11 @@ std::string conf::html_debug (void)
 
 static const char *syntax_help [] =
 {
-    "http-server, namespace, slave-ttl, network, or slave",
+    "http-server, namespace, timer, network, or slave",
 
     "http-server [listen <addr>] [port <num>] [threads <num>]",
     "namespace <admin|sos> <path>",
-    "slave-ttl <timeout in s>",
+    "timer <firsthello|hello|slavettl|http> <value in s>",
     "network <ethernet|802.15.4> ...",
     "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
 
@@ -272,23 +287,45 @@ bool conf::parse_line (std::string &line)
 		    nslist_.push_back (c) ;
 	    }
 	}
-	else if (tokens [i] == "slave-ttl")
+	else if (tokens [i] == "timer")
 	{
 	    i++ ;
 
-	    if (i + 1 != asize)
+	    if (i + 2 != asize)
 	    {
-		parse_error_num_token (asize, HELP_SLAVETTL) ;
-		r = false ;
-	    }
-	    else if (def_ttl_ != 0)
-	    {
-		parse_error_dup_token (tokens [0], HELP_SLAVETTL) ;
+		parse_error_num_token (asize, HELP_TIMER) ;
 		r = false ;
 	    }
 	    else
 	    {
-		def_ttl_ = std::stoi (tokens [i]) ;
+		int idx ;
+
+		if (tokens [i] == "firsthello")
+		    idx = I_FIRST_HELLO ;
+		else if (tokens [i] == "hello")
+		    idx = I_INTERVAL_HELLO ;
+		else if (tokens [i] == "slavettl")
+		    idx = I_SLAVE_TTL ;
+		else if (tokens [i] == "http")
+		    idx = I_HTTP ;
+		else
+		    idx = -1 ;
+
+		if (idx == -1)
+		{
+		    parse_error_unk_token (tokens [i], HELP_TIMER) ;
+		    r = false ;
+		}
+		else if (timers [idx] != 0)
+		{
+		    i++ ;
+		    timers [idx] = std::stoi (tokens [i]) ;
+		}
+		else
+		{
+		    parse_error_dup_token (tokens [0], HELP_TIMER) ;
+		    r = false ;
+		}
 	    }
 	}
 	else if (tokens [i] == "network")
@@ -474,9 +511,18 @@ bool conf::parse_line (std::string &line)
      * Fourth pass: set default values
      */
 
+    if (timers [I_FIRST_HELLO] == 0)
+	timers [I_FIRST_HELLO] = DEFAULT_FIRST_HELLO ;
+    if (timers [I_INTERVAL_HELLO] == 0)
+	timers [I_INTERVAL_HELLO] = DEFAULT_INTERVAL_HELLO ;
+    if (timers [I_SLAVE_TTL] == 0)
+	timers [I_SLAVE_TTL] = DEFAULT_SLAVE_TTL ;
+    if (timers [I_HTTP] == 0)
+	timers [I_HTTP] = DEFAULT_HTTP ;
+
     for (auto &s : slavelist_)
 	if (s.ttl == 0)
-	    s.ttl = def_ttl_ ;
+	    s.ttl = timers [I_SLAVE_TTL] ;
 
     if (r)
 	done_ = true ;
