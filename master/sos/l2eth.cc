@@ -111,11 +111,17 @@ int l2addr_eth::operator!= (const l2addr &other)
 
 int l2net_eth::init (const char *iface)
 {
+    return init (iface, ETHTYPE_SOS) ;
+}
+
+int l2net_eth::init (const char *iface, int ethertype)
+{
 #ifdef USE_PF_PACKET
     struct sockaddr_ll sll ;
 
     mtu_ = ETHMTU ;
     maxlatency_ = ETHMAXLATENCY ;
+    ethertype_ = ethertype ;
 
     /* Get interface index */
 
@@ -125,7 +131,7 @@ int l2net_eth::init (const char *iface)
 
     /* Open socket */
 
-    fd_ = socket (PF_PACKET, SOCK_DGRAM, htons (ETHTYPE_SOS)) ;
+    fd_ = socket (PF_PACKET, SOCK_DGRAM, htons (ethertype_)) ;
     if (fd_ == -1)
 	return -1 ;
 
@@ -133,7 +139,7 @@ int l2net_eth::init (const char *iface)
 
     std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
-    sll.sll_protocol = htons (ETHTYPE_SOS) ;
+    sll.sll_protocol = htons (ethertype_) ;
     sll.sll_ifindex = ifidx_ ;
     if (bind (fd_, (struct sockaddr *) &sll, sizeof sll) == -1)
     {
@@ -151,7 +157,7 @@ int l2net_eth::init (const char *iface)
     if (fd_ == NULL)
 	return -1 ;
 
-    snprintf (buf, sizeof buf, "ether proto 0x%x", ETHTYPE_SOS) ;
+    snprintf (buf, sizeof buf, "ether proto 0x%x", ethertype_) ;
     if (pcap_compile (fd_, bpfp, buf, 1, PCAP_NETMASK_UNKNOWN) != 0)
     {
 	pcap_close (fd_) ;

@@ -14,10 +14,6 @@
 #include <pcap/pcap.h>
 #endif
 
-
-// http://stackoverflow.com/questions/3366812/linux-raw-ethernet-socket-bind-to-specific-protocol
-#define	ETHTYPE_SOS	0x88b5		// public use for prototype
-
 // Ethernet address length
 #define	ETHADDRLEN	6
 // Ethernet default MTU
@@ -54,6 +50,7 @@ class l2net_eth: public l2net
 {
     public:
 	~l2net_eth () {} ;
+	int init (const char *iface, int ethertype) ;
 	int init (const char *iface) ;
 	void term (void) ;
 	int send (l2addr *daddr, void *data, int len) ;
@@ -65,6 +62,7 @@ class l2net_eth: public l2net
 #ifdef USE_PF_PACKET
 	int ifidx_ ;			// interface index
 	int fd_ ;			// socket descriptor
+	int ethertype_  ;		// ethernet type
 #endif
 #ifdef USE_PCAP
 	pcap_t *fd_ ;			// pcap descriptor

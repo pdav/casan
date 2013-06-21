@@ -55,11 +55,11 @@ class slave
 	timepoint_t next_timeout_ ;	// remaining ttl
 
     private:
-	slaveid_t slaveid_ ;		// slave id
-	l2net *l2_ ;			// l2 network this slave is on
-	l2addr *addr_ ;			// slave address
-	int init_ttl_ ;			// initial ttl (in sec)
-	enum status_code status_ ;	// current status of slave
+	slaveid_t slaveid_ = 0 ;	// slave id
+	l2net *l2_ = nullptr ;		// l2 network this slave is on
+	l2addr *addr_ = nullptr ;	// slave address
+	int init_ttl_ = 0 ;		// initial ttl (in sec)
+	enum status_code status_ = SL_INACTIVE;	// current status of slave
 	std::vector <resource> reslist_ ;	// resource list
 
 	// parse a resource list returned by this slave

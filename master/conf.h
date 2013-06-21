@@ -58,6 +58,7 @@ class conf
 	struct cf_net_eth
 	{
 	    std::string iface ;
+	    int ethertype ;
 	} ;
 	struct cf_net_802154
 	{
@@ -93,11 +94,15 @@ class conf
 	void parse_error_dup_token (const std::string tok, int help) ;
 	void parse_error_unk_token (const std::string tok, int help) ;
 	void parse_error_mis_token (int help) ;
-	
+
 	const sostimer_t DEFAULT_FIRST_HELLO	= 3 ;		// 3 s
 	const sostimer_t DEFAULT_INTERVAL_HELLO	= 10 ;		// 10 s
 	const sostimer_t DEFAULT_SLAVE_TTL	= 3600 ;	// 1 h
 	const sostimer_t DEFAULT_HTTP		= 120 ;		// 2 m
+
+	const char *DEFAULT_HTTP_PORT		= "http" ;
+	const char *DEFAULT_HTTP_LISTEN		= "*" ;
+	const int DEFAULT_HTTP_THREADS		= 5 ;
 } ;
 
 #endif

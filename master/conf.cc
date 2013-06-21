@@ -37,8 +37,8 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
     {
 	for (auto &h : cf.httplist_)
 	    os << "http-server"
-		<< " listen " << (h.listen == "" ? "*" : h.listen)
-	    	<< " port " << (h.port == "" ? "80" : h.port)
+		<< " listen " << h.listen
+	    	<< " port " << h.port
 		<< " threads " << h.threads
 		<< "\n" ;
 	for (auto &n : cf.nslist_)
@@ -66,6 +66,9 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 		case conf::I_SLAVE_TTL :
 		    p = "slavettl" ;
 		    break ;
+		case conf::I_HTTP :
+		    p = "http" ;
+		    break ;
 	    }
 	    os << "timer " << p << " " << cf.timers [i] << "\n" ;
 	}
@@ -75,10 +78,12 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	    switch (n.type)
 	    {
 		case conf::NET_ETH :
-		    os << "ethernet " << n.net_eth.iface ;
+		    os << "ethernet " << n.net_eth.iface
+			    << " ethertype 0x"
+				<< std::hex << n.net_eth.ethertype << std::dec ;
 		    break ;
 		case conf::NET_802154 :
-		    os << "802.15.4 " << n.net_eth.iface ;
+		    os << "802.15.4" << n.net_eth.iface ;
 		    break ;
 		default :
 		    os << "(unrecognized network)\n" ;
@@ -126,7 +131,7 @@ static const char *syntax_help [] =
     "network <ethernet|802.15.4> ...",
     "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
 
-    "network ethernet <iface> [mtu <bytes>]",
+    "network ethernet <iface> [mtu <bytes>] [ethertype [0x]<val>]",
     "network 802.15.4 <iface> [mtu <bytes>] ???",
 } ;
 
@@ -360,6 +365,24 @@ bool conf::parse_line (std::string &line)
 				}
 				else c.mtu = std::stoi (tokens [i+1]) ;
 			    }
+			    else if (tokens [i] == "ethertype")
+			    {
+				if (c.net_eth.ethertype != 0)
+				{
+				    parse_error_dup_token (tokens [i], HELP_NETETH) ;
+				    r = false ;
+				    break ;
+				}
+				else
+				{
+				    std::istringstream is (tokens [i+1]) ;
+
+				    if (tokens [i+1].substr (0, 2) == "0x")
+					is >> std::hex >> c.net_eth.ethertype ;
+				    else
+					is >> c.net_eth.ethertype ;
+				}
+			    }
 			    else
 			    {
 				parse_error_unk_token (tokens [i], HELP_NETETH) ;
@@ -511,6 +534,16 @@ bool conf::parse_line (std::string &line)
      * Fourth pass: set default values
      */
 
+    for (auto &h : httplist_)
+    {
+	if (h.port == "")
+	    h.port = DEFAULT_HTTP_PORT ;
+	if (h.threads == 0)
+	    h.threads = DEFAULT_HTTP_THREADS ;
+	if (h.listen == "")
+	    h.listen = DEFAULT_HTTP_LISTEN ;
+    }
+
     if (timers [I_FIRST_HELLO] == 0)
 	timers [I_FIRST_HELLO] = DEFAULT_FIRST_HELLO ;
     if (timers [I_INTERVAL_HELLO] == 0)
@@ -523,6 +556,10 @@ bool conf::parse_line (std::string &line)
     for (auto &s : slavelist_)
 	if (s.ttl == 0)
 	    s.ttl = timers [I_SLAVE_TTL] ;
+
+    for (auto &n : netlist_)
+	if (n.type == NET_ETH && n.net_eth.ethertype == 0)
+	    n.net_eth.ethertype = ETHTYPE_SOS ;
 
     if (r)
 	done_ = true ;

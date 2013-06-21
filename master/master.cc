@@ -61,15 +61,19 @@ bool master::start (conf &cf)
 	    switch (n.type)
 	    {
 		case conf::NET_ETH :
-		    l = new sos::l2net_eth ;
-		    if (l->init (n.net_eth.iface.c_str ()) == -1)
 		    {
-			perror ("init") ;
-			delete l ;
-			return 0 ;
+			sos::l2net_eth *le ;
+			le = new sos::l2net_eth ;
+			if (le->init (n.net_eth.iface.c_str (), n.net_eth.ethertype) == -1)
+			{
+			    perror ("init") ;
+			    delete le ;
+			    return 0 ;
+			}
+			l = le ;
+			engine_.start_net (l) ;
+			std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
 		    }
-		    engine_.start_net (l) ;
-		    std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
 		    break ;
 		case conf::NET_802154 :
 		    std::cerr << "802.15.4 not supported\n" ;
