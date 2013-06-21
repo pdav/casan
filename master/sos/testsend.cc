@@ -27,6 +27,7 @@
 int main (int argc, char *argv [])
 {
     sos::l2net *l ;
+    sos::l2net_eth *le ;
     sos::l2addr_eth *sa ;		// slave address
     sos::slave s ;			// slave
     sos::slave sb ;			// pseudo-slave for broadcast
@@ -34,12 +35,15 @@ int main (int argc, char *argv [])
     char buf [512] = "" ;
 
     // start new interface
-    l = new sos::l2net_eth ;
-    if (l->init (IFACE) == -1)
+    le = new sos::l2net_eth ;
+    if (le->init (IFACE, ETHTYPE_SOS) == -1)
     {
 	perror ("init") ;
 	exit (1) ;
     }
+
+    // from now on, use only generic l2net interface
+    l = le ;
 
     // register new slave
     sa = new sos::l2addr_eth (ADDR) ;
