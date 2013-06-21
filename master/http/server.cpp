@@ -21,7 +21,7 @@ server::server(const std::string& address, const std::string& port,
     new_connection_(new connection(
           io_service_pool_.get_io_service(), request_handler_)),
     /* request_handler_(doc_root) */
-    request_handler_("/admin")
+    request_handler_("*value not used*")
 {
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
   asio::ip::tcp::resolver resolver(acceptor_.io_service());
