@@ -200,7 +200,7 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
 
     std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
-    sll.sll_protocol = htons (ETHTYPE_SOS) ;
+    sll.sll_protocol = htons (ethertype_) ;
     sll.sll_halen = ETHADDRLEN ;
     sll.sll_ifindex = ifidx_ ;
     std::memcpy (sll.sll_addr, a->addr_, ETHADDRLEN) ;
