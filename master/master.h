@@ -43,6 +43,7 @@ class master
 
 	void http_admin (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
 	void http_sos (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
+	void http_well_known (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
 } ;
 
 #endif

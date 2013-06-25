@@ -39,7 +39,7 @@ resource::resource (const std::string path)
 
 std::ostream& operator<< (std::ostream &os, const resource &r)
 {
-    os << "resource " << join_path (r.vpath_) ;
+    os << join_path (r.vpath_) ;
     for (auto &a : r.attributes_)
 	for (auto &v : a.values)
 	    os << ";" << a.name << "=\"" << v << "\"" ;

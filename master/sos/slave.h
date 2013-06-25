@@ -34,6 +34,7 @@ class slave
 	enum status_code status (void) ;
 	int init_ttl (void) ;
 	resource *find_resource (const std::vector <std::string> &v) ;
+	const std::vector <resource> &resource_list (void) ;
 
 	// SOS protocol handling
 	void process_sos (sos *e, msg *m) ;

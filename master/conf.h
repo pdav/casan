@@ -20,7 +20,7 @@ class conf
 
 	std::string html_debug (void) ;
 
-	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_SOS } ;
+	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_SOS, NS_WELL_KNOWN } ;
 
     protected:
 	friend class master ;

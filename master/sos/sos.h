@@ -52,6 +52,7 @@ class sos
 
 	// dump data structures
 	std::string html_debug (void) ;
+	std::string resource_list (void) ;	// aggregated .well-known/sos
 
     private:
 	std::list <receiver> rlist_ ;	// connected networks

@@ -218,6 +218,14 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 
 			break ;
 		    }
+		    case conf::NS_WELL_KNOWN :
+		    {
+			/*
+			 * No specific handling
+			 */
+
+			break ;
+		    }
 		    case conf::NS_NONE :
 		    default :
 		    {
@@ -258,6 +266,9 @@ void master::handle_http (const std::string request_path, const http::server2::r
 	    break ;
 	case conf::NS_SOS :
 	    http_sos (res, req, rep) ;
+	    break ;
+	case conf::NS_WELL_KNOWN :
+	    http_well_known (res, req, rep) ;
 	    break ;
 	case conf::NS_NONE :
 	default :
@@ -396,6 +407,23 @@ void master::http_admin (const parse_result & res, const http::server2::request 
 }
 
 /******************************************************************************
+ * Handle a HTTP request for the "well-known" namespace
+ */
+
+void master::http_well_known (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
+{
+    rep.status = http::server2::reply::ok ;
+    rep.content = engine_.resource_list () ;
+
+    rep.headers.resize (2) ;
+    rep.headers[0].name = "Content-Length" ;
+    rep.headers[0].value =
+	boost::lexical_cast < std::string > (rep.content.size ()) ;
+    rep.headers[1].name = "Content-Type" ;
+    rep.headers[1].value = "text/html" ;
+}
+
+/******************************************************************************
  * Handle a HTTP request for sos namespace
  */
 
@@ -405,6 +433,7 @@ struct
     const sos::msg::msgcode code ;
 } tabmethod[] = {
     { "GET",    sos::msg::MC_GET },
+    { "HEAD",   sos::msg::MC_GET },
     { "POST",   sos::msg::MC_POST },
     { "PUT",    sos::msg::MC_PUT },
     { "DELETE", sos::msg::MC_DELETE },

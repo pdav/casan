@@ -44,7 +44,10 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	for (auto &n : cf.nslist_)
 	{
 	    os << "namespace "
-		<< (n.type == conf::NS_ADMIN ? "admin" : "sos")
+		<< (n.type == conf::NS_ADMIN ? "admin" :
+		    (n.type == conf::NS_SOS ? "sos" :
+		    (n.type == conf::NS_WELL_KNOWN ?  "well-known" :
+			"(unknown)")))
 		<< " " ;
 	    if (n.prefix.size () == 0)
 		os << '/' ;
@@ -126,7 +129,7 @@ static const char *syntax_help [] =
     "http-server, namespace, timer, network, or slave",
 
     "http-server [listen <addr>] [port <num>] [threads <num>]",
-    "namespace <admin|sos> <path>",
+    "namespace <admin|sos|well-known> <path>",
     "timer <firsthello|hello|slavettl|http> <value in s>",
     "network <ethernet|802.15.4> ...",
     "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
@@ -283,6 +286,8 @@ bool conf::parse_line (std::string &line)
 		    c.type = NS_ADMIN ;
 		else if (tokens [i] == "sos")
 		    c.type = NS_SOS ;
+		else if (tokens [i] == "well-known")
+		    c.type = NS_WELL_KNOWN ;
 		else
 		{
 		    parse_error_unk_token (tokens [i], HELP_NAMESPACE) ;

@@ -163,6 +163,29 @@ std::string sos::html_debug (void)
 }
 
 /******************************************************************************
+ * Returns aggregated .well-known/sos for all running slaves
+ */
+
+std::string sos::resource_list (void)
+{
+    std::string str = "" ;
+
+    for (auto &s : slist_)
+    {
+	if (s.status_ == slave::SL_RUNNING)
+	{
+	    for (auto &r : s.resource_list ())
+	    {
+		std::ostringstream oss ;
+		oss << r ;
+		str += oss.str () ;
+	    }
+	}
+    }
+    return str ;
+}
+
+/******************************************************************************
  * Add a new L2 network:
  * - schedule the first HELLO packet
  * - add the network to the receiver queue

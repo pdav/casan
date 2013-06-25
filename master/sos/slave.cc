@@ -120,6 +120,11 @@ resource *slave::find_resource (const std::vector <std::string> &v)
     return r ;
 }
 
+const std::vector <resource> &slave::resource_list (void)
+{
+    return reslist_ ;
+}
+
 /******************************************************************************
  * Mutators
  */
