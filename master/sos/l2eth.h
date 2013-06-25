@@ -29,8 +29,10 @@ namespace sos {
 class l2addr_eth: public l2addr
 {
     public:
-	l2addr_eth () ;			// default constructor
-	l2addr_eth (const char *) ;	// constructor
+	l2addr_eth () ;				// default constructor
+	l2addr_eth (const char *) ;		// constructor
+	l2addr_eth (const l2addr_eth &l) ;	// copy constructor
+	l2addr_eth &operator= (const l2addr_eth &l) ;	// copy assignment constructor
 
 	int operator== (const l2addr &) ;
 	int operator!= (const l2addr &) ;

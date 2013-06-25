@@ -6,7 +6,10 @@
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <memory>
+#include <functional>
 
 #include <unistd.h>
 #include <signal.h>
@@ -16,6 +19,7 @@
 #include "conf.h"			// configuration file
 #include "l2.h"
 #include "l2eth.h"
+#include "waiter.h"
 #include "msg.h"
 #include "option.h"
 #include "resource.h"
@@ -345,8 +349,11 @@ void master::http_admin (const parse_result & res, const http::server2::request 
 		if (r)
 		{
 		    rep.status = http::server2::reply::ok ;
-		    rep.content = "<html><body><pre>"
-			"ok (but not implemented)" "</pre></body></html>" ;
+		    rep.content = "<html><body><pre>set to " ;
+		    rep.content += (newstatus == sos::slave::SL_INACTIVE ?
+					"inactive" : "running") ;
+		    rep.content += "(note: not implemented)"
+		    		"</pre></body></html>" ;
 		}
 		else
 		{
@@ -403,27 +410,50 @@ struct
     { "DELETE", sos::msg::MC_DELETE },
 } ;
 
-void master::http_sos (const parse_result & res, const http::server2::request & req, http::server2::reply & rep)
+void master::http_sos (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
 {
-    sos::msg m ;
+    sos::msg *m ;
+    sos::msg *r ;
     sos::msg::msgcode_t code ;
+    sos::waiter w ;
 
     code = sos::msg::MC_GET ;
     for (int i = 0 ; i < NTAB (tabmethod); i++)
 	if (tabmethod[i].text == req.method)
 	    code = tabmethod[i].code ;
 
-    m.peer (res.slave_) ;
-    m.type (sos::msg::MT_CON) ;
-    m.code (code) ;
-    res.res_->add_to_message (m) ;
+    m = new sos::msg ;
+    m->peer (res.slave_) ;
+    m->type (sos::msg::MT_CON) ;
+    m->code (code) ;
+    res.res_->add_to_message (*m) ;	// add resource path as msg options
+    m->wt (&w) ;
 
-    if (m.send () == -1)
-    {
+    auto a = std::bind (&sos::sos::add_request, &this->engine_, m) ;
+    w.do_and_wait (a) ;
+
+    m->wt (nullptr) ;
+
+    r = m->reqrep () ;
+    if (r == nullptr)
 	rep = http::server2::reply::stock_reply (http::server2::reply::service_unavailable) ;
-    }
     else
     {
-	/* nothing */
+	rep.status = http::server2::reply::ok ;
+	rep.content = "<html><body><pre>ok</pre></body></html>" ;
+	rep.headers.resize (2) ;
+	rep.headers[0].name = "Content-Length" ;
+	rep.headers[0].value =
+	    boost::lexical_cast < std::string > (rep.content.size ()) ;
+	rep.headers[1].name = "Content-Type" ;
+	rep.headers[1].value = "text/html" ;
+
+	int paylen ;
+	(void) r->payload (&paylen) ;
+	std::cout << "answer code=" << r->code ()
+		<< ", id=" << r->id ()
+		<< ", paylen=" << paylen
+		<< ", from slave " << *(r->peer ())
+		<< "\n" ;
     }
 }

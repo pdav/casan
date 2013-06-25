@@ -17,9 +17,11 @@ int msg::global_message_id = 1 ;
 
 // reset pointer and length
 #define	RESET_PL(p,l)	do {					\
-			    if (p)				\
+			    if (p != nullptr)			\
 			    {					\
-				delete [] p ; p = 0 ; l = 0 ;	\
+				delete [] p ;			\
+				p = nullptr ;			\
+				l = 0 ;				\
 			    }					\
 			} while (false)				// no ";"
 // reset encoded message
@@ -30,17 +32,22 @@ int msg::global_message_id = 1 ;
 #define	RESET_POINTERS	do {					\
 			    RESET_PL (msg_, msglen_) ;		\
 			    RESET_PL (payload_, paylen_) ;	\
+			    if (reqrep_ != nullptr)		\
+				reqrep_->reqrep_ = nullptr ;	\
+			    reqrep_ = nullptr ;			\
 			    optlist_.clear () ;			\
 			} while (false)				// no ";"
 // reset all values and pointers (but don't deallocate them)
 #define	RESET_VALUES	do {					\
-			    peer_ = 0 ; reqrep_ = 0 ;		\
-			    msg_ = 0     ; msglen_ = 0 ;	\
-			    payload_ = 0 ; paylen_ = 0 ;	\
+			    peer_ = nullptr ;			\
+			    reqrep_ = nullptr ;			\
+			    msg_ = nullptr ; msglen_ = 0 ;	\
+			    payload_ = nullptr ; paylen_ = 0 ;	\
 			    toklen_ = 0 ; ntrans_ = 0 ;		\
 			    timeout_ = duration_t (0) ;		\
 			    next_timeout_ = std::chrono::system_clock::time_point::max () ; \
 			    expire_ = std::chrono::system_clock::time_point::max () ; \
+			    pktype_ = PK_NONE ;			\
 			    sostype_ = SOS_UNKNOWN ;		\
 			    id_ = 0 ;				\
 			} while (false)				// no ";"
@@ -75,7 +82,6 @@ int msg::global_message_id = 1 ;
 #define	BYTE_LOW(n)	((n) & 0xff)
 #define	INT16(h,l)	((h) << 8 | (l))
 
-// default constructor
 msg::msg ()
 {
     RESET_VALUES ;
@@ -85,7 +91,7 @@ msg::msg ()
 msg::msg (const msg &m)
 {
     *this = m ;
-    if (msg_)
+    if (msg_ != nullptr)
 	ALLOC_COPY (msg_, m.msg_, msglen_) ;
     if (payload_)
 	ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
@@ -98,7 +104,7 @@ msg &msg::operator= (const msg &m)
     {
 	RESET_POINTERS ;
 	*this = m ;
-	if (msg_)
+	if (msg_ != nullptr)
 	    ALLOC_COPY (msg_, m.msg_, msglen_) ;
 	if (payload_)
 	    ALLOC_COPYNUL (payload_, m.payload_, paylen_) ;
@@ -112,6 +118,28 @@ msg::~msg ()
     RESET_POINTERS ;
 }
 
+std::ostream& operator<< (std::ostream &os, const msg &m)
+{
+    char buf1 [MAXBUF], buf2 [MAXBUF] ;
+    std::time_t nt ;
+
+    nt = std::chrono::system_clock::to_time_t (m.expire_) ;
+    strftime (buf1, sizeof buf1, "%T", std::localtime (&nt)) ;
+
+    nt = std::chrono::system_clock::to_time_t (m.next_timeout_) ;
+    strftime (buf2, sizeof buf2, "%T", std::localtime (&nt)) ;
+
+    os << "msg id=" << m.id_
+	<< ", toklen=" << m.toklen_
+	<< ", paylen=" << m.paylen_
+	<< ", ntrans=" << m.ntrans_
+	<< ", expire=" << buf1
+	<< ", next_timeout=" << buf2
+	<< "\n" ;
+
+    return os ;
+}
+
 /******************************************************************************
  * Operators
  */
@@ -122,8 +150,8 @@ int msg::operator == (msg &m)
     int r ;
 
     r = 0 ;
-    if (this->msg_ != 0 && m.msg_ != 0 && this->msglen_ == m.msglen_)
-	r = std::memcmp (this->msg_, m.msg_, this->msglen_) == 0 ;
+    if (msg_ != nullptr && m.msg_ != nullptr && msglen_ == m.msglen_)
+	r = std::memcmp (msg_, m.msg_, msglen_) == 0 ;
     return r ;
 }
 
@@ -377,7 +405,7 @@ int msg::send (void)
 {
     int r ;
 
-    if (! msg_)
+    if (msg_ == nullptr)
 	coap_encode () ;
 
     D ("TRANSMIT id=" << id_ << " ntrans_=" << ntrans_) ;
@@ -553,25 +581,27 @@ void msg::pushoption (option &o)
     optlist_.push_back (o) ;
 }
 
+void msg::wt (waiter *w)
+{
+    waiter_ = w ;
+}
+
 void msg::link_reqrep (msg *m)
 {
-    if (m != 0)
+    if (m == nullptr)
+    {
+	// unlink peer message if it exists
+	if (reqrep_ != nullptr)
+	    reqrep_->reqrep_ = nullptr ;
+	// unlink current message
+	reqrep_ = nullptr ;
+    }
+    else
     {
 	// link messages
 	reqrep_ = m ;
 	m->reqrep_ = this ;
     }
-    else
-    {
-	// unlink
-	m->reqrep_ = 0 ;
-	reqrep_ = 0 ;
-    }
-}
-
-void msg::handler (reply_handler_t func)
-{
-    handler_ = func ;
 }
 
 /******************************************************************************
@@ -627,6 +657,11 @@ option msg::popoption (void)
     o = optlist_.front () ;
     optlist_.pop_front () ;
     return o ;
+}
+
+waiter *msg::wt (void)
+{
+    return waiter_ ;
 }
 
 /******************************************************************************
@@ -749,7 +784,7 @@ msg::sostype_t msg::sos_type (void)
     {
 	if (is_sos_discover () == 0 && ! is_sos_associate ())
 	{
-	    if (reqrep_ != 0)
+	    if (reqrep_ != nullptr)
 	    {
 		sostype_t st = reqrep_->sos_type () ;
 		if (st == SOS_ASSOC_REQUEST)

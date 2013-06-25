@@ -10,7 +10,7 @@
  * There is a receiver thread by L2 network. These receiver threads
  * are used to receive events from slaves:
  * - events which can be matched with a request are handled through
- *   the request handler
+ *   a wake up of the emitting thread
  * - events which can not be paired with a request are handled through
  *   the slave handler
  * - events which are not issued by a recognized slave are ignored.
@@ -24,6 +24,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 // don't define NDEBUG
 #include <cassert>
@@ -32,6 +35,7 @@
 #include "utils.h"
 
 #include "l2.h"
+#include "waiter.h"
 #include "msg.h"
 #include "resource.h"
 #include "sos.h"
@@ -76,6 +80,35 @@ void sos::init (void)
 	tsender_ = new std::thread (&sos::sender_thread, this) ;
     }
 }
+
+/******************************************************************************
+ * Engine dumper
+ */
+
+std::ostream& operator<< (std::ostream &os, const sos &se)
+{
+    os << "Receivers: " ;
+    for (auto &r : se.rlist_)
+    {
+	os << "Recv hid=" << r.hid
+	    << ", Deduplist (NON/CON received):"
+	    << "\n" ;
+	for (auto &m : r.deduplist)
+	    os << *m ;
+    }
+    os << "\n" ;
+
+    os << "Slaves:\n" ;
+    for (auto &s : se.slist_)
+	os << s ;
+
+    os << "Messages (sent):\n" ;
+    for (auto &m : se.mlist_)
+	os << *m ;
+
+    return os ;
+}
+
 
 /******************************************************************************
  * Accessors & mutators
@@ -145,7 +178,6 @@ void sos::start_net (l2net *l2)
 	timepoint_t now ;
 
 	r = new receiver ;
-	// std::memset (r, 0, sizeof *r) ;
 
 	r->l2 = l2 ;
 	r->thr = NULL ;
@@ -231,7 +263,6 @@ void sos::add_request (msg *m)
 
 void sos::sender_thread (void)
 {
-    std::unique_lock <std::mutex> lk (mtx_) ;
     timepoint_t now, next_timeout ;
 
     now = std::chrono::system_clock::now () ;
@@ -239,8 +270,9 @@ void sos::sender_thread (void)
 
     for (;;)
     {
-	std::list <receiver>::iterator ri ;
-	std::list <msg *>::iterator mi ;
+	std::unique_lock <std::mutex> lk (mtx_) ;
+
+	// D ("- SENDER THREAD ---------------------" << *this) ;
 
 	if (next_timeout == std::chrono::system_clock::time_point::max ())
 	{
@@ -267,6 +299,7 @@ void sos::sender_thread (void)
 	 * After each iteration, we check all timeout reasons.
 	 */
 
+
 	now = std::chrono::system_clock::now () ;
 	next_timeout = std::chrono::system_clock::time_point::max () ;
 
@@ -275,23 +308,23 @@ void sos::sender_thread (void)
 	 * start receiver threads.
 	 */
 
-	for (ri = rlist_.begin () ; ri != rlist_.end () ; ri++)
+	for (auto &r : rlist_)
 	{
 	    // should the receiver thread be started?
-	    if (ri->thr == NULL)
+	    if (r.thr == NULL)
 	    {
 		D ("Found a receiver to start") ;
-		ri->thr = new std::thread (&sos::receiver_thread, this, &*ri) ;
+		r.thr = new std::thread (&sos::receiver_thread, this, &r) ;
 	    }
 
 	    // is it time to send a new hello ?
-	    if (now >= ri->next_hello)
+	    if (now >= r.next_hello)
 	    {
 		// send the pre-prepared hello message
-		ri->hellomsg->id (0) ;		// don't reuse the same msg id
-		ri->hellomsg->send () ;
+		r.hellomsg->id (0) ;		// don't reuse the same msg id
+		r.hellomsg->send () ;
 		// schedule next hello packet
-		ri->next_hello = now + duration_t (interval_hello_ * 1000) ;
+		r.next_hello = now + duration_t (interval_hello_ * 1000) ;
 	    }
 	}
 
@@ -300,29 +333,30 @@ void sos::sender_thread (void)
 	 */
 
 	for (auto &s : slist_)
-	{
-	    // must current timeout be the next hello?
 	    if (s.status () == slave::SL_RUNNING && now >= s.next_timeout_)
 		s.reset () ;
-	}
 
 	/*
 	 * Traverse message list to check new messages to send or older
 	 * messages to retransmit
 	 */
 
-	mi = mlist_.begin () ;
+	auto mi = mlist_.begin () ;
+
 	while (mi != mlist_.end ())
 	{
-	    msg *m ;
-	    auto newmi = mi ;		// backup mi since we may erase it
-	    newmi++ ;
+	    msg *m = *mi ;
+
+#if 0
+	    D ("PARCOURS mlist_") ;
+	    D ("m = " << m) ;
+	    D (*m) ;
+#endif
 
 	    /*
 	     * New message to transmit or old message to retransmit
 	     */
 
-	    m = *mi ;
 	    if (m->ntrans_ == 0 ||
 		    (m->ntrans_ < MAX_RETRANSMIT && now >= m->next_timeout_)
 		    )
@@ -339,12 +373,24 @@ void sos::sender_thread (void)
 
 	    if (now >= m->expire_)
 	    {
-		D ("ERASE id=" << m->id ()) ;
-		delete m ;
-		mlist_.erase (mi) ;
-	    }
+		D ("ERASE FROM SENT id=" << m->id ()) ;
 
-	    mi = newmi ;
+#if 0
+		/*
+		 * Unlink messages
+		 */
+
+		m->link_reqrep (nullptr) ;
+#endif
+
+		/*
+		 * Process to removal
+		 */
+
+		delete m ;
+		mi = mlist_.erase (mi) ;
+	    }
+	    else mi++ ;
 	}
 
 	/*
@@ -363,6 +409,7 @@ void sos::sender_thread (void)
 	for (auto &s : slist_)
 	{
 	    // must current timeout be the next hello?
+	    if (s.status () == slave::SL_RUNNING && next_timeout > s.next_timeout_)
 	    if (next_timeout > s.next_timeout_)
 		next_timeout = s.next_timeout_ ;
 	}
@@ -381,12 +428,12 @@ void sos::sender_thread (void)
  * Block on packet reception on the given interface
  */
 
-bool sos::find_peer (msg *m, l2addr *a, receiver *r)
+bool sos::find_peer (msg *m, l2addr *a, receiver &r)
 {
     bool found ;
 
     found = false ;
-    if (a)
+    if (a != nullptr)
     {
 	bool free_a = true ;
 
@@ -420,7 +467,7 @@ bool sos::find_peer (msg *m, l2addr *a, receiver *r)
 		{
 		    if (sid == s.slaveid ())
 		    {
-			s.l2 (r->l2) ;
+			s.l2 (r.l2) ;
 			s.addr (a) ; free_a = false ;
 			m->peer (&s) ;
 			found = true ;
@@ -453,7 +500,7 @@ msg *sos::correlate (msg *m)
     mt = m->type () ;
     if (mt == msg::MT_ACK || mt == msg::MT_RST)
     {
-	std::lock_guard <std::mutex> lk (mtx_) ;
+	std::unique_lock <std::mutex> lk (mtx_) ;
 	int id ;
 
 	id = m->id () ;
@@ -472,26 +519,28 @@ msg *sos::correlate (msg *m)
     return orgmsg ;
 }
 
-void sos::clean_deduplist (receiver *r)
+void sos::clean_deduplist (receiver &r)
 {
-    std::list <msg *>::iterator di ;
-    timepoint_t now ;
-
-    now = std::chrono::system_clock::now () ;
-
-    di = r->deduplist.begin () ;
-    while (di != r->deduplist.end ())
+    timepoint_t now = std::chrono::system_clock::now () ;
+    auto di = r.deduplist.begin () ;
+    while (di != r.deduplist.end ())
     {
-	auto newdi = di ;		// backup di since we may erase it
-	newdi++ ;
+	msg *m = *di ;
 
-	if (now >= (*di)->expire_)
+#if 0
+	D ("PARCOURS deduplist") ;
+	D ("m = " << m) ;
+	D ("*di = " << *di) ;
+	D (*m) ;
+#endif
+
+	if (now >= m->expire_)
 	{
-	    D ("ERASE FROM DEDUP id=" << (*di)->id ()) ;
-	    r->deduplist.erase (di) ;
+	    D ("ERASE FROM DEDUP id=" << m->id ()) ;
+	    delete m ;
+	    di = r.deduplist.erase (di) ;
 	}
-
-	di = newdi ;
+	else di++ ;
     }
 }
 
@@ -502,7 +551,7 @@ void sos::clean_deduplist (receiver *r)
  * the reqrep method), send it back again
  */
 
-msg *sos::deduplicate (receiver *r, msg *m)
+msg *sos::deduplicate (receiver &r, msg *m)
 {
     msg::msgtype mt ;
     msg *orgmsg ;
@@ -511,7 +560,7 @@ msg *sos::deduplicate (receiver *r, msg *m)
     mt = m->type () ;
     if (mt == msg::MT_CON || mt == msg::MT_NON)
     {
-	for (auto &d : r->deduplist)
+	for (auto &d : r.deduplist)
 	{
 	    if (*m == *d)
 	    {
@@ -532,8 +581,8 @@ msg *sos::deduplicate (receiver *r, msg *m)
 	else
 	{
 	    // store the new message on deduplist with a timeout
-	    m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
-	    r->deduplist.push_front (m) ;
+	    m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r.l2->maxlatency ())) ;
+	    r.deduplist.push_front (m) ;
 	}
     }
 
@@ -549,6 +598,8 @@ void sos::receiver_thread (receiver *r)
 	msg *orgreq ;			// message correlation result
 	msg *dupmsg ;			// original message in case of duplicate
 
+	// D ("- RECEIVER THREAD -------------------\n" << *this) ;
+
 	/*
 	 * Wait for a new message
 	 */
@@ -556,11 +607,22 @@ void sos::receiver_thread (receiver *r)
 	m = new msg ;
 	a = m->recv (r->l2) ;
 
+	D ("Received a message from " << *a) ;
+
+	/*
+	 * Invalid message received
+	 */
+
+	if (a == nullptr)
+	    continue ;
+
+	m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
+
 	/*
 	 * House cleaning: remove obsolete messages from deduplication list
 	 */
 
-	clean_deduplist (r) ;
+	clean_deduplist (*r) ;
 
 	/*************************************************************
 	 * CoAP message pre-processing (deduplication, correlation, etc.)
@@ -568,11 +630,12 @@ void sos::receiver_thread (receiver *r)
 
 	/*
 	 * Find slave. If not found, the message is ignored
+	 * If found, a is either
 	 */
 
-	if (! find_peer (m, a, r))
+	if (! find_peer (m, a, *r))
 	{
-		D("\033[31m ! find_peer\033[00m");
+	    D("Sender " << *a << " not found in authorized peers") ;
 	    continue ;
 	}
 
@@ -581,23 +644,29 @@ void sos::receiver_thread (receiver *r)
 	 */
 
 	orgreq = correlate (m) ;
-	if (orgreq)
+	if (orgreq != nullptr)
 	{
 	    /*
 	     * Ignore the message if an answer has already been received
 	     */
 
-	    if (orgreq->reqrep ())
+	    if (orgreq->reqrep () != nullptr)
 		continue ;
 
 	    /*
 	     * This is the first reply we get.
-	     * Stop further retransmissions and link the received answer to
-	     * the original request we sent.
+	     * Stop further retransmissions, link the received answer to
+	     * the original request we sent, and wake the emitter up.
 	     */
 
 	    orgreq->link_reqrep (m) ;
 	    orgreq->stop_retransmit () ;
+
+	    if (orgreq->wt () != nullptr)
+	    {
+		orgreq->wt ()->wakeup () ;
+		continue ;
+	    }
 	}
 
 	/*
@@ -606,7 +675,7 @@ void sos::receiver_thread (receiver *r)
 	 * case the deduplicate function send it back again).
 	 */
 
-	dupmsg = deduplicate (r, m) ;
+	dupmsg = deduplicate (*r, m) ;
 	if (dupmsg && dupmsg->reqrep ())
 	    continue ;
 
@@ -624,16 +693,13 @@ void sos::receiver_thread (receiver *r)
 	    continue ;
 	}
 
+	/*
+	 * If we get here, message is an orphaned message
+	 */
+
 	if (m->peer ()->status () == slave::SL_RUNNING)
 	{
-	    /*
-	     * Is this message a duplicated one?
-	     */
-
-	    if (m->type () == msg::MT_CON)
-	    {
-		////         XXXXXXXXXXXXXXXXXXXXX
-	    }
+	    D ("Orphaned message from " << *(m->peer ()->addr ()) << ", id=" << m->id ()) ;
 	}
     }
 }

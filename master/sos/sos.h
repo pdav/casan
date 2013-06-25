@@ -24,6 +24,8 @@ class sos
 	sos () ;
 	~sos () ;
 
+	friend std::ostream& operator<< (std::ostream &os, const sos &se) ;
+
 	// start sender thread
 	void init (void) ;
 
@@ -66,9 +68,9 @@ class sos
 
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
-	void clean_deduplist (receiver *r) ;
-	msg *deduplicate (receiver *r, msg *m) ;
-	bool find_peer (msg *m, l2addr *a, receiver *r) ;
+	void clean_deduplist (receiver &r) ;
+	msg *deduplicate (receiver &r, msg *m) ;
+	bool find_peer (msg *m, l2addr *a, receiver &r) ;
 	msg *correlate (msg *m) ;
 } ;
 

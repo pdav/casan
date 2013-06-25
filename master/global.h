@@ -31,6 +31,7 @@ namespace sos {
 }
 
 typedef void (*reply_handler_t) (sos::msg *request, sos::msg *reply) ;
+typedef void (*msghandler_t) (sos::msg &m) ;
 
 #ifdef DEBUG
 #define	D(s)	do { std::cout << s << "\n" ; } while (false)	// no ";"

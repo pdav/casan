@@ -10,6 +10,7 @@
 namespace sos {
 
 class slave ;
+class waiter ;
 
 /*
  * Message encoder/decoder
@@ -36,6 +37,8 @@ class msg
 	// operators
 	int operator == (msg &) ;	// only for received messages
 
+	friend std::ostream& operator<< (std::ostream &os, const msg &m) ;
+
 	// basic operations
 	int send (void) ;
 	l2addr *recv (l2net *l2) ;	// returned addr must be freed by caller
@@ -48,9 +51,9 @@ class msg
 	void code (int code) ;
 	void payload (void *data, int len) ;
 	void pushoption (option &o) ;
+	void wt (waiter *w) ;
 
 	void stop_retransmit (void) ;	// no need for more retransmits
-	void handler (reply_handler_t h) ;	// for answers to requests
 
 	// accessors (for received messages)
 	slave *peer (void) ;
@@ -62,6 +65,7 @@ class msg
 	void *payload (int *paylen) ;
 	option popoption (void) ;
 	msg *reqrep (void) ;
+	waiter *wt (void) ;
 
 	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
 
@@ -75,35 +79,35 @@ class msg
 
     protected:
 	timepoint_t expire_ ;		// all msg
-	int ntrans_ ;			// # of transmissions (CON/NON)
+	int ntrans_ = 0 ;		// # of transmissions (CON/NON)
 	duration_t timeout_ ;		// current timeout (CON)
 	timepoint_t next_timeout_ ;	// (CON)
-
-	reply_handler_t handler_ ;
 
 	friend class sos ;
 
     private:
+	waiter *waiter_ = nullptr ;	// wakeup when an answer is received
+
 	// Formatted message, as it appears on the cable/over the air
-	byte *msg_ ;			// NULL when reset
-	int msglen_ ;			// len of msg
-	pktype_t pktype_ ;
+	byte *msg_ = nullptr ;		// NULL when reset
+	int msglen_ = 0 ;		// len of msg
+	pktype_t pktype_ = PK_NONE ;
 
 	// Peer
-	slave *peer_ ;			// if found associated slave
+	slave *peer_ = nullptr ;	// if found associated slave
 
 	// CoAP specific variables
-	byte *payload_ ;		// nul added at the end
-	int paylen_ ;
+	byte *payload_ = nullptr ;	// nul added at the end
+	int paylen_ = 0 ;
 	byte token_ [COAP_MAX_TOKLEN] ;
-	int toklen_ ;
-	msgtype_t type_ ;
-	int code_ ;
-	int id_ ;			// message id
+	int toklen_ = 0 ;
+	msgtype_t type_ = MT_RST ;
+	int code_ = MC_EMPTY ;
+	int id_ = 0 ;			// message id
 	std::list <option> optlist_ ;	// list of all options
 
-	msg *reqrep_ ;			// "request of" or "response of"
-	sostype_t sostype_ ;
+	msg *reqrep_ = nullptr ;	// "request of" or "response of"
+	sostype_t sostype_ = SOS_UNKNOWN ;
 
 	static int global_message_id ;
 

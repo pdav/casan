@@ -72,6 +72,20 @@ l2addr_eth::l2addr_eth (const char *a)
 	addr_ [i] = b ;
 }
 
+// copy constructor
+l2addr_eth::l2addr_eth (const l2addr_eth &l)
+{
+    *this = l ;
+}
+
+// copy assignment constructor
+l2addr_eth &l2addr_eth::operator= (const l2addr_eth &l)
+{
+    if (this != &l)
+	*this = l ;
+    return *this ;
+}
+
 l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 
 /******************************************************************************
@@ -80,18 +94,13 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 
 void l2addr_eth::print (std::ostream &os) const
 {
-    if (addr_)
+    for (int i = 0  ; i < ETHADDRLEN ; i++)
     {
-	for (int i = 0  ; i < ETHADDRLEN ; i++)
-	{
-	    if (i > 0)
-		os << ":" ;
-
-	    PRINT_HEX_DIGIT (os, addr_ [i] >> 4) ;
-	    PRINT_HEX_DIGIT (os, addr_ [i]     ) ;
-	}
+	if (i > 0)
+	    os << ":" ;
+	PRINT_HEX_DIGIT (os, addr_ [i] >> 4) ;
+	PRINT_HEX_DIGIT (os, addr_ [i]     ) ;
     }
-    else os << "(null)" ;
 }
 
 /******************************************************************************
@@ -232,8 +241,6 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     int r ;
     pktype_t pktype ;
 
-    *a = new l2addr_eth ;
-
     std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
     sll.sll_ifindex = ifidx_ ;
@@ -245,10 +252,12 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     r = recvfrom (fd_, data, *len, 0, (struct sockaddr *) &sll, &ssll) ;
     if (r == -1)
     {
+	*a = nullptr ;
 	pktype = PK_NONE ;
     }
     else
     {
+	*a = new l2addr_eth ;
 	*len = r ;
 	switch (sll.sll_pkttype)
 	{
