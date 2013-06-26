@@ -51,7 +51,7 @@ l2addr_eth::l2addr_eth (const char *a)
 // copy constructor
 l2addr_eth::l2addr_eth (const l2addr_eth &x)
 {
-	addr = new byte [ETHADDRLEN] ;
+	addr = (byte *) malloc( sizeof(byte) * ETHADDRLEN) ;
 	memcpy (addr, x.addr, ETHADDRLEN) ;
 }
 
@@ -62,7 +62,7 @@ l2addr_eth & l2addr_eth::operator = (const l2addr_eth &x)
 		return *this ;
 
 	if (addr == NULL)
-		addr = new byte [ETHADDRLEN] ;
+		addr = (byte *) malloc( sizeof(byte) * ETHADDRLEN) ;
 	memcpy (addr, x.addr, ETHADDRLEN) ;
 	return *this ;
 }

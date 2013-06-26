@@ -7,6 +7,10 @@ For information on installing libraries, see: http://arduino.cc/en/Guide/Librari
 	* token
 	* type (after a CON => NON or ACK)
 
+* complete the rmanager class
+	* put ID & token like input msg in output msg
+	* be able to send an ACK then do the job & send and CON msg when finished
+
 * complete the Retransmit class
 	* check if the main loop is complete
 * complete the Sos class
@@ -17,7 +21,6 @@ For information on installing libraries, see: http://arduino.cc/en/Guide/Librari
 	* recording packet to retransmit
 	* switch between different states
 	* timers (retransmit & so)
-
 
 ## some explanations
 In the code and in this file I talk about « payload », there is two different 

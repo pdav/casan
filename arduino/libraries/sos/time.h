@@ -30,4 +30,6 @@ class time {
 		unsigned long int _restart;		// nb restart to 0 (function millis())
 };
 
+extern time current_time ;
+
 #endif

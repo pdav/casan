@@ -8,13 +8,14 @@
 #include "message.h"
 #include "l2eth.h"
 #include "memory_free.h"
+#include "time.h"
 
 #define DEFAULT_TIMER 4000
 
 typedef struct _retransmit_s {
 	Message *m;
-	ulong_t timel;	// time last transmition
-	ulong_t timen;	// time next transmition
+	time timel;	// time last transmition
+	time timen;	// time next transmition
 	uint8_t nb; // nb retransmit. 
 	_retransmit_s *s;	// next
 } retransmit_s;
@@ -24,7 +25,7 @@ class Retransmit {
 		Retransmit(Coap *c, l2addr **master);
 		~Retransmit(void);
 
-		void add(Message *m, ulong_t time_first_transmit);
+		void add(Message *m);
 		void del(Message *m);
 		void del(retransmit_s *r);
 		void loop_retransmit(void); // TODO

@@ -12,13 +12,16 @@ Retransmit::~Retransmit()
 	reset();
 }
 
-void Retransmit::add(Message *m, ulong_t time_first_transmit) 
+void Retransmit::add(Message *m) 
 {
 	retransmit_s * n = (retransmit_s *) malloc(sizeof(retransmit_s));
 	n->m = m ;
+
+	current_time.cur();		// we get the current_time up to date
+	n->timel = current_time;
 	// next retransmit
-	n->timel = time_first_transmit;
-	n->timen = time_first_transmit + ALEA(ACK_TIMEOUT * ACK_RANDOM_FACTOR);
+	n->timen = current_time;
+	n->timen.add(ALEA(ACK_TIMEOUT * ACK_RANDOM_FACTOR));
 	n->nb = 0;
 	n->s = _retransmit;
 	_retransmit = n;
@@ -42,7 +45,8 @@ void Retransmit::del(retransmit_s *r)
 		while( tmp->s != r ) tmp = tmp->s;
 		tmp->s = r->s;
 	}
-	delete r->m;
+	if(r->m)
+		delete r->m;
 	free(r);
 }
 
@@ -72,11 +76,11 @@ void Retransmit::loop_retransmit(void)
 			tmp = tmp2;
 			continue;
 		}
-		else if( tmp->timen < millis()) {
+		else if( tmp->timen < current_time) {
 			_c->send(**_master_addr, *(tmp->m));
 			tmp->nb++;
-			ulong_t time_tmp = tmp->timen;
-			tmp->timen = tmp->timen + 2 * (tmp->timen - tmp->timel);
+			time time_tmp = tmp->timen;
+			tmp->timen.add( 2 * time::diff(tmp->timen, tmp->timel));
 			tmp->timel = time_tmp;
 		}
 		tmp = tmp->s;
@@ -106,7 +110,7 @@ void Retransmit::check_msg_sent(Message &in)
 	switch(in.get_type())
 	{
 		case COAP_TYPE_CON :
-			add(&in, (ulong_t) millis);
+			add(&in);
 			break;
 		default :
 			break;

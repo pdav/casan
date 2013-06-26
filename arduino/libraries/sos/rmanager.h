@@ -34,6 +34,8 @@ public:
 	void delete_resource(rmanager_s *r);
 	void reset();
 
+	void print(void);
+
 private :
 
 	rmanager_s * get_resource_instance(option *o);

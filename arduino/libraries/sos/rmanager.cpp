@@ -53,6 +53,8 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 						(sizeof SOS_RESOURCES_ALL -1)) == 0)
 			{
 
+				out.set_id(in.get_id() +1);
+				out.set_token(in.get_token_length(), in.get_token());
 				out.set_code(COAP_RETURN_CODE(2,5));
 				get_all_resources(out);
 				return 0;
@@ -64,6 +66,9 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 				rmanager_s * tmp = get_resource_instance(o);
 				if(tmp == NULL)
 					return 1;
+
+				out.set_id(in.get_id() +1);
+				out.set_token(in.get_token_length(), in.get_token());
 				return (*tmp->h)(in, out);
 
 			}
@@ -179,4 +184,26 @@ rmanager_s * Rmanager::get_resource_instance(option *o)
 	}
 
 	return NULL;
+}
+
+void Rmanager::print(void)
+{
+	char buf[150];
+	for(rmanager_s * tmp = _resources; tmp != NULL ; tmp = tmp->s)
+	{
+		Serial.print(F("resource name : "));
+		memcpy(buf, tmp->name, tmp->namelen);
+		buf[tmp->namelen] = '\0';
+		Serial.println(buf);
+
+		Serial.print(F("resource title : "));
+		memcpy(buf, tmp->title, tmp->titlelen);
+		buf[tmp->titlelen] = '\0';
+		Serial.println(buf);
+
+		Serial.print(F("resource rt : "));
+		memcpy(buf, tmp->rt, tmp->rtlen);
+		buf[tmp->rtlen] = '\0';
+		Serial.println(buf);
+	}
 }

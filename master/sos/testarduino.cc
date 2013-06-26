@@ -287,6 +287,7 @@ int main (int argc, char **argv)
 			break;
 
 		case 2 :
+
 			if(strcmp("assoc", argv[1]) == 0)
 			{
 				request_assoc(NULL);
@@ -299,9 +300,11 @@ int main (int argc, char **argv)
 			{
 				requete_ressources(argv[1], NULL);
 			}
+
 			break;
 
 		case 3 :
+
 			if(strcmp("assoc", argv[1]) == 0)
 			{
 				request_assoc(argv[2]);
@@ -314,6 +317,7 @@ int main (int argc, char **argv)
 			{
 				requete_ressources(argv[1], argv[2]);
 			}
+
 			break;
 
 		default :

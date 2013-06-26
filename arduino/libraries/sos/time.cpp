@@ -1,5 +1,7 @@
 #include "time.h"
 
+time current_time ;
+
 time::time()
 {
 	_millis = millis();

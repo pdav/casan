@@ -10,7 +10,7 @@ class l2addr
 		virtual bool operator!= (const l2addr &other) = 0 ;
 		virtual bool operator!= (const unsigned char* mac_addr) = 0 ;
 	protected:
-		byte *addr ;
+		byte *addr = NULL;
 } ;
 
 #endif

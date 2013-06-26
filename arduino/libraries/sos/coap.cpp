@@ -8,8 +8,9 @@ Coap::~Coap(void) {
 	delete _eth;
 }
 
-void Coap::send(l2addr &mac_addr_dest, Message &m) {
-	uint8_t sbuf[ETH_MAX_SIZE] = {0};
+void Coap::send(l2addr &mac_addr_dest, Message &m) 
+{
+	uint8_t sbuf[150] = {0};
 	size_t sbuflen(0);
 	encode(m, sbuf, sbuflen);
 	_eth->send( mac_addr_dest, sbuf, sbuflen);
