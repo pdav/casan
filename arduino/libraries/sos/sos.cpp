@@ -522,7 +522,7 @@ bool Sos::is_associate (Message &m)
 				// we benefit from the added nul byte at the end of val
 				if (sscanf ((const char *) o->val(), SOS_ASSOC, &n) == 1)
 				{
-					_nttl = n;
+					_nttl = n * 1000;
 					PRINT_DEBUG_STATIC("\033[31m TTL recv \033[00m ");
 					PRINT_DEBUG_DYNAMIC(_nttl);
 					found = true ;
