@@ -65,7 +65,7 @@ class slave
 
 	// parse a resource list returned by this slave
 	// at the slave auto-discovery time
-	bool parse_resource_list (const byte *b, int len) ;
+	bool parse_resource_list (std::vector <resource> &rlist, const byte *b, int len) ;
 } ;
 
 }					// end of namespace sos

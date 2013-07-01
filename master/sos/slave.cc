@@ -184,16 +184,19 @@ void slave::process_sos (sos *e, msg *m)
 	    if (m->reqrep ())
 	    {
 		byte *pload ; int plen ;
+		std::vector <resource> rlist ;
 
 		D ("Received ASSOC ANSWER for slave" << slaveid_) ;
 
 		 // Add ressource list from the answer
 		pload = (byte *) m->payload (&plen) ;
-		(void) parse_resource_list (pload, plen) ;
-
-		D ("Slave " << slaveid_ << " status set to RUNNING") ;
-		status_ = SL_RUNNING ;
-		next_timeout_ = DATE_TIMEOUT_S (init_ttl_) ;
+		if (parse_resource_list (rlist, pload, plen))
+		{
+		    D ("Slave " << slaveid_ << " status set to RUNNING") ;
+		    status_ = SL_RUNNING ;
+		    reslist_ = rlist ;
+		    next_timeout_ = DATE_TIMEOUT_S (init_ttl_) ;
+		}
 	    }
 	    break ;
 	case msg::SOS_HELLO :
@@ -206,7 +209,7 @@ void slave::process_sos (sos *e, msg *m)
     delete m ;
 }
 
-bool slave::parse_resource_list (const byte *b, int len)
+bool slave::parse_resource_list (std::vector <resource> &rlist, const byte *b, int len)
 {
     enum { s_start,			// potential terminal state
 	    s_resource,
@@ -240,7 +243,7 @@ bool slave::parse_resource_list (const byte *b, int len)
 	    case s_resource :
 		if (*b == '>')
 		{
-		    reslist_.push_back (resource (current)) ;
+		    rlist.push_back (resource (current)) ;
 		    state = s_endres ; 
 		}
 		else current += *b ;
@@ -263,13 +266,13 @@ bool slave::parse_resource_list (const byte *b, int len)
 		}
 		else if (*b == ';')
 		{
-		    reslist_.back ().add_attribute (attrname, "") ;
+		    rlist.back ().add_attribute (attrname, "") ;
 		    attrname = "" ;
 		    state = s_attrname ;	// stay in current state
 		}
 		else if (*b == ',')
 		{
-		    reslist_.back ().add_attribute (attrname, "") ;
+		    rlist.back ().add_attribute (attrname, "") ;
 		    state = s_start ;
 		}
 		else attrname += *b ;
@@ -280,12 +283,12 @@ bool slave::parse_resource_list (const byte *b, int len)
 		    state = s_attrval_quoted ;
 		else if (*b == ',')
 		{
-		    reslist_.back ().add_attribute (attrname, "") ;
+		    rlist.back ().add_attribute (attrname, "") ;
 		    state = s_start ;
 		}
 		else if (*b == ';')
 		{
-		    reslist_.back ().add_attribute (attrname, "") ;
+		    rlist.back ().add_attribute (attrname, "") ;
 		    attrname = "" ;
 		    state = s_attrname ;
 		}
@@ -298,7 +301,7 @@ bool slave::parse_resource_list (const byte *b, int len)
 	    case s_attrval_quoted :
 		if (*b == '"')
 		{
-		    reslist_.back ().add_attribute (attrname, current) ;
+		    rlist.back ().add_attribute (attrname, current) ;
 		    state = s_endres ;
 		}
 		else current += *b ;
@@ -306,12 +309,12 @@ bool slave::parse_resource_list (const byte *b, int len)
 	    case s_attrval_nquoted :
 		if (*b == ',')
 		{
-		    reslist_.back ().add_attribute (attrname, current) ;
+		    rlist.back ().add_attribute (attrname, current) ;
 		    state = s_start ;
 		}
 		else if (*b == ';')
 		{
-		    reslist_.back ().add_attribute (attrname, current) ;
+		    rlist.back ().add_attribute (attrname, current) ;
 		    attrname = "" ;
 		    state = s_attrname ;
 		}
@@ -333,13 +336,13 @@ bool slave::parse_resource_list (const byte *b, int len)
 	    break ;
 	case s_attrname :
 	    if (attrname == "")
-		reslist_.back ().add_attribute (attrname, "") ;
+		rlist.back ().add_attribute (attrname, "") ;
 	    break ;
 	case s_attrval_start :
-	    reslist_.back ().add_attribute (attrname, "") ;
+	    rlist.back ().add_attribute (attrname, "") ;
 	    break ;
 	case s_attrval_nquoted :
-	    reslist_.back ().add_attribute (attrname, current) ;
+	    rlist.back ().add_attribute (attrname, current) ;
 	    break ;
 	default :
 	    // nothing to do
