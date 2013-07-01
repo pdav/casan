@@ -1,0 +1,53 @@
+% what is to say : 
+
+% the ~ symbols are to indicate that we can simulate analog output with these
+% digital pins by setting power on and off quickly
+
+% ...
+% and there is a lot more components we can get
+%
+%  9v battery snap
+%  Potentiometer 10kilohm
+%  alphanumeric LCD
+%
+
+
+% snippets
+\begin {columns} [c,onlytextwidth]
+	\begin {column} [c] {.6\textwidth}
+	   \begin {center}
+		\includegraphics [width=.9\textwidth,keepaspectratio]{delicious}
+	   \end {center}
+	\end {column}
+	\pause
+	\begin {column} [c] {.4\textwidth}
+	   Delicious has a RESTful API
+	\end {column}
+\end {columns}
+
+{
+	\small
+	\hspace* {5mm}
+	\alert {GET http://feeds.delicious.com/v2/json/pdagog/histinfo}
+}
+\vspace* {3mm}
+
+\pause
+Result (JSON format): \\
+\begin {quote}
+	\scriptsize
+	[ \\
+		\hspace* {3mm} \{ \\
+		\hspace* {6mm} "a": "pdagog", \\
+		\hspace* {6mm} "d": "Google60", \\
+		\hspace* {6mm} "u": "http://www.masswerk.at/google60/", \\
+		\hspace* {6mm} "t": ["histinfo", "web", "humour"] \\
+		\hspace* {3mm} \}, \\
+		\hspace* {3mm} \{ \\
+		\hspace* {6mm} "a": "pdagog", \\
+		\hspace* {6mm} "d": "Unix Preservation society", \\
+		\hspace* {6mm} "u": "http://minnie.tuhs.org/", \\
+		\hspace* {6mm} "t": ["freebsd", "unix", "histinfo"] \\
+		\hspace* {3mm} \}, ... \\
+	]
+\end {quote}

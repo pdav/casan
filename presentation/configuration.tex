@@ -1,0 +1,51 @@
+\documentclass [12pt] {beamer}
+
+    \usepackage [utf8] {inputenc}
+    \usepackage {helvet}
+
+    \usepackage {graphicx}
+    % \usepackage {tikz}
+
+    % \usepackage {hyperref}
+    \hypersetup
+    {
+	pdfauthor={Philippe PITTOLI},
+        pdfsubject={A short presentation of the arduino capabilities},
+	pdftitle={A short presentation of the arduino capabilities},
+	pdfkeywords={Arduino, Electronic}
+    }
+
+
+    \usetheme {default}
+    % \useoutertheme [headline=empty,footline=authortitle] {miniframes}
+    \usefonttheme {structurebold}
+
+    \setbeamercolor {frametitle} {fg=red}
+    \setbeamerfont {frametitle} {series=\bfseries}
+    \setbeamertemplate {frametitle} {
+	\textbf {\insertframetitle} \par
+    }
+
+    \pgfdeclareimage[height=0.5cm]{logo}{icube}
+    % \logo{\pgfuseimage{logo}}
+
+    \setbeamertemplate {footline} {%
+	\vskip 1ex
+	    \hskip 1ex
+	    % \insertlogo
+	    \pgfuseimage {logo}
+	    \hfill
+	    \insertframenumber/\inserttotalframenumber
+	    \hspace* {1ex}
+	\vskip 1ex
+    }
+
+    \setbeamertemplate {navigation symbols} {}
+
+    \title {A pragmatic approach \\
+	 	of the arduino}
+    \author {Philippe PITTOLI \\ \texttt {philippe.pittoli@etu.unistra.fr}}
+    \institute {ICube -- Network Research Group}
+    \date [Network Research Group meeting] {9 july 2013}
+
+    \newcommand {\imply} {$\Rightarrow$\ }
