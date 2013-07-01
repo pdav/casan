@@ -9,8 +9,8 @@ MCU				= atmega328p
 #F_CPU			= 16000000
 F_CPU			= 16000000L
 #ARDUINO_PORT	= /dev/ttyUSB*
-ARDUINO_PORT	= /dev/ttyACM0
-#ARDUINO_PORT	= /dev/ttyACM3
+#ARDUINO_PORT	= /dev/ttyACM0
+ARDUINO_PORT	= /dev/ttyACM3
 UPLOAD_RATE		= 9600
 
 ARDUINO_LIBS	= sos sos/utility SPI

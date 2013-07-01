@@ -206,7 +206,6 @@ void slave::process_sos (sos *e, msg *m)
 	    D ("Received an unrecognized message") ;
 	    break ;
     }
-    delete m ;
 }
 
 bool slave::parse_resource_list (std::vector <resource> &rlist, const byte *b, int len)

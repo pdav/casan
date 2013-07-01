@@ -55,11 +55,12 @@ class sos
 	std::string resource_list (void) ;	// aggregated .well-known/sos
 
     private:
-	std::list <receiver> rlist_ ;	// connected networks
+	std::list <receiver *> rlist_ ;	// connected networks
 	std::list <slave> slist_ ;	// registered slaves
 	std::list <msg *> mlist_ ;	// messages sent by SOS
 
 	std::thread *tsender_ ;
+
 	std::mutex mtx_ ;
 	std::condition_variable condvar_ ;
 

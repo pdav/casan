@@ -90,10 +90,10 @@ std::ostream& operator<< (std::ostream &os, const sos &se)
     os << "Receivers: " ;
     for (auto &r : se.rlist_)
     {
-	os << "Recv hid=" << r.hid
+	os << "Recv hid=" << r->hid
 	    << ", Deduplist (NON/CON received):"
 	    << "\n" ;
-	for (auto &m : r.deduplist)
+	for (auto &m : r->deduplist)
 	    os << *m ;
     }
     os << "\n" ;
@@ -194,9 +194,10 @@ std::string sos::resource_list (void)
 
 void sos::start_net (l2net *l2)
 {
+    std::unique_lock <std::mutex> lk (mtx_) ;
+
     if (tsender_ != NULL)
     {
-	std::lock_guard <std::mutex> lk (mtx_) ;
 	receiver *r ;
 	timepoint_t now ;
 
@@ -219,7 +220,7 @@ void sos::start_net (l2net *l2)
 
 	r->next_hello = now + random_timeout (first_hello_ * 1000)  ;
 
-	rlist_.push_front (*r) ;
+	rlist_.push_front (r) ;
 	condvar_.notify_one () ;
     }
 }
@@ -238,7 +239,7 @@ void sos::stop_net (l2net *l2)
 
 void sos::add_slave (slave *s)
 {
-    std::lock_guard <std::mutex> lk (mtx_) ;
+    std::unique_lock <std::mutex> lk (mtx_) ;
 
     s->reset () ;
     slist_.push_front (*s) ;
@@ -270,7 +271,7 @@ slave *sos::find_slave (slaveid_t sid)
 
 void sos::add_request (msg *m)
 {
-    std::lock_guard <std::mutex> lk (mtx_) ;
+    std::unique_lock <std::mutex> lk (mtx_) ;
 
     mlist_.push_front (m) ;
     condvar_.notify_one () ;
@@ -334,20 +335,20 @@ void sos::sender_thread (void)
 	for (auto &r : rlist_)
 	{
 	    // should the receiver thread be started?
-	    if (r.thr == NULL)
+	    if (r->thr == NULL)
 	    {
 		D ("Found a receiver to start") ;
-		r.thr = new std::thread (&sos::receiver_thread, this, &r) ;
+		r->thr = new std::thread (&sos::receiver_thread, this, r) ;
 	    }
 
 	    // is it time to send a new hello ?
-	    if (now >= r.next_hello)
+	    if (now >= r->next_hello)
 	    {
 		// send the pre-prepared hello message
-		r.hellomsg->id (0) ;		// don't reuse the same msg id
-		r.hellomsg->send () ;
+		r->hellomsg->id (0) ;		// don't reuse the same msg id
+		r->hellomsg->send () ;
 		// schedule next hello packet
-		r.next_hello = now + duration_t (interval_hello_ * 1000) ;
+		r->next_hello = now + duration_t (interval_hello_ * 1000) ;
 	    }
 	}
 
@@ -425,8 +426,8 @@ void sos::sender_thread (void)
 	for (auto &r : rlist_)
 	{
 	    // must current timeout be the next hello?
-	    if (next_timeout > r.next_hello)
-		next_timeout = r.next_hello ;
+	    if (next_timeout > r->next_hello)
+		next_timeout = r->next_hello ;
 	}
 
 	for (auto &s : slist_)
@@ -550,12 +551,10 @@ void sos::clean_deduplist (receiver &r)
     {
 	msg *m = *di ;
 
-#if 0
 	D ("PARCOURS deduplist") ;
 	D ("m = " << m) ;
 	D ("*di = " << *di) ;
-	D (*m) ;
-#endif
+	D ("*m = " << *m) ;
 
 	if (now >= m->expire_)
 	{
@@ -605,9 +604,9 @@ msg *sos::deduplicate (receiver &r, msg *m)
 	{
 	    // store the new message on deduplist with a timeout
 	    m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r.l2->maxlatency ())) ;
-	    r.deduplist.push_front (m) ;
 	}
     }
+    r.deduplist.push_back (m) ;
 
     return orgmsg ;
 }
