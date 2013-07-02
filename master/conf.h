@@ -32,16 +32,16 @@ class conf
 	    I_FIRST_HELLO = 0,		// default slave ttl
 	    I_INTERVAL_HELLO = 1,	// interval between hello
 	    I_SLAVE_TTL = 2,		// default slave ttl
-	    I_HTTP = 3,			// http replies timeout
+	    I_LAST = 3			// last value
 	} ;
-	sostimer_t timers [I_HTTP+1] ;
+	sostimer_t timers [I_LAST] ;
 
 	// HTTP server configuration
 	struct cf_http
 	{
 	    std::string listen ;	// listen address (v4 or v6)
 	    std::string port ;		// tcp port number or name
-	    int threads ;		// number of threads for this server
+	    int threads = 0 ;		// number of threads for this server
 	} ;
 	std::list <cf_http> httplist_ ;
 
@@ -49,7 +49,7 @@ class conf
 	struct cf_namespace
 	{
 	    std::vector <std::string> prefix ;	// namespace prefix
-	    cf_ns_type type ;
+	    cf_ns_type type = NS_NONE ;
 	} ;
 	std::list <cf_namespace> nslist_ ;
 
@@ -58,7 +58,7 @@ class conf
 	struct cf_net_eth
 	{
 	    std::string iface ;
-	    int ethertype ;
+	    int ethertype = 0 ;
 	} ;
 	struct cf_net_802154
 	{
@@ -66,8 +66,8 @@ class conf
 	} ;
 	struct cf_network
 	{
-	    net_type type ;
-	    int mtu ;
+	    net_type type = NET_NONE ;
+	    int mtu = 0 ;
 	    // not using an union since C++ cannot know how to initialize it
 	    cf_net_eth    net_eth ;
 	    cf_net_802154 net_802154 ;
@@ -77,15 +77,15 @@ class conf
 	// slave configuration
 	struct cf_slave
 	{
-	    int id ;
-	    int ttl ;
-	    int mtu ;
+	    int id = 0 ;
+	    int ttl = 0 ;
+	    int mtu = 0 ;
 	} ;
 	std::list <cf_slave> slavelist_ ;
 
     private:
 	std::string file_ ;		// parsed file
-	int lineno_ ;			// parsed line
+	int lineno_ = 0 ;		// parsed line
 
 	bool parse_file (void) ;
 	bool parse_line (std::string &line) ;
@@ -98,7 +98,6 @@ class conf
 	const sostimer_t DEFAULT_FIRST_HELLO	= 3 ;		// 3 s
 	const sostimer_t DEFAULT_INTERVAL_HELLO	= 10 ;		// 10 s
 	const sostimer_t DEFAULT_SLAVE_TTL	= 3600 ;	// 1 h
-	const sostimer_t DEFAULT_HTTP		= 120 ;		// 2 m
 
 	const char *DEFAULT_HTTP_PORT		= "http" ;
 	const char *DEFAULT_HTTP_LISTEN		= "*" ;
