@@ -22,7 +22,7 @@
 
 #define	HELLO_100	"hello=100"
 #define ASSOCIATE	"assoc=30000"		// assoc=ttl
-#define ASK_RESOURCES "/resources"
+#define ASK_RESOURCES "resources"
 
 void connexion(void)
 {
@@ -89,7 +89,7 @@ void connexion(void)
 
 	sleep(1);
 
-	sos::option opt_ask_resources(sos::option::MO_Uri_Query, 
+	sos::option opt_ask_resources(sos::option::MO_Uri_Path, 
 			(void *) ASK_RESOURCES, sizeof ASK_RESOURCES - 1);
 
 	m3.type (sos::msg::MT_NON) ;
@@ -249,10 +249,10 @@ void requete_ressources(char * resource, char * val)
 
 	// sleep (1) ;
 
-	sos::option opt_ask_resources(sos::option::MO_Uri_Query, 
+	sos::option opt_ask_resources(sos::option::MO_Uri_Path, 
 			(void *) resource, strlen(resource));
 
-	m.type (sos::msg::MT_NON);
+	m.type (sos::msg::MT_CON);
 	m.code (sos::msg::MC_GET);
 	m.peer (&s);
 	m.id (3);
@@ -260,9 +260,9 @@ void requete_ressources(char * resource, char * val)
 
 	if(val != NULL)	
 	{
-		sos::option opt_resource_val(sos::option::MO_Uri_Query, 
-				(void *) val, strlen(val));
-		m.pushoption(opt_resource_val);
+		char valeur[50];
+		snprintf(valeur, 50, "val=%s", val);
+		m.payload((void *) valeur, strlen(valeur));
 	}
 
 	std::cout << "OPTCODE : " << opt_ask_resources.optcode() << std::endl;

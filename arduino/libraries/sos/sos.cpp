@@ -416,7 +416,7 @@ void Sos::mk_ack_assoc(Message &in, Message &out)
 	out.set_type(COAP_TYPE_ACK);
 	out.set_code(COAP_RETURN_CODE(2,5));
 	out.set_id(in.get_id());
-	mk_ctl_msg(out);
+	// mk_ctl_msg(out); useless because it's an ACK
 
 	// will get the resources and set them in the payload in the right format
 	_rmanager->get_all_resources(out);

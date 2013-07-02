@@ -5,7 +5,7 @@
 #include "coap.h"
 #include "option.h"
 
-#define SOS_RESOURCES_ALL		"/resources"
+#define SOS_RESOURCES_ALL		"resources"
 
 typedef struct _rmanager_s {
 	uint8_t (*h)(Message &in, Message &out);

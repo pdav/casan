@@ -44,7 +44,7 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 	for(option * o = in.get_option() ; o != NULL ; o = in.get_option())
 	{
 
-		if (o->optcode() == option::MO_Uri_Query)
+		if (o->optcode() == option::MO_Uri_Path)
 		{
 			// if the request is to get all resources
 			if (o->optlen() >= (sizeof SOS_RESOURCES_ALL -1) && 

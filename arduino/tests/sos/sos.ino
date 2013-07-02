@@ -5,13 +5,13 @@
 #include "sos.h"
 #include <avr/wdt.h>
 
-#define PROCESS_1_name	"/light"
+#define PROCESS_1_name	"light"
 #define PROCESS_1_title	"light"
 #define PROCESS_1_rt	"light"
-#define PROCESS_2_name	"/temp"
+#define PROCESS_2_name	"temp"
 #define PROCESS_2_title	"temperature"
 #define PROCESS_2_rt	"°c"
-#define PROCESS_3_name	"/led"
+#define PROCESS_3_name	"led"
 #define PROCESS_3_title	"led"
 #define PROCESS_3_rt	"light"
 
@@ -22,7 +22,8 @@ int led = A2;
 Sos *sos;
 l2addr *mac_addr = new l2addr_eth("00:01:02:03:04:05");
 
-uint8_t process_light(Message &in, Message &out) {
+uint8_t process_light(Message &in, Message &out) 
+{
 	Serial.println(F("process_light"));
 
 	char message[10];
@@ -42,7 +43,8 @@ uint8_t process_light(Message &in, Message &out) {
 	return 0;
 }
 
-uint8_t process_temp(Message &in, Message &out) {
+uint8_t process_temp(Message &in, Message &out) 
+{
 	Serial.println(F("process_temp"));
 
 	char message[10];
@@ -62,19 +64,15 @@ uint8_t process_temp(Message &in, Message &out) {
 	return 0;
 }
 
-uint8_t process_led(Message &in, Message &out) {
+uint8_t process_led(Message &in, Message &out) 
+{
 	Serial.println(F("process_led"));
 
-	for(option * o = in.get_option() ; o != NULL ; o = in.get_option()) 
+	int n;
+	char * payload = (char*) in.get_payload();
+	if(payload != NULL && sscanf ((const char *) payload, "val=%d", &n) == 1)
 	{
-		if (o->optcode() == option::MO_Uri_Query)
-		{
-			int n;
-			if (sscanf ((const char *) o->val(), "%d", &n) == 1)
-			{
-				analogWrite(led, n);
-			}
-		}
+		analogWrite(led, n);
 	}
 
 	out.set_code(COAP_RETURN_CODE(2,5));
@@ -82,7 +80,8 @@ uint8_t process_led(Message &in, Message &out) {
 	return 0;
 }
 
-void setup() {
+void setup() 
+{
 	/*
 	   wdt_disable();
 	   */
