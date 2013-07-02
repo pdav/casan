@@ -55,9 +55,6 @@ bool master::start (conf &cf)
 	engine_.timer_slave_ttl (cf.timers [conf::I_SLAVE_TTL]) ;
 	engine_.init () ;
 
-// avoid dead-lock if l2 is started before sender_thread
-sleep (1) ;
-
 	conf_ = &cf ;
 
 	// Start interfaces

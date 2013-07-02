@@ -287,45 +287,24 @@ void sos::add_request (msg *m)
 
 void sos::sender_thread (void)
 {
-    timepoint_t now, next_timeout ;
-
-    now = std::chrono::system_clock::now () ;
-    next_timeout = std::chrono::system_clock::time_point::max () ;
-
     for (;;)
     {
+	timepoint_t now ;
+	timepoint_t next_timeout ;
+
 	std::unique_lock <std::mutex> lk (mtx_) ;
 
-	// D ("- SENDER THREAD ---------------------" << *this) ;
-
-	if (next_timeout == std::chrono::system_clock::time_point::max ())
-	{
-	    D ("WAIT") ;
-	    condvar_.wait (lk) ;
-	}
-	else
-	{
-	    auto delay = next_timeout - now ;	// needed precision for delay
-
-	    assert (std::chrono::duration_cast<duration_t> (delay).count() >= 0) ;
-
-	    D ("WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
-	    condvar_.wait_for (lk, delay) ;
-	}
-
 	/*
-	 * we have been awaken for (one or more) multiple reasons:
+	 * Sender thread is woken up (see last instructions in this loop
+	 * body) for one or more multiple reasons:
 	 * - a new l2 network has been registered
 	 * - a new message is to be sent
 	 * - timeout expired: there is an action to do (message to
 	 *	retransmit or to remove from a queue)
-	 *
-	 * After each iteration, we check all timeout reasons.
+	 * At each iteration, we need to check all reasons.
 	 */
 
-
 	now = std::chrono::system_clock::now () ;
-	next_timeout = std::chrono::system_clock::time_point::max () ;
 
 	/*
 	 * Traverse the receiver list to check new entries, and
@@ -421,7 +400,7 @@ void sos::sender_thread (void)
 	 * Determine date of next action
 	 */
 
-	now = std::chrono::system_clock::now () ;
+	next_timeout = std::chrono::system_clock::time_point::max () ;
 
 	for (auto &r : rlist_)
 	{
@@ -443,6 +422,27 @@ void sos::sender_thread (void)
 	    // must current timeout be the next retransmission of this message?
 	    if (m->ntrans_ < MAX_RETRANSMIT && next_timeout > m->next_timeout_)
 		next_timeout = m->next_timeout_ ;
+	}
+
+
+	/*
+	 * Wait for next action (or indefinitely)
+	 */
+
+	if (next_timeout == std::chrono::system_clock::time_point::max ())
+	{
+	    D ("WAIT") ;
+	    condvar_.wait (lk) ;
+	}
+	else
+	{
+	    now = std::chrono::system_clock::now () ;
+	    auto delay = next_timeout - now ;	// needed precision for delay
+
+	    assert (std::chrono::duration_cast<duration_t> (delay).count() >= 0) ;
+
+	    D ("WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
+	    condvar_.wait_for (lk, delay) ;
 	}
     }
 }
