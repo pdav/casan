@@ -52,8 +52,8 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 						SOS_RESOURCES_ALL, 
 						(sizeof SOS_RESOURCES_ALL -1)) == 0)
 			{
-
-				out.set_id(in.get_id() +1);
+				out.set_type(COAP_TYPE_ACK);
+				out.set_id(in.get_id());
 				out.set_token(in.get_token_length(), in.get_token());
 				out.set_code(COAP_RETURN_CODE(2,5));
 				get_all_resources(out);
@@ -67,7 +67,8 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 				if(tmp == NULL)
 					return 1;
 
-				out.set_id(in.get_id() +1);
+				out.set_type(COAP_TYPE_ACK);
+				out.set_id(in.get_id());
 				out.set_token(in.get_token_length(), in.get_token());
 				return (*tmp->h)(in, out);
 
