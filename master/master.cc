@@ -474,21 +474,22 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	rep = http::server2::reply::stock_reply (http::server2::reply::service_unavailable) ;
     else
     {
+	int paylen ;
+	char *payld ;
+	payld = (char *) r->payload (&paylen) ;
+
 	rep.status = http::server2::reply::ok ;
-	rep.content = "<html><body><pre>ok</pre></body></html>" ;
+	rep.content = "<html><body><pre>" ;
+
+	for (int i = 0 ; i < paylen ; i++)
+	    rep.content.push_back (payld [i]) ;
+	rep.content += "</pre></body></html>" ;
+
 	rep.headers.resize (2) ;
 	rep.headers[0].name = "Content-Length" ;
 	rep.headers[0].value =
 	    boost::lexical_cast < std::string > (rep.content.size ()) ;
 	rep.headers[1].name = "Content-Type" ;
 	rep.headers[1].value = "text/html" ;
-
-	int paylen ;
-	(void) r->payload (&paylen) ;
-	std::cout << "answer code=" << r->code ()
-		<< ", id=" << r->id ()
-		<< ", paylen=" << paylen
-		<< ", from slave " << *(r->peer ())
-		<< "\n" ;
     }
 }
