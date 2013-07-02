@@ -107,13 +107,13 @@ void l2addr_eth::print (std::ostream &os) const
  * l2net_eth methods
  */
 
-int l2addr_eth::operator== (const l2addr &other)
+bool l2addr_eth::operator== (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
     return std::memcmp (this->addr_, oe->addr_, ETHADDRLEN) == 0 ;
 }
 
-int l2addr_eth::operator!= (const l2addr &other)
+bool l2addr_eth::operator!= (const l2addr &other)
 {
     return ! (*this == other) ;
 }

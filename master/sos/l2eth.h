@@ -34,8 +34,8 @@ class l2addr_eth: public l2addr
 	l2addr_eth (const l2addr_eth &l) ;	// copy constructor
 	l2addr_eth &operator= (const l2addr_eth &l) ;	// copy assignment constructor
 
-	int operator== (const l2addr &) ;
-	int operator!= (const l2addr &) ;
+	bool operator== (const l2addr &) ;
+	bool operator!= (const l2addr &) ;
 
 	friend class l2net_eth ;
 

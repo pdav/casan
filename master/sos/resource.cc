@@ -51,57 +51,56 @@ std::ostream& operator<< (std::ostream &os, const resource &r)
  * Resource matching
  */
 
-int resource::operator== (const std::string path)
+bool resource::operator== (const std::string path)
 {
     std::vector <std::string> v = split_path (path) ;
 
     return *this == v ;
 }
 
-int resource::operator!= (const std::string path)
+bool resource::operator!= (const std::string path)
 {
     return ! (*this == path) ;
 }
 
-int resource::operator== (const std::vector <std::string> &vpath)
+bool resource::operator== (const std::vector <std::string> &vpath)
 {
-    int r ;
+    bool r = false ;
  
     if (vpath.size () == vpath_.size ())
     {
-	r = 0 ;				// by default : equal
-	for (std::string::size_type i = 0 ; i < vpath.size () ; i++)
+	r = true ;			// by default : equal
+	for (std::size_t i = 0 ; i < vpath.size () ; i++)
 	{
 	    if (vpath [i] != vpath_ [i])
 	    {
-		r = 1 ;			// not equal
+		r = false ;
 		break ;
 	    }
 	}
     }
-    else r = 1 ;
 
     return r ;
 }
 
-int resource::operator!= (const std::vector <std::string> &vpath)
+bool resource::operator!= (const std::vector <std::string> &vpath)
 {
     return ! (*this == vpath) ;
 }
 
-int resource::operator== (const std::vector <option> &pathopt)
+bool resource::operator== (const std::vector <option> &pathopt)
 {
     unsigned int sz = pathopt_.size () ;
-    int r = 0 ;
+    bool r = false ;
 
     if (sz == pathopt.size ())
     {
-	r = 1 ;
+	r = true ;
 	for (unsigned int i = 0 ; i < sz ; i++)
 	{
 	    if (pathopt_ [i] != pathopt [i])
 	    {
-		r = 0 ;
+		r = false ;
 		break ;
 	    }
 	}
@@ -109,7 +108,7 @@ int resource::operator== (const std::vector <option> &pathopt)
     return r ;
 }
 
-int resource::operator!= (const std::vector <option> &pathopt)
+bool resource::operator!= (const std::vector <option> &pathopt)
 {
     return ! (*this == pathopt) ;
 }

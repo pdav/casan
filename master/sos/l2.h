@@ -12,8 +12,8 @@ class l2addr
 {
     public:
 	virtual ~l2addr () {} ;
-	virtual int operator== (const l2addr &other) = 0 ;
-	virtual int operator!= (const l2addr &other) = 0 ;
+	virtual bool operator== (const l2addr &other) = 0 ;
+	virtual bool operator!= (const l2addr &other) = 0 ;
 
 	// ugly hack to make operator<< feel as a virtual one
 	friend std::ostream& operator<< (std::ostream &os, const l2addr &a) ;

@@ -240,21 +240,20 @@ bool option::operator< (const option &o)
  * Operator used for option matching
  */
 
-int option::operator== (const option &o)
+bool option::operator== (const option &o)
 {
-    int r ;
+    bool r = false ;
 
-    r = 0 ;
     if (optcode_ == o.optcode_ && optlen_ == o.optlen_)
     {
 	if (optval_ && o.optval_)
-	    r = std::memcmp (optval_, o.optval_, optlen_) ;
-	else r = std::memcmp (staticval_, o.staticval_, optlen_) ;
+	    r = (std::memcmp (optval_, o.optval_, optlen_) == 0) ;
+	else r = (std::memcmp (staticval_, o.staticval_, optlen_) == 0) ;
     }
     return r ;
 }
 
-int option::operator!= (const option &o)
+bool option::operator!= (const option &o)
 {
     return ! (*this == o) ;
 }

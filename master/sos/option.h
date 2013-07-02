@@ -39,8 +39,8 @@ class option
 
 	bool operator< (const option &o) ;	// for list sorting in msg.cc
 
-	int operator== (const option &o) ;
-	int operator!= (const option &o) ;
+	bool operator== (const option &o) ;
+	bool operator!= (const option &o) ;
 
 	void reset (void) ;
 

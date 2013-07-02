@@ -11,12 +11,12 @@ class resource
     public:
 	resource (const std::string path) ;	// constructor
 
-	int operator== (const std::string path) ;
-	int operator!= (const std::string path) ;
-	int operator== (const std::vector <std::string> &vpath) ;
-	int operator!= (const std::vector <std::string> &vpath) ;
-	int operator== (const std::vector <option> &pathopt) ;
-	int operator!= (const std::vector <option> &pathopt) ;
+	bool operator== (const std::string path) ;
+	bool operator!= (const std::string path) ;
+	bool operator== (const std::vector <std::string> &vpath) ;
+	bool operator!= (const std::vector <std::string> &vpath) ;
+	bool operator== (const std::vector <option> &pathopt) ;
+	bool operator!= (const std::vector <option> &pathopt) ;
 
 	// Mutators
 	void add_attribute (const std::string name, const std::string value) ;
