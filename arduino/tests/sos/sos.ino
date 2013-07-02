@@ -33,12 +33,9 @@ uint8_t process_light(Message &in, Message &out)
 	int sensorValue = analogRead(light_sensor);
 	snprintf(message, 10, "%d\0", sensorValue);
 
-	option o (option::MO_Uri_Query,
-		(unsigned char*) message,
-		strlen(message)) ;
+	out.set_payload( strlen(message), (unsigned char *) message);
 
 	out.set_code(COAP_RETURN_CODE(2,5));
-	out.push_option(o);
 
 	return 0;
 }
@@ -54,12 +51,9 @@ uint8_t process_temp(Message &in, Message &out)
 	int sensorValue = analogRead(tmp_sensor);
 	snprintf(message, 10, "%d\0", sensorValue);
 
-	option o (option::MO_Uri_Query,
-		(unsigned char*) message,
-		strlen(message)) ;
+	out.set_payload( strlen(message), (unsigned char *) message);
 
 	out.set_code(COAP_RETURN_CODE(2,5));
-	out.push_option(o);
 
 	return 0;
 }
@@ -106,7 +100,6 @@ void setup()
 			PROCESS_3_rt, sizeof PROCESS_3_rt -1, 
 			process_led);
 }
-
 
 void test_values_temp(void)
 {
