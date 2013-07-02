@@ -551,10 +551,12 @@ void sos::clean_deduplist (receiver &r)
     {
 	msg *m = *di ;
 
+#if 0
 	D ("PARCOURS deduplist") ;
 	D ("m = " << m) ;
 	D ("*di = " << *di) ;
 	D ("*m = " << *m) ;
+#endif
 
 	if (now >= m->expire_)
 	{
