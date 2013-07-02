@@ -448,6 +448,8 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
     sos::msg *r ;
     sos::msg::msgcode_t code ;
     sos::waiter w ;
+    timepoint_t timeout ;
+    sostimer_t max ;
 
     code = sos::msg::MC_GET ;
     for (int i = 0 ; i < NTAB (tabmethod); i++)
@@ -461,8 +463,12 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
     res.res_->add_to_message (*m) ;	// add resource path as msg options
     m->wt (&w) ;
 
+    max = EXCHANGE_LIFETIME (res.slave_->l2 ()->maxlatency()) ;
+    timeout = DATE_TIMEOUT_MS (max) ;
+    D ("HTTP request, timeout = " << max << " ms") ;
+
     auto a = std::bind (&sos::sos::add_request, &this->engine_, m) ;
-    w.do_and_wait (a) ;
+    w.do_and_wait (a, timeout) ;
 
     m->wt (nullptr) ;
 

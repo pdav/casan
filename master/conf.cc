@@ -69,9 +69,6 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 		case conf::I_SLAVE_TTL :
 		    p = "slavettl" ;
 		    break ;
-		case conf::I_HTTP :
-		    p = "http" ;
-		    break ;
 	    }
 	    os << "timer " << p << " " << cf.timers [i] << "\n" ;
 	}
@@ -316,8 +313,6 @@ bool conf::parse_line (std::string &line)
 		    idx = I_INTERVAL_HELLO ;
 		else if (tokens [i] == "slavettl")
 		    idx = I_SLAVE_TTL ;
-		else if (tokens [i] == "http")
-		    idx = I_HTTP ;
 		else
 		    idx = -1 ;
 
@@ -555,8 +550,6 @@ bool conf::parse_line (std::string &line)
 	timers [I_INTERVAL_HELLO] = DEFAULT_INTERVAL_HELLO ;
     if (timers [I_SLAVE_TTL] == 0)
 	timers [I_SLAVE_TTL] = DEFAULT_SLAVE_TTL ;
-    if (timers [I_HTTP] == 0)
-	timers [I_HTTP] = DEFAULT_HTTP ;
 
     for (auto &s : slavelist_)
 	if (s.ttl == 0)

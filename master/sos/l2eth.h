@@ -21,7 +21,7 @@
 // Ethernet maximum latency (ms). Even a very conservative value is far
 // more realistic than the default CoAP value (100 s)
 // #define	ETHMAXLATENCY	10
-#define	ETHMAXLATENCY	1000
+#define	ETHMAXLATENCY	50
 
 
 namespace sos {
