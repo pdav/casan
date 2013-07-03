@@ -1,0 +1,799 @@
+%
+% ICube - Network research group meeting, 28/01/2013
+%
+
+\documentclass [12pt] {beamer}
+
+    \usepackage [utf8] {inputenc}
+    \usepackage {helvet}
+
+    \usepackage {graphicx}
+    % \usepackage {tikz}
+
+    % \usepackage {hyperref}
+    \hypersetup
+    {
+	pdfauthor={Pierre David},
+        pdfsubject={A pragmatic architecture for sensor networks},
+	pdftitle={A pragmatic architecture for sensor networks},
+	pdfkeywords={REST, HTTP, CoRE, CoAP, Bonjour}
+    }
+
+
+    \usetheme {default}
+    % \useoutertheme [headline=empty,footline=authortitle] {miniframes}
+    \usefonttheme {structurebold}
+
+    \setbeamercolor {frametitle} {fg=red}
+    \setbeamerfont {frametitle} {series=\bfseries}
+    \setbeamertemplate {frametitle} {
+	\textbf {\insertframetitle} \par
+    }
+
+    \pgfdeclareimage[height=0.5cm]{logo}{icube}
+    % \logo{\pgfuseimage{logo}}
+
+    \setbeamertemplate {footline} {%
+	\vskip 1ex
+	    \hskip 1ex
+	    % \insertlogo
+	    \pgfuseimage {logo}
+	    \hfill
+	    \insertframenumber/\inserttotalframenumber
+	    \hspace* {1ex}
+	\vskip 1ex
+    }
+
+    \setbeamertemplate {navigation symbols} {}
+
+    \title {A pragmatic architecture \\
+	 	for sensor networks}
+    \author {Pierre David \\ \texttt {pda@unistra.fr}}
+    \institute {ICube -- Network Research Group}
+    \date [Network Research Group meeting] {13 february 2013}
+
+    \newcommand {\imply} {$\Rightarrow$\ }
+
+\begin {document}
+
+\begin {frame} [plain]
+    \titlepage
+\end {frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section* {Outline}
+
+\begin {frame} {Outline}
+    \tableofcontents
+\end {frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section {The REST architecture}
+
+\begin {frame} {SOS control messages}
+    \begin {center}
+    \includegraphics [width=.7\textwidth,keepaspectratio] {handshake}
+    \end {center}
+\end {frame}
+
+\begin {frame} {Slave automaton}
+    \includegraphics [width=.98\textwidth,keepaspectratio] {auto-slave}
+
+\end {frame}
+
+\begin {frame} {Master automaton}
+    \includegraphics [width=.98\textwidth,keepaspectratio] {auto-master}
+
+\end {frame}
+
+\end {document}
+
+\begin {frame} {Software view point}
+    Current trend is to use a RESTful architecture:
+
+    \begin {columns} [c]
+	\begin {column} [c] {.5\textwidth}
+	    \begin {center}
+		\includegraphics [height=5cm,keepaspectratio] {stack}
+	    \end {center}
+	\end {column}
+	\begin {column} [c] {.5\textwidth}
+	    What is REST?
+	\end {column}
+    \end {columns}
+    \vspace {3mm}
+
+    This is \alert {not} the standard OSI 7 layer model
+\end {frame}
+
+\begin {frame} {The REST architecture}
+    REST = Representational State Transfer
+
+    \begin {itemize}
+	\item formally defined in 2000 (Roy Fielding)
+	\item REST is an architecture, not a protocol (... but...)
+    \end {itemize}
+%
+%    \pause
+%    Components of a REST architecture:
+%    \begin {itemize}
+%	\item resources
+%	\item representation of resources
+%	\item manipulation of resources
+%	\item self-descriptive messages
+%	\item hypermedia as the engine of application state
+%    \end {itemize}
+\end {frame}
+
+\begin {frame} {The REST architecture constraints}
+
+    \includegraphics<1> [width=\textwidth,keepaspectratio] {rest-princ0}
+    \includegraphics<2> [width=\textwidth,keepaspectratio] {rest-princ1}
+    \includegraphics<3> [width=\textwidth,keepaspectratio] {rest-princ2}
+    \includegraphics<4> [width=\textwidth,keepaspectratio] {rest-princ3}
+    \includegraphics<5> [width=\textwidth,keepaspectratio] {rest-princ4}
+    \includegraphics<6> [width=\textwidth,keepaspectratio] {rest-princ5}
+    \includegraphics<7> [width=\textwidth,keepaspectratio] {rest-princ6}
+    \includegraphics<8> [width=\textwidth,keepaspectratio] {rest-princ7}
+    \includegraphics<9> [width=\textwidth,keepaspectratio] {rest-princ}
+
+\end {frame}
+
+\begin {frame} {The REST architecture}
+    Application to HTTP:
+    \begin {itemize}
+	\item resource id: \\
+	    \imply URL
+	\item representation of a resource: \\
+	    \imply JSON or XML or text formats
+	\item manipulation of resources: HTTP operations \\
+	    \imply GET, PUT, DELETE and POST
+	\item meta-data: HTTP headers \\
+	    \imply data types \\
+	    \imply cache control
+    \end {itemize}
+
+    \pause
+    REST is an architecture not a protocol... \\
+    \imply but REST is often seen
+    as an alternative to other RPC mechanisms (e.g. SOAP)
+\end {frame}
+
+\begin {frame} {Example: delicious.com}
+    \url {http://delicious.com} is a social bookmarking service:
+    \begin {itemize}
+	\item store my Web bookmarks in the cloud
+	\item tag my Web bookmarks
+	\item share my Web bookmarks with other people
+	\item discover other's Web bookmarks
+    \end {itemize}
+    \begin {columns} [c,onlytextwidth]
+	\begin {column} [c] {.6\textwidth}
+	    \begin {center}
+		\includegraphics [width=.9\textwidth,keepaspectratio]{delicious}
+	    \end {center}
+	\end {column}
+	\pause
+	\begin {column} [c] {.4\textwidth}
+	    Delicious has a RESTful API
+	\end {column}
+    \end {columns}
+\end {frame}
+
+\begin {frame} {Example: delicious.com}
+    To get my public bookmarks tagged with "histinfo":
+
+    {
+	\small
+	\hspace* {5mm}
+	\alert {GET http://feeds.delicious.com/v2/json/pdagog/histinfo}
+    }
+    \vspace* {3mm}
+
+    \pause
+    Result (JSON format): \\
+    \begin {quote}
+	\scriptsize
+	[ \\
+	    \hspace* {3mm} \{ \\
+		\hspace* {6mm} "a": "pdagog", \\
+		\hspace* {6mm} "d": "Google60", \\
+		\hspace* {6mm} "u": "http://www.masswerk.at/google60/", \\
+		\hspace* {6mm} "t": ["histinfo", "web", "humour"] \\
+	    \hspace* {3mm} \}, \\
+	    \hspace* {3mm} \{ \\
+		\hspace* {6mm} "a": "pdagog", \\
+		\hspace* {6mm} "d": "Unix Preservation society", \\
+		\hspace* {6mm} "u": "http://minnie.tuhs.org/", \\
+		\hspace* {6mm} "t": ["freebsd", "unix", "histinfo"] \\
+	    \hspace* {3mm} \}, ... \\
+	]
+    \end {quote}
+
+%    \pause
+%    \begin {itemize}
+%	\item See https://delicious.com/developers
+%	\item Some resources need an authentication
+%    \end {itemize}
+\end {frame}
+
+\begin {frame} {Application to sensor networks}
+    \begin {center}
+	\includegraphics [width=\textwidth,keepaspectratio] {rest-sens}
+    \end {center}
+
+\end {frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section {Towards a pragmatic architecture}
+
+\begin {frame} {Outline}
+    \tableofcontents [current]
+\end {frame}
+
+\begin {frame} {Towards a pragmatic architecture}
+
+    Each sensor is an autonomous node. It must embed an HTTP server over
+    a complete network stack.
+
+    \begin {columns} [c,onlytextwidth]
+	\begin {column} [c] {.3\textwidth}
+	    \begin {center}
+		\includegraphics [width=.8\textwidth,keepaspectratio] {stack}
+	    \end {center}
+	\end {column}
+	\begin {column} [c] {.7\textwidth}
+	    \pause
+	    ... and a lot of other protocols:
+	    \begin {itemize}
+		\item SSL for confidentiality
+		\item Bonjour for service discovery
+		\item multicast support for Bonjour
+		\item DNS for naming and DNS-SD
+		\item and many other things...
+	    \end {itemize}
+	    \vspace* {2mm}
+	    \imply 3 decades of associated protocols
+	\end {column}
+    \end {columns}
+\end {frame}
+
+\begin {frame} {Towards a pragmatic architecture}
+
+    With such a stack:
+
+    \begin {itemize}
+	\item sensors need CPU power
+	\item sensors need energy
+	\item sensor software is complex
+	\item sensor software has bugs
+	\item sensors need software updates
+    \end {itemize}
+
+    \pause
+    \imply manufacturing and maintenance cost
+
+    \pause
+    \begin {columns} [c,onlytextwidth]
+	\begin {column} [t] {.9\textwidth}
+	    Can we embed such a stack into a lightbulb?
+
+	    Can we afford the costs for all lightbulbs?
+	\end {column}
+	\begin {column} [c] {.1\textwidth}
+	    \begin {center}
+		\includegraphics [width=.9\textwidth,keepaspectratio] {lightbulb}
+	    \end {center}
+	\end {column}
+    \end {columns}
+
+    \pause
+    \imply no...
+
+\end {frame}
+
+\begin {frame} {Towards a pragmatic architecture}
+
+    Can we simplify this architecture?
+
+    \pause
+    \imply yes
+
+    \pause
+    \vspace* {2mm}
+
+    Central idea:
+    \begin {itemize}
+	\item reduce sensor intelligence
+	\item improve intelligence of WSN sink (or similar) in
+	    order to make a high-level gateway
+    \end {itemize}
+
+    \vspace* {2mm}
+
+    \pause
+    Make this gateway run a \alert {Sensor Operating System} (SOS)
+
+    \begin {itemize}
+	\item SOS is a distributed operating system
+	\item gateway is the \alert {master} processor
+	\item sensor \alert {nodes} are viewed as peripheral devices
+	\item sensor operations are REST operations on the SOS
+    \end {itemize}
+
+    \imply simplify protocol between master and nodes
+
+\end {frame}
+
+\begin {frame} {Towards a pragmatic architecture}
+
+    \includegraphics [width=\textwidth,keepaspectratio] {arch-req}
+
+    \pause
+    Master must:
+    \begin {itemize}
+	\item discover neighborhood
+	\item map node addresses to REST resources
+	\item respond to REST requests on these resources
+	\item hide the sensor network from the Internet
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {Towards a pragmatic architecture}
+    \includegraphics [width=\textwidth,keepaspectratio] {arch-req}
+
+    Master-Sensor protocol does not need:
+    \begin {itemize}
+	\item long-distance optimizations
+	    \imply no TCP layer
+	\item inter-network routing
+	    \imply no IP layer
+	\item multiple applications on sensor
+	    \imply no UDP port
+	\item inter-sensor communication (only master-sensor)
+
+    \end {itemize}
+    \pause
+    \vspace* {1mm}
+    Need for a simplified protocol: SOS protocol
+
+\end {frame}
+
+\begin {frame} {Towards a pragmatic architecture}
+    \includegraphics [width=\textwidth,keepaspectratio] {arch-stack}
+
+    \vspace* {2mm}
+    \small
+    Master~: Unix-like (Linux, BSD) \\
+    Nodes~: micro-controller based OS (Arduino, TinyOS, Contiki)
+
+\end {frame}
+
+\begin {frame} {SOS protocol requirements}
+    Master, nodes and sensors:
+    \begin {itemize}
+	\item a single node may have multiple sensors 
+	    \includegraphics [width=10mm,keepaspectratio] {power-outlet2}
+	\item nodes and sensors are named \\
+	    power-outlet25, unit1
+	\item master must auto-discover nodes and sensors
+	\item mutual authentication between master and nodes
+	\item REST mapping: resource names and operations \\
+	    http://power-outlet25.my.home/unit1/switch?val=on
+	\item redundancy: multiple master support
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {SOS protocol requirements}
+    Traffic handling:
+    \begin {itemize}
+	\item scalable \\
+	    all lightbulbs in TPS, C building, 2nd floor
+	\item block transfer (e.g. cameras)
+	\item traffic congestion should be regulated by master \\
+	    camera2, you can use at most 640x480 \\
+	    (not sure about that)
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {SOS protocol requirements}
+    Data link layer interface:
+
+    \begin {itemize}
+	\item data link layer agnostic (802.15.4, PLC, etc.)
+	\item allow use of a multi-hop data link layer
+	\item allow small packet sizes
+    \end {itemize}
+
+\end {frame}
+
+\begin {frame} {Opportunities}
+    Additional benefits of intelligence on master:
+
+    \begin {itemize}
+	\item simulate content-centric sensor networks \\
+	    (e.g. no need for TinyDB or similar)
+	\item aggregate sensor information \\
+	    (e.g.  raise a condition if more than $x$ sensors report
+		    an high temperature)
+	\item cache information and reduce traffic \\
+	    (especially when more than one client)
+	\item etc.
+
+    \end {itemize}
+
+\end {frame}
+
+\begin {frame} {Summary}
+    Network stack required by REST is too complex, and too
+    costly to deploy everywhere.
+    \vspace* {5mm}
+
+    Idea: design the Sensor Operating System:
+    \begin {itemize}
+	\item sensors are devices of a master processor
+	\item master-sensor protocol must be very light
+	\item yet, sensors are "on the Internet" \\
+	    even if they have no IP address
+    \end {itemize}
+
+    \pause
+    Analogy:
+    \begin {itemize}
+	\item Mobile IP is too complex for mobile nodes
+	\item Current trend is to shift mobility support from nodes to infrastructure
+	\item \imply Proxy MIP has been preferred to Mobile IP
+    \end {itemize}
+\end {frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section {Related work: CoRE}
+
+\begin {frame} {Outline}
+    \tableofcontents [current]
+\end {frame}
+
+%\begin {frame} {Related work}
+%    IETF remains in the "IP everywhere" dogma (surprise?)
+%
+%    \vspace* {2mm}
+%
+%    Related works:
+%    \begin {itemize}
+%	\item discovery protocols (Web Linking, SLP, UPNP, Bonjour)
+%	\item 6LoWPAN
+%	\item \alert {CoRE} and \alert {CoAP}
+%    \end {itemize}
+%
+%\end {frame}
+
+\begin {frame} {CoRE / CoAP}
+    CoRE = Constrained RESTful Environments
+
+    \vspace* {2mm}
+
+    CoRE is a framework for REST-architectured applications on constrained
+    IP networks.
+
+    \begin {itemize}
+	\item young IETF working group
+	\item first meeting: march 2010
+	\item \~{} 20 internet drafts (wg and related)
+	\item one published RFC (6690)
+    \end {itemize}
+
+    CoAP (Constrained Application Protocol) is the protocol defined by
+    the CoRE working group.
+
+\end {frame}
+
+\begin {frame} {CoRE / CoAP}
+    In short: CoAP is HTTP over UDP.
+
+    \vspace* {3mm}
+
+    \includegraphics [width=\textwidth,keepaspectratio] {core-stack}
+
+    \vspace* {3mm}
+    CoAP may use standard UDP/IP stack on classical networks as well as
+    6LoWPAN on constrained networks \\
+    CoAP may also use DTLS (Datagram Transport Layer Security, RFC 6347 --
+    TLS over UDP), or IPSec.
+
+\end {frame}
+
+\begin {frame} {CoRE / CoAP}
+    Architectural view:
+
+    \includegraphics [width=\textwidth,keepaspectratio] {core-arch}
+
+    \pause
+    \begin {itemize}
+	\item "IP everywhere" dogma: each sensor must be IP addressable
+	    from the Internet
+
+	\item mapping from HTTP to CoAP on the proxy
+
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {CoRE / CoAP}
+
+    \begin {itemize}
+	\item 
+	    IMHO: end-to-end connection is unrealistic in the real world
+
+	\item
+	    \pause
+	    So, why keep an UDP/IP stack on the constrained network?
+
+	\item
+	    \pause
+	    However, CoAP has some good features. Let's see...
+
+    \end {itemize}
+
+\end {frame}
+
+\begin {frame} {CoAP -- Message format}
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-fmt}
+
+    \pause
+    \begin {itemize}
+	\item Type: transaction type
+	    \begin {itemize}
+		\item CON (Confirmable): issuer expects an answer
+		\item NON (Non-Confirmable): no answer needed
+		\item ACK (Acknowledgment)
+		\item RST (Reset)
+	    \end {itemize}
+	\item Code: request (GET, PUT, etc.) or return code (205, 404, etc.)
+	\item Options: list of TLVs (type-length-value)
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {CoAP -- A typical request}
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-fmt}
+    \vspace* {2mm}
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-req-con}
+
+    \vspace* {2mm}
+    No acknowledgment: client retransmits after a timeout
+
+\end {frame}
+
+\begin {frame} {CoAP -- A typical request}
+    \begin {itemize}
+	\item Message Id: to match each request and response messages
+	\item Token: to match responses independently from the
+	    underlying messages
+    \end {itemize}
+
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-req-tok}
+
+\end {frame}
+
+\begin {frame} {CoAP -- Another typical request}
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-fmt}
+    \vspace* {2mm}
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-req-non}
+
+    \vspace* {2mm}
+    No acknowledgment expected from the client
+
+\end {frame}
+
+\begin {frame} {CoAP -- Caching}
+    \begin {itemize}
+	\item Cacheability is determined by the response code \\
+	    \vspace* {1mm}
+	    Examples:
+	    \begin {tabular} {|l|l|l|} \hline
+		201 & Created & \alert {no} \\ \hline
+		205 & Content & \alert {yes} \\ \hline
+		4xx & Client error & \alert {yes} \\ \hline
+	    \end {tabular}
+	    \vspace* {1mm}
+	\item Option \alert {Max-Age}: expiration time given by the server
+	\item Option \alert {Etag}: entity tag supplied by the server \\
+	    Client uses it to re-validate an expired answer
+    \end {itemize}
+
+\end {frame}
+
+\begin {frame} {CoAP -- Block transfers (aka TFTP)}
+    \begin {itemize}
+	\item Option \alert {Block1} : for large requests
+	\item Option \alert {Block2} : for large responses
+    \end {itemize}
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-req-blk}
+
+\end {frame}
+
+\begin {frame} {CoAP -- Observe}
+    A CoAP client can subscribe to a resource with the \alert {Observe}
+    option. Each time the observed resource changes, a notification is
+    sent to the client.
+
+    \vspace* {2mm}
+
+    \includegraphics [width=\textwidth,keepaspectratio] {coap-req-obs}
+
+    \vspace* {2mm}
+
+    \pause
+    End of observation : \alert {Max-Age} expired, RST, CON without ACK,
+    or new GET without \alert {Observe} option.
+
+\end {frame}
+
+\begin {frame} {CoAP -- Multicast}
+    CoAP may use multicast addresses:
+
+    \begin {quote}
+	\small coap://all-lightbulbs-flr2-bdgC.tps.u-strasbg.fr/status
+    \end {quote}
+
+    Special considerations:
+    \begin {itemize}
+	\item Non confirmable requests only
+	\item Idempotent requests only (e.g. GET, but not POST)
+	\item Configuration of group membership: with unicast CoAP \\
+	    \imply {\small POST /gp?n=all-light...\&ip=ff05::4200:f7fe:ed37:14ca}
+	    \\
+	    Receiving node will subscribe to the multicast group
+
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {CoRE -- Resource discovery}
+    Which resources are available on an HTTP node?
+
+    \begin {itemize}
+	\item "Well-Known" interface (RFC 5785): \\
+	    \hspace* {5mm}
+	    http://server/\alert {.well-known}/xxx \\
+	    xxx names are registered by IANA
+	\item Web Linking (RFC 5988): relationship between resources \\
+	    \hspace* {5mm}
+	    {
+		\footnotesize
+		\alert {Link}:
+		    $<$http://.../book/ch2$>$;
+		    \alert {rel}="next";
+		    title="next chapter"
+	    }
+	    \\
+	    Link is an HTTP header \\
+	    Relation types are registered by IANA \\
+	    Web Linking may also be used in an HTML document
+    \end {itemize}
+\end {frame}
+
+\begin {frame} {CoRE -- Resource discovery}
+    Application to CoRE:
+
+    \begin {itemize}
+	\item CoRE link interface (RFC 6690): \\
+	    \hspace* {5mm}
+		coap://server/.well-known/\alert {core}
+		\hspace* {4mm} (or http://)
+	    \\
+	    Default entry point for requesting the list of resources \\
+	    \imply directory of related links (web-linking)
+
+	\item Get the list of available resources: \\
+	    \hspace* {5mm}
+		\alert {GET} /.well-known/core
+	    \\
+	    May be filtered: GET /.well-known/core\alert {?rt=light-lux}
+
+	\item Discover all resources on a CoRE network: \\
+	    \hspace* {5mm}
+		\alert {multicast (all CoAP nodes)} GET /.well-known/core
+
+	\item Build a resource directory (e.g. on a proxy),
+	    by registering a new resource: \\
+	    \hspace* {5mm}
+		\alert {POST} /.well-known/core
+    \end {itemize}
+
+\end {frame}
+
+%%%%%%%%%%%%%%%%%%%%% METTRE L'ACCENT SUR LES PROTOCOLES NECESSAIRES AUTOUR : DNS, SSL, DTLS, Bonjour, 30 ans de protocole
+
+\begin {frame} {Summary}
+    CoAP:
+    \begin {itemize}
+	\item assumes an end-to-end IP connectivity
+	\item needs a lot of protocols:
+	    \begin {itemize}
+		\item UDP, which needs IP
+		\item 6LoWPAN, which needs IPv6
+		\item RPL and MPL for routing
+		\item Multicast and associated protocols
+		\item DTLS
+		\item ...
+	    \end {itemize}
+    \end {itemize}
+
+    However:
+    \begin {itemize}
+	\item CoAP is a serious basis to build upon
+	\item SOS = CoAP over Data-Link?
+    \end {itemize}
+\end {frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section {Proposed SOS architecture}
+
+\begin {frame} {Outline}
+    \tableofcontents [current]
+\end {frame}
+
+\begin {frame} {SOS architecture}
+    \begin {center}
+	\includegraphics<1> [width=\textwidth,keepaspectratio] {sos-arch11}
+	\includegraphics<2> [width=\textwidth,keepaspectratio] {sos-arch12}
+	\includegraphics<3> [width=\textwidth,keepaspectratio] {sos-arch13}
+    \end {center}
+\end {frame}
+
+\begin {frame} {SOS architecture}
+    \begin {center}
+	\includegraphics<1> [width=\textwidth,keepaspectratio] {sos-arch21}
+	\includegraphics<2> [width=\textwidth,keepaspectratio] {sos-arch22}
+	\includegraphics<3> [width=\textwidth,keepaspectratio] {sos-arch23}
+	\includegraphics<4> [width=\textwidth,keepaspectratio] {sos-arch24}
+	\includegraphics<5> [width=\textwidth,keepaspectratio] {sos-arch25}
+	\includegraphics<6> [width=\textwidth,keepaspectratio] {sos-arch26}
+	\includegraphics<7> [width=\textwidth,keepaspectratio] {sos-arch27}
+    \end {center}
+\end {frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section {Conclusion}
+
+\begin {frame} {Outline}
+    \tableofcontents [current]
+\end {frame}
+
+
+\begin {frame} {Summary}
+    REST:
+    \begin {itemize}
+	\item is the current trend for sensor networks applications
+	\item needs far too many protocols \\
+	    \imply and complexity
+    \end {itemize}
+
+    Our idea:
+    \begin {itemize}
+	\item view a sensor network as a distributed operating system
+	    offering a REST interface \\
+	    \imply each sensor is REST-addressable \\
+	    \imply each sensor is ``on the Internet'' through REST
+	\item build upon CoRE experience
+    \end {itemize}
+
+\end {frame}
+
+\begin {frame} {Challenges}
+    \begin {itemize}
+	\item design and implement the SOS protocol
+	\item design and implement the Sensor Operating System
+	\item prove that our architecture is viable \\
+	    \imply experiment with some use-cases
+	\item prove that SOS architecture is more efficient \\
+	    \imply compare times on identical hardware \\
+	    \imply compare code size
+    \end {itemize}
+
+\end {frame}
+
+\begin {frame} {Questions?}
+    \includegraphics [width=\textwidth,keepaspectratio] {tomatoes}
+\end {frame}
+
+\end {document}
