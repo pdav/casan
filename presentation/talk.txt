@@ -1,0 +1,28 @@
+Presentation
+
+The arduino development board
+
+the ~ symbols are to indicate that we can simulate analog output with these
+digital pins by setting power on and off quickly
+
+...
+and there is a lot more components we can get
+
+9v battery snap
+Potentiometer 10kilohm
+alphanumeric LCD
+
+we can modify this electronic component as we modify an opensource code
+no pre-require knowledge
+
+when the arduino is connected to a powersource, it runs
+
+COMPONENTS
+	a breadboard
+	wooden base, pushbuttons, diodes, leds, wires
+	several resistors (and resistance values), capacitors
+	photo and temperature sensors
+	motors, transistors, …
+
+
+USAGE
