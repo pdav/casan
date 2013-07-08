@@ -4,23 +4,71 @@
     \tableofcontents [current]
 \end{frame}
 
-\begin{frame}[containsverbatim] {Code sample}
-\begin{Verbatim}[fontsize=\small]
+
+% setup(): a function run once at the start of a program that can initialize settings
+% loop(): a function called repeatedly until the board powers off
+
+\begin{frame}[containsverbatim]{Code sample : resistor and led}
+	\begin{columns}[c,onlytextwidth]
+		\begin{column}[c]{.5\textwidth}
+			\begin{center}
+				\includegraphics [width=.9\textwidth,keepaspectratio]{img/resistor_led.png}
+			\end{center}
+		\end{column}
+		\begin{column}[c]{.5\textwidth}
+\begin{Verbatim}[fontsize=\scriptsize]
 #define LED_PIN 13
 
 void setup () {
-  // enable pin 13 for digital output
   pinMode (LED_PIN, OUTPUT);
 }
 
 void loop () {
-  digitalWrite (LED_PIN, HIGH); // turn on the LED
-  delay (1000); // wait one second (1000 milliseconds)
-  digitalWrite (LED_PIN, LOW); // turn off the LED
-  delay (1000); // wait one second
+  digitalWrite (LED_PIN, HIGH);
+  delay (1000);
+  digitalWrite (LED_PIN, LOW);
+  delay (1000);
 }
 \end{Verbatim}
-\end {frame}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[containsverbatim]{Code sample : UDP with EthernetShield }
+	\begin{columns}[c]
+		\begin{column}[c]{.4\textwidth}
+
+\begin{Verbatim}[fontsize=\scriptsize]
+void setup() {
+  Ethernet.begin(mac,ip);
+  Udp.begin(localPort);
+  Serial.begin(9600);
+}
+\end{Verbatim}
+
+		\end{column}
+		\begin{column}[c]{.8\textwidth}
+
+\begin{Verbatim}[fontsize=\scriptsize]
+int packetSize = Udp.parsePacket();
+if(packetSize)
+{
+  Serial.print("Received packet of size ");
+  Serial.println(packetSize);
+
+  Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
+  Serial.println("Contents:");
+  Serial.println(packetBuffer);
+
+  Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+  Udp.write(ReplyBuffer);
+  Udp.endPacket();
+}
+\end{Verbatim}
+
+		\end{column}
+	\end{columns}
+\end{frame}
 
 \begin{frame}{The IDE}
 	\begin{center}
@@ -38,7 +86,7 @@ void loop () {
 	\end{center}
 \end{frame}
 
-\begin{frame} {Documentation}
+\begin{frame}{Documentation}
 	On the arduino.cc website
 	\begin{itemize}
 		\item Simple, Readable, Relevant 
@@ -47,13 +95,13 @@ void loop () {
 	\end{itemize}
 \end{frame}
 
-\begin {frame} {Documentation}
+\begin{frame}{Documentation}
 	For all pages about a subject, there are
 	\begin{itemize}
 		\item hardware scheme
 		\item code samples, with relevant comments, Creative Common license
 	\end{itemize}
-\end {frame}
+\end{frame}
 
 \begin {frame} {Examples}
 	\begin {center}

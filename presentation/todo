@@ -1,28 +1,14 @@
 schémas
 
-prix des shields + composants
 il y a des tas de cartes "arduino compatible"
 quand on envoie du courant à l'arduino il démarre et le programme tourne
-faire une animation pour présenter les composants
-
-
-Parler de l'IDE
-	- contient des exemples de code (ceux sur le wiki)
-	- compile
-	- envoie
-	- affiche la sortie (quand l'USB est utilisé en port Série)
 
 Exemples : 
 	- comprendre l'électronique (mettre une résistance avant une LED car elle ne supporte qu'un courant de 33mA)
 	- 5100 : faire un serveur web en quelques lignes
 
 ARDUINO:
-	- pas d'OS
-		- bibliothèques embarquées
-		- facilite la programmation des composants
-			- les composants sont intelligents
-			- pas de multi-tâche
-			- pas d'interruption
-		- un seul programme qui tourne
-		- C++ - sans STD
-
+	- facilite la programmation des composants
+		- les composants sont intelligents
+		- pas de multi-tâche
+		- pas d'interruption
