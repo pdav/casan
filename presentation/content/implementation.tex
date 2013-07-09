@@ -9,12 +9,13 @@
 \begin{Verbatim}[fontsize=\scriptsize]
 void setup() 
 {
-  sos = new Sos(mac_addr, 169);
+  sos = new Sos(mac_addr, 123);
+  // it will change
   sos->register_resource(
-    resource_name, resource_name_len, 
-    resource_title, resource_title_len,
-    resource_rt, resource_rt_len,
-    resource_handler);
+    "temp",
+    "Temperature",
+    "temp",
+    handler);
 }
 \end{Verbatim}
 		\end{column}
@@ -33,7 +34,7 @@ void loop()
 	\begin{columns}[c,onlytextwidth]
 		\begin{column}[c]{.5\textwidth}
 			\begin{center}
-				\includegraphics [width=.9\textwidth,keepaspectratio]{img/resistor_led.png}
+				\includegraphics [width=.9\textwidth,keepaspectratio]{img/resistor_led_analog.png}
 			\end{center}
 		\end{column}
 		\begin{column}[c]{.5\textwidth}
@@ -42,13 +43,17 @@ uint8_t process_led(Message &in,
 	               Message &out) 
 {
   int n;
-  char * payload = (char*) 
-    in.get_payload();
-  if(payload != NULL && 
-      sscanf ((const char *) payload, 
-	  "val=%d", &n) == 1)
-  	analogWrite(led, n);
-  out.set_code(COAP_RETURN_CODE(2,5));
+  for(option * o = in.get_option() ; 
+    o != NULL ; o = in.get_option())
+  {
+    if(o->optcode() == option::MO_Uri_Query)
+    {
+      if(sscanf ((const char *) opt.val(), 
+          "val=%d", &n) == 1)
+      	analogWrite(led, n);
+      out.set_code(COAP_RETURN_CODE(2,5));
+    }
+  }
   return 0;
 }
 \end{Verbatim}
@@ -85,33 +90,25 @@ uint8_t process_light(Message &in,
 	\end{columns}
 \end{frame}
 
-\begin{frame}[containsverbatim]{Thermistor}
-	\begin{columns}[c,onlytextwidth]
-		\begin{column}[c]{.5\textwidth}
-			\begin{center}
-				\includegraphics [width=.9\textwidth,keepaspectratio]{img/thermistor.png}
-			\end{center}
-		\end{column}
-		\begin{column}[c]{.5\textwidth}
-\begin{Verbatim}[fontsize=\scriptsize]
-uint8_t temperature_handler(Message &in, 
-                           Message &out) 
-{
-  char message[10];
-  for(int i(0) ; i < 10 ; i++)
-    message[i] = '\0';
-  int sensorValue = 
-    analogRead(tmp_sensor);
-  snprintf(message, 10, "%d\0", 
-                  sensorValue);
-  out.set_payload( strlen(message), 
-        (unsigned char *) message);
-  out.set_code(COAP_RETURN_CODE(2,5));
-  return 0;
-}
-\end{Verbatim}
-		\end{column}
-	\end{columns}
+\begin{frame}{Stats}
+	\begin{center}
+		\includegraphics<1> [width=1\textwidth,keepaspectratio] {pdf/memory0.pdf}
+		\includegraphics<2> [width=1\textwidth,keepaspectratio] {pdf/memory1.pdf}
+	\end{center}
+\end{frame}
+
+\begin{frame} {W5100}
+	\begin{itemize}
+		\item One position possible on the Arduino
+		\item Runs on 3 modes : 
+		\begin{itemize}
+			\item UDP
+			\item TCP
+			\item MAC Raw
+		\end{itemize}
+		\item Advantage : simple to work with UDP and TCP
+		\item Inconvenient : need to implement all other protocols
+	\end{itemize}
 \end{frame}
 
 \begin{frame} {Difficulties}

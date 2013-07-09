@@ -34,14 +34,48 @@ void loop () {
 	\end{columns}
 \end{frame}
 
+\begin{frame}[containsverbatim]{Code sample : resistor and photoresistor}
+	\begin{columns}[c,onlytextwidth]
+		\begin{column}[c]{.5\textwidth}
+			\begin{center}
+				\includegraphics [width=.9\textwidth,keepaspectratio]{img/resistor_photoresistor.png}
+			\end{center}
+		\end{column}
+		\begin{column}[c]{.5\textwidth}
+\begin{Verbatim}[fontsize=\scriptsize]
+#define LIGHT_SENSOR_PIN A0
+
+void setup () {
+  pinMode (LIGHT_SENSOR_PIN, INPUT);
+  Serial.begin(9600);
+}
+
+void loop () {
+  long sensorValue = 
+    analogRead(LIGHT_SENSOR_PIN);
+
+  Serial.print("Light Sensor : ");
+  Serial.println(sensorValue);
+  delay (1000);
+}
+\end{Verbatim}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+
 \begin{frame}[containsverbatim]{Code sample : UDP with EthernetShield }
 	\begin{columns}[c]
 		\begin{column}[c]{.4\textwidth}
 
 \begin{Verbatim}[fontsize=\scriptsize]
+byte mac[] = {
+  0xDE, 0xAD, 0xBE, 
+  0xEF, 0xFE, 0xED };
+IPAddress ip(192, 168, 1, 177);
 void setup() {
   Ethernet.begin(mac,ip);
-  Udp.begin(localPort);
+  Udp.begin(1234);
   Serial.begin(9600);
 }
 \end{Verbatim}
@@ -50,19 +84,22 @@ void setup() {
 		\begin{column}[c]{.8\textwidth}
 
 \begin{Verbatim}[fontsize=\scriptsize]
-int packetSize = Udp.parsePacket();
-if(packetSize)
+void loop()
 {
-  Serial.print("Received packet of size ");
-  Serial.println(packetSize);
-
-  Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
-  Serial.println("Contents:");
-  Serial.println(packetBuffer);
-
-  Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  Udp.write(ReplyBuffer);
-  Udp.endPacket();
+  int packetSize = Udp.parsePacket();
+  if(packetSize)
+  {
+    Serial.print("Received packet of size ");
+    Serial.println(packetSize);
+  
+    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
+    Serial.println("Contents:");
+    Serial.println(packetBuffer);
+  
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(ReplyBuffer);
+    Udp.endPacket();
+  }
 }
 \end{Verbatim}
 
@@ -76,13 +113,6 @@ if(packetSize)
 		\includegraphics<2> [width=1\textwidth,keepaspectratio] {img/ide_webserver.png}
 		\includegraphics<3> [width=1\textwidth,keepaspectratio] {img/ide_webserver_buttons.png}
 		\includegraphics<4> [width=1\textwidth,keepaspectratio] {img/ide_serial.png}
-	\end{center}
-\end{frame}
-
-\begin{frame}{Stats}
-	\begin{center}
-		\includegraphics<1> [width=1\textwidth,keepaspectratio] {pdf/memory0.pdf}
-		\includegraphics<2> [width=1\textwidth,keepaspectratio] {pdf/memory1.pdf}
 	\end{center}
 \end{frame}
 
