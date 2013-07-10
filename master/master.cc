@@ -474,22 +474,50 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	rep = http::server2::reply::stock_reply (http::server2::reply::service_unavailable) ;
     else
     {
+	int contentformat = 0 ;		// text/plain by default
+	sos::option *o ;
 	int paylen ;
 	char *payld ;
 	payld = (char *) r->payload (&paylen) ;
 
-	rep.status = http::server2::reply::ok ;
-	rep.content = "<html><body><pre>" ;
+	// get content format
+	r->option_reset_iterator () ;
+	while ((o = r->option_next ()) != nullptr)
+	{
+	    if (o->optcode () == sos::option::MO_Content_Format)
+	    {
+		contentformat = o->optval () ;
+		break ;
+	    }
+	}
 
-	for (int i = 0 ; i < paylen ; i++)
-	    rep.content.push_back (payld [i]) ;
-	rep.content += "</pre></body></html>" ;
+	rep.status = http::server2::reply::ok ;
 
 	rep.headers.resize (2) ;
 	rep.headers[0].name = "Content-Length" ;
+	rep.headers[1].name = "Content-Type" ;
+
+	// See draft-ietf-core-coap-16.txt:  "12.3. Content-Format Registry"
+	switch (contentformat)
+	{
+	    case 0 :			// text/plain charset=utf-8
+		// rep.content = "<html><body><pre>" ;
+		for (int i = 0 ; i < paylen ; i++)
+		    rep.content.push_back (payld [i]) ;
+		// rep.content += "</pre></body></html>" ;
+		rep.headers[1].value = "text/plain" ;
+		break ;
+
+	    case 50 :			// application/json
+		// rep.content = "<html><body><pre>" ;
+		for (int i = 0 ; i < paylen ; i++)
+		    rep.content.push_back (payld [i]) ;
+		// rep.content += "</pre></body></html>" ;
+		rep.headers[1].value = "application/json" ;
+		break ;
+	}
+
 	rep.headers[0].value =
 	    boost::lexical_cast < std::string > (rep.content.size ()) ;
-	rep.headers[1].name = "Content-Type" ;
-	rep.headers[1].value = "text/html" ;
     }
 }

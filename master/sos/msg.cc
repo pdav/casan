@@ -659,6 +659,25 @@ option msg::popoption (void)
     return o ;
 }
 
+void msg::option_reset_iterator (void)
+{
+    optiter_ = optlist_.begin () ;
+}
+
+option *msg::option_next (void)
+{
+    option *o ;
+
+    if (optiter_ == optlist_.end ())
+	o = nullptr ;
+    else
+    {
+	o = & (*optiter_) ;
+	optiter_++ ;
+    }
+    return o ;
+}
+
 waiter *msg::wt (void)
 {
     return waiter_ ;

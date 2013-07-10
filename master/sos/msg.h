@@ -67,6 +67,9 @@ class msg
 	msg *reqrep (void) ;
 	waiter *wt (void) ;
 
+	void option_reset_iterator (void) ;
+	option *option_next (void) ;
+
 	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
 
 	// control messages
@@ -105,6 +108,7 @@ class msg
 	int code_ = MC_EMPTY ;
 	int id_ = 0 ;			// message id
 	std::list <option> optlist_ ;	// list of all options
+	std::list <option>::iterator optiter_ ;
 
 	msg *reqrep_ = nullptr ;	// "request of" or "response of"
 	sostype_t sostype_ = SOS_UNKNOWN ;
