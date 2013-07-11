@@ -70,8 +70,26 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 				out.set_type(COAP_TYPE_ACK);
 				out.set_id(in.get_id());
 				out.set_token(in.get_token_length(), in.get_token());
-				return (*tmp->h)(in, out);
+				uint8_t ret = (*tmp->h)(in, out);
+				
+				bool found = false;
+				for(option * o2 = out.get_option() ; o2 != NULL ; o2 = out.get_option()) {
+					
+					if (o2->optcode() == option::MO_Content_Format) {
+						found = true;
+						break;
+					}
+				}
+				
+				if(!found) {
+					option o3 ;
 
+					o3.optcode (option::MO_Content_Format) ;
+					o3.optval (option::cf_text_plain) ;
+					out.push_option (o3) ;
+				}
+
+				return ret;
 			}
 		}
 

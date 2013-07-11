@@ -37,6 +37,10 @@ class option
 		    } optcode_t ;
 	typedef unsigned long int uint ;
 
+	typedef enum {
+			cf_text_plain			= 0,
+			} content_format ;
+
 	option () ;				// constructor
 	option (optcode_t c) ;			// constructor
 	option (optcode_t c, void *v, int l) ;	// constructor
