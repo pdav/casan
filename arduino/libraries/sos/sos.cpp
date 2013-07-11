@@ -3,9 +3,9 @@
 #define	SOS_NAMESPACE1		".well-known"
 #define	SOS_NAMESPACE2		"sos"
 #define	SOS_HELLO		"hello=%ld"
-#define	SOS_REGISTER		"slave=%ld"
+#define	SOS_DISCOVER_SLAVEID	"slave=%ld"
+#define	SOS_DISCOVER_MTU	"mtu=%d"
 #define	SOS_ASSOC		"assoc=%ld"
-#define SOS_ASSOC_RETURN_PAYLOAD	"<resource list>"
 
 static struct
 {
@@ -21,20 +21,17 @@ sos_namespace [] =
 extern l2addr_eth l2addr_eth_broadcast ;
 
 // TODO : set all variables
-	Sos::Sos(l2addr *mac_addr, long int uuid) 
-: _nttl(SOS_DEFAULT_TTL), _status(SL_COLDSTART), _uuid(uuid) 
+Sos::Sos(l2net *l2, long int uuid)
+	: _nttl(SOS_DEFAULT_TTL), _status(SL_COLDSTART), _uuid(uuid), _l2(l2)
 {
-	_master_addr = new l2addr_eth(l2addr_eth_broadcast);
+	_master_addr = l2->bcastaddr ();
 	reset_master();	// _master_addr becomes a broadcast
 
-	_eth->set_master_addr(_master_addr);
+	// XXXX
+	_l2->set_master_addr(_master_addr);
 	_current_message_id = 1;
 
-	_eth = new EthernetRaw();
-	_eth->set_mac(mac_addr);
-	_eth->set_ethtype((int) SOS_ETH_TYPE);
-
-	_coap = new Coap(_eth);
+	_coap = new Coap(_l2);
 	_rmanager = new Rmanager();
 	_retransmition_handler = new Retransmit(_coap, &_master_addr);
 	_status = SL_COLDSTART;
@@ -52,6 +49,7 @@ void Sos::reset_master(void)
 	}
 	else
 	{
+		// Can't happen
 		PRINT_DEBUG_STATIC("\033[31mERROR : master not set yet ! \033[00m");
 	}
 
@@ -94,7 +92,7 @@ void Sos::loop()
 	_retransmition_handler->loop_retransmit(); 
 	Message in;
 	Message out;
-	eth_recv_t ret;
+	l2_recv_t ret;
 
 	current_time.cur();
 
@@ -103,7 +101,7 @@ void Sos::loop()
 
 		case SL_COLDSTART :
 			Serial.println(F("SL_COLDSTART"));
-			mk_registration();
+			mk_discover();
 
 			_status = SL_WAITING_UNKNOWN;
 			// the next waiting time laps for a message
@@ -117,12 +115,12 @@ void Sos::loop()
 			Serial.println(F("\033[33mSL_WAITING_UNKNOWN\033[00m"));
 
 			while(  _status == SL_WAITING_UNKNOWN &&
-					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
+					(ret = _coap->recv(in)) != L2_RECV_EMPTY)
 			{
 
 				//print_coap_ret_type(ret);
 
-				if(ret == ETH_RECV_RECV_OK) 
+				if(ret == L2_RECV_RECV_OK) 
 				{
 
 					_retransmition_handler->check_msg_received(in); 
@@ -161,7 +159,7 @@ void Sos::loop()
 
 			if( _next_register < current_time)
 			{
-				mk_registration();
+				mk_discover();
 
 				// compute the next waiting time laps for a message
 				_next_time_increment = 
@@ -180,10 +178,10 @@ void Sos::loop()
 			// other messages than ASSOC & HELLO
 
 			while(  _status == SL_WAITING_KNOWN &&
-					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
+					(ret = _coap->recv(in)) != L2_RECV_EMPTY)
 			{
 
-				if(ret == ETH_RECV_RECV_OK) 
+				if(ret == L2_RECV_RECV_OK) 
 				{
 					_retransmition_handler->check_msg_received(in); 
 
@@ -235,7 +233,7 @@ void Sos::loop()
 				if( _next_register < current_time)
 				{
 
-					mk_registration();
+					mk_discover();
 
 					_next_time_increment = 
 						(_next_time_increment + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
@@ -253,10 +251,10 @@ void Sos::loop()
 			Serial.println(F("\033[33mSL_RENEW\033[00m"));
 
 			while(  _status == SL_RENEW &&
-					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
+					(ret = _coap->recv(in)) != L2_RECV_EMPTY)
 			{
 
-				if(ret == ETH_RECV_RECV_OK) 
+				if(ret == L2_RECV_RECV_OK) 
 				{
 					_retransmition_handler->check_msg_received(in); 
 
@@ -274,7 +272,7 @@ void Sos::loop()
 							_next_register.add(_next_time_increment);
 							
 
-							mk_registration();
+							mk_discover();
 						} 
 						else if (is_associate(in)) 
 						{
@@ -302,7 +300,7 @@ void Sos::loop()
 					_next_register = current_time;
 					_next_register.add(_next_time_increment);
 
-					mk_registration();
+					mk_discover();
 
 				}
 
@@ -315,7 +313,7 @@ void Sos::loop()
 
 					_status = SL_WAITING_UNKNOWN;
 					_next_time_increment = SOS_DELAY;
-					mk_registration();
+					mk_discover();
 				}
 			}
 
@@ -325,10 +323,10 @@ void Sos::loop()
 			Serial.println(F("\033[33mSL_RUNNING\033[00m"));
 
 			while(  _status == SL_RUNNING &&
-					(ret = _coap->recv(in)) != ETH_RECV_EMPTY)
+					(ret = _coap->recv(in)) != L2_RECV_EMPTY)
 			{
 
-				if(ret == ETH_RECV_RECV_OK) 
+				if(ret == L2_RECV_RECV_OK) 
 				{
 					_retransmition_handler->check_msg_received(in); 
 
@@ -378,7 +376,7 @@ void Sos::loop()
 				// if current time <= ttl timeout /2
 				if(time::diff(_ttl_timeout_mid, current_time) <= 0)
 				{
-					mk_registration();
+					mk_discover();
 					_next_time_increment = SOS_DELAY;
 					_next_register = current_time;
 					_next_register.add(_next_time_increment);
@@ -480,9 +478,9 @@ void Sos::mk_ctl_msg (Message &m)
 	m.push_option(path2);
 }
 
-void Sos::mk_registration() 
+void Sos::mk_discover() 
 {
-	Serial.println(F("registration"));
+	Serial.println(F("Discover"));
 	Message m;
 
 	m.set_id(_current_message_id);
@@ -495,7 +493,15 @@ void Sos::mk_registration()
 
 	{
 		char message[SOS_BUF_LEN];
-		snprintf(message, SOS_BUF_LEN, SOS_REGISTER, _uuid);
+		snprintf(message, SOS_BUF_LEN, SOS_DISCOVER_SLAVEID, _uuid);
+		option o (option::MO_Uri_Query,
+				(unsigned char*) message,
+				strlen(message)) ;
+		m.push_option (o) ;
+	}
+	{
+		char message[SOS_BUF_LEN];
+		snprintf(message, SOS_BUF_LEN, SOS_DISCOVER_MTU,_l2->mtu ());
 		option o (option::MO_Uri_Query,
 				(unsigned char*) message,
 				strlen(message)) ;
@@ -587,21 +593,21 @@ void check_msg(Message &in, Message &out)
  * useful display of pieces of information
  */
 
-void Sos::print_coap_ret_type(eth_recv_t ret)
+void Sos::print_coap_ret_type(l2_recv_t ret)
 {
 	switch(ret)
 	{
-		case ETH_RECV_WRONG_SENDER :
-			PRINT_DEBUG_STATIC("ETH_RECV_WRONG_SENDER");
+		case L2_RECV_WRONG_SENDER :
+			PRINT_DEBUG_STATIC("L2_RECV_WRONG_SENDER");
 			break;
-		case ETH_RECV_WRONG_DEST :
-			PRINT_DEBUG_STATIC("ETH_RECV_WRONG_DEST");
+		case L2_RECV_WRONG_DEST :
+			PRINT_DEBUG_STATIC("L2_RECV_WRONG_DEST");
 			break;
-		case ETH_RECV_WRONG_ETHTYPE :
-			PRINT_DEBUG_STATIC("ETH_RECV_WRONG_ETHTYPE");
+		case L2_RECV_WRONG_ETHTYPE :
+			PRINT_DEBUG_STATIC("L2_RECV_WRONG_ETHTYPE");
 			break ;
-		case ETH_RECV_RECV_OK :
-			PRINT_DEBUG_STATIC("ETH_RECV_RECV_OK");
+		case L2_RECV_RECV_OK :
+			PRINT_DEBUG_STATIC("L2_RECV_RECV_OK");
 			break;
 		default :
 			PRINT_DEBUG_STATIC("ERROR RECV");

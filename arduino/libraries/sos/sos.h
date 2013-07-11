@@ -6,7 +6,10 @@
 #include "defs.h"
 #include "enum.h"
 #include "option.h"
-#include "ethernetraw.h"
+#include "l2addr.h"
+#include "l2addr_eth.h"
+#include "l2net.h"
+#include "l2net_eth.h"
 #include "coap.h"
 #include "retransmit.h"
 #include "rmanager.h"
@@ -25,7 +28,7 @@
 class Sos {
 	public:
 
-		Sos(l2addr *mac_addr, long int uuid);
+		Sos(l2net *l2, long int uuid);
 		~Sos();
 
 		// reset address of the master (broadcast)
@@ -48,15 +51,15 @@ class Sos {
 		bool is_associate (Message &m);
 
 		void mk_ctl_msg (Message &m);
-		void mk_registration();
+		void mk_discover();
 		void mk_ack_assoc(Message &in, Message &out);
 
-		void print_coap_ret_type(eth_recv_t ret);
+		void print_coap_ret_type(l2_recv_t ret);
 
 		Retransmit * _retransmition_handler = NULL;
 		Coap *_coap = NULL;
 		l2addr *_master_addr;
-		EthernetRaw *_eth = NULL;
+		l2net *_l2 = NULL;
 		uint8_t _status;
 		long int _nttl;				// TTL get by assoc msg
 		long int _hlid;				// hello ID

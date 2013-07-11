@@ -1,4 +1,4 @@
-#include "l2eth.h"
+#include "l2addr_eth.h"
 
 l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 

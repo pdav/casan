@@ -58,7 +58,7 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
 	case slave::SL_RUNNING:
 	    nt = std::chrono::system_clock::to_time_t (s.next_timeout_) ;
 	    strftime (buf, sizeof buf, "%F %T", std::localtime (&nt)) ;
-	    os << "RUNNING (ttl=" << buf << ")" ;
+	    os << "RUNNING (mtu=" << s.mtu_ << ", ttl=" << buf << ")" ;
 	    break ;
 	default:
 	    os << "(unknown state)" ;
@@ -93,6 +93,11 @@ l2addr *slave::addr (void)
 slaveid_t slave::slaveid (void)
 {
     return slaveid_ ;
+}
+
+int slave::mtu (void)
+{
+    return mtu_ ;
 }
 
 enum slave::status_code slave::status (void)
@@ -144,6 +149,11 @@ void slave::slaveid (slaveid_t sid)
     slaveid_ = sid ;
 }
 
+void slave::mtu (int m)
+{
+    mtu_ = m ;
+}
+
 void slave::init_ttl (int t)
 {
     init_ttl_ = t ;
@@ -167,8 +177,8 @@ void slave::process_sos (sos *e, msg *m)
 
     switch (m->sos_type ())
     {
-	case msg::SOS_REGISTER :
-	    D ("Received REGISTER, sending ASSOCIATE") ;
+	case msg::SOS_DISCOVER :
+	    D ("Received DISCOVER, sending ASSOCIATE") ;
 	    answer = new msg ;
 	    answer->peer (m->peer ()) ;
 	    answer->type (msg::MT_CON) ;

@@ -26,7 +26,7 @@ class msg
 	typedef enum msgcode { MC_EMPTY=0,
 		    MC_GET=1, MC_POST, MC_PUT, MC_DELETE } msgcode_t ;
 	// SOS_HELLO is never used
-	typedef enum sostype { SOS_NONE=0, SOS_REGISTER, SOS_ASSOC_REQUEST,
+	typedef enum sostype { SOS_NONE=0, SOS_DISCOVER, SOS_ASSOC_REQUEST,
 		    SOS_ASSOC_ANSWER, SOS_HELLO, SOS_UNKNOWN} sostype_t ;
 
 	msg () ;			// constructor
@@ -74,7 +74,7 @@ class msg
 
 	// control messages
 	sostype_t sos_type (void) ;
-	slaveid_t is_sos_discover (void) ;	// SOS control message
+	bool is_sos_discover (slaveid_t &sid, int &mtu) ;// SOS control message
 	bool is_sos_associate (void) ;		// SOS control message
 	void add_path_ctl (void) ;
 	void mk_ctl_hello (long int hid) ;	// options for ctl mssage

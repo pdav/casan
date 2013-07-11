@@ -1,11 +1,11 @@
 #include "coap.h"
 
-Coap::Coap(EthernetRaw *e) {
-	_eth = e;
+Coap::Coap(l2net *e) {
+	_l2 = e;
 }
 
 Coap::~Coap(void) {
-	delete _eth;
+	delete _l2;
 }
 
 void Coap::send(l2addr &mac_addr_dest, Message &m) 
@@ -13,7 +13,7 @@ void Coap::send(l2addr &mac_addr_dest, Message &m)
 	uint8_t sbuf[150] = {0};
 	size_t sbuflen(0);
 	encode(m, sbuf, sbuflen);
-	_eth->send( mac_addr_dest, sbuf, sbuflen);
+	_l2->send( mac_addr_dest, sbuf, sbuflen);
 }
 
 /*
@@ -22,43 +22,43 @@ void Coap::send(l2addr &mac_addr_dest, Message &m)
  * returns 3 if it's the wrong eth type
  * return 0 if ok
  */
-eth_recv_t Coap::recv(Message &m) {
+l2_recv_t Coap::recv(Message &m) {
 	m.reset();
-	eth_recv_t ret = _eth->recv();
-	if(ret == ETH_RECV_RECV_OK)
-		decode(m, _eth->get_offset_payload(0), 
-				_eth->get_payload_length() - 2);
+	l2_recv_t ret = _l2->recv();
+	if(ret == L2_RECV_RECV_OK)
+		decode(m, _l2->get_offset_payload(0), 
+				_l2->get_payload_length() - 2);
 	return ret;
 }
 
 void Coap::set_master_addr(l2addr *master_addr) {
-	_eth->set_master_addr(master_addr);
+	_l2->set_master_addr(master_addr);
 }
 
 uint8_t Coap::get_type(void) {
-	return (uint8_t) ((*(_eth->get_offset_payload(COAP_OFFSET_TYPE))) >> 4 ) & 0x03;
+	return (uint8_t) ((*(_l2->get_offset_payload(COAP_OFFSET_TYPE))) >> 4 ) & 0x03;
 }
 
 uint8_t Coap::get_code(void) {
-	return *(_eth->get_offset_payload(COAP_OFFSET_CODE));
+	return *(_l2->get_offset_payload(COAP_OFFSET_CODE));
 }
 
 int Coap::get_id(void) {
-	uint8_t *idp = _eth->get_offset_payload(COAP_OFFSET_ID);
+	uint8_t *idp = _l2->get_offset_payload(COAP_OFFSET_ID);
 	int ret = ((*(idp) & 0xff) << 8) | (*(idp+1) & 0xff);
 	return ret;
 }
 
 uint8_t Coap::get_token_length(void) {
-	return (*(_eth->get_offset_payload(COAP_OFFSET_TKL))) & 0x0F;
+	return (*(_l2->get_offset_payload(COAP_OFFSET_TKL))) & 0x0F;
 }
 
 uint8_t * Coap::get_token(void) {
-	return _eth->get_offset_payload(COAP_OFFSET_TOKEN);
+	return _l2->get_offset_payload(COAP_OFFSET_TOKEN);
 }
 
 void Coap::get_mac_src(l2addr * mac_src) {
-	_eth->get_mac_src(mac_src);
+	_l2->get_mac_src(mac_src);
 }
 
 /* returns true if message is decoding was successful */

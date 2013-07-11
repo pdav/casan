@@ -1,5 +1,5 @@
-#ifndef	SOS_L2_H
-#define	SOS_L2_H
+#ifndef	L2ADDR_H
+#define	L2ADDR_H
 
 #include "util.h"
 

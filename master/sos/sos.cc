@@ -483,9 +483,9 @@ bool sos::find_peer (msg *m, l2addr *a, receiver &r)
 	if (!found)
 	{
 	    slaveid_t sid ;
+	    int mtu ;
 
-	    sid = m->is_sos_discover () ;
-	    if (sid)
+	    if (m->is_sos_discover (sid, mtu))
 	    {
 		for (auto &s : slist_)
 		{
@@ -493,6 +493,7 @@ bool sos::find_peer (msg *m, l2addr *a, receiver &r)
 		    {
 			s.l2 (r.l2) ;
 			s.addr (a) ; free_a = false ;
+			s.mtu (mtu) ;
 			m->peer (&s) ;
 			found = true ;
 			break ;

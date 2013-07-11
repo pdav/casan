@@ -1,8 +1,8 @@
-#ifndef SOS_L2ETH_H
-#define	SOS_L2ETH_H
+#ifndef L2ADDR_ETH_H
+#define	L2ADDR_ETH_H
 
 #include "Arduino.h"
-#include "l2.h"
+#include "l2addr.h"
 #include "defs.h"
 
 class l2addr_eth: public l2addr

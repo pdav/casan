@@ -3,8 +3,8 @@
 
 #include "Arduino.h"
 #include "defs.h"
-#include "ethernetraw.h"
-#include "l2.h"
+#include "l2addr.h"
+#include "l2net.h"
 #include "option.h"
 #include "message.h"
 
@@ -21,11 +21,11 @@
 class Coap {
 	public:
 
-		Coap(EthernetRaw *e);
+		Coap(l2net *e);
 		~Coap();
 
 		void send(l2addr &mac_addr_dest, Message &m);
-		eth_recv_t recv(Message &m);
+		l2_recv_t recv(Message &m);
 
 		// TODO : tests
 		// TODO : handle errors
@@ -43,7 +43,7 @@ class Coap {
 		uint8_t get_token_length(void);
 		uint8_t * get_token(void);
 		uint8_t get_payload_offset(void);
-		EthernetRaw *_eth;
+		l2net *_l2;
 };
 
 #endif

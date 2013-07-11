@@ -6,7 +6,7 @@
 #include "enum.h"
 #include "coap.h"
 #include "message.h"
-#include "l2eth.h"
+#include "l2addr_eth.h"
 #include "memory_free.h"
 #include "time.h"
 

@@ -65,7 +65,7 @@ int main (int argc, char *argv [])
     uri_path2 = uri_path1 ;
     uri_path2.optval ((void *) PATH_2, sizeof PATH_2 - 1) ;
 
-    // REGISTER message
+    // DISCOVER message
     m1.type (sos::msg::MT_NON) ;
     m1.code (sos::msg::MC_POST) ;
     m1.peer (&sb) ;

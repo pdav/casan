@@ -15,12 +15,16 @@
 #define PROCESS_3_title	"led"
 #define PROCESS_3_rt	"light"
 
+// MTU is less than 0.25 * (free memory in SRAM after initialization)
+#define	MTU		200
+
 int tmp_sensor = A0;
 int light_sensor = A1;
 int led = A2;
 
-Sos *sos;
 l2addr *mac_addr = new l2addr_eth("00:01:02:03:04:05");
+l2net_eth *e = new l2net_eth (mac_addr, MTU, SOS_ETH_TYPE);
+Sos *sos;
 
 uint8_t process_light(Message &in, Message &out) 
 {
@@ -86,7 +90,7 @@ void setup()
 	Serial.begin (9600) ;
 	Serial.println(F("start"));
 
-	sos = new Sos(mac_addr, 169);
+	sos = new Sos(e, 169);
 	sos->register_resource(PROCESS_1_name, sizeof PROCESS_1_name -1, 
 			PROCESS_1_title, sizeof PROCESS_1_title -1, 
 			PROCESS_1_rt, sizeof PROCESS_1_rt -1, 

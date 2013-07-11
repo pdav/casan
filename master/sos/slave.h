@@ -25,12 +25,14 @@ class slave
 	void l2 (l2net *l2) ;		// set l2 network
 	void addr (l2addr *a) ;		// set address
 	void slaveid (slaveid_t sid) ;	// set slave id
+	void mtu (int m) ;		// set slave mtu
 	void init_ttl (int t) ;		// set initial slave ttl
 
 	// Accessors
 	l2net *l2 (void) ;
 	l2addr *addr (void) ;
 	slaveid_t slaveid (void) ;
+	int mtu (void) ;
 	enum status_code status (void) ;
 	int init_ttl (void) ;
 	resource *find_resource (const std::vector <std::string> &v) ;
@@ -57,6 +59,7 @@ class slave
 
     private:
 	slaveid_t slaveid_ = 0 ;	// slave id
+	int mtu_ = 0 ;			// slave MTU
 	l2net *l2_ = nullptr ;		// l2 network this slave is on
 	l2addr *addr_ = nullptr ;	// slave address
 	int init_ttl_ = 0 ;		// initial ttl (in sec)

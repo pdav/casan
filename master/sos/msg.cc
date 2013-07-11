@@ -691,6 +691,7 @@ waiter *msg::wt (void)
 #define	SOS_NAMESPACE2		"sos"
 #define	SOS_HELLO		"hello=%ld"
 #define	SOS_SLAVE		"slave=%ld"
+#define	SOS_MTU			"mtu=%d"
 #define	SOS_ASSOC		"assoc=%ld"
 
 static struct
@@ -732,9 +733,10 @@ bool msg::is_sos_ctl_msg (void)
     return r ;
 }
 
-slaveid_t msg::is_sos_discover (void)
+bool msg::is_sos_discover (slaveid_t &sid, int &mtu)
 {
-    slaveid_t sid = 0 ;
+    sid = 0 ;
+    mtu = 0 ;
 
     if (type_ == MT_NON && code_ == MC_POST && is_sos_ctl_msg ())
     {
@@ -750,6 +752,11 @@ slaveid_t msg::is_sos_discover (void)
 		    sid = n ;
 		    // continue, just in case there are other query strings
 		}
+		else if (std::sscanf ((char *) OPTVAL (o), SOS_MTU, &n) == 1)
+		{
+		    mtu = n ;
+		    // continue, just in case there are other query strings
+		}
 		else
 		{
 		    sid = 0 ;
@@ -758,9 +765,9 @@ slaveid_t msg::is_sos_discover (void)
 	    }
 	}
     }
-    if (sid > 0)
-	sostype_ = SOS_REGISTER ;
-    return sid ;
+    if (sid > 0 && mtu > 0)
+	sostype_ = SOS_DISCOVER ;
+    return sostype_ == SOS_DISCOVER ;
 }
 
 bool msg::is_sos_associate (void)
@@ -801,7 +808,10 @@ msg::sostype_t msg::sos_type (void)
 {
     if (sostype_ == SOS_UNKNOWN)
     {
-	if (is_sos_discover () == 0 && ! is_sos_associate ())
+	slaveid_t sid ;
+	int mtu ;
+
+	if (! is_sos_discover (sid, mtu) && ! is_sos_associate ())
 	{
 	    if (reqrep_ != nullptr)
 	    {
