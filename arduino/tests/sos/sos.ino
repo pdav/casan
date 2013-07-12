@@ -92,18 +92,19 @@ void setup()
 
 	e = new l2net_eth (mac_addr, MTU, SOS_ETH_TYPE);
 	sos = new Sos(e, 169);
-	sos->register_resource(PROCESS_1_name, 
-			PROCESS_1_title, 
-			PROCESS_1_rt, 
-			process_light);
-	sos->register_resource(PROCESS_2_name, 
-			PROCESS_2_title, 
-			PROCESS_2_rt, 
-			process_temp);
-	sos->register_resource(PROCESS_3_name, 
-			PROCESS_3_title, 
-			PROCESS_3_rt, 
-			process_led);
+	
+	
+	Resource *r1 = new Resource(PROCESS_1_name, PROCESS_1_title, PROCESS_1_rt);
+	r1->add_handler(COAP_CODE_GET,process_light);
+	sos->register_resource(r1);
+	
+	Resource *r2 = new Resource(PROCESS_2_name, PROCESS_2_title, PROCESS_2_rt);
+	r2->add_handler(COAP_CODE_GET,process_temp);
+	sos->register_resource(r2);
+	
+	Resource *r3 = new Resource(PROCESS_3_name, PROCESS_3_title, PROCESS_3_rt);
+	r3->add_handler(COAP_CODE_GET,process_led);
+	sos->register_resource(r3);
 }
 
 void test_values_temp(void)

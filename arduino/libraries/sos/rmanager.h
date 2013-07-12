@@ -4,14 +4,12 @@
 #include "message.h"
 #include "coap.h"
 #include "option.h"
+#include "resource.h"
 
 #define SOS_RESOURCES_ALL		"resources"
 
 typedef struct _rmanager_s {
-	uint8_t (*h)(Message &in, Message &out);
-	char *name;
-	char *title;
-	char *rt;
+     Resource *r;
 	_rmanager_s *s;
 } rmanager_s;
 
@@ -22,8 +20,7 @@ public:
 	Rmanager();
 	~Rmanager();
 
-	void add_resource(char *name, char *title, char *rt,
-			uint8_t (*handler)(Message &in, Message &out));
+	void add_resource(Resource *resource);
 	uint8_t request_resource(Message &in, Message &out);
 	void get_all_resources(Message &out);
 	void delete_resource(rmanager_s *r);

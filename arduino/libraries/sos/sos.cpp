@@ -59,10 +59,9 @@ void Sos::reset_master(void)
 	_hlid = 0;
 }
 
-void Sos::register_resource( char *name, char *title, char *rt,
-		uint8_t (*handler)(Message &in, Message &out) ) 
+void Sos::register_resource( Resource *r ) 
 {
-	_rmanager->add_resource(name, title, rt, handler);
+	_rmanager->add_resource(r);
 }
 
 // TODO : we need to restart all the application, 

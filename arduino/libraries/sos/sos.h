@@ -15,7 +15,7 @@
 #include "rmanager.h"
 #include "memory_free.h"
 #include "time.h"
-
+#include "resource.h"
 
 #define SOS_BUF_LEN			50
 #define SOS_DELAY_INCR		50
@@ -35,8 +35,7 @@ class Sos {
 		// and set _hlid to 0
 		void reset_master (void) ;	
 
-		void register_resource(char *name, char *title, char *rt,
-				uint8_t (*handler)(Message &in, Message &out) );
+		void register_resource(Resource *r);
 
 		void reset (void);
 		void loop();

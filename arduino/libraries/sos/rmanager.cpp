@@ -9,21 +9,11 @@ Rmanager::~Rmanager()
 	reset();
 }
 
-void Rmanager::add_resource(char *name,
-		char *title, char *rt, uint8_t (*handler)(Message &in, Message &out)) 
+void Rmanager::add_resource(Resource *r) 
 {
 	rmanager_s * newresource = (rmanager_s *) malloc(sizeof(rmanager_s));
-	newresource->name = (char *) malloc(strlen(name)+1);
-	memcpy(newresource->name, name, strlen(name)+1);
-
-	newresource->title = (char *) malloc(strlen(title)+1);
-	memcpy(newresource->title, title, strlen(title)+1);
-
-	newresource->rt = (char *) malloc(strlen(rt)+1);
-	memcpy(newresource->rt, rt, strlen(rt)+1);
-
-	newresource->h = handler;
 	newresource->s = _resources;
+	newresource->r = r;
 	_resources = newresource;
 }
 
@@ -63,7 +53,14 @@ uint8_t Rmanager::request_resource(Message &in, Message &out)
 				out.set_type(COAP_TYPE_ACK);
 				out.set_id(in.get_id());
 				out.set_token(in.get_token_length(), in.get_token());
-				uint8_t ret = (*tmp->h)(in, out);
+				
+				
+				Resource *r = tmp->r;
+				handler_s h = r->get_handler((coap_code_t) in.get_code());
+				uint8_t ret = (*h.handler)( in, out );
+				
+				
+				//uint8_t ret = (*tmp->r->get_handler(in.get_code()))(in, out);
 				
 				bool found = false;
 				for(option * o2 = out.get_option() ; o2 != NULL ; o2 = out.get_option()) {
@@ -144,13 +141,13 @@ void Rmanager::get_all_resources(Message &out)
 			}
 		}
 
-		len = strlen(tmp->name) + strlen(tmp->title) + strlen(tmp->rt); 
+		len = strlen(tmp->r->_name) + strlen(tmp->r->_title) + strlen(tmp->r->_rt); 
 		size += len + 17; // for the '<>;title="";rt=""'
 
 		if(size < limit)
 		{
 			snprintf(buf, size +1, "%s<%s>;title=\"%s\";rt=\"%s\"",
-					buf, tmp->name, tmp->title, tmp->rt);
+					buf, tmp->r->_name, tmp->r->_title, tmp->r->_rt);
 			out.set_payload(size, (uint8_t*)buf);
 		}
 	}
@@ -169,9 +166,7 @@ void Rmanager::delete_resource(rmanager_s *r)
 		while( tmp->s != r ) tmp = tmp->s;
 		tmp->s = r->s;
 	}
-	free(r->name);
-	free(r->title);
-	free(r->rt);
+	delete r->r;
 	free(r);
 }
 
@@ -188,10 +183,7 @@ rmanager_s * Rmanager::get_resource_instance(option *o)
 
 	for(rmanager_s * tmp = _resources; tmp != NULL ; tmp = tmp->s)
 	{
-		//TODO: test strlen 
-		if(strlen(tmp->name) == o->optlen() && 
-				strncmp(tmp->name,(char*) o->val(), o->optlen()) == 0)
-		{
+		if(tmp->r->check_name((char *)o->val(), o->optlen())) {
 			return tmp;
 		}
 	}
@@ -205,15 +197,15 @@ void Rmanager::print(void)
 	for(rmanager_s * tmp = _resources; tmp != NULL ; tmp = tmp->s)
 	{
 		Serial.print(F("resource name : "));
-		memcpy(buf, tmp->name, strlen(tmp->name)+1);
+		memcpy(buf, tmp->r->_name, strlen(tmp->r->_name)+1);
 		Serial.println(buf);
 
 		Serial.print(F("resource title : "));
-		memcpy(buf, tmp->title, strlen(tmp->title)+1);
+		memcpy(buf, tmp->r->_title, strlen(tmp->r->_title)+1);
 		Serial.println(buf);
 
 		Serial.print(F("resource rt : "));
-		memcpy(buf, tmp->rt, strlen(tmp->rt)+1);
+		memcpy(buf, tmp->r->_rt, strlen(tmp->r->_rt)+1);
 		Serial.println(buf);
 	}
 }
