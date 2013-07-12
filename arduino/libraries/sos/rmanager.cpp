@@ -9,32 +9,25 @@ Rmanager::~Rmanager()
 	reset();
 }
 
-void Rmanager::add_resource(char *name, int namelen,
-		char *title, int titlelen,
-		char *rt, int rtlen,
-		uint8_t (*handler)(Message &in, Message &out)) 
+void Rmanager::add_resource(char *name,
+		char *title, char *rt, uint8_t (*handler)(Message &in, Message &out)) 
 {
 	rmanager_s * newresource = (rmanager_s *) malloc(sizeof(rmanager_s));
-	newresource->name = (char *) malloc(namelen +1);
-	newresource->namelen = namelen;
-	memcpy(newresource->name, name, namelen);
-	newresource->name[namelen] = '\0';
+	newresource->name = (char *) malloc(strlen(name)+1);
+	memcpy(newresource->name, name, strlen(name)+1);
 
-	newresource->title = (char *) malloc(titlelen +1);
-	newresource->titlelen = titlelen;
-	memcpy(newresource->title, title, titlelen);
-	newresource->title[titlelen] = '\0';
+	newresource->title = (char *) malloc(strlen(title)+1);
+	memcpy(newresource->title, title, strlen(title)+1);
 
-	newresource->rt = (char *) malloc(rtlen +1);
-	newresource->rtlen = rtlen;
-	memcpy(newresource->rt, rt, rtlen);
-	newresource->rt[rtlen] = '\0';
+	newresource->rt = (char *) malloc(strlen(rt)+1);
+	memcpy(newresource->rt, rt, strlen(rt)+1);
 
 	newresource->h = handler;
-
 	newresource->s = _resources;
 	_resources = newresource;
 }
+
+
 
 // returns  0 if ok 
 uint8_t Rmanager::request_resource(Message &in, Message &out) 
@@ -151,7 +144,7 @@ void Rmanager::get_all_resources(Message &out)
 			}
 		}
 
-		len = tmp->namelen + tmp->titlelen + tmp->rtlen; 
+		len = strlen(tmp->name) + strlen(tmp->title) + strlen(tmp->rt); 
 		size += len + 17; // for the '<>;title="";rt=""'
 
 		if(size < limit)
@@ -195,7 +188,8 @@ rmanager_s * Rmanager::get_resource_instance(option *o)
 
 	for(rmanager_s * tmp = _resources; tmp != NULL ; tmp = tmp->s)
 	{
-		if(tmp->namelen == o->optlen() && 
+		//TODO: test strlen 
+		if(strlen(tmp->name) == o->optlen() && 
 				strncmp(tmp->name,(char*) o->val(), o->optlen()) == 0)
 		{
 			return tmp;
@@ -211,18 +205,15 @@ void Rmanager::print(void)
 	for(rmanager_s * tmp = _resources; tmp != NULL ; tmp = tmp->s)
 	{
 		Serial.print(F("resource name : "));
-		memcpy(buf, tmp->name, tmp->namelen);
-		buf[tmp->namelen] = '\0';
+		memcpy(buf, tmp->name, strlen(tmp->name)+1);
 		Serial.println(buf);
 
 		Serial.print(F("resource title : "));
-		memcpy(buf, tmp->title, tmp->titlelen);
-		buf[tmp->titlelen] = '\0';
+		memcpy(buf, tmp->title, strlen(tmp->title)+1);
 		Serial.println(buf);
 
 		Serial.print(F("resource rt : "));
-		memcpy(buf, tmp->rt, tmp->rtlen);
-		buf[tmp->rtlen] = '\0';
+		memcpy(buf, tmp->rt, strlen(tmp->rt)+1);
 		Serial.println(buf);
 	}
 }

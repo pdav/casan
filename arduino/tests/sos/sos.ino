@@ -10,7 +10,7 @@
 #define PROCESS_1_rt	"light"
 #define PROCESS_2_name	"temp"
 #define PROCESS_2_title	"temperature"
-#define PROCESS_2_rt	"°c"
+#define PROCESS_2_rt	"celcius"
 #define PROCESS_3_name	"led"
 #define PROCESS_3_title	"led"
 #define PROCESS_3_rt	"light"
@@ -92,17 +92,17 @@ void setup()
 
 	e = new l2net_eth (mac_addr, MTU, SOS_ETH_TYPE);
 	sos = new Sos(e, 169);
-	sos->register_resource(PROCESS_1_name, sizeof PROCESS_1_name -1, 
-			PROCESS_1_title, sizeof PROCESS_1_title -1, 
-			PROCESS_1_rt, sizeof PROCESS_1_rt -1, 
+	sos->register_resource(PROCESS_1_name, 
+			PROCESS_1_title, 
+			PROCESS_1_rt, 
 			process_light);
-	sos->register_resource(PROCESS_2_name, sizeof PROCESS_2_name -1, 
-			PROCESS_2_title, sizeof PROCESS_2_title -1, 
-			PROCESS_2_rt, sizeof PROCESS_2_rt -1, 
+	sos->register_resource(PROCESS_2_name, 
+			PROCESS_2_title, 
+			PROCESS_2_rt, 
 			process_temp);
-	sos->register_resource(PROCESS_3_name, sizeof PROCESS_3_name -1, 
-			PROCESS_3_title, sizeof PROCESS_3_title -1, 
-			PROCESS_3_rt, sizeof PROCESS_3_rt -1, 
+	sos->register_resource(PROCESS_3_name, 
+			PROCESS_3_title, 
+			PROCESS_3_rt, 
 			process_led);
 }
 

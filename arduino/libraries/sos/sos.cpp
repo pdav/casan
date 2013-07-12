@@ -59,17 +59,10 @@ void Sos::reset_master(void)
 	_hlid = 0;
 }
 
-void Sos::register_resource(
-		char *name, int namelen,
-		char *title, int titlelen,
-		char *rt, int rtlen,
+void Sos::register_resource( char *name, char *title, char *rt,
 		uint8_t (*handler)(Message &in, Message &out) ) 
 {
-	_rmanager->add_resource(
-			name, namelen, 
-			title, titlelen, 
-			rt, rtlen, 
-			handler);
+	_rmanager->add_resource(name, title, rt, handler);
 }
 
 // TODO : we need to restart all the application, 

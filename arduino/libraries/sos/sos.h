@@ -35,9 +35,7 @@ class Sos {
 		// and set _hlid to 0
 		void reset_master (void) ;	
 
-		void register_resource(char *name, int namelen,
-				char *title, int titlelen,
-				char *rt, int rtlen,
+		void register_resource(char *name, char *title, char *rt,
 				uint8_t (*handler)(Message &in, Message &out) );
 
 		void reset (void);

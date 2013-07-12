@@ -10,11 +10,8 @@
 typedef struct _rmanager_s {
 	uint8_t (*h)(Message &in, Message &out);
 	char *name;
-	int namelen;
 	char *title;
-	int titlelen;
 	char *rt;
-	int rtlen;
 	_rmanager_s *s;
 } rmanager_s;
 
@@ -25,9 +22,7 @@ public:
 	Rmanager();
 	~Rmanager();
 
-	void add_resource(char *name, int namelen,
-			char *title, int titlelen,
-			char *rt, int rtlen,
+	void add_resource(char *name, char *title, char *rt,
 			uint8_t (*handler)(Message &in, Message &out));
 	uint8_t request_resource(Message &in, Message &out);
 	void get_all_resources(Message &out);
