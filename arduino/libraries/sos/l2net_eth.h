@@ -1,6 +1,7 @@
 #ifndef L2NET_ETH_H
 #define L2NET_ETH_H
 
+#include "Arduino.h"
 #include "l2addr_eth.h"
 #include "l2net.h"
 #include "utility/w5100.h"

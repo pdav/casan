@@ -23,7 +23,7 @@ int light_sensor = A1;
 int led = A2;
 
 l2addr *mac_addr = new l2addr_eth("00:01:02:03:04:05");
-l2net_eth *e = new l2net_eth (mac_addr, MTU, SOS_ETH_TYPE);
+l2net *e ;
 Sos *sos;
 
 uint8_t process_light(Message &in, Message &out) 
@@ -90,6 +90,7 @@ void setup()
 	Serial.begin (9600) ;
 	Serial.println(F("start"));
 
+	e = new l2net_eth (mac_addr, MTU, SOS_ETH_TYPE);
 	sos = new Sos(e, 169);
 	sos->register_resource(PROCESS_1_name, sizeof PROCESS_1_name -1, 
 			PROCESS_1_title, sizeof PROCESS_1_title -1, 
