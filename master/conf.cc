@@ -79,11 +79,15 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	    {
 		case conf::NET_ETH :
 		    os << "ethernet " << n.net_eth.iface
-			    << " ethertype 0x"
+			<< " ethertype 0x"
 				<< std::hex << n.net_eth.ethertype << std::dec ;
 		    break ;
 		case conf::NET_802154 :
-		    os << "802.15.4" << n.net_eth.iface ;
+		    os << "802.15.4" << n.net_eth.iface
+			<< " type " << (n.net_802154.type == conf::NET_802154_XBEE ? "xbee" : "(none)")
+			<< " addr " << n.net_802154.addr
+			<< " panid " << n.net_802154.panid
+			;
 		    break ;
 		default :
 		    os << "(unrecognized network)\n" ;
@@ -132,7 +136,7 @@ static const char *syntax_help [] =
     "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
 
     "network ethernet <iface> [mtu <bytes>] [ethertype [0x]<val>]",
-    "network 802.15.4 <iface> [mtu <bytes>] ???",
+    "network 802.15.4 <iface> type <xbee> addr <addr> panid <id> [mtu <bytes>]",
 } ;
 
 bool conf::parse_file (void)
@@ -409,6 +413,9 @@ bool conf::parse_line (std::string &line)
 		else if (tokens [i] == "802.15.4")
 		{
 		    c.type = NET_802154 ;
+		    c.net_802154.type = NET_802154_NONE ;
+		    c.net_802154.addr = "" ;
+		    c.net_802154.panid = "" ;
 		    i++ ;
 
 		    if (i < asize)
@@ -427,6 +434,46 @@ bool conf::parse_line (std::string &line)
 				    break ;
 				}
 				else c.mtu = std::stoi (tokens [i+1]) ;
+			    }
+			    else if (tokens [i] == "type")
+			    {
+				if (c.net_802154.type != NET_802154_NONE)
+				{
+				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    r = false ;
+				    break ;
+				}
+				else
+				{
+				    if (tokens [i+1] == "xbee")
+					c.net_802154.type = NET_802154_XBEE ;
+				    else
+				    {
+					parse_error_unk_token (tokens [i+1], HELP_NET802154) ;
+					r = false ;
+					break ;
+				    }
+				}
+			    }
+			    else if (tokens [i] == "addr")
+			    {
+				if (c.net_802154.addr != "")
+				{
+				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    r = false ;
+				    break ;
+				}
+				else c.net_802154.addr = tokens [i+1] ;
+			    }
+			    else if (tokens [i] == "panid")
+			    {
+				if (c.net_802154.panid != "")
+				{
+				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    r = false ;
+				    break ;
+				}
+				else c.net_802154.panid = tokens [i+1] ;
 			    }
 			    else
 			    {
@@ -450,9 +497,6 @@ bool conf::parse_line (std::string &line)
 			    r = false ;
 			}
 		    }
-
-		    // XXX
-		    r = false ;
 		}
 		else
 		{

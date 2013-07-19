@@ -60,9 +60,13 @@ class conf
 	    std::string iface ;
 	    int ethertype = 0 ;
 	} ;
+	enum net_802154_type { NET_802154_NONE, NET_802154_XBEE } ;
 	struct cf_net_802154
 	{
 	    std::string iface ;
+	    net_802154_type type ;
+	    std::string addr ;	// short or long addr: ab:cd[:ef:ab:cd:ef:ab:cd]
+	    std::string panid ;		// in hex [ab:cd]
 	} ;
 	struct cf_network
 	{
