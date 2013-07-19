@@ -691,7 +691,7 @@ waiter *msg::wt (void)
 #define	SOS_NAMESPACE2		"sos"
 #define	SOS_HELLO		"hello=%ld"
 #define	SOS_SLAVE		"slave=%ld"
-#define	SOS_MTU			"mtu=%d"
+#define	SOS_MTU			"mtu=%ld"
 #define	SOS_ASSOC		"assoc=%ld"
 
 static struct
