@@ -118,12 +118,7 @@ bool l2addr_eth::operator!= (const l2addr &other)
     return ! (*this == other) ;
 }
 
-int l2net_eth::init (const char *iface)
-{
-    return init (iface, ETHTYPE_SOS) ;
-}
-
-int l2net_eth::init (const char *iface, int ethertype)
+int l2net_eth::init (const std::string iface, int ethertype)
 {
 #ifdef USE_PF_PACKET
     struct sockaddr_ll sll ;
@@ -134,7 +129,7 @@ int l2net_eth::init (const char *iface, int ethertype)
 
     /* Get interface index */
 
-    ifidx_ = if_nametoindex (iface) ;
+    ifidx_ = if_nametoindex (iface.c_str ()) ;
     if (ifidx_ == 0)
 	return -1 ;
 
@@ -162,7 +157,7 @@ int l2net_eth::init (const char *iface, int ethertype)
     struct bpf_program *bpfp ;
     char buf [MAXBUF] ;
 
-    fd_ = pcap_create (iface, errbuf_) ;
+    fd_ = pcap_create (iface.c_str (), errbuf_) ;
     if (fd_ == NULL)
 	return -1 ;
 

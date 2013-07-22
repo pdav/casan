@@ -52,8 +52,7 @@ class l2net_eth: public l2net
 {
     public:
 	~l2net_eth () {} ;
-	int init (const char *iface, int ethertype) ;
-	int init (const char *iface) ;
+	int init (const std::string iface, int ethertype) ;
 	void term (void) ;
 	int send (l2addr *daddr, void *data, int len) ;
 	int bsend (void *data, int len) ;

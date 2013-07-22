@@ -10,6 +10,7 @@
 #include "msg.h"
 #include "slave.h"
 #include "utils.h"
+#include "byte.h"
 
 namespace sos {
 
@@ -77,10 +78,6 @@ int msg::global_message_id = 1 ;
 				    f [(l)]=0 ;			\
 				} while (false)			// no ";"
 #define	OPTVAL(o)	((o).optval_ ? (o).optval_ : (o).staticval_)
-
-#define	BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
-#define	BYTE_LOW(n)	((n) & 0xff)
-#define	INT16(h,l)	((h) << 8 | (l))
 
 msg::msg ()
 {

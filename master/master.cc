@@ -19,6 +19,7 @@
 #include "conf.h"			// configuration file
 #include "l2.h"
 #include "l2eth.h"
+#include "l2802154.h"
 #include "waiter.h"
 #include "msg.h"
 #include "option.h"
@@ -80,7 +81,32 @@ bool master::start (conf &cf)
 		    }
 		    break ;
 		case conf::NET_802154 :
-		    std::cerr << "802.15.4 not supported\n" ;
+		    {
+			sos::l2net_802154 *l8 ;
+			const char *t ;
+
+			l8 = new sos::l2net_802154 ;
+
+			switch (n.net_802154.type)
+			{
+			    case conf::NET_802154_XBEE :
+				t = "xbee" ;
+				break ;
+			    default :
+				t = "(none)" ;
+				break ;
+			}
+
+			if (l8->init (n.net_802154.iface, t, n.net_802154.addr, n.net_802154.panid) == -1)
+			{
+			    perror ("init") ;
+			    delete l8 ;
+			    return 0 ;
+			}
+			l = l8 ;
+			engine_.start_net (l) ;
+			std::cout << "Interface " << n.net_802154.iface << " initialized\n" ;
+		    }
 		    break ;
 		default :
 		    std::cerr << "(unrecognized network)\n" ;

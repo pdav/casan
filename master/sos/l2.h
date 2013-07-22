@@ -26,7 +26,7 @@ class l2net
 {
     public:
 	virtual ~l2net () {} ;
-	// virtual int init (const char *iface) = 0 ;
+	// no init method here: it is defined in each derived class
 	virtual void term (void) = 0 ;
 	virtual int send (l2addr *daddr, void *data, int len) = 0 ;
 	virtual int bsend (void *data, int len) = 0 ;
