@@ -207,8 +207,10 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 	}
 
 	// enter API mode
+	sleep (1) ;
 	write (fd_, "ATAP1\r", 6) ;
 	sleep (1) ;
+	write (fd_, "ATCN\r", 5) ;
 	
 	n = 0 ;
     }
