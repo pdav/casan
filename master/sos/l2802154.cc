@@ -24,6 +24,7 @@
 #define	XBEE_START		0x7e
 #define	XBEE_TX_SHORT		0x01
 
+#define	XBEE_MIN_FRAME_SIZE	5		// start:1+len:2+api:1+cksum:1
 #define	XBEE_MAX_FRAME_SIZE	115		// RX 64bit addr, 100 bytes
 
 #define	PRINT_HEX_DIGIT(os,c)	do { char d = (c) & 0xf ; d =  d < 10 ? d + '0' : d - 10 + 'a' ; (os) << d ; } while (false)
@@ -187,13 +188,14 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 	    std::sprintf (buf, "ATMY%02x%02x\r",
 			a.addr_ [L2802154ADDRLEN-2],
 			a.addr_ [L2802154ADDRLEN-1]) ;
-	    std::cout << "J'écris " << buf << "\n" ;
 	    write (fd_, buf, strlen (buf)) ;
 	}
 	write (fd_, "ATAP1\r", 6) ;		// enter API mode
 	write (fd_, "ATCN\r", 5) ;		// quit AT command mode
 	
 	n = 0 ;
+
+	pbuffer_ = buffer_ ;
     }
 
     return n ;
@@ -283,8 +285,9 @@ bool l2net_802154::encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr
     std::memcpy (b, data, len) ;
     b += len ;
 
-    *b++ = compute_checksum (cmd, cmdlen) ;
+    *b++ = compute_checksum (cmd) ;
 
+#if 0
     std::cout << "PKT=" ;
     for (int i = 0 ; i < cmdlen ; i++)
     {
@@ -292,29 +295,24 @@ bool l2net_802154::encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr
 	    std::cout << ":" ;
 	std::cout << std::hex << (int) cmd [i] ;
     }
-    std::cout << "\n" ;
+    std::cout << "\n" << std::dec ;
+#endif
 
     return true ;
 }
 
-// buf = encoded frame, paylen = len of encoded frame (including checksum)
-int l2net_802154::compute_checksum (const byte *buf, int paylen)
+// buf = encoded frame
+int l2net_802154::compute_checksum (const byte *buf)
 {
     int c = 0 ;
+    int paylen ;
+
+    // length of whole API packet, from API start byte to checksum included
+    paylen = INT16 (buf [1], buf [2]) + 4 ;
 
     for (int i = 3 ; i < paylen - 1 ; i++)
 	c = (c + buf [i]) & 0xff ;
     return 0xff - c ;
-}
-
-// buf = encoded frame, paylen = len of encoded frame (including checksum)
-bool l2net_802154::valid_checksum (const byte *buf, int paylen)
-{
-    int c = 0 ;
-
-    for (int i = 3 ; i < paylen ; i++)
-	c = (c + buf [i]) & 0xff ;
-    return c == 0xFF ;
 }
 
 l2addr *l2net_802154::bcastaddr (void)
@@ -333,128 +331,205 @@ pktype_t l2net_802154::recv (l2addr **saddr, void *data, int *len)
     r = PK_NONE ;			// no packet received
     while (r == PK_NONE)
     {
-	std::list <sos::l2net_802154::frame>::iterator &pos ;
+	// try to find an already received packet (in the list)
+	r = extract_received_packet (saddr, data, len) ;
 
-	/*
-	 * Explore frame list to find a received packet
-	 */
-
-	for (auto &f : framelist_)
-	{
-	    if (f.type == sos::l2net_802154::RX_SHORT)
-	    {
-		// get source address and convert it to a l2addr_802154 object
-		char txtaddr [6] ;
-		std::snprintf (txtaddr, sizeof txtaddr, "%2x:%2x", 
-		    BYTE_HIGH (f.rx_short_.saddr), BYTE_LOW (f.rx_short_.saddr)) ;
-		*saddr = new l2addr_802154 (txtaddr) ;
-
-		// transfer data
-		if (*len >= f.rx_short_.len)
-		    *len = f.rx_short_.len ;
-		std::memcpy (data, f.rx_short_.data, *len) ;
-
-		// packet addressed to us?
-		if (f.rx_short_.options & sos::l2net_802154::RX_SHORT_OPT_BROADCAST)
-		    r = PK_BCAST ;
-		else r = PK_ME ;
-
-		// keep position to remove frame from list
-		pos = f ;
-		break ;
-	    }
-	}
 	if (r == PK_NONE)
 	{
-	    /*
-	     * No packet received: waits for a complete frame
-	     */
-	    
+	    // No packet received: waits for a complete frame in the buffer
+	    // and store it (them) in the list
 	    if (read_complete_frame () == -1)
 		break ;				// error
 	}
-	else
-	    framelist_.erase (pos) ;
     }
+
+    D ("Received packet (" << *len << " bytes)") ;
 
     return r ;
 }
 
+// Explore frame list to find (and remove) a received packet
+pktype_t l2net_802154::extract_received_packet (l2addr **saddr, void *data, int *len)
+{
+    pktype_t r = PK_NONE ;
+    std::list <sos::l2net_802154::frame>::iterator f ;
+
+    f = framelist_.begin () ;
+    while (r == PK_NONE && f != framelist_.end ())
+    {
+	if (f->type == sos::l2net_802154::RX_SHORT)
+	{
+	    // get source address and convert it to a l2addr_802154 object
+	    char txtaddr [6] ;
+	    std::snprintf (txtaddr, sizeof txtaddr, "%2x:%2x", 
+		BYTE_HIGH (f->rx_short_.saddr), BYTE_LOW (f->rx_short_.saddr)) ;
+	    *saddr = new l2addr_802154 (txtaddr) ;
+
+	    // transfer data
+	    if (*len >= f->rx_short_.len)
+		*len = f->rx_short_.len ;
+	    std::memcpy (data, f->rx_short_.data, *len) ;
+
+	    // packet addressed to us?
+	    if (f->rx_short_.options & sos::l2net_802154::RX_SHORT_OPT_BROADCAST)
+		r = PK_BCAST ;
+	    else r = PK_ME ;
+
+	    // remove frame from list
+	    // std::list <sos::l2net_802154::frame>::iterator tmp ;
+	    // tmp = f ;
+	    // tmp++ ;
+	    framelist_.erase (f) ;
+	    // f = tmp ;
+	}
+	else f++ ;
+    }
+    return r ;
+}
+
+// Buffer does not contain a complete valid frame. Read a complete frame
 int l2net_802154::read_complete_frame (void)
 {
-    int len ;
-	int n = -1 ;
-	
+    int n = -1 ;
+    bool found_at_least_one = false ;
+
     /*
      * We should never reach the end of this buffer
      */
 
-    while ((n = read (fd_, pbuffer_, BUFLEN - (pbuffer_ - buffer_))) > 0)
+    while (! found_at_least_one &&
+	(n = read (fd_, pbuffer_, BUFLEN - (pbuffer_ - buffer_))) > 0)
     {
-	int buflen ;
-	int i ;
 
 	pbuffer_ += n ;
-	buflen = pbuffer_ - buffer_ ;
-	i = 0 ;
-	while (i < buflen && buffer_ [i] != XBEE_START)
-	    i++ ;
-	if (i >= buflen)
+
+	// we may have read more than one frame:
+	// extract them all from the buffer to the list
+	while (l2net_802154::is_frame_complete ())
 	{
-	    pbuffer_ = buffer_ ;	// no valid start byte found
-	    buflen = 0 ;
+	    found_at_least_one = true ;
+	    l2net_802154::extract_frame_to_list () ;
 	}
-	else
-	{
-	    if (i > 0)
-	    {
-		std::memcpy (buffer_, buffer_ + i, buflen - i) ;
-		pbuffer_ -= i ;
-		buflen -= i ;
-	    }
-	}
-
-	/*
-	 * When we arrive here, either the buffer is empty
-	 * or the buffer starts with an API start byte (which may
-	 * also be a junk byte).
-	 */
-
-	
-	switch ( l2net_802154::frame_status () )
-	{
-	    case XBEE_INCOMPLETE : { }
-	    case XBEE_INVALID : { }
-	    case XBEE_VALID : { }
-	}
-
-
     }
 
     return n ;				// -1 <=> error
 }
 
-l2net_802154::xbee_frame_status l2net_802154::read_complete_frame (void)
+/*
+ * This function checks to see if the buffer contains a valid API packet.
+ * If no valid packet is found, skip junk bytes and re-analyze buffer.
+ * Return:
+ * - true: a valid frame has been found
+ * - false: the buffer still needs some bytes
+ */
+
+bool l2net_802154::is_frame_complete (void)
 {
-    int buflen ;
+    byte *start ;
+    bool complete = false ;
+    bool invalid = true ;
 
-    buflen = pbuffer_ - buffer_ ;
-    if (buffer_ [0] != XBEE_START)
-	return XBEE_INVALID ;
+    start = buffer_ ;			// current start of buffer
+    while (invalid)
+    {
+	int buflen ;
+	int framelen ;
+	int pktlen ;
+	int cksum ;
+	int i ;
 
-    if (buflen < 5)
-	return XBEE_INCOMPLETE ;
+	buflen = pbuffer_ - start ;
 
-    framelen = (buffer_ [1] << 8) | buffer_ [2] ;
-    if (framelen > XBEE_MAX_FRAME_SIZE)
-	return XBEE_INVALID ;
-	
-	//compute checksum
-	if(!valid_checksum (buffer, framelen + 1)) {
-		return XBEE_INVALID 
+	// discard junk bytes before API start delimiter (start-byte)
+	i = 0 ;
+	while (i < buflen && start [i] != XBEE_START)
+	    i++ ;
+	// here, i is the relative (to start) position of the start-byte
+	// or i >= buflen if not found
+
+	// has a start-byte been found?
+	if (i >= buflen)		// no
+	{
+	    pbuffer_ = buffer_ ;	// reset buffer to empty
+	    break ;			// still not complete
 	}
-	
-	return XBEE_VALID;
+
+	// align start byte at the buffer start
+	if (buffer_ != start + i)
+	{
+	    buflen -= i ;
+	    std::memcpy (buffer_, start + i, buflen) ;
+	    pbuffer_ = buffer_ + buflen ;
+	}
+
+	// do we have enough stuff to extract frame length?
+	if (buflen < XBEE_MIN_FRAME_SIZE)
+	    break ;			// still not complete
+
+	// does frame length seem realistic ?
+	framelen = (buffer_ [1] << 8) | buffer_ [2] ;
+	if (framelen > XBEE_MAX_FRAME_SIZE)
+	{
+	    // skip start-byte
+	    start = buffer_ + 1 ;
+	    continue ;
+	}
+	    
+	// is checksum already inside the buffer?
+	pktlen = framelen + 4 ;
+	if (pktlen > buflen)
+	    break ;			// still not complete
+
+	// compare checksum
+	cksum = compute_checksum (buffer_) ;
+	if (cksum != buffer_ [pktlen - 1])
+	{
+	    // skip start-byte
+	    start = buffer_ + 1 ;
+	    continue ;
+	}
+
+	// if we get there, a valid frame has been found
+	invalid = false ;
+	complete = true ;
+    }
+
+    return complete ;
+}
+
+void l2net_802154::extract_frame_to_list (void)
+{
+    int framelen ;
+    int pktlen ;
+    struct frame f ;
+    
+    framelen = (buffer_ [1] << 8) | buffer_ [2] ;
+    pktlen = framelen + 4 ;
+
+    f.type = (enum frame_type) buffer_ [3] ;
+    switch (buffer_ [3])
+    {
+	case l2net_802154::TX_STATUS :
+	    f.tx_status_.frame_id = buffer_ [4] ;
+	    f.tx_status_.status = buffer_ [5] ;
+	    break ;
+	case l2net_802154::RX_SHORT :
+	    f.rx_short_.saddr = (buffer_ [4] << 8) | buffer_ [5] ;
+	    f.rx_short_.len = framelen - 5 ;
+	    std::memcpy (f.rx_short_.data, buffer_ + 8, f.rx_short_.len) ;
+	    f.rx_short_.rssi = buffer_ [6] ;
+	    f.rx_short_.options = buffer_ [7] ;
+	    break ;
+	default :
+	    std::cerr << "PKT API " << (int) buffer_ [3] << " unrecognized\n" ;
+	    break ;
+    }
+    framelist_.push_back (f) ;
+
+    // remove extracted packet from buffer
+    pbuffer_ -=  pktlen ;
+    if (pbuffer_ - buffer_ > 0)		// buffer still contains more bytes
+	std::memcpy (buffer_, buffer_ + pktlen, pbuffer_ - buffer_) ;
 }
 
 }					// end of namespace sos

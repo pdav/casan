@@ -95,18 +95,11 @@ class l2net_802154: public l2net
 	std::list <frame> framelist_ ;
 
 	bool encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr, byte *data, int len) ;
-	int compute_checksum (const byte *buf, int paylen) ;
-	bool valid_checksum(const byte*, int) ;
+	int compute_checksum (const byte *buf) ;
+	pktype_t extract_received_packet (l2addr **saddr, void *data, int *len) ;
 	int read_complete_frame (void) ;
-	xbee_frame_status read_complete_frame (void) ;
-
-	enum xbee_frame_status
-	{
-	    XBEE_INCOMPLETE,
-	    XBEE_INVALID,
-	    XBEE_VALID
-	} ;
-	xbee_frame_status frame_status (void) ;
+	bool is_frame_complete (void) ;
+	void extract_frame_to_list (void) ;
 } ;
 
 }					// end of namespace sos

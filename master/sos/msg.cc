@@ -505,7 +505,7 @@ l2addr *msg::recv (l2net *l2)
 	 * Packet reception failed, not addressed to me, or not a SOS packet
 	 */
 
-	delete [] a ;			// remove address created by l2->recv ()
+	delete a ;			// remove address created by l2->recv ()
 	a = 0 ;
     }
 

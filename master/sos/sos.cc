@@ -632,8 +632,6 @@ void sos::receiver_thread (receiver *r)
 	m = new msg ;
 	a = m->recv (r->l2) ;
 
-	D ("Received a message from " << *a) ;
-
 	/*
 	 * Invalid message received
 	 */
@@ -641,6 +639,7 @@ void sos::receiver_thread (receiver *r)
 	if (a == nullptr)
 	    continue ;
 
+	D ("Received a message from " << *a) ;
 	m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
 
 	/*
