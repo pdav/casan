@@ -50,25 +50,14 @@ int main (int argc, char *argv [])
     // from now on, use only generic l2net interface
     l = le ;
 
-    sa = new sos::l2addr_802154 (DADDR) ;
-    // sa = new sos::l2addr_802154 ("ff:ff:ff:ff:ff:ff:ff:ff") ;
-    l->send (sa, (void *) "TEST SOS", 8) ;
-
-    sos::l2addr *x ;
-    int len ;
-    l->recv (&x, buf, &len) ;
-
-#if 0
     // register new slave
     sa = new sos::l2addr_802154 (DADDR) ;
     s.addr (sa) ;
     s.l2 (l) ;
 
     // pseudo-slave for broadcast address
-    sb.addr (&sos::l2addr__broadcast) ;
+    sb.addr (&sos::l2addr_802154_broadcast) ;
     sb.l2 (l) ;
-
-    std::cout << IFACE << " initialized for " << ADDR << "\n" ;
 
     // sleep (1) ;
 
@@ -105,5 +94,4 @@ int main (int argc, char *argv [])
 
     delete sa ;
     delete l ;
-#endif
 }
