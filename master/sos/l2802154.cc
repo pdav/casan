@@ -24,6 +24,8 @@
 #define	XBEE_START		0x7e
 #define	XBEE_TX_SHORT		0x01
 
+#define	XBEE_MAX_FRAME_SIZE	115		// RX 64bit addr, 100 bytes
+
 #define	PRINT_HEX_DIGIT(os,c)	do { char d = (c) & 0xf ; d =  d < 10 ? d + '0' : d - 10 + 'a' ; (os) << d ; } while (false)
 
 namespace sos {
@@ -187,30 +189,9 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 			a.addr_ [L2802154ADDRLEN-1]) ;
 	    std::cout << "J'écris " << buf << "\n" ;
 	    write (fd_, buf, strlen (buf)) ;
-	    write (fd_, "ATMY\r", 5) ;
-#if 0
-	    sleep (1) ;
-	    write (fd_, "ATDLcafe\r", 9) ;
-	    sleep (1) ;
-	    // write (fd_, "ATDH0\r", 5) ;
-	    sleep (1) ;
-	    write (fd_, "ATMY\r", 5) ;
-	    sleep (1) ;
-	    write (fd_, "ATDH\r", 5) ;
-	    sleep (1) ;
-	    write (fd_, "ATDL\r", 10) ;
-	    sleep (1) ;
-	    write (fd_, "ATCN\r", 5) ;
-	    sleep (1) ;
-	    write (fd_, "tagada\r", 7) ;
-#endif
 	}
-
-	// enter API mode
-	sleep (1) ;
-	write (fd_, "ATAP1\r", 6) ;
-	sleep (1) ;
-	write (fd_, "ATCN\r", 5) ;
+	write (fd_, "ATAP1\r", 6) ;		// enter API mode
+	write (fd_, "ATCN\r", 5) ;		// quit AT command mode
 	
 	n = 0 ;
     }
@@ -222,6 +203,10 @@ void l2net_802154::term (void)
 {
     close (fd_) ;
 }
+
+/******************************************************************************
+ * Send data
+ */
 
 int l2net_802154::send (l2addr *daddr, void *data, int len)
 {
@@ -235,10 +220,35 @@ int l2net_802154::send (l2addr *daddr, void *data, int len)
 	int cmdlen ;
 
 	cmdlen = sizeof cmd ;
-for (int i = 0 ; i < 5 ; i++) {
 	if (encode_transmit (cmd, cmdlen, da, (byte *) data, len))
-	    n = write (fd_, cmd, cmdlen) ;
-}
+	{
+	    byte *pcmd ;
+
+	    /*
+	     * Send encoded command, may be in multiple chunks
+	     * since write() may return a value < cmdlen
+	     */
+
+	    n = 0 ;
+	    pcmd = cmd ;
+	    while (cmdlen > 0)
+	    {
+		int r ;
+
+		r = write (fd_, pcmd, cmdlen) ;
+		if (r == -1)
+		{
+		    n = -1 ;
+		    break ;
+		}
+		else
+		{
+		    cmdlen -= r ;
+		    pcmd += r ;
+		    n += r ;
+		}
+	    }
+	}
     }
     return n ;
 }
@@ -302,57 +312,130 @@ l2addr *l2net_802154::bcastaddr (void)
     return &l2addr_802154_broadcast ;
 }
 
+/******************************************************************************
+ * Receive data
+ */
+
 pktype_t l2net_802154::recv (l2addr **saddr, void *data, int *len)
 {
-    byte buf [MAXBUF] ;
-    char buf2 [MAXBUF] ;
-    int n ;
+    pktype_t r ;
 
-    while ((n = read (fd_, buf, sizeof buf)) != -1)
+    r = PK_NONE ;			// no packet received
+    while (r == PK_NONE)
     {
-	char linehex [MAXBUF], *phex, lineascii [MAXBUF], *pascii ;
+	std::list <sos::l2net_802154::frame>::iterator &pos ;
+
+	/*
+	 * Explore frame list to find a received packet
+	 */
+
+	for (auto &f : framelist_)
+	{
+	    if (f.type == sos::l2net_802154::RX_SHORT)
+	    {
+		// get source address and convert it to a l2addr_802154 object
+		char txtaddr [6] ;
+		std::snprintf (txtaddr, sizeof txtaddr, "%2x:%2x", 
+		    BYTE_HIGH (f.rx_short_.saddr), BYTE_LOW (f.rx_short_.saddr)) ;
+		*saddr = new l2addr_802154 (txtaddr) ;
+
+		// transfer data
+		if (*len >= f.rx_short_.len)
+		    *len = f.rx_short_.len ;
+		std::memcpy (data, f.rx_short_.data, *len) ;
+
+		// packet addressed to us?
+		if (f.rx_short_.options & sos::l2net_802154::RX_SHORT_OPT_BROADCAST)
+		    r = PK_BCAST ;
+		else r = PK_ME ;
+
+		// keep position to remove frame from list
+		pos = f ;
+		break ;
+	    }
+	}
+	if (r == PK_NONE)
+	{
+	    /*
+	     * No packet received: waits for a complete frame
+	     */
+	    
+	    if (read_complete_frame () == -1)
+		break ;				// error
+	}
+	else
+	    framelist_.erase (pos) ;
+    }
+
+    return r ;
+}
+
+int l2net_802154::read_complete_frame (void)
+{
+    int len ;
+
+    /*
+     * We should never reach the end of this buffer
+     */
+
+    while ((n = read (fd_, pbuffer_, BUFLEN - (pbuffer_ - buffer_))) > 0)
+    {
+	int buflen ;
 	int i ;
 
-	phex = linehex ;
-	pascii = lineascii ;
-	for (i = 0 ; i < n ; i++)
+	pbuffer_ += n ;
+	buflen = pbuffer_ - buffer_ ;
+	i = 0 ;
+	while (i < buflen && buffer_ [i] != XBEE_START)
+	    i++ ;
+	if (i >= buflen)
 	{
-	    int c ;
-
-	    if (i % 16 == 0 && (phex != linehex))
-	    {
-		*phex = '\0' ;
-		*pascii = '\0' ;
-		std::sprintf (buf2, "%05d %-52.52s  %-20.20s", i-16, linehex, lineascii) ;
-		std::cout << buf2 << "\n" ;
-		phex = linehex ;
-		pascii = lineascii ;
-	    }
-
-	    if (i % 16 != 0 && i % 4 == 0)
-	    {
-		*phex++ = ' ' ;
-		*pascii++ = ' ' ;
-	    }
-
-	    c = (buf [i] & 0xf0) >> 4 ;
-	    *phex++ = (c > 9) ? (c-10) + 'a' : c + '0' ;
-	    c = (buf [i] & 0x0f) ;
-	    *phex++ = (c > 9) ? (c-10) + 'a' : c + '0' ;
-	    *phex++ = ' ' ;
-
-	    if (isascii (buf [i]) && isgraph (buf [i]))
-		*pascii++ = buf [i] ;
-	    else *pascii++ = '.' ;
+	    pbuffer_ = buffer_ ;	// no valid start byte found
+	    buflen = 0 ;
 	}
-	if (i % 16 != 0)
+	else
 	{
-	    *phex = '\0' ;
-	    *pascii = '\0' ;
-	    std::sprintf (buf2, "%05d %-52.52s  %-20.20s", (i / 16) * 16, linehex, lineascii) ;
-	    std::cout << buf2 << "\n" ;
+	    if (i > 0)
+	    {
+		std::memcpy (buffer_, buffer_ + i, buflen - i) ;
+		pbuffer_ -= i ;
+		buflen -= i ;
+	    }
 	}
+
+	/*
+	 * When we arrive here, either the buffer is empty
+	 * or the buffer starts with an API start byte (which may
+	 * also be a junk byte).
+	 */
+
+	switch l2net_802154::frame_status ()
+	{
+	    XBEE_INCOMPLETE :
+	    XBEE_INVALID :
+	    XBEE_VALID :
+	}
+
+
     }
+
+    return n ;				// -1 <=> error
+}
+
+l2net_802154::xbee_frame_status l2net_802154::read_complete_frame (void)
+{
+    int buflen ;
+
+    buflen = pbuffer_ - buffer_ ;
+    if (buffer_ [0] != XBEE_START)
+	return XBEE_INVALID ;
+
+    if (buflen < 5)
+	return XBEE_INCOMPLETE ;
+
+    framelen = (buffer_ [1] << 8) | buffer_ [2] ;
+    if (framelen > XBEE_MAX_FRAME_SIZE)
+	return XBEE_INVALID ;
 }
 
 }					// end of namespace sos
