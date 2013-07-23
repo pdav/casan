@@ -2,6 +2,7 @@
 #define	SOS_L2802154_H
 
 #include "l2.h"
+#include <list>
 
 // Ethernet address length
 #define	L2802154ADDRLEN	8
@@ -73,7 +74,7 @@ class l2net_802154: public l2net
 	    int frame_id ;
 	    int status ;
 	} ;
-	const RX_SHORT_OPT_BROADCAST = 0x02 ;
+	const int RX_SHORT_OPT_BROADCAST = 0x02 ;
 	struct rx_short
 	{
 	    int saddr ;			// source address
@@ -95,7 +96,9 @@ class l2net_802154: public l2net
 
 	bool encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr, byte *data, int len) ;
 	int compute_checksum (const byte *buf, int paylen) ;
+	bool valid_checksum(const byte*, int) ;
 	int read_complete_frame (void) ;
+	xbee_frame_status read_complete_frame (void) ;
 
 	enum xbee_frame_status
 	{

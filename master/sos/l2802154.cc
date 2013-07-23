@@ -307,6 +307,16 @@ int l2net_802154::compute_checksum (const byte *buf, int paylen)
     return 0xff - c ;
 }
 
+// buf = encoded frame, paylen = len of encoded frame (including checksum)
+bool l2net_802154::valid_checksum (const byte *buf, int paylen)
+{
+    int c = 0 ;
+
+    for (int i = 3 ; i < paylen ; i++)
+	c = (c + buf [i]) & 0xff ;
+    return c == 0xFF ;
+}
+
 l2addr *l2net_802154::bcastaddr (void)
 {
     return &l2addr_802154_broadcast ;
@@ -373,7 +383,8 @@ pktype_t l2net_802154::recv (l2addr **saddr, void *data, int *len)
 int l2net_802154::read_complete_frame (void)
 {
     int len ;
-
+	int n = -1 ;
+	
     /*
      * We should never reach the end of this buffer
      */
@@ -409,11 +420,12 @@ int l2net_802154::read_complete_frame (void)
 	 * also be a junk byte).
 	 */
 
-	switch l2net_802154::frame_status ()
+	
+	switch ( l2net_802154::frame_status () )
 	{
-	    XBEE_INCOMPLETE :
-	    XBEE_INVALID :
-	    XBEE_VALID :
+	    case XBEE_INCOMPLETE : { }
+	    case XBEE_INVALID : { }
+	    case XBEE_VALID : { }
 	}
 
 
@@ -436,6 +448,13 @@ l2net_802154::xbee_frame_status l2net_802154::read_complete_frame (void)
     framelen = (buffer_ [1] << 8) | buffer_ [2] ;
     if (framelen > XBEE_MAX_FRAME_SIZE)
 	return XBEE_INVALID ;
+	
+	//compute checksum
+	if(!valid_checksum (buffer, framelen + 1)) {
+		return XBEE_INVALID 
+	}
+	
+	return XBEE_VALID;
 }
 
 }					// end of namespace sos
