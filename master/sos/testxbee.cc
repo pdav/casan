@@ -16,14 +16,15 @@
 
 #define IFACE		"ttyUSB0"
 // #define ADDR		"90:a2:da:80:0a:d4"		// arduino
-#define SADDR		"12:34"
+#define SADDR		"ca:fe"
 #define	PANID		"56:78"
-#define DADDR		"ca:fe"
+#define DADDR		"12:34"
 
 #define	PATH_1		".well-known"
 #define	PATH_2		"sos"
 
 #define	SLAVE169	"slave=169"
+#define	MTU		"mtu=100"
 
 int main (int argc, char *argv [])
 {
@@ -77,6 +78,8 @@ int main (int argc, char *argv [])
     m1.pushoption (uri_path2) ;
     sos::option os (sos::option::MO_Uri_Query, (void *) SLAVE169, sizeof SLAVE169 - 1) ;
     m1.pushoption (os) ;
+    sos::option os2 (sos::option::MO_Uri_Query, (void *) MTU, sizeof MTU - 1) ;
+    m1.pushoption (os2) ;
     m1.send () ;
 
     sleep (2) ;
