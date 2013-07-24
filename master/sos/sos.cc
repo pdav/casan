@@ -659,7 +659,7 @@ void sos::receiver_thread (receiver *r)
 
 	if (! find_peer (m, a, *r))
 	{
-	    D("Sender " << *a << " not found in authorized peers") ;
+	    D("Sender not found in authorized peers") ;
 	    continue ;
 	}
 
