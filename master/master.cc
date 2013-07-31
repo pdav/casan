@@ -525,6 +525,18 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	    }
 	}
 
+	// get announced mtu
+	r->option_reset_iterator () ;
+	while ((o = r->option_next ()) != nullptr)
+	{
+	    if (o->optcode () == sos::option::MO_Size1)
+	    {
+		res.slave_->mtu ( o->optval () ) ;
+		break ;
+	    }
+	}
+
+
 	rep.status = http::server2::reply::ok ;
 
 	rep.headers.resize (2) ;
