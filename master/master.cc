@@ -486,6 +486,14 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
     res.res_->add_to_message (*m) ;	// add resource path as msg options
     m->wt (&w) ;
 
+
+    //return bad_request if request is too large for slave mtu
+    //TODO: find request length!
+    if (m->paylen () > res.slave_->mtu ()) {
+	rep = http::server2::reply::stock_reply (http::server2::reply::bad_request) ;
+	return ;
+    }
+
     max = EXCHANGE_LIFETIME (res.slave_->l2 ()->maxlatency()) ;
     timeout = DATE_TIMEOUT_MS (max) ;
     D ("HTTP request, timeout = " << max << " ms") ;

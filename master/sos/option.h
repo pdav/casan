@@ -26,6 +26,7 @@ class option
 			MO_Accept		= 16,
 			MO_If_None_Match	= 5,
 			MO_If_Match		= 1,
+			MO_Size1		= 60,
 		    } optcode_t ;
 	typedef unsigned long int uint ;
 

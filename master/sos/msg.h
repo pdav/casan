@@ -66,6 +66,8 @@ class msg
 	option popoption (void) ;
 	msg *reqrep (void) ;
 	waiter *wt (void) ;
+	int msglen (void) ;
+	int paylen (void) ;
 
 	void option_reset_iterator (void) ;
 	option *option_next (void) ;
