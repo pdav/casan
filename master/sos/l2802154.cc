@@ -168,7 +168,7 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 	tm.c_oflag = 0 ;
 	tm.c_cflag = CS8 | CREAD | B9600 ;
 	tm.c_lflag = 0 ;
-	for (int i = i ; i < NTAB (tm.c_cc) ; i++)
+	for (int i = 0 ; i < NTAB (tm.c_cc) ; i++)
 	    tm.c_cc [i] = _POSIX_VDISABLE ;
 	if (tcsetattr (fd_, TCSANOW, &tm) == -1)
 	{
