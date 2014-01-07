@@ -15,6 +15,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <list>
 #include <boost/lexical_cast.hpp>
 #include "http/mime_types.hpp"
 #include "http/reply.hpp"
