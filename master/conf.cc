@@ -87,6 +87,7 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 			<< " type " << (n.net_802154.type == conf::NET_802154_XBEE ? "xbee" : "(none)")
 			<< " addr " << n.net_802154.addr
 			<< " panid " << n.net_802154.panid
+			<< " channel " << n.net_802154.channel
 			;
 		    break ;
 		default :
@@ -136,7 +137,7 @@ static const char *syntax_help [] =
     "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
 
     "network ethernet <iface> [mtu <bytes>] [ethertype [0x]<val>]",
-    "network 802.15.4 <iface> type <xbee> addr <addr> panid <id> [mtu <bytes>]",
+    "network 802.15.4 <iface> type <xbee> addr <addr> panid <id> [channel <chan>] [mtu <bytes>]",
 } ;
 
 bool conf::parse_file (void)
@@ -416,6 +417,7 @@ bool conf::parse_line (std::string &line)
 		    c.net_802154.type = NET_802154_NONE ;
 		    c.net_802154.addr = "" ;
 		    c.net_802154.panid = "" ;
+		    c.net_802154.channel = 0 ;
 		    i++ ;
 
 		    if (i < asize)
@@ -474,6 +476,16 @@ bool conf::parse_line (std::string &line)
 				    break ;
 				}
 				else c.net_802154.panid = tokens [i+1] ;
+			    }
+			    else if (tokens [i] == "channel")
+			    {
+				if (c.net_802154.channel != 0)
+				{
+				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    r = false ;
+				    break ;
+				}
+				else c.net_802154.channel = std::stoi (tokens [i+1]) ;
 			    }
 			    else
 			    {
@@ -600,8 +612,12 @@ bool conf::parse_line (std::string &line)
 	    s.ttl = timers [I_SLAVE_TTL] ;
 
     for (auto &n : netlist_)
+    {
 	if (n.type == NET_ETH && n.net_eth.ethertype == 0)
 	    n.net_eth.ethertype = ETHTYPE_SOS ;
+	if (n.type == NET_802154 && n.net_802154.channel == 0)
+	    n.net_802154.channel = DEFAULT_802154_CHANNEL ;
+    }
 
     if (r)
 	done_ = true ;

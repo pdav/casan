@@ -133,11 +133,12 @@ bool l2addr_802154::operator!= (const l2addr &other)
     return ! (*this == other) ;
 }
 
-int l2net_802154::init (const std::string iface, const char *type, const std::string myaddr, const std::string panid)
+int l2net_802154::init (const std::string iface, const char *type, const std::string myaddr, const std::string panid, const int channel)
 {
     std::string dev ;
     int n = -1 ;			// default: init fails
     l2addr_802154 a (myaddr.c_str ()) ;
+    l2addr_802154 pan (panid.c_str ()) ;	// same format as addr
 
     /* Various initializations */
     mtu_ = L2802154MTU ;
@@ -152,6 +153,9 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
     if (strcmp (type, "xbee") == 0)
     {
 	struct termios tm ;
+
+	if (channel < 11 || channel > 26)
+	    return -1 ;
 
 	/* Open device */
 	fd_ = open (dev.c_str (), O_RDWR) ;
@@ -185,10 +189,25 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 	// initialize short addresses, my address, panid
 	{
 	    char buf [MAXBUF] ;
+
+	    // my short address
 	    std::sprintf (buf, "ATMY%02x%02x\r",
 			a.addr_ [L2802154ADDRLEN-2],
 			a.addr_ [L2802154ADDRLEN-1]) ;
 	    write (fd_, buf, strlen (buf)) ;
+
+	    // pan id
+	    std::sprintf (buf, "ATID%02x%02x\r",
+			pan.addr_ [L2802154ADDRLEN-2],
+			pan.addr_ [L2802154ADDRLEN-1]) ;
+	    write (fd_, buf, strlen (buf)) ;
+
+	    // channel
+	    std::sprintf (buf, "ATCH%02x\r", channel) ;
+	    write (fd_, buf, strlen (buf)) ;
+
+	    // 802.15.4 with ACKs
+	    write (fd_, "ATMM2\r", 6) ;
 	}
 	write (fd_, "ATAP1\r", 6) ;		// enter API mode
 	write (fd_, "ATCN\r", 5) ;		// quit AT command mode

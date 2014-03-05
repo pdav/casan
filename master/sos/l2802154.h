@@ -41,7 +41,7 @@ class l2net_802154: public l2net
     public:
 	~l2net_802154 () {} ;
 	// type = xbee
-	int init (const std::string iface, const char *type, const std::string myaddr, const std::string panid) ;
+	int init (const std::string iface, const char *type, const std::string myaddr, const std::string panid, const int channel) ;
 	void term (void) ;
 	int send (l2addr *daddr, void *data, int len) ;
 	int bsend (void *data, int len) ;

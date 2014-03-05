@@ -67,6 +67,7 @@ class conf
 	    net_802154_type type ;
 	    std::string addr ;	// short or long addr: ab:cd[:ef:ab:cd:ef:ab:cd]
 	    std::string panid ;		// in hex [ab:cd]
+	    int channel ;
 	} ;
 	struct cf_network
 	{
@@ -106,6 +107,7 @@ class conf
 	const char *DEFAULT_HTTP_PORT		= "http" ;
 	const char *DEFAULT_HTTP_LISTEN		= "*" ;
 	const int DEFAULT_HTTP_THREADS		= 5 ;
+	const int DEFAULT_802154_CHANNEL 	= 12 ;
 } ;
 
 #endif

@@ -97,7 +97,7 @@ bool master::start (conf &cf)
 				break ;
 			}
 
-			if (l8->init (n.net_802154.iface, t, n.net_802154.addr, n.net_802154.panid) == -1)
+			if (l8->init (n.net_802154.iface, t, n.net_802154.addr, n.net_802154.panid, n.net_802154.channel) == -1)
 			{
 			    perror ("init") ;
 			    delete l8 ;

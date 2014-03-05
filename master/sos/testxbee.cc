@@ -19,6 +19,7 @@
 #define SADDR		"ca:fe"
 #define	PANID		"56:78"
 #define DADDR		"12:34"
+#define	CHANNEL		25
 
 #define	PATH_1		".well-known"
 #define	PATH_2		"sos"
@@ -41,13 +42,14 @@ int main (int argc, char *argv [])
 
     // start new interface
     le = new sos::l2net_802154 ;
-    if (le->init (iface, "xbee", myaddr, panid) == -1)
+    if (le->init (iface, "xbee", myaddr, panid, CHANNEL) == -1)
     {
 	perror ("init") ;
 	exit (1) ;
     }
 
-    std::cout << IFACE << " initialized for " << myaddr << "\n" ;
+    std::cout << IFACE << " initialized for " << myaddr << "/" << PANID
+			<< " on channel " << CHANNEL << "\n" ;
     // from now on, use only generic l2net interface
     l = le ;
 

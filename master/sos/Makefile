@@ -23,6 +23,9 @@ testarduino: testarduino.o $(LIBS)
 testxbee: testxbee.o $(LIBS)
 	c++ $(CXXFLAGS) -o testxbee testxbee.o $(LDFLAGS)
 
+test154: test154.o $(LIBS)
+	c++ $(CXXFLAGS) -o test154 test154.o $(LDFLAGS)
+
 *.o: $(HDRS)
 
 clean:
