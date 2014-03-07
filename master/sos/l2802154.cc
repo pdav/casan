@@ -190,16 +190,16 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 	{
 	    char buf [MAXBUF] ;
 
-	    // my short address
+	    // my short address : lowest significant byte first
 	    std::sprintf (buf, "ATMY%02x%02x\r",
-			a.addr_ [L2802154ADDRLEN-2],
-			a.addr_ [L2802154ADDRLEN-1]) ;
+			a.addr_ [L2802154ADDRLEN-1],
+			a.addr_ [L2802154ADDRLEN-2]) ;
 	    write (fd_, buf, strlen (buf)) ;
 
-	    // pan id
+	    // pan id : lowest significant byte first
 	    std::sprintf (buf, "ATID%02x%02x\r",
-			pan.addr_ [L2802154ADDRLEN-2],
-			pan.addr_ [L2802154ADDRLEN-1]) ;
+			pan.addr_ [L2802154ADDRLEN-1],
+			pan.addr_ [L2802154ADDRLEN-2]) ;
 	    write (fd_, buf, strlen (buf)) ;
 
 	    // channel
