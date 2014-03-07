@@ -298,8 +298,8 @@ bool l2net_802154::encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr
     *b++ = XBEE_TX_SHORT ;
     // *b++ = 0 ;				// frame id
     *b++ = 0x41 ;				// frame id
+    *b++ = daddr->addr_ [L2802154ADDRLEN-1] ;	// lowest significant byte first
     *b++ = daddr->addr_ [L2802154ADDRLEN-2] ;
-    *b++ = daddr->addr_ [L2802154ADDRLEN-1] ;
     *b++ = 0 ;				// options
     std::memcpy (b, data, len) ;
     b += len ;
