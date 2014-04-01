@@ -21,7 +21,7 @@ DESTDIR=.
 #
 
 # IMPORT="ln -s"
-IMPORT="cp"
+IMPORT="cp -R"
 
 
 #
