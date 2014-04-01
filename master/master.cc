@@ -531,7 +531,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	{
 	    if (o->optcode () == sos::option::MO_Size1)
 	    {
-		res.slave_->mtu ( o->optval () ) ;
+		res.slave_->mtu (o->optval ()) ;
 		break ;
 	    }
 	}
