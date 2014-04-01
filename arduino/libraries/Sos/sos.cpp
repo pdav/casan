@@ -317,7 +317,6 @@ void Sos::loop()
 			while(  _status == SL_RUNNING &&
 					(ret = _coap->recv(in)) != L2_RECV_EMPTY)
 			{
-
 				if(ret == L2_RECV_RECV_OK) 
 				{
 					_retransmition_handler->check_msg_received(in); 
@@ -358,6 +357,18 @@ void Sos::loop()
 							_coap->send(*_master_addr, out);
 						}
 					}
+				}
+				else if(ret == L2_RECV_TRUNCATED) {
+					Serial.println(F("\033[36mRequest too large\033[00m"));
+					out.set_type(COAP_TYPE_ACK);
+					out.set_id(in.get_id());
+					out.set_token(in.get_token_length(), in.get_token());
+					option o ;
+					o.optcode (option::MO_Size1) ;
+					o.optval (_l2->mtu ()) ;
+					out.push_option (o) ;
+					out.set_code(COAP_RETURN_CODE(4,13));
+					_coap->send(*_master_addr, out);
 				}
 
 			}

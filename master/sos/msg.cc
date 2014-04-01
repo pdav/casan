@@ -636,6 +636,16 @@ int msg::code (void)
     return code_ ;
 }
 
+int msg::msglen (void)
+{
+    return msglen_ ;
+}
+
+int msg::paylen (void)
+{
+    return paylen_ ;
+}
+
 void *msg::payload (int *paylen)
 {
     *paylen = paylen_ ;
