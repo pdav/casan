@@ -1,21 +1,21 @@
-#NO_CORE = a
-ARDUINO_DIR   = /usr/share/arduino
-ARDMK_DIR     = /usr
-AVR_TOOLS_DIR = /usr
+ARDMK_DIR		= $(realpath ../../mk)
+ARDUINO_DIR		= /usr/share/arduino
+AVR_TOOLS_DIR		= /usr
 
-TARGET			= sos
-#MCU			= atmega168
-MCU				= atmega328p
-#F_CPU			= 16000000
-F_CPU			= 16000000L
-#ARDUINO_PORT	= /dev/ttyUSB*
-#ARDUINO_PORT	= /dev/ttyACM0
-ARDUINO_PORT	= /dev/ttyACM3
-UPLOAD_RATE		= 9600
+TARGET			= .
+BOARD_TAG		= uno
 
-ARDUINO_LIBS	= sos sos/utility SPI
+# ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 
-include /usr/share/arduino/Arduino.mk
+MONITOR_PORT		= /dev/ttyACM3
 
-test : all upload
-	screen -s 9600 $(ARDUINO_PORT)
+USER_LIB_PATH		= $(realpath ../../libraries)
+ARDUINO_LIBS		= Sos SPI
+
+include $(ARDMK_DIR)/Arduino.mk
+
+CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ 
+
+test : all upload monitor
+
+retest: reset monitor
