@@ -47,6 +47,10 @@ C='
     trx_datarate.c
 '
 
+LICENSE='
+    LICENSE
+'
+
 #
 # First, build doc (may be useful) and generate appropriate header files
 #
@@ -90,3 +94,8 @@ do
 done
 
 echo "#define zigduino 1" > $DESTDIR/config.h
+
+for i in $LICENSE
+do
+    $IMPORT $URACOLIDIR/$i $DESTDIR/$i.uracoli
+done

@@ -1,0 +1,1 @@
+#define zigduino 1
