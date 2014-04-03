@@ -6,12 +6,9 @@
  */
 
 // number of elements in an array
-#define NTAB(t)		(sizeof (t)/sizeof (t)[0])
+#define NTAB(t)		((int) (sizeof (t)/sizeof (t)[0]))
 
 // http://stackoverflow.com/questions/3366812/linux-raw-ethernet-socket-bind-to-specific-protocol
-
-// Ethernet address length
-#define	ETHADDRLEN	6
 
 // Ethernet default MTU
 #define	ETHMTU		1536
@@ -60,13 +57,15 @@
 
 #define	BYTE_LOW(n)		((n) & 0xff)
 #define	BYTE_HIGH(n)	(((n) & 0xff00) >> 8)
-#define FORMAT_BYTE0(ver,type,toklen)               \                                                                                                                                                                                      
-	(												\
-		 (((unsigned int) (ver) & 0x3) << 6) |		\                                   
-		 (((unsigned int) (type) & 0x3) << 4) |		\                                   
-		 (((unsigned int) (toklen) & 0x7))			\                                       
+#define FORMAT_BYTE0(ver,type,toklen)   			\
+	(							\
+		 (((unsigned int) (ver) & 0x3) << 6) |		\
+		 (((unsigned int) (type) & 0x3) << 4) |		\
+		 (((unsigned int) (toklen) & 0x7))		\
 	)                                                                           
 
 #define	OPTVAL(o)	((o)->optval_ ? (o)->optval_ : (o)->staticval_)
+
+typedef unsigned char byte ;
 
 #endif

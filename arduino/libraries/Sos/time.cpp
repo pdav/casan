@@ -1,120 +1,73 @@
 #include "time.h"
 
+#define	TIME_HIGH(t)		((uint32_t) (((t) >> 32) & 0xffffffff))
+#define	TIME_LOW(t)		((uint32_t) (((t)      ) & 0xffffffff))
+#define	MK_TIME(n,ms)		((((uint64_t) (n)) << 32) | ms)
+
 time current_time ;
 
-time::time()
+time::time ()
 {
-	_millis = millis();
-	_restart = 0;
+    time_ = 0 ;
 }
 
-time::time(time &t)
+time::time (time &t)
 {
-	_millis = t._millis;
-	_restart = t._restart;
+    time_ = t.time_ ;
 }
 
-time::~time()
+time::~time ()
 {
 }
 
-bool time::operator<(time &t)
+bool time::operator< (time &t)
 {
-	return _restart < t._restart || 
-		_restart == t._restart && 
-		_millis < t._millis;
+    return time_ < t.time_ ;
 }
 
 time &time::operator= (time &t)
 {
-	if (this != &t)
-	{
-		memcpy (this, &t, sizeof *this) ;
-	}
-	return *this ;
+    if (this != &t)
+	memcpy (this, &t, sizeof *this) ;
+    return *this ;
 }
 
-void time::add(unsigned long time)
+// update current time with help of millis ()
+void time::cur (void)		
 {
-	if(time + _millis > MAX_LONGINT)
-	{
-		_millis = time - (MAX_LONGINT - _millis);
-		_restart++;
-	}
-	else
-	{
-		_millis += time;
-	}
+    uint32_t ms ;
+    uint32_t n ;
+
+    n = TIME_HIGH (time_) ;
+    ms = millis () ;			// current time
+    if (ms < TIME_LOW (time_))		// rollover?
+	n++ ;
+    time_ = MK_TIME (n, ms) ;
 }
 
-void time::add(time &t)
+void time::add (unsigned long int time)
 {
-	if(_millis + t._millis > MAX_LONGINT)
-	{
-		_restart++;
-	}
-	_millis = (_millis + t._millis) % MAX_LONGINT;
-
-	_restart += t._restart;
+    time_ += (uint64_t) time ;
 }
 
-long time::diff(time &a, time &b)
+void time::add (time &t)
 {
-	long diff = 0;
-
-	/*
-	if(a < b)
-	{
-
-		if( a._restart != b._restart)
-		{
-			diff += MAX_LONGINT - a._millis;
-			diff += b._millis;
-		}
-		else
-		{
-			diff += b._millis - a._millis;
-		}
-
-	}
-	else
-	{
-	*/
-
-		if( a._restart != b._restart)
-		{
-			diff += MAX_LONGINT - b._millis;
-			diff += a._millis;
-		}
-		else
-		{
-			diff += (a._millis - b._millis);
-		}
-
-	//}
-
-	PRINT_DEBUG_STATIC("\033[31m DIFF : \033[00m ");
-	PRINT_DEBUG_DYNAMIC(diff);
-	delay(100);
-	return diff;
+    time_ += t.time_ ;
 }
 
-// set _millis to current value of millis()
-void time::cur(void)		
+timediff_t time::diff (time &a, time &b)
 {
-	long int ms = millis();
-	if(_millis > ms)
-	{
-		PRINT_DEBUG_STATIC("\033[31m _millis > ms LOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOL");
-		_restart++;
-	}
-	_millis = ms;
+    timediff_t diff ;
+
+    diff = a.time_ - b.time_ ;
+    return diff ;
 }
 
-void time::print()
+void time::print ()
 {
-	Serial.print(F("\033[33m_millis \033[00m: "));
-	Serial.print(_millis);
-	Serial.print(F(" \033[33m_restart \033[00m: "));
-	Serial.println(_restart);
+    Serial.print (F ("\033[33mtime = \033[00m")) ;
+    Serial.print (TIME_HIGH (time_)) ;
+    Serial.print (F ("\033[33m,\033[00m")) ;
+    Serial.print (TIME_LOW (time_)) ;
+    Serial.println () ;
 }

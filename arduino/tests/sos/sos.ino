@@ -5,15 +5,15 @@
 #include "sos.h"
 #include <avr/wdt.h>
 
-#define PROCESS_1_name	"light"
-#define PROCESS_1_title	"light"
-#define PROCESS_1_rt	"light"
-#define PROCESS_2_name	"temp"
-#define PROCESS_2_title	"temperature"
-#define PROCESS_2_rt	"celcius"
-#define PROCESS_3_name	"led"
-#define PROCESS_3_title	"led"
-#define PROCESS_3_rt	"light"
+#define	PROCESS_1_name	"light"
+#define	PROCESS_1_title	"light"
+#define	PROCESS_1_rt	"light"
+#define	PROCESS_2_name	"temp"
+#define	PROCESS_2_title	"temperature"
+#define	PROCESS_2_rt	"celcius"
+#define	PROCESS_3_name	"led"
+#define	PROCESS_3_title	"led"
+#define	PROCESS_3_rt	"light"
 
 // MTU is less than 0.25 * (free memory in SRAM after initialization)
 #define	MTU		200
@@ -35,7 +35,7 @@ uint8_t process_light(Message &in, Message &out)
 		message[i] = '\0';
 
 	int sensorValue = analogRead(light_sensor);
-	snprintf(message, 10, "%d\0", sensorValue);
+	snprintf(message, 10, "%d", sensorValue);
 
 	out.set_payload( strlen(message), (unsigned char *) message);
 
@@ -53,7 +53,7 @@ uint8_t process_temp(Message &in, Message &out)
 		message[i] = '\0';
 
 	int sensorValue = analogRead(tmp_sensor);
-	snprintf(message, 10, "%d\0", sensorValue);
+	snprintf(message, 10, "%d", sensorValue);
 
 	out.set_payload( strlen(message), (unsigned char *) message);
 
@@ -126,8 +126,8 @@ void test_values_led(void)
 	char h[10];
 	char l[10];
 
-	snprintf(h, 10, "%d\0", 1024);
-	snprintf(l, 10, "%d\0", 0);
+	snprintf(h, 10, "%d", 1024);
+	snprintf(l, 10, "%d", 0);
 
 	Serial.println(h);
 	Serial.println(l);

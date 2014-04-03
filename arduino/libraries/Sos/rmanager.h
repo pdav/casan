@@ -8,32 +8,30 @@
 
 #define SOS_RESOURCES_ALL		"resources"
 
-typedef struct _rmanager_s {
-     Resource *r;
-	_rmanager_s *s;
-} rmanager_s;
+struct rmanager_list
+{
+    Resource *r ;
+    rmanager_list *next ;
+} ;
 
 class Rmanager {
+    public:
+	Rmanager () ;
+	~Rmanager () ;
 
-public:
+	void add_resource (Resource *resource) ;
+	uint8_t request_resource (Message &in, Message &out) ;
+	void get_all_resources (Message &out) ;
+	void delete_resource (rmanager_list *r) ;
+	void reset () ;
 
-	Rmanager();
-	~Rmanager();
+	void print (void) ;
 
-	void add_resource(Resource *resource);
-	uint8_t request_resource(Message &in, Message &out);
-	void get_all_resources(Message &out);
-	void delete_resource(rmanager_s *r);
-	void reset();
+    private :
+	rmanager_list *resources_ ;
 
-	void print(void);
-
-private :
-
-	rmanager_s * get_resource_instance(option *o);
-
-	rmanager_s *_resources = NULL;
-};
+	rmanager_list *get_resource_instance (option *o) ;
+} ;
 
 #endif
 

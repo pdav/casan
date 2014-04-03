@@ -69,12 +69,12 @@ class option
 	void optval (void *v, int len) ;
 	void optval (uint v) ;
 
-	static void reset_errno(void);
+	static void reset_errno (void) ;
 
     protected:
-	optcode_t optcode_ = MO_None;
-	int optlen_ = 0;
-	byte *optval_ = NULL;			// 0 if staticval is used
+	optcode_t optcode_ ;
+	int optlen_ ;
+	byte *optval_ ;			// 0 if staticval is used
 	byte staticval_ [8 + 1] ;	// keep a \0 after, just in case
 
     private:
@@ -82,7 +82,7 @@ class option
 	    				OF_EMPTY, OF_UINT } optfmt_t ;
 	struct optdesc
 	{
-		optcode_t code;
+	    optcode_t code ;
 	    optfmt_t format ;
 	    int minlen ;
 	    int maxlen ;

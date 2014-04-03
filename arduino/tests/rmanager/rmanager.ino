@@ -43,12 +43,12 @@ void setup() {
 			process_temp);
 }
 
-// To do this test, you have to put "_rmanager" in public in sos.h
+// To do this test, you have to put "rmanager_" in public in sos.h
 void test_get_resources(void)
 {
 	Message out; // we will get the resources list in the payload
 
-	sos->_rmanager->get_all_resources(out);
+	sos->rmanager_->get_all_resources(out);
 
 	out.print();
 }
@@ -67,7 +67,7 @@ void test_request_resource(void)
 	in.push_option(o);
 	//in.set_payload(sizeof SOS_RESOURCES_ALL -1, (uint8_t*) SOS_RESOURCES_ALL);
 
-	uint8_t ret = sos->_rmanager->request_resource(in, out);
+	uint8_t ret = sos->rmanager_->request_resource(in, out);
 	Serial.print(F("\033[36m request_resource returns : "));
 	Serial.println(ret);
 

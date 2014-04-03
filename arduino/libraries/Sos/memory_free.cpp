@@ -15,7 +15,7 @@ struct __freelist {
 /* The head of the free list structure */
 extern struct __freelist *__flp;
 
-#include "memory_free.h";
+#include "memory_free.h"
 
 /* Calculates the size of the free list */
 int freeListSize() {
