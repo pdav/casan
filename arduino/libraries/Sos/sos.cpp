@@ -27,7 +27,7 @@ Sos::Sos (l2net *l2, long int uuid)
     reset_master () ;		// master_ becomes a broadcast
 
     // XXXX
-    l2_->set_master_addr (master_) ;
+    // ///////////////// l2_->set_master_addr (master_) ;
     current_message_id_ = 1 ;
 
     coap_ = new Coap (l2_) ;
@@ -142,7 +142,7 @@ void Sos::loop ()
 		// compute the next waiting time laps for a message
 		next_time_inc_ = 
 			(next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
-			SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
+			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
 		next_register_ = current_time ;
 		next_register_.add (next_time_inc_) ;
 	    }
@@ -546,9 +546,6 @@ void Sos::print_coap_ret_type (l2_recv_t ret)
 {
     switch (ret)
     {
-	case L2_RECV_WRONG_SENDER :
-	    PRINT_DEBUG_STATIC ("L2_RECV_WRONG_SENDER") ;
-	    break ;
 	case L2_RECV_WRONG_DEST :
 	    PRINT_DEBUG_STATIC ("L2_RECV_WRONG_DEST") ;
 	    break ;

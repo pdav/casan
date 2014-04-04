@@ -31,8 +31,6 @@ class l2net {
 	virtual uint8_t * get_offset_payload (int offset) = 0 ;
 	virtual size_t get_payload_length (void) = 0 ;
 
-	virtual void set_master_addr (l2addr *master_addr) = 0 ;
-
 	size_t mtu (void) { return mtu_ ; } ;
 
     protected:

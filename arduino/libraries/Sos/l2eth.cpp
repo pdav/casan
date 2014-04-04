@@ -1,10 +1,29 @@
 #include "l2eth.h"
 
+/*
+ * Ethernet classes for SOS
+ *
+ * Needs : w5100 functions from standard (i.e. Arduino) Ethernet class
+ */
+
 l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 
+#define	SOCK0		((SOCKET) 0)		// mandatory for MAC raw
+#define	S0_MR_MF	(1<<6)			// MAC filter for socket 0
+
+#define	FLUSH_SIZE	128
+
+// Various fields in Ethernet frame
+#define	OFFSET_DEST_ADDR	0
+#define	OFFSET_SRC_ADDR		6
+#define	OFFSET_ETHTYPE		12
+#define	OFFSET_SIZE		14		// specific to SOS
+#define	OFFSET_PAYLOAD		16
+
+
 /******************************************************************************
-* l2addr_eth methods
-*/
+ * l2addr_eth methods
+ */
 
 // constructor
 l2addr_eth::l2addr_eth ()
@@ -52,17 +71,13 @@ l2addr_eth::l2addr_eth (const l2addr_eth &x)
 }
 
 // assignment operator
-l2addr_eth & l2addr_eth::operator = (const l2addr_eth &x)
+l2addr_eth & l2addr_eth::operator= (const l2addr_eth &x)
 {
     if (addr_ == x.addr_)
 	return *this ;
     memcpy (addr_, x.addr_, ETHADDRLEN) ;
     return *this ;
 }
-
-/******************************************************************************
-* l2addr_eth methods
-*/
 
 bool l2addr_eth::operator== (const l2addr &other)
 {
@@ -76,190 +91,196 @@ bool l2addr_eth::operator!= (const l2addr &other)
     return memcmp (this->addr_, oe->addr_, ETHADDRLEN) != 0 ;
 }
 
-bool l2addr_eth::operator!= (const unsigned char* mac_addr)
+// Raw MAC address (array of 6 bytes)
+bool l2addr_eth::operator!= (const unsigned char *other)
 {
-    return memcmp (this->addr_, mac_addr, ETHADDRLEN) != 0 ;
+    return memcmp (this->addr_, other, ETHADDRLEN) != 0 ;
 }
 
-void l2addr_eth::set_addr (const unsigned char* mac_addr) 
+void l2addr_eth::set_raw_addr (const unsigned char *mac_addr) 
 {
     memcpy (this->addr_, mac_addr, ETHADDRLEN) ;
 }
+
 unsigned char * l2addr_eth::get_raw_addr (void) 
 {
     return this->addr_ ;
 }
 
 void l2addr_eth::print () {
-    Serial.print (F ("IP : ")) ;
-    for (int i (0) ; i < ETHADDRLEN ; i++) {
-	Serial.print ("\033[32m") ;
-	Serial.print (addr_[i], HEX) ;
-	if (i != ETHADDRLEN - 1)
+    int i ;
+
+    Serial.print (F ("Eth : \033[32m")) ;
+    for (i = 0 ; i < ETHADDRLEN ; i++)
+    {
+	if (i > 0)
 	    Serial.print (':') ;
+	Serial.print (addr_ [i], HEX) ;
     }
     Serial.println ("\033[00m") ;
 }
 
+/******************************************************************************
+ * l2addr_eth methods
+ */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-l2net_eth::l2net_eth (l2addr *mac_addr, size_t mtu, int ethtype)
-	: sock_ (0), ethtype_ (ethtype)
+l2net_eth::l2net_eth (void)
 {
-    W5100.init () ;
-    W5100.writeSnMR (sock_, SnMR::MACRAW) ;
-    W5100.execCmdSn (sock_, Sock_OPEN) ;
-    mac_addr_ = (l2addr_eth *) mac_addr ;
-    W5100.setMACAddress (mac_addr_->get_raw_addr ()) ;
-    mtu_ = mtu ;
-    rbuf_ = (byte *) malloc (mtu_) ;
-    master_addr_ = NULL ;
 }
 
 l2net_eth::~l2net_eth () 
 {
-    if (mac_addr_ != NULL)
-	delete mac_addr_ ;
-    if (master_addr_ != NULL)
-	delete master_addr_ ;
-    free (rbuf_) ;
+    if (rbuf_ != NULL)
+	free (rbuf_) ;
 }
 
-int l2net_eth::available () 
+void l2net_eth::start (l2addr *mac_addr, bool promisc, size_t mtu, int ethtype)
 {
-    rbuflen_ = W5100.getRXReceivedSize (sock_) ;
-    return rbuflen_ ; 
-}
+    int cmd ;
 
-size_t l2net_eth::send (l2addr &mac_dest, const uint8_t *data, size_t len) 
-{
-    l2addr_eth *m = (l2addr_eth *) &mac_dest ;
-    byte *sbuf = NULL ;
-    int sbuflen ;
-    size_t reste ;
+    myaddr_ = * (l2addr_eth *) mac_addr ;
+    ethtype_ = ethtype ;
+    mtu_ = mtu ;
 
-    // to include the two size bytes
-    len += 2 ;
+    if (rbuf_ != NULL)
+	free (rbuf_) ;
+    rbuf_ = (byte *) malloc (mtu_ + 2) ;
 
-    reste = mtu_ < len ? len - mtu_ - OFFSET_DATA : 0 ;
-    sbuflen = mtu_ < len + OFFSET_DATA ? mtu_ : len + OFFSET_DATA ;
-    sbuf = (byte *) malloc (sbuflen) ;
-
-    memcpy (sbuf + OFFSET_DEST_ADDR, m->get_raw_addr (), 6) ;
-    memcpy (sbuf + OFFSET_SRC_ADDR, mac_addr_->get_raw_addr (), 6) ;
-
-    sbuf [OFFSET_ETHTYPE    ] = (char) ((ethtype_ >> 8) & 0xff) ;
-    sbuf [OFFSET_ETHTYPE +1 ] = (char) ((ethtype_     ) & 0xff) ;
-
-    // message size
-    sbuf [OFFSET_SIZE    ] = BYTE_HIGH (len) ;
-    sbuf [OFFSET_SIZE + 1] = BYTE_LOW  (len) ;
-
-    memcpy (sbuf + OFFSET_DATA, data, len) ;
-
-    W5100.send_data_processing (sock_, sbuf, sbuflen) ;
-    W5100.execCmdSn (sock_, Sock_SEND_MAC) ;
-
-    free (sbuf) ;
-    return reste ;
+    W5100.init () ;
+    W5100.setMACAddress (myaddr_.get_raw_addr ()) ;
+    cmd = SnMR::MACRAW ;
+    if (! promisc)
+	cmd |= S0_MR_MF ;			// MAC filter for socket 0
+    W5100.writeSnMR (SOCK0, cmd) ;
+    W5100.execCmdSn (SOCK0, Sock_OPEN) ;
 }
 
 /*
-* returns L2_RECV_WRONG_SENDER if it's not the master the sender ;
-* returns L2_RECV_WRONG_DEST if the dest is wrong 
-     * (not the good mac address or the broadcast address)
-* returns L2_RECV_WRONG_ETHTYPE if it's the wrong eth type
-* returns L2_RECV_TRUNCATED if packet is too large (i.e. has been truncated)
-* returns L2_RECV_RECV_OK if ok
-*/
+ * Send packet
+ *
+ * Returns size of data really sent (not including header)
+ */
+
+size_t l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len) 
+{
+    l2addr_eth *m = (l2addr_eth *) &dest ;
+    byte *sbuf ;		// send buffer
+    size_t sbuflen ;		// buffer size
+    size_t paylen ;		// restricted to mtu, if any
+
+    paylen = len ;		// keep original length
+    sbuflen = len + OFFSET_PAYLOAD ;	// add MAC header
+    if (sbuflen > mtu_)
+    {
+	paylen -= (sbuflen - mtu_) ;
+	sbuflen = mtu_ ;
+    }
+    sbuf = (byte *) malloc (sbuflen) ;
+
+    // Standard Ethernet MAC header (14 bytes)
+    memcpy (sbuf + OFFSET_DEST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
+    memcpy (sbuf + OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
+    sbuf [OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
+    sbuf [OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
+
+    // SOS message size (2 bytes)
+    sbuf [OFFSET_SIZE    ] = BYTE_HIGH (paylen + 2) ;
+    sbuf [OFFSET_SIZE + 1] = BYTE_LOW  (paylen + 2) ;
+
+    // Payload
+    memcpy (sbuf + OFFSET_PAYLOAD, data, paylen) ;
+
+    // Send packet
+    W5100.send_data_processing (SOCK0, sbuf, sbuflen) ;
+    W5100.execCmdSn (SOCK0, Sock_SEND_MAC) ;
+
+    free (sbuf) ;
+
+    return paylen ;
+}
+
+/*
+ * Receive packet
+ *
+ * returns L2_RECV_EMPTY if no packet has been received
+ * returns L2_RECV_WRONG_DEST if destination address is wrong
+ *      (i.e. not our MAC address nor the broadcast address)
+ * returns L2_RECV_WRONG_ETHTYPE if Ethernet packet type is not the good one
+ * returns L2_RECV_TRUNCATED if packet is too large (i.e. has been truncated)
+ * returns L2_RECV_RECV_OK if ok
+ */
+
 l2_recv_t l2net_eth::recv (void) 
 {
     l2_recv_t r ;
+    size_t wizlen ;
 
-    r = L2_RECV_EMPTY ;
-    if (available ())
-	r = check_received () ;
-    return r ;
-}
-
-l2_recv_t l2net_eth::check_received (void) 
-{
-    bool truncated = false ;
-    byte *packet ;
-
-    if (rbuflen_ > mtu_) 
+    wizlen = W5100.getRXReceivedSize (SOCK0) ;	// size of data in RX mem
+    if (wizlen == 0)
+	r = L2_RECV_EMPTY ;
+    else
     {
-	truncated = true ;
-	rbuflen_ = mtu_ ;
-    }
+	uint8_t pl [2] ;		// intermediate storage for pkt len
+	size_t remaining ;
 
-    // copy received packet from W5100 internal buffer to instance
-    // private variable
-    W5100.recv_data_processing (sock_, rbuf_, rbuflen_) ;
-    W5100.execCmdSn (sock_, Sock_RECV) ;
+	r = L2_RECV_RECV_OK ;		// default value
 
-    // There is an offset in the reception (2 bytes, see the w5100 datasheet)
-    packet = rbuf_ + OFFSET_RECEPTION ;
-    // Check the source address (only the master must send informations)
-    // TODO : we don't use it for now, but we will use this feature later
-    PRINT_DEBUG_STATIC ("JUSTE AVANT DE TESTER") ;
-    if (master_addr_ != NULL)
-	((l2addr_eth *) master_addr_)->print () ;
+	// Extract packet length (use an int16_t as an intermediate buf)
+	W5100.recv_data_processing (SOCK0, pl, sizeof pl, 0) ;
+	W5100.execCmdSn (SOCK0, Sock_RECV) ;
+	pktlen_ = ((uint16_t) pl [0] << 8) | (uint16_t) pl [1] ;
+	pktlen_ -= 2 ;			// data size include size itself
 
-    if (master_addr_ != NULL && 
-	*(l2addr_eth *) master_addr_ != (l2addr_eth) l2addr_eth_broadcast &&
-	*master_addr_ != packet + OFFSET_SRC_ADDR) 
-    {
-	PRINT_DEBUG_STATIC ("\033[31m\tRecv : don't come from master\033[00m") ;
-	return L2_RECV_WRONG_SENDER ;
-    }
-
-    // Check the destination address
-    if (mac_addr_ != NULL && *mac_addr_ != (packet +OFFSET_DEST_ADDR)) 
-    {
-	// Serial.print (F ("\033[36m\tRecv : not explicitly for us\033[00m")) ;
-	if (l2addr_eth_broadcast != (packet + OFFSET_DEST_ADDR))
+	if (pktlen_ <= mtu_) 
 	{
-	    // PRINT_DEBUG_STATIC ("\033[31m : not even broadcast\033[00m") ;
-	    return L2_RECV_WRONG_DEST ;
+	    rbuflen_ = pktlen_ ;
+	    remaining = 0 ;
 	}
-	// PRINT_DEBUG_STATIC ("\033[32m : broadcast\033[00m ") ;
+	else
+	{
+	    rbuflen_ = mtu_ ;
+	    remaining = pktlen_ - rbuflen_ ;
+	}
+
+	// copy received packet from W5100 internal buffer
+	// to private instance variable
+	W5100.recv_data_processing (SOCK0, rbuf_, rbuflen_, 0) ;
+	W5100.execCmdSn (SOCK0, Sock_RECV) ;
+
+	// don't try to consume more bytes than effectively received
+	wizlen -= rbuflen_ + 2 ;
+	if (remaining > wizlen)
+	    remaining = wizlen ;
+
+	// flush remaining bytes if packet was too big
+	while (remaining > 0)
+	{
+	    uint8_t flushbuf [FLUSH_SIZE] ;
+	    size_t n ;
+
+	    n = (remaining > sizeof flushbuf) ? sizeof flushbuf : remaining ;
+	    W5100.recv_data_processing (SOCK0, flushbuf, n, 0) ;
+	    W5100.execCmdSn (SOCK0, Sock_RECV) ;
+	    remaining -= n ;
+	}
+
+	// Check destination address
+	if (myaddr_ != rbuf_ + OFFSET_DEST_ADDR
+		&& l2addr_eth_broadcast != rbuf_ + OFFSET_DEST_ADDR)
+	    r = L2_RECV_WRONG_DEST ;
+
+	// Check Ethernet type
+	if (r == L2_RECV_RECV_OK
+		&& (rbuf_ [OFFSET_ETHTYPE] != (uint8_t) (ethtype_ >> 8) || 
+		    rbuf_ [OFFSET_ETHTYPE + 1] != (uint8_t) (ethtype_ & 0xff)))
+	    r = L2_RECV_WRONG_ETHTYPE ;
+
+	// Truncated?
+	if (r == L2_RECV_RECV_OK && pktlen_ > mtu_)
+	    r = L2_RECV_TRUNCATED ;
     }
 
-    // Check the ethernet type
-    if (packet [OFFSET_ETHTYPE] != (uint8_t) (ethtype_ >> 8) || 
-		packet [OFFSET_ETHTYPE + 1] != (uint8_t) (ethtype_ & 0xff))
-    {
-	return L2_RECV_WRONG_ETHTYPE ;
-    }
-
-    // if this is a real coap message
-    if (truncated || get_payload_length () > mtu_)
-    {
-	return L2_RECV_TRUNCATED ;
-    }
-    return L2_RECV_RECV_OK ;
+    return r ;
 }
 
 l2addr *l2net_eth::bcastaddr (void)
@@ -270,65 +291,49 @@ l2addr *l2net_eth::bcastaddr (void)
 void l2net_eth::get_mac_src (l2addr *mac_src) 
 {
     l2addr_eth *m = (l2addr_eth *) mac_src ;
-    m->set_addr (rbuf_ + OFFSET_RECEPTION + OFFSET_SRC_ADDR) ;
+    m->set_raw_addr (rbuf_ + OFFSET_SRC_ADDR) ;
 }
 
 uint8_t *l2net_eth::get_offset_payload (int offset) 
 {
     uint8_t off ;
     
-    off = OFFSET_RECEPTION + OFFSET_DATA + offset ;
+    off = OFFSET_PAYLOAD + offset ;
     return rbuf_ + off ;
 }
 
 // we add 2 bytes to know the real payload
 size_t l2net_eth::get_payload_length (void) 
 {
-    size_t rlen ;
-
-    rlen = (*(rbuf_ + OFFSET_RECEPTION + OFFSET_SIZE) << 8) & 0xff00 ;
-    rlen = rlen | (*(rbuf_ + OFFSET_RECEPTION + OFFSET_SIZE + 1) & 0xff) ;
-    return rlen ;
-}
-
-void l2net_eth::set_master_addr (l2addr * master_addr) 
-{
-    master_addr_ = (l2addr_eth *) master_addr ;
+    return pktlen_ ;
 }
 
 void l2net_eth::print_eth_addr (byte addr []) 
 {
     int i ;
-    for (i = 0 ; i < 6 ; i++)
+    for (i = 0 ; i < ETHADDRLEN ; i++)
     {
 	if (i > 0)
-		Serial.print (':') ;
+	    Serial.print (':') ;
 	Serial.print (addr [i], HEX) ;
     }
 }
 
-void l2net_eth::print_packet (byte pkt [], int len) 
+void l2net_eth::dump_packet (size_t start, size_t maxlen)
 {
-    word w ;
+    size_t i, n ;
 
-    w = * (word *) pkt ;
-    Serial.print (len) ;
-    Serial.print (F (" bytes ") ) ;
+    n = start + maxlen ;
+    if (rbuflen_ < n)
+	n = rbuflen_ ;
 
-    print_eth_addr (pkt + OFFSET_SRC_ADDR) ;
-    Serial.print (F ("->") ) ;
-    print_eth_addr (pkt + OFFSET_DEST_ADDR) ;
-
-    w = * (word *) (pkt + OFFSET_ETHTYPE) ;
-    Serial.print (F (" Ethtype: ") ) ;
-    Serial.print (w, HEX) ;
-
-    Serial.print (" ") ;
-
-    for (int z = 0 ; z < len ; z++)
+    for (i = start ; i < n ; i++)
     {
-	Serial.print (' ') ;
-	Serial.print (pkt [z + OFFSET_ETHTYPE + 2], HEX) ;
+	if (i > start)
+	    Serial.print (' ') ;
+	Serial.print ((rbuf_ [i] >> 4) & 0xf, HEX) ;
+	Serial.print ((rbuf_ [i]     ) & 0xf, HEX) ;
     }
+
     Serial.println () ;
 }

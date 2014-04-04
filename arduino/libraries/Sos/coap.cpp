@@ -38,7 +38,6 @@ l2_recv_t Coap::recv (Message &m)
 
 void Coap::set_master_addr (l2addr *master_addr)
 {
-    l2_->set_master_addr (master_addr) ;
 }
 
 uint8_t Coap::get_type (void)

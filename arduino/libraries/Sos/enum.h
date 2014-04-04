@@ -24,7 +24,6 @@ typedef enum pktype {
 
 typedef enum l2_recv {
     L2_RECV_EMPTY, 
-    L2_RECV_WRONG_SENDER, 
     L2_RECV_WRONG_ETHTYPE, 
     L2_RECV_WRONG_DEST,
     L2_RECV_TRUNCATED,
