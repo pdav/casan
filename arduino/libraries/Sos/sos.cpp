@@ -21,7 +21,6 @@ extern l2addr_eth l2addr_eth_broadcast ;
 
 // TODO : set all variables
 Sos::Sos (l2net *l2, long int uuid)
-    : l2_ (l2), status_ (SL_COLDSTART), nttl_ (SOS_DEFAULT_TTL), uuid_ (uuid)
 {
     master_ = l2->bcastaddr () ;
     reset_master () ;		// master_ becomes a broadcast
@@ -29,6 +28,10 @@ Sos::Sos (l2net *l2, long int uuid)
     // XXXX
     // ///////////////// l2_->set_master_addr (master_) ;
     current_message_id_ = 1 ;
+
+    l2_ = l2 ;
+    nttl_ = SOS_DEFAULT_TTL ;
+    uuid_ = uuid ;
 
     coap_ = new Coap (l2_) ;
     rmanager_ = new Rmanager () ;
@@ -114,7 +117,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_mac_src (master_) ;
+			    coap_->get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
@@ -163,7 +166,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_mac_src (master_) ;
+			    coap_->get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 
 			    next_time_inc_ = SOS_DELAY ;
@@ -227,7 +230,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_mac_src (master_) ;
+			    coap_->get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
@@ -292,7 +295,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_mac_src (master_) ;
+			    coap_->get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
@@ -328,7 +331,7 @@ void Sos::loop ()
 		    Serial.println (F ("\033[36mRequest too large\033[00m")) ;
 		    out.set_type (COAP_TYPE_ACK) ;
 		    out.set_id (in.get_id ()) ;
-		    out.set_token (in.get_token_length (), in.get_token ()) ;
+		    out.set_token (in.get_toklen (), in.get_token ()) ;
 		    option o ;
 		    o.optcode (option::MO_Size1) ;
 		    o.optval (l2_->mtu ()) ;
@@ -368,7 +371,7 @@ void Sos::loop ()
 void Sos::mk_ack_assoc (Message &in, Message &out)
 {
     // we get the new master
-    coap_->get_mac_src (master_) ;
+    coap_->get_src (master_) ;
 
     // the current mid is the next after the id of the received msg
     current_message_id_ = in.get_id () + 1 ;

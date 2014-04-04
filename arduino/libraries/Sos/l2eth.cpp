@@ -134,11 +134,11 @@ l2net_eth::~l2net_eth ()
 	free (rbuf_) ;
 }
 
-void l2net_eth::start (l2addr *mac_addr, bool promisc, size_t mtu, int ethtype)
+void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 {
     int cmd ;
 
-    myaddr_ = * (l2addr_eth *) mac_addr ;
+    myaddr_ = * (l2addr_eth *) a ;
     ethtype_ = ethtype ;
     mtu_ = mtu ;
 
@@ -288,13 +288,13 @@ l2addr *l2net_eth::bcastaddr (void)
     return &l2addr_eth_broadcast ;
 }
 
-void l2net_eth::get_mac_src (l2addr *mac_src) 
+void l2net_eth::get_src (l2addr *src) 
 {
-    l2addr_eth *m = (l2addr_eth *) mac_src ;
-    m->set_raw_addr (rbuf_ + OFFSET_SRC_ADDR) ;
+    l2addr_eth *a = (l2addr_eth *) src ;
+    a->set_raw_addr (rbuf_ + OFFSET_SRC_ADDR) ;
 }
 
-uint8_t *l2net_eth::get_offset_payload (int offset) 
+uint8_t *l2net_eth::get_payload (int offset) 
 {
     uint8_t off ;
     
@@ -303,20 +303,9 @@ uint8_t *l2net_eth::get_offset_payload (int offset)
 }
 
 // we add 2 bytes to know the real payload
-size_t l2net_eth::get_payload_length (void) 
+size_t l2net_eth::get_paylen (void) 
 {
     return pktlen_ ;
-}
-
-void l2net_eth::print_eth_addr (byte addr []) 
-{
-    int i ;
-    for (i = 0 ; i < ETHADDRLEN ; i++)
-    {
-	if (i > 0)
-	    Serial.print (':') ;
-	Serial.print (addr [i], HEX) ;
-    }
 }
 
 void l2net_eth::dump_packet (size_t start, size_t maxlen)

@@ -81,7 +81,7 @@ int Message::get_id (void)
     return id_ ;
 }
 
-uint8_t Message::get_token_length (void) 
+uint8_t Message::get_toklen (void) 
 {
     return toklen_ ;
 }
@@ -98,7 +98,7 @@ uint8_t * Message::get_token_copy (void)
     return copy ;
 }
 
-uint8_t Message::get_payload_length (void) 
+uint8_t Message::get_paylen (void) 
 {
     return paylen_ ;
 }
@@ -238,20 +238,20 @@ void Message::print (void)
        Serial.println (get_version ()) ;
        */
     Serial.print (F ("  token_length=")) ;
-    Serial.print (get_token_length ()) ;
+    Serial.print (get_toklen ()) ;
 
-    if (get_token_length () > 0) {
+    if (get_toklen () > 0) {
 	Serial.print (F ("  token=")) ;
 	uint8_t * token = get_token () ;
-	for (int i (0) ; i < get_token_length () ; i++)
+	for (int i (0) ; i < get_toklen () ; i++)
 	    Serial.print (token[i], HEX) ;
 	Serial.println () ;
     }
 
 
     Serial.print (F ("  payload_length=")) ;
-    Serial.print (get_payload_length ()) ;
-    if (get_payload_length () > 0) {
+    Serial.print (get_paylen ()) ;
+    if (get_paylen () > 0) {
 	Serial.print (F ("  payload=")) ;
 	uint8_t * pcopy = get_payload_copy () ;
 	Serial.print ((char*)pcopy) ;

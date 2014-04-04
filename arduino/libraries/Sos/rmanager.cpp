@@ -40,7 +40,7 @@ uint8_t Rmanager::request_resource (Message &in, Message &out)
 	    {
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
-		out.set_token (in.get_token_length (), in.get_token ()) ;
+		out.set_token (in.get_toklen (), in.get_token ()) ;
 		out.set_code (COAP_RETURN_CODE (2,5)) ;
 		get_all_resources (out) ;
 		r = 0 ;
@@ -57,7 +57,7 @@ uint8_t Rmanager::request_resource (Message &in, Message &out)
 
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
-		out.set_token (in.get_token_length (), in.get_token ()) ;
+		out.set_token (in.get_toklen (), in.get_token ()) ;
 		
 		res = tmp->r ;
 		handler_s h = res->get_handler ((coap_code_t) in.get_code ()) ;
@@ -102,7 +102,7 @@ void Rmanager::get_all_resources (Message &out)
     {
 	int len ;
 
-	len = out.get_payload_length () ;
+	len = out.get_paylen () ;
 	if (len)
 	{
 	    size = len + 1 ;		// 1 for ','

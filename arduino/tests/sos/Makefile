@@ -10,7 +10,7 @@ BOARD_TAG		= uno
 MONITOR_PORT		= /dev/ttyACM3
 
 USER_LIB_PATH		= $(realpath ../../libraries)
-ARDUINO_LIBS		= Sos SPI # Ethernet
+ARDUINO_LIBS		= Sos SPI Ethernet
 
 include $(ARDMK_DIR)/Arduino.mk
 

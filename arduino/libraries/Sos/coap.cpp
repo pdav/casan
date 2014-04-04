@@ -10,21 +10,15 @@ Coap::~Coap (void)
     delete l2_ ;
 }
 
-void Coap::send (l2addr &mac_addr_dest, Message &m) 
+void Coap::send (l2addr &dest, Message &m) 
 {
     uint8_t sbuf [150] = {0} ;
     size_t sbuflen = 0 ;
 
     encode (m, sbuf, sbuflen) ;
-    l2_->send ( mac_addr_dest, sbuf, sbuflen) ;
+    l2_->send (dest, sbuf, sbuflen) ;
 }
 
-/*
-* returns 1 if it's not the master the sender ;
-* returns 2 if the dest is wrong (not the good mac address or the broadcast address)
-* returns 3 if it's the wrong eth type
-* return 0 if ok
-*/
 l2_recv_t Coap::recv (Message &m)
 {
     l2_recv_t r ;
@@ -32,7 +26,7 @@ l2_recv_t Coap::recv (Message &m)
     m.reset () ;
     r = l2_->recv () ;
     if (r == L2_RECV_RECV_OK)
-	decode (m, l2_->get_offset_payload (0), l2_->get_payload_length () - 2) ;
+	decode (m, l2_->get_payload (0), l2_->get_paylen () - 2) ;
     return r ;
 }
 
@@ -42,37 +36,35 @@ void Coap::set_master_addr (l2addr *master_addr)
 
 uint8_t Coap::get_type (void)
 {
-    return (uint8_t) ((*(l2_->get_offset_payload (COAP_OFFSET_TYPE))) >> 4 ) & 0x03 ;
+    return (*(l2_->get_payload (COAP_OFFSET_TYPE)) >> 4) & 0x03 ;
 }
 
 uint8_t Coap::get_code (void)
 {
-    return *(l2_->get_offset_payload (COAP_OFFSET_CODE)) ;
+    return *(l2_->get_payload (COAP_OFFSET_CODE)) ;
 }
 
 int Coap::get_id (void)
 {
-    int r ;
     uint8_t *idp ;
-    
-    idp = l2_->get_offset_payload (COAP_OFFSET_ID) ;
-    r = ((*(idp) & 0xff) << 8) | (*(idp+1) & 0xff) ;
-    return r ;
+
+    idp = l2_->get_payload (COAP_OFFSET_ID) ;
+    return ((*(idp) & 0xff) << 8) | (*(idp+1) & 0xff) ;
 }
 
-uint8_t Coap::get_token_length (void)
+uint8_t Coap::get_toklen (void)
 {
-    return (*(l2_->get_offset_payload (COAP_OFFSET_TKL))) & 0x0f ;
+    return *(l2_->get_payload (COAP_OFFSET_TKL)) & 0x0f ;
 }
 
 uint8_t *Coap::get_token (void)
 {
-    return l2_->get_offset_payload (COAP_OFFSET_TOKEN) ;
+    return l2_->get_payload (COAP_OFFSET_TOKEN) ;
 }
 
-void Coap::get_mac_src (l2addr *mac_src)
+void Coap::get_src (l2addr *mac)
 {
-    l2_->get_mac_src (mac_src) ;
+    l2_->get_src (mac) ;
 }
 
 /* returns true if message is decoding was successful */
@@ -88,9 +80,9 @@ bool Coap::decode (Message &m, uint8_t rbuf[], size_t rbuflen)
     m.set_type (get_type ()) ;
     m.set_code (get_code ()) ;
     m.set_id (get_id ()) ;
-    m.set_token (get_token_length (), get_token ()) ;
+    m.set_token (get_toklen (), get_token ()) ;
 
-    i = 4 + get_token_length () ;
+    i = 4 + get_toklen () ;
 
     /*
      * Options analysis
@@ -174,9 +166,9 @@ void Coap::encode (Message &m, uint8_t sbuf[], size_t &sbuflen)
     int id ;
     int paylen ;
 
-    toklen = m.get_token_length () ;
+    toklen = m.get_toklen () ;
     id = m.get_id () ;
-    paylen = m.get_payload_length () ;
+    paylen = m.get_paylen () ;
 
     /*
      * Format message, part 1 : compute message size

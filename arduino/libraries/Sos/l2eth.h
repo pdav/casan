@@ -57,9 +57,9 @@ class l2net_eth : public l2net
 	l2_recv_t recv (void) ;
 
 	l2addr *bcastaddr (void) ;
-	void get_mac_src (l2addr *mac_src) ;
-	uint8_t * get_offset_payload (int offset) ;
-	size_t get_payload_length (void) ;
+	void get_src (l2addr *mac_src) ;
+	uint8_t *get_payload (int offset) ;
+	size_t get_paylen (void) ;
 
 	// debug usage
 	void dump_packet (size_t start, size_t maxlen) ;
@@ -70,9 +70,6 @@ class l2net_eth : public l2net
 	byte *rbuf_ ;			// receive buffer (of size mtu_ bytes)
 	size_t pktlen_ ;		// real length of received packet
 	size_t rbuflen_ ;		// length of data received (<= mtu_)
-
-	void print_eth_addr (byte addr []) ;
-	l2_recv_t check_received (void) ;
 } ;
 
 #endif

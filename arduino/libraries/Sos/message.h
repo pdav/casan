@@ -21,10 +21,10 @@ class Message {
 	uint8_t get_type (void) ;
 	uint8_t get_code (void) ;
 	int get_id (void) ;
-	uint8_t get_token_length (void) ;
+	uint8_t get_toklen (void) ;
 	uint8_t *get_token (void) ;
 	uint8_t *get_token_copy (void) ;
-	uint8_t get_payload_length (void) ;
+	uint8_t get_paylen (void) ;
 	uint8_t *get_payload (void) ;
 	uint8_t *get_payload_copy (void) ;
 

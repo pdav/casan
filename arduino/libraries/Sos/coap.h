@@ -22,22 +22,22 @@ class Coap {
 	Coap (l2net *e) ;
 	~Coap () ;
 
-	void send (l2addr &mac_addr_dest, Message &m) ;
+	void send (l2addr &dest, Message &m) ;
 	l2_recv_t recv (Message &m) ;
 
 	// TODO : tests
 	// TODO : handle errors
-	void encode (Message &m, uint8_t sbuf[], size_t &sbuflen) ;
-	bool decode (Message &m, uint8_t rbuf[], size_t rbuflen) ;
+	void encode (Message &m, uint8_t sbuf [], size_t &sbuflen) ;
+	bool decode (Message &m, uint8_t rbuf [], size_t rbuflen) ;
 
-	void get_mac_src (l2addr *mac_src) ;
+	void get_src (l2addr *mac) ;
 	void set_master_addr (l2addr *master_addr) ;
 
     private:
 	uint8_t get_type (void) ;
 	uint8_t get_code (void) ;
 	int get_id (void) ;
-	uint8_t get_token_length (void) ;
+	uint8_t get_toklen (void) ;
 	uint8_t *get_token (void) ;
 	uint8_t get_payload_offset (void) ;
 

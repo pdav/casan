@@ -27,9 +27,9 @@ class l2net {
 	virtual l2_recv_t recv (void) = 0 ;
 
 	virtual l2addr *bcastaddr (void) = 0 ;
-	virtual void get_mac_src (l2addr * mac_src) = 0 ;
-	virtual uint8_t * get_offset_payload (int offset) = 0 ;
-	virtual size_t get_payload_length (void) = 0 ;
+	virtual void get_src (l2addr *src) = 0 ;
+	virtual uint8_t *get_payload (int offset) = 0 ;
+	virtual size_t get_paylen (void) = 0 ;
 
 	size_t mtu (void) { return mtu_ ; } ;
 
