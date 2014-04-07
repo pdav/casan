@@ -14,7 +14,7 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 #define	FLUSH_SIZE	128
 
 // Various fields in Ethernet frame
-#define	OFFSET_DEST_ADDR	0
+#define	OFFSET_DST_ADDR		0
 #define	OFFSET_SRC_ADDR		6
 #define	OFFSET_ETHTYPE		12
 #define	OFFSET_SIZE		14		// specific to SOS
@@ -178,7 +178,7 @@ size_t l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
     sbuf = (byte *) malloc (sbuflen) ;
 
     // Standard Ethernet MAC header (14 bytes)
-    memcpy (sbuf + OFFSET_DEST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
+    memcpy (sbuf + OFFSET_DST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
     memcpy (sbuf + OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
     sbuf [OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
     sbuf [OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
@@ -265,8 +265,8 @@ l2_recv_t l2net_eth::recv (void)
 	}
 
 	// Check destination address
-	if (myaddr_ != rbuf_ + OFFSET_DEST_ADDR
-		&& l2addr_eth_broadcast != rbuf_ + OFFSET_DEST_ADDR)
+	if (myaddr_ != rbuf_ + OFFSET_DST_ADDR
+		&& l2addr_eth_broadcast != rbuf_ + OFFSET_DST_ADDR)
 	    r = L2_RECV_WRONG_DEST ;
 
 	// Check Ethernet type
@@ -288,10 +288,16 @@ l2addr *l2net_eth::bcastaddr (void)
     return &l2addr_eth_broadcast ;
 }
 
-void l2net_eth::get_src (l2addr *src) 
+void l2net_eth::get_src (l2addr *mac) 
 {
-    l2addr_eth *a = (l2addr_eth *) src ;
+    l2addr_eth *a = (l2addr_eth *) mac ;
     a->set_raw_addr (rbuf_ + OFFSET_SRC_ADDR) ;
+}
+
+void l2net_eth::get_dst (l2addr *mac) 
+{
+    l2addr_eth *a = (l2addr_eth *) mac ;
+    a->set_raw_addr (rbuf_ + OFFSET_DST_ADDR) ;
 }
 
 uint8_t *l2net_eth::get_payload (int offset) 

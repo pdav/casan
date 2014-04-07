@@ -24,10 +24,13 @@ void setup ()
 void recv_eth (void)
 {
     l2_recv_t r ;
+    l2addr_eth src, dst ;
     int paylen ;
 
     r = e.recv () ;
     paylen = e.get_paylen () ;
+    e.get_src (&src) ;
+    e.get_dst (&dst) ;
     switch (r)
     {
 	case L2_RECV_EMPTY :
@@ -48,6 +51,7 @@ void recv_eth (void)
 	    Serial.print (F ("WRONG ETHTYPE : payload length=")) ;
 	    Serial.print (paylen) ;
 	    Serial.println () ;
+	    e.dump_packet (0, 20) ;
 	    break ;
 	case L2_RECV_TRUNCATED :
 	    Serial.print (F ("TRUNCATED : payload length=")) ;

@@ -57,7 +57,8 @@ class l2net_eth : public l2net
 	l2_recv_t recv (void) ;
 
 	l2addr *bcastaddr (void) ;
-	void get_src (l2addr *mac_src) ;
+	void get_src (l2addr *mac) ;
+	void get_dst (l2addr *mac) ;
 	uint8_t *get_payload (int offset) ;
 	size_t get_paylen (void) ;
 
