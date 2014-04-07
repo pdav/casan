@@ -27,7 +27,7 @@ void recv_eth (void)
     int paylen ;
 
     r = e.recv () ;
-    paylen = e.get_payload_length () ;
+    paylen = e.get_paylen () ;
     switch (r)
     {
 	case L2_RECV_EMPTY :
