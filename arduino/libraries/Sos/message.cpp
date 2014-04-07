@@ -1,10 +1,17 @@
 #include "message.h"
 
 Message::Message ()
-    : type_ (0), code_ (0), id_ (0), toklen_ (0), paylen_ (0), optlen_ (0)
 {
+    type_ = 0 ;
+    code_ = 0 ;
+    id_ = 0 ;
+    toklen_ = 0 ;
+    token_ = NULL ;
+    paylen_ = 0 ;
+    optlen_ = 0 ;
     payload_ = NULL ;
     optlist_ = NULL ;
+    curopt_ = NULL ;
     curopt_initialized_ = false ;
 }
 
@@ -221,7 +228,7 @@ void Message::print (void)
 {
     Serial.print (F ("\033[36mmsg\033[00m\tid=")) ;
     Serial.print (get_id ()) ;
-    Serial.print (F ("  type=")) ;
+    Serial.print (F (", type=")) ;
     switch (get_type ()) {
 	case COAP_TYPE_CON : Serial.print ("CON") ; break ;
 	case COAP_TYPE_NON : Serial.print ("NON") ; break ;
@@ -229,36 +236,30 @@ void Message::print (void)
 	case COAP_TYPE_RST : Serial.print ("RST") ; break ;
 	default : Serial.print ("\033[31mERROR\033[00m") ;
     }
-    Serial.print (F ("  code=")) ;
+    Serial.print (F (", code=")) ;
     Serial.print (get_code () >> 5, HEX) ;
     Serial.print (".") ;
     Serial.print (get_code () & 0x1f, HEX) ;
-    /*
-       Serial.print (F ("msg\tversion = ")) ;
-       Serial.println (get_version ()) ;
-       */
-    Serial.print (F ("  token_length=")) ;
+    Serial.print (F (", toklen=")) ;
     Serial.print (get_toklen ()) ;
 
     if (get_toklen () > 0) {
-	Serial.print (F ("  token=")) ;
-	uint8_t * token = get_token () ;
-	for (int i (0) ; i < get_toklen () ; i++)
-	    Serial.print (token[i], HEX) ;
+	Serial.print (F (", token=")) ;
+	uint8_t *token = get_token () ;
+	for (int i = 0 ; i < get_toklen () ; i++)
+	    Serial.print (token [i], HEX) ;
 	Serial.println () ;
     }
 
-
-    Serial.print (F ("  payload_length=")) ;
+    Serial.print (F (", paylen=")) ;
     Serial.print (get_paylen ()) ;
     if (get_paylen () > 0) {
 	Serial.print (F ("  payload=")) ;
-	uint8_t * pcopy = get_payload_copy () ;
-	Serial.print ((char*)pcopy) ;
+	uint8_t *pcopy = get_payload_copy () ;
+	Serial.print ((char *) pcopy) ;
 	free (pcopy) ;
     }
     Serial.println () ;
-
 
     for (option *o = get_option () ; o != NULL ; o = get_option ()) {
 	o->print () ;

@@ -6,19 +6,16 @@
 
 #define OPT_ERR_OPTCODE		1
 #define OPT_ERR_OPTLEN		2
-#define OPT_ERR_RST			0
-
-// this should be the number of enums in optcode_t
-#define	MAXOPT				14
+#define OPT_ERR_RST		0
 
 /*
  * Option
  */
-
 class option
 {
     public:
-	typedef enum {
+	typedef enum
+	{
 			MO_None			= 0,
 			MO_Content_Format	= 12,
 			MO_Etag			= 4,
@@ -35,7 +32,15 @@ class option
 			MO_If_None_Match	= 5,
 			MO_If_Match		= 1,
 			MO_Size1		= 60,
-		    } optcode_t ;
+	} optcode_t ;
+	typedef enum
+	{
+	    OF_NONE = 0,
+	    OF_OPAQUE,
+	    OF_STRING,
+	    OF_EMPTY,
+	    OF_UINT,
+	} optfmt_t ;
 	typedef unsigned long int uint ;
 
 	typedef enum {
@@ -78,22 +83,20 @@ class option
 	byte staticval_ [8 + 1] ;	// keep a \0 after, just in case
 
     private:
-	typedef enum optfmt { OF_NONE = 0, OF_OPAQUE, OF_STRING,
-	    				OF_EMPTY, OF_UINT } optfmt_t ;
-	struct optdesc
-	{
-	    optcode_t code ;
-	    optfmt_t format ;
-	    int minlen ;
-	    int maxlen ;
-	} ;
-	static optdesc *optdesc_;
-	static uint8_t errno_;
-
-	void static_init (void) ;
+	static uint8_t errno_ ;
 
 	friend class Coap;
 
 } ;
+
+struct optdesc
+{
+    option::optcode_t code ;
+    option::optfmt_t format ;
+    int minlen ;
+    int maxlen ;
+} ;
+
+extern struct optdesc taboptdesc [] ;
 
 #endif

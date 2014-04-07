@@ -75,6 +75,7 @@ bool Coap::decode (Message &m, uint8_t rbuf[], size_t rbuflen)
     int opt_nb ;
     int paylen ;
 
+    Serial.println ("COAP DECODE") ;
     success = true ;
 
     m.set_type (get_type ()) ;

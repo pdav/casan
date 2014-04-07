@@ -107,6 +107,7 @@ void Sos::loop ()
 	    while (status_ == SL_WAITING_UNKNOWN &&
 			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
 	    {
+		Serial.println ("Received a msg") ;
 		// print_coap_ret_type (ret) ;
 		if (ret == L2_RECV_RECV_OK) 
 		{
@@ -115,8 +116,10 @@ void Sos::loop ()
 		    // In this state, we only consider control messages
 		    if (is_ctl_msg (in))
 		    {
+			Serial.println ("Received a CTL msg") ;
 			if (is_hello (in)) 
 			{
+			    Serial.println ("Received a CTL HELLO msg") ;
 			    coap_->get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
@@ -128,6 +131,7 @@ void Sos::loop ()
 			} 
 			else if (is_associate (in)) 
 			{
+			    Serial.println ("Received a CTL ASSOC msg") ;
 			    mk_ack_assoc (in, out) ;
 			} 
 			else 

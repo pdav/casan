@@ -2,13 +2,8 @@
 #include "sos.h"
 #include "option.h"
 
-struct option::optdesc * option::optdesc_ = 0 ;
 uint8_t option::errno_ = 0;
 
-#define	OPTION_INIT	do {					\
-			    if (optdesc_ == 0)			\
-			    static_init () ;			\
-			} while (false)				// no ";"
 #define	RESET		do {					\
 			    optcode_ = MO_None ;		\
 			    optlen_ = 0 ;			\
@@ -18,7 +13,7 @@ uint8_t option::errno_ = 0;
 			    byte *b ;				\
 			    if (optlen_ + 1 > (int) sizeof staticval_) { \
 				optval_ = (uint8_t*) malloc (optlen_+ 1) ; \
-				b = optval_;			\
+				b = optval_ ;			\
 			    }					\
 			    else				\
 			    {					\
@@ -29,22 +24,52 @@ uint8_t option::errno_ = 0;
 			    b [optlen_] = 0 ;			\
 			} while (false)				// no ";"
 #define	CHK_OPTCODE(c,err) do {					\
-			    err = false;			\
-			    for (int i (0) ; !err && i < MAXOPT ; i++) \
-				    if (optdesc_[i].code == c &&	\
-					    optdesc_ [i].format == OF_NONE) \
-					err = true;		\
+			    int i ;				\
+			    (err) = true ;			\
+			    for (i = 0 ; i < MAXOPT ; i++)	\
+			    {					\
+				if (taboptdesc [i].code == c)	\
+				{				\
+				    (err) = false ;		\
+				    break ;			\
+				}				\
+			    }					\
 			} while (false)				// no ";"
 #define	CHK_OPTLEN(c,l,err) do {				\
-			    err = false;			\
-			    for (int i (0) ; !err && i < MAXOPT ; i++) {	\
-				    if (optdesc_[i].code == c	\
-					&& ((l) < optdesc_ [i].minlen	\
-					    || (l) > optdesc_ [i].maxlen)) \
-				    err = true;			\
+			    int i ;				\
+			    (err) = true ;			\
+			    for (i = 0 ; i < MAXOPT ; i++)	\
+			    {					\
+				if (taboptdesc [i].code == c	\
+					&& (l) >= taboptdesc [i].minlen	\
+					&& (l) <= taboptdesc [i].maxlen) \
+				{				\
+				    (err) = false ;		\
+				    break ;			\
+				}				\
 			    }					\
 			} while (false)				// no ";"
 
+
+struct optdesc taboptdesc [] =
+{
+    { option::MO_Content_Format,	option::OF_OPAQUE,	0, 8	},
+    { option::MO_Etag,			option::OF_OPAQUE,	1, 8	},
+    { option::MO_Location_Path,		option::OF_STRING,	0, 255	},
+    { option::MO_Location_Query,	option::OF_STRING,	0, 255	},
+    { option::MO_Max_Age,		option::OF_UINT,	0, 4	},
+    { option::MO_Proxy_Uri,		option::OF_STRING,	1, 1034	},
+    { option::MO_Proxy_Scheme,		option::OF_STRING,	1, 255	},
+    { option::MO_Uri_Host,		option::OF_STRING,	1, 255	},
+    { option::MO_Uri_Path,		option::OF_STRING,	0, 255	},
+    { option::MO_Uri_Port,		option::OF_UINT,	0, 2	},
+    { option::MO_Uri_Query,		option::OF_STRING,	0, 255	},
+    { option::MO_Accept,		option::OF_UINT,	0, 2	},
+    { option::MO_If_None_Match,		option::OF_EMPTY,	0, 0	},
+    { option::MO_If_Match,		option::OF_OPAQUE,	0, 8	},
+} ;
+
+#define	MAXOPT		NTAB(taboptdesc)
 
 /******************************************************************************
  * Utilities
@@ -80,7 +105,6 @@ stbin *uint_to_byte (option::uint val)
 
 void option::reset (void)
 {
-    OPTION_INIT ;
     if (optval_)
 	free (optval_) ;
     RESET ;
@@ -89,14 +113,12 @@ void option::reset (void)
 // default constructor
 option::option ()
 {
-    OPTION_INIT ;
     RESET ;
 }
 
 option::option (optcode_t optcode)
 {
     bool err = false;
-    OPTION_INIT ;
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
@@ -109,7 +131,6 @@ option::option (optcode_t optcode)
 
 option::option (optcode_t optcode, void *optval, int optlen)
 {
-    OPTION_INIT ;
     bool err = false;
     CHK_OPTCODE (optcode, err) ;
     if (err)
@@ -134,7 +155,6 @@ option::option (optcode_t optcode, option::uint optval)
     stbin *stbin ;
 
     stbin = uint_to_byte (optval) ;
-    OPTION_INIT ;
     bool err = false;
     CHK_OPTCODE (optcode, err) ;
     if (err)
@@ -157,7 +177,6 @@ option::option (optcode_t optcode, option::uint optval)
 // copy constructor
 option::option (const option &o)
 {
-    OPTION_INIT ;
     memcpy (this, &o, sizeof o) ;
     if (optval_)
     {
@@ -169,7 +188,6 @@ option::option (const option &o)
 // copy assignment constructor
 option &option::operator= (const option &o)
 {
-    OPTION_INIT ;
     if (this != &o)
     {
 	if (this->optval_)
@@ -192,85 +210,6 @@ option::~option ()
 {
     if (optval_)
 	free (optval_) ;
-}
-
-
-void option::static_init (void)
-{
-    optdesc_ = (struct optdesc *) malloc (sizeof (struct optdesc) * MAXOPT) ;
-
-    for (int i = 0 ; i < MAXOPT ; i++)
-	optdesc_ [i].format = OF_NONE ;
-
-    optdesc_ [0].code = MO_Content_Format;
-    optdesc_ [0].format = OF_OPAQUE ;
-    optdesc_ [0].minlen = 0 ;
-    optdesc_ [0].maxlen = 8 ;
-
-    optdesc_ [1].code = MO_Etag;
-    optdesc_ [1].format = OF_OPAQUE ;
-    optdesc_ [1].minlen = 1 ;
-    optdesc_ [1].maxlen = 8 ;
-
-    optdesc_ [2].code = MO_Location_Path;
-    optdesc_ [2].format = OF_STRING ;
-    optdesc_ [2].minlen = 0 ;
-    optdesc_ [2].maxlen = 255 ;
-
-    optdesc_ [3].code = MO_Location_Query;
-    optdesc_ [3].format = OF_STRING ;
-    optdesc_ [3].minlen = 0 ;
-    optdesc_ [3].maxlen = 255 ;
-
-    optdesc_ [4].code = MO_Max_Age;
-    optdesc_ [4].format = OF_UINT ;
-    optdesc_ [4].minlen = 0 ;
-    optdesc_ [4].maxlen = 4 ;
-
-    optdesc_ [5].code = MO_Proxy_Uri;
-    optdesc_ [5].format = OF_STRING ;
-    optdesc_ [5].minlen = 1 ;
-    optdesc_ [5].maxlen = 1034 ;
-
-    optdesc_ [6].code = MO_Proxy_Scheme;
-    optdesc_ [6].format = OF_STRING ;
-    optdesc_ [6].minlen = 1 ;
-    optdesc_ [6].maxlen = 255 ;
-
-    optdesc_ [7].code = MO_Uri_Host;
-    optdesc_ [7].format = OF_STRING ;
-    optdesc_ [7].minlen = 1 ;
-    optdesc_ [7].maxlen = 255 ;
-
-    optdesc_ [8].code = MO_Uri_Path;
-    optdesc_ [8].format = OF_STRING ;
-    optdesc_ [8].minlen = 0 ;
-    optdesc_ [8].maxlen = 255 ;
-
-    optdesc_ [9].code = MO_Uri_Port;
-    optdesc_ [9].format = OF_UINT ;
-    optdesc_ [9].minlen = 0 ;
-    optdesc_ [9].maxlen = 2 ;
-
-    optdesc_ [10].code = MO_Uri_Query;
-    optdesc_ [10].format = OF_STRING ;
-    optdesc_ [10].minlen = 0 ;
-    optdesc_ [10].maxlen = 255 ;
-
-    optdesc_ [11].code = MO_Accept;
-    optdesc_ [11].format = OF_UINT ;
-    optdesc_ [11].minlen = 0 ;
-    optdesc_ [11].maxlen = 2 ;
-
-    optdesc_ [12].code = MO_If_None_Match;
-    optdesc_ [12].format = OF_EMPTY ;
-    optdesc_ [12].minlen = 0 ;
-    optdesc_ [12].maxlen = 0 ;
-
-    optdesc_ [13].code = MO_If_Match;
-    optdesc_ [13].format = OF_OPAQUE ;
-    optdesc_ [13].minlen = 0 ;
-    optdesc_ [13].maxlen = 8 ;
 }
 
 /******************************************************************************
