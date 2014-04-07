@@ -220,7 +220,14 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 			    throw int (42) ;
 
 			res.base_ += "/" + vp [i] ;
-			sid = std::stoi (vp [i]) ;
+			try
+			{
+			    sid = std::stoi (vp [i]) ;
+			}
+			catch (...)
+			{
+			    sid = -1 ;
+			}
 			i++ ;
 
 			res.slave_ = engine_.find_slave (sid) ;
