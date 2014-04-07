@@ -152,9 +152,16 @@ void test_values (void)
 
 void loop () 
 {
-    PRINT_DEBUG_STATIC ("\033[36m\tloop\033[00m") ;
-    // to check if we have memory leak
-    PRINT_FREE_MEM ;
+    static int n = 0 ;
+
+    if (n++ % 100000 == 0)
+    {
+	PRINT_DEBUG_STATIC ("\033[36m\tloop\033[00m") ;
+	// check memory leak
+	PRINT_FREE_MEM ;
+	n = 1 ;
+    }
+
     //test_values () ;
     sos->loop () ;
 }

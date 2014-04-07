@@ -179,10 +179,7 @@ option::option (const option &o)
 {
     memcpy (this, &o, sizeof o) ;
     if (optval_)
-    {
-	this->optval_ = NULL;
 	COPY_VAL (o.optval_) ;
-    }
 }
 
 // copy assignment constructor
@@ -196,11 +193,8 @@ option &option::operator= (const option &o)
 	    this->optval_ = NULL;
 	}
 	memcpy (this, &o, sizeof *this) ;
-	if (this->optval_)
-	{
-	    this->optval_ = NULL;
+	if (o.optval_)
 	    COPY_VAL (o.optval_) ;
-	}
     }
     return *this ;
 }
@@ -216,9 +210,33 @@ option::~option ()
  * Operator used for list sorting (cf msg.cc)
  */
 
-bool option::operator< (const option &o)
+bool option::operator== (const option &o)
+{
+    return this->optcode_ == o.optcode_ ;
+}
+bool option::operator!= (const option &o)
+{
+    return this->optcode_ != o.optcode_ ;
+}
+
+bool option::operator<  (const option &o)
 {
     return this->optcode_ < o.optcode_ ;
+}
+
+bool option::operator<= (const option &o)
+{
+    return this->optcode_ <= o.optcode_ ;
+}
+
+bool option::operator>  (const option &o)
+{
+    return this->optcode_ > o.optcode_ ;
+}
+
+bool option::operator>= (const option &o)
+{
+    return this->optcode_ >= o.optcode_ ;
 }
 
 /******************************************************************************
@@ -321,6 +339,8 @@ void option::print (void)
 	    Serial.print ((unsigned char)optcode_);
 	    break;
     }
+    Serial.print (F ("/")) ;
+    Serial.print (optcode_) ;
     Serial.print (F ("\033[36m optlen\033[00m="));
     Serial.print (optlen_);
     if (optval_)

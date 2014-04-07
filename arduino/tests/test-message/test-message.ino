@@ -64,8 +64,8 @@ void test_msg (void) {
 #endif
 
     // REGISTER message
-    m1.set_type (COAP_TYPE_NON) ;
-    m1.set_code (COAP_CODE_POST) ;
+    m1.set_type (COAP_TYPE_CON) ;
+    m1.set_code (COAP_CODE_GET) ;
     m1.set_id (10) ;
 
     PRINT_DEBUG_STATIC ("STEP 3a: M1 add uriquery2") ;

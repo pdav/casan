@@ -173,13 +173,13 @@ void Message::set_payload (uint8_t payload_length, uint8_t * payload)
 void Message::push_option (option &o) 
 {
     optlist *newo, *prev, *cur ;
-    
-    newo = (optlist *) malloc (sizeof (optlist)) ;
+
+    newo = (optlist *) malloc (sizeof *newo) ;
     newo->o = new option (o) ;
     prev = NULL ;
     cur = optlist_ ;
 
-    while (cur != NULL && *(newo->o) < *(cur->o))
+    while (cur != NULL && *(newo->o) >= *(cur->o))
     {
 	prev = cur ;
 	cur = cur->next ;

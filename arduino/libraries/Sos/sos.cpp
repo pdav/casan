@@ -82,14 +82,16 @@ void Sos::loop ()
     Message in ;
     Message out ;
     l2_recv_t ret ;
+    uint8_t oldstatus ;
 
     retransmission_handler_->loop_retransmit () ; 	// check all retrans.
     current_time.cur () ;
 
+    oldstatus = status_ ;
     switch (status_) 
     {
 	case SL_COLDSTART :
-	    Serial.println (F ("SL_COLDSTART")) ;
+	    // Serial.println (F ("SL_COLDSTART")) ;
 	    mk_discover () ;
 
 	    status_ = SL_WAITING_UNKNOWN ;
@@ -103,14 +105,14 @@ void Sos::loop ()
 	    // no break: fall through
 
 	case SL_WAITING_UNKNOWN :
-	    Serial.println (F ("\033[33mSL_WAITING_UNKNOWN\033[00m")) ;
+	    // Serial.println (F ("\033[33mSL_WAITING_UNKNOWN\033[00m")) ;
 	    while (status_ == SL_WAITING_UNKNOWN &&
 			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
 	    {
-		Serial.println ("Received a msg") ;
 		// print_coap_ret_type (ret) ;
 		if (ret == L2_RECV_RECV_OK) 
 		{
+		    Serial.println ("Received a msg") ;
 		    retransmission_handler_->check_msg_received (in) ; 
 
 		    // In this state, we only consider control messages
@@ -156,7 +158,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_WAITING_KNOWN :
-	    Serial.println (F ("\033[33mSL_WAITING_KNOWN\033[00m")) ;
+	    // Serial.println (F ("\033[33mSL_WAITING_KNOWN\033[00m")) ;
 
 	    // As in SL_WAITING_UNKNOWN, we do not consider messages
 	    // other than ASSOC & HELLO
@@ -222,7 +224,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_RENEW :
-	    Serial.println (F ("\033[33mSL_RENEW\033[00m")) ;
+	    // Serial.println (F ("\033[33mSL_RENEW\033[00m")) ;
 
 	    while (status_ == SL_RENEW &&
 			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
@@ -287,7 +289,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_RUNNING :	// TODO
-	    Serial.println (F ("\033[33mSL_RUNNING\033[00m")) ;
+	    // Serial.println (F ("\033[33mSL_RUNNING\033[00m")) ;
 
 	    while (status_ == SL_RUNNING &&
 			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
@@ -369,7 +371,16 @@ void Sos::loop ()
 	    break ;
     }
 
-    delay (5) ;
+    if (oldstatus != status_)
+    {
+	Serial.print (F ("Status ")) ;
+	Serial.print (oldstatus) ;
+	Serial.print (F ("->")) ;
+	Serial.print (status_) ;
+	Serial.println () ;
+    }
+
+    // delay (5) ;
 }
 
 void Sos::mk_ack_assoc (Message &in, Message &out)
@@ -453,7 +464,7 @@ void Sos::mk_discover ()
     Message m ;
     char message[SOS_BUF_LEN] ;
 
-    Serial.println (F ("Discover")) ;
+    Serial.println (F ("Sending Discover")) ;
 
     m.set_id (current_message_id_++) ;
     m.set_type (COAP_TYPE_NON) ;

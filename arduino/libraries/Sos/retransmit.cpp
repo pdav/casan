@@ -45,7 +45,7 @@ void Retransmit::loop_retransmit (void)
 {
     retransq *cur, *prev ;
 
-    Serial.println (F ("retransmit loop")) ;
+    // Serial.println (F ("retransmit loop")) ;
 
     prev = NULL ;
     cur = retransq_ ;

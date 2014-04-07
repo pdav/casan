@@ -16,22 +16,22 @@ class option
     public:
 	typedef enum
 	{
-			MO_None			= 0,
-			MO_Content_Format	= 12,
-			MO_Etag			= 4,
-			MO_Location_Path	= 8,
-			MO_Location_Query	= 20,
-			MO_Max_Age		= 14,
-			MO_Proxy_Uri		= 35,
-			MO_Proxy_Scheme		= 39,
-			MO_Uri_Host		= 3,
-			MO_Uri_Path		= 11,
-			MO_Uri_Port		= 7,
-			MO_Uri_Query		= 15,
-			MO_Accept		= 16,
-			MO_If_None_Match	= 5,
-			MO_If_Match		= 1,
-			MO_Size1		= 60,
+	    MO_None		= 0,
+	    MO_Content_Format	= 12,
+	    MO_Etag		= 4,
+	    MO_Location_Path	= 8,
+	    MO_Location_Query	= 20,
+	    MO_Max_Age		= 14,
+	    MO_Proxy_Uri	= 35,
+	    MO_Proxy_Scheme	= 39,
+	    MO_Uri_Host		= 3,
+	    MO_Uri_Path		= 11,
+	    MO_Uri_Port		= 7,
+	    MO_Uri_Query	= 15,
+	    MO_Accept		= 16,
+	    MO_If_None_Match	= 5,
+	    MO_If_Match		= 1,
+	    MO_Size1		= 60,
 	} optcode_t ;
 	typedef enum
 	{
@@ -55,7 +55,12 @@ class option
 	option &operator= (const option &o) ;	// copy assignment constructor
 	~option () ;				// destructor
 
-	bool operator< (const option &o) ;	// for list sorting in msg.cc
+	bool operator== (const option &o) ;	// for list sorting in msg.cc
+	bool operator!= (const option &o) ;	// for list sorting in msg.cc
+	bool operator<  (const option &o) ;	// for list sorting in msg.cc
+	bool operator<= (const option &o) ;	// for list sorting in msg.cc
+	bool operator>  (const option &o) ;	// for list sorting in msg.cc
+	bool operator>= (const option &o) ;	// for list sorting in msg.cc
 
 	void reset (void) ;
 	void print(void);

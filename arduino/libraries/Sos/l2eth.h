@@ -59,8 +59,10 @@ class l2net_eth : public l2net
 	l2addr *bcastaddr (void) ;
 	void get_src (l2addr *mac) ;
 	void get_dst (l2addr *mac) ;
+
+	// Ethernet payload (not including MAC header, of course)
 	uint8_t *get_payload (int offset) ;
-	size_t get_paylen (void) ;
+	size_t get_paylen (void) ;	// if truncated pkt: truncated payload
 
 	// debug usage
 	void dump_packet (size_t start, size_t maxlen) ;
