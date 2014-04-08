@@ -34,7 +34,7 @@ Sos::Sos (l2net *l2, long int uuid)
     uuid_ = uuid ;
 
     rmanager_ = new Rmanager () ;
-    retransmission_handler_ = new Retransmit (&master_) ;
+    retransmission_handler_ = new Retrans (&master_) ;
     status_ = SL_COLDSTART ;
 
     current_time.cur () ;

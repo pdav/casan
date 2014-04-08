@@ -8,7 +8,7 @@
 #include "l2.h"
 #include "l2eth.h"
 #include "msg.h"
-#include "retransmit.h"
+#include "retrans.h"
 #include "rmanager.h"
 #include "memory_free.h"
 #include "time.h"
@@ -49,7 +49,7 @@ class Sos {
 	void print_coap_ret_type (l2_recv_t ret) ;
 	void print_status (uint8_t status) ;
 
-	Retransmit *retransmission_handler_ ;
+	Retrans *retransmission_handler_ ;
 	l2addr *master_ ;
 	l2net *l2_ ;
 	uint8_t status_ ;

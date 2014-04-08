@@ -1,24 +1,24 @@
-#include "retransmit.h"
+#include "retrans.h"
 
-Retransmit::Retransmit (l2addr **master) 
+Retrans::Retrans (l2addr **master) 
 {
     master_addr_ = master ;
     retransq_ = NULL ;
 }
 
-Retransmit::~Retransmit () 
+Retrans::~Retrans () 
 {
     reset () ;
 }
 
-void Retransmit::reset (void) 
+void Retrans::reset (void) 
 {
     while (retransq_ != NULL)
 	del (NULL, retransq_) ;
 }
 
 // insert a new message in the retransmission list
-void Retransmit::add (Msg *msg) 
+void Retrans::add (Msg *msg) 
 {
     retransq *n ;
 
@@ -34,13 +34,13 @@ void Retransmit::add (Msg *msg)
     retransq_ = n ;
 }
 
-void Retransmit::del (Msg *msg) 
+void Retrans::del (Msg *msg) 
 {
-    del (get_retransmit (msg)) ;
+    del (get (msg)) ;
 }
 
 // TODO
-void Retransmit::loop (l2net &l2) 
+void Retrans::loop (l2net &l2) 
 {
     retransq *cur, *prev ;
 
@@ -74,7 +74,7 @@ void Retransmit::loop (l2net &l2)
     }
 }
 
-void Retransmit::check_msg_received (Msg &in) 
+void Retrans::check_msg_received (Msg &in) 
 {
     switch (in.get_type ())
     {
@@ -86,7 +86,7 @@ void Retransmit::check_msg_received (Msg &in)
     }
 }
 
-void Retransmit::check_msg_sent (Msg &in) 
+void Retrans::check_msg_sent (Msg &in) 
 {
     switch (in.get_type ())
     {
@@ -99,7 +99,7 @@ void Retransmit::check_msg_sent (Msg &in)
 }
 
 // for internal use only
-void Retransmit::del (retransq *r) 
+void Retrans::del (retransq *r) 
 {
     retransq *cur, *prev ;
 
@@ -116,7 +116,7 @@ void Retransmit::del (retransq *r)
 }
 
 // for internal use only
-void Retransmit::del (retransq *prev, retransq *cur) 
+void Retrans::del (retransq *prev, retransq *cur) 
 {
     if (prev == NULL)
 	retransq_ = cur->next ;
@@ -128,7 +128,7 @@ void Retransmit::del (retransq *prev, retransq *cur)
 }
 
 // get a message to retransmit, given its message id
-Retransmit::retransq *Retransmit::get_retransmit (Msg *msg) 
+Retrans::retransq *Retrans::get (Msg *msg) 
 {
     retransq *cur ;
 

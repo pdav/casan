@@ -1,5 +1,5 @@
-#ifndef __RETRANSMIT_H__
-#define __RETRANSMIT_H__
+#ifndef __RETRANS_H__
+#define __RETRANS_H__
 
 /*
  * Retransmission handling
@@ -18,10 +18,10 @@
 
 #define DEFAULT_TIMER 4000
 
-class Retransmit {
+class Retrans {
     public:
-	Retransmit (l2addr **master) ;
-	~Retransmit (void) ;
+	Retrans (l2addr **master) ;
+	~Retrans (void) ;
 
 	void add (Msg *m) ;		// add a message in retrans queue
 	void del (Msg *m) ;		// delete a message from retrans queue
@@ -42,7 +42,7 @@ class Retransmit {
 
 	void del (retransq *r) ;
 	void del (retransq *prev, retransq *cur) ;
-	retransq *get_retransmit (Msg *m) ;
+	retransq *get (Msg *m) ;
 
 	retransq *retransq_ ;
 	l2addr **master_addr_ ;
