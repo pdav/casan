@@ -72,7 +72,7 @@ char testpkt [] = "This is a test packet to broadcast address" ;
 
 void send_eth (void)
 {
-    size_t r ;
+    bool r ;
 
     r = e.send (*dest_addr, (uint8_t *) testpkt, sizeof testpkt) ;
     Serial.print (F ("Sent: r=")) ;

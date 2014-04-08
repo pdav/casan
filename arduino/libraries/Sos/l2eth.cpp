@@ -22,6 +22,8 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 
 #define	ETH_CRC_LENGTH		4
 
+#define	ETH_MTU			1500
+
 
 /******************************************************************************
  * l2addr_eth methods
@@ -142,17 +144,19 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 
     myaddr_ = * (l2addr_eth *) a ;
     ethtype_ = ethtype ;
+    if (mtu == 0)
+	mtu = ETH_MTU - 2 ;		// exluding MAC header + SOS length
     mtu_ = mtu ;
 
     if (rbuf_ != NULL)
 	free (rbuf_) ;
-    rbuf_ = (byte *) malloc (mtu_) ;
+    rbuf_ = (byte *) malloc (mtu_ + ETH_OFFSET_PAYLOAD) ;
 
     W5100.init () ;
     W5100.setMACAddress (myaddr_.get_raw_addr ()) ;
     cmd = SnMR::MACRAW ;
     if (! promisc)
-	cmd |= S0_MR_MF ;			// MAC filter for socket 0
+	cmd |= S0_MR_MF ;		// MAC filter for socket 0
     W5100.writeSnMR (SOCK0, cmd) ;
     W5100.execCmdSn (SOCK0, Sock_OPEN) ;
 }
@@ -160,45 +164,48 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 /*
  * Send packet
  *
- * Returns size of data really sent (not including header)
+ * Returns true if data is sent (i.e. located in the send buffer of
+ * the W5100 chip). If message should be truncated, it is not sent.
  */
 
-size_t l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len) 
+bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len) 
 {
-    l2addr_eth *m = (l2addr_eth *) &dest ;
-    byte *sbuf ;		// send buffer
-    size_t sbuflen ;		// buffer size
-    size_t paylen ;		// restricted to mtu, if any
+    bool success = false ;
 
-    paylen = len ;		// keep original length
-    sbuflen = len + ETH_OFFSET_PAYLOAD ;	// add MAC header
-    if (sbuflen > mtu_)
+    if (len + ETH_OFFSET_PAYLOAD <= mtu_)
     {
-	paylen -= (sbuflen - mtu_) ;
-	sbuflen = mtu_ ;
+	l2addr_eth *m = (l2addr_eth *) &dest ;
+	byte *sbuf ;		// send buffer
+	size_t sbuflen ;	// buffer size
+	size_t paylen ;		// restricted to mtu, if any
+
+	paylen = len ;		// keep original length
+	sbuflen = len + ETH_OFFSET_PAYLOAD ;	// add MAC header + SOS length
+	sbuf = (byte *) malloc (sbuflen) ;
+
+	// Standard Ethernet MAC header (14 bytes)
+	memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
+	memcpy (sbuf + ETH_OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
+	sbuf [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
+	sbuf [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
+
+	// SOS message size (2 bytes)
+	sbuf [ETH_OFFSET_SIZE    ] = BYTE_HIGH (paylen + 2) ;
+	sbuf [ETH_OFFSET_SIZE + 1] = BYTE_LOW  (paylen + 2) ;
+
+	// Payload
+	memcpy (sbuf + ETH_OFFSET_PAYLOAD, data, paylen) ;
+
+	// Send packet
+	W5100.send_data_processing (SOCK0, sbuf, sbuflen) ;
+	W5100.execCmdSn (SOCK0, Sock_SEND_MAC) ;
+
+	free (sbuf) ;
+
+	success = true ;
     }
-    sbuf = (byte *) malloc (sbuflen) ;
 
-    // Standard Ethernet MAC header (14 bytes)
-    memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
-    memcpy (sbuf + ETH_OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
-    sbuf [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
-    sbuf [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
-
-    // SOS message size (2 bytes)
-    sbuf [ETH_OFFSET_SIZE    ] = BYTE_HIGH (paylen + 2) ;
-    sbuf [ETH_OFFSET_SIZE + 1] = BYTE_LOW  (paylen + 2) ;
-
-    // Payload
-    memcpy (sbuf + ETH_OFFSET_PAYLOAD, data, paylen) ;
-
-    // Send packet
-    W5100.send_data_processing (SOCK0, sbuf, sbuflen) ;
-    W5100.execCmdSn (SOCK0, Sock_SEND_MAC) ;
-
-    free (sbuf) ;
-
-    return paylen ;
+    return success ;
 }
 
 /*
@@ -230,17 +237,17 @@ l2_recv_t l2net_eth::recv (void)
 	// Extract packet length
 	W5100.recv_data_processing (SOCK0, pl, sizeof pl, 0) ;
 	W5100.execCmdSn (SOCK0, Sock_RECV) ;
-	pktlen_ = ((uint16_t) pl [0] << 8) | (uint16_t) pl [1] ;
+	pktlen_ = INT16 (pl [0], pl [1]) ;
 	pktlen_ -= 2 ;			// w5100 header includes size itself
 
-	if (pktlen_ <= mtu_) 
+	if (pktlen_ <= mtu_ + ETH_OFFSET_PAYLOAD) 
 	{
 	    rbuflen_ = pktlen_ ;
 	    remaining = 0 ;
 	}
 	else
 	{
-	    rbuflen_ = mtu_ ;
+	    rbuflen_ = mtu_ + ETH_OFFSET_PAYLOAD ;
 	    remaining = pktlen_ - rbuflen_ ;
 	}
 
@@ -273,8 +280,8 @@ l2_recv_t l2net_eth::recv (void)
 
 	// Check Ethernet type
 	if (r == L2_RECV_RECV_OK
-		&& (rbuf_ [ETH_OFFSET_ETHTYPE] != (uint8_t) (ethtype_ >> 8) || 
-		    rbuf_ [ETH_OFFSET_ETHTYPE + 1] != (uint8_t) (ethtype_ & 0xff)))
+		&& (rbuf_ [ETH_OFFSET_ETHTYPE] != BYTE_HIGH (ethtype_)
+		 || rbuf_ [ETH_OFFSET_ETHTYPE + 1] != BYTE_LOW (ethtype_) ))
 	    r = L2_RECV_WRONG_ETHTYPE ;
 
 	// Truncated?
@@ -311,9 +318,8 @@ uint8_t *l2net_eth::get_payload (int offset)
 size_t l2net_eth::get_paylen (void) 
 {
     size_t sos_paylen ;
-    
-    sos_paylen = ((size_t) rbuf_ [ETH_OFFSET_SIZE] << 8) |
-		  (size_t) rbuf_ [ETH_OFFSET_SIZE + 1] ;
+
+    sos_paylen = INT16 (rbuf_ [ETH_OFFSET_SIZE], rbuf_ [ETH_OFFSET_SIZE + 1]) ;
     return sos_paylen ;
 }
 

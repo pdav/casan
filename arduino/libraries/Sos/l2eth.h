@@ -12,8 +12,8 @@
 #include "enum.h"
 #include "memory_free.h"
 
-// Ethernet address length
-#define	ETHADDRLEN	6
+#define	ETHADDRLEN	6		// Ethernet address length
+#define	ETHMTU		1536
 
 class l2addr_eth : public l2addr
 {
@@ -51,7 +51,7 @@ class l2net_eth : public l2net
 	l2net_eth (void) ;
 	~l2net_eth () ;
 	void start (l2addr *myaddr, bool promisc, size_t mtu, int ethtype) ;
-	size_t send (l2addr &dest, const uint8_t *data, size_t len) ;
+	bool send (l2addr &dest, const uint8_t *data, size_t len) ;
 	// the "recv" method copy the received packet in
 	// the instance private variable (see rbuf_/rbuflen_ below)
 	l2_recv_t recv (void) ;

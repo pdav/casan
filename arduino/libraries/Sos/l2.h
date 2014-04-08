@@ -21,7 +21,7 @@ class l2addr
 class l2net {
     public:
 	virtual ~l2net () {} ;
-	virtual size_t send (l2addr &mac_dest, const uint8_t *data, size_t len) = 0 ;
+	virtual bool send (l2addr &dest, const uint8_t *data, size_t len) = 0 ;
 	// the "recv" method copies the received packet in
 	// the instance private variable (see _rbuf/_rbuflen below)
 	virtual l2_recv_t recv (void) = 0 ;
@@ -32,9 +32,11 @@ class l2net {
 	virtual uint8_t *get_payload (int offset) = 0 ;
 	virtual size_t get_paylen (void) = 0 ;
 
-	size_t mtu (void) { return mtu_ ; } ;
+	size_t mtu (void) { return mtu_ ; }
 
     protected:
+	// Note on MTU: this value does not include MAC header
+	// thus, it is the maximum size of a SOS-level datagram
 	size_t mtu_ ;		// must be initialized in derived classes
 } ;
 

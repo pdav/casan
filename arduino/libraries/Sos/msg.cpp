@@ -218,7 +218,7 @@ bool Msg::send (l2net &l2, l2addr &dest)
     if (encoded_ == NULL)
     {
 	l2_ = &l2 ;
-	enclen_ = l2_->mtu () ;
+	enclen_ = l2_->mtu () ;			// exploitable size
 	encoded_ = (uint8_t *) malloc (enclen_) ;
 	success = coap_encode (encoded_, enclen_) ;
     }
@@ -226,7 +226,7 @@ bool Msg::send (l2net &l2, l2addr &dest)
 
     if (success)
     {
-	l2_->send (dest, encoded_, enclen_) ;
+	success = l2_->send (dest, encoded_, enclen_) ;
     }
     else
     {
@@ -274,8 +274,6 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
     }
     if (paylen_ > 0)
 	size += 1 + paylen_ ;		// don't forget 0xff byte
-
-
 
     if (size <= sbuflen)		// Enough space?
     {

@@ -57,9 +57,9 @@
 
 #define	BYTE_HIGH(n)		(((n) & 0xff00) >> 8)
 #define	BYTE_LOW(n)		((n) & 0xff)
-#define	INT16(h,l)		((h) << 8 | (l))
+#define	INT16(h,l)		(((uint16_t) (h)) << 8 | (uint16_t) (l))
 
-#define	OPTVAL(o)	((o)->optval_ ? (o)->optval_ : (o)->staticval_)
+#define	OPTVAL(o)		((o)->optval_ ? (o)->optval_ : (o)->staticval_)
 
 
 #define	COAP_MAX_TOKLEN		8
