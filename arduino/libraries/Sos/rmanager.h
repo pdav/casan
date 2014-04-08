@@ -1,9 +1,8 @@
 #ifndef __RMANAGER_H__
 #define __RMANAGER_H__
 
-#include "message.h"
-#include "coap.h"
 #include "option.h"
+#include "msg.h"
 #include "resource.h"
 
 #define SOS_RESOURCES_ALL		"resources"
@@ -20,8 +19,8 @@ class Rmanager {
 	~Rmanager () ;
 
 	void add_resource (Resource *resource) ;
-	uint8_t request_resource (Message &in, Message &out) ;
-	void get_all_resources (Message &out) ;
+	uint8_t request_resource (Msg &in, Msg &out) ;
+	void get_all_resources (Msg &out) ;
 	void delete_resource (rmanager_list *r) ;
 	void reset () ;
 

@@ -1,8 +1,7 @@
 #include "retransmit.h"
 
-Retransmit::Retransmit (Coap *c, l2addr **master) 
+Retransmit::Retransmit (l2addr **master) 
 {
-    coap_ = c ;
     master_addr_ = master ;
     retransq_ = NULL ;
 }
@@ -19,14 +18,14 @@ void Retransmit::reset (void)
 }
 
 // insert a new message in the retransmission list
-void Retransmit::add (Message *m) 
+void Retransmit::add (Msg *msg) 
 {
     retransq *n ;
 
     current_time.cur () ;		// synchronize current_time
 
     n = (retransq *) malloc (sizeof (retransq)) ;
-    n->m = m ;
+    n->msg = msg ;
     n->timelast = current_time ;
     n->timenext = current_time ;
     n->timenext.add (ALEA (ACK_TIMEOUT * ACK_RANDOM_FACTOR)) ;
@@ -35,13 +34,13 @@ void Retransmit::add (Message *m)
     retransq_ = n ;
 }
 
-void Retransmit::del (Message *m) 
+void Retransmit::del (Msg *msg) 
 {
-    del (get_retransmit (m)) ;
+    del (get_retransmit (msg)) ;
 }
 
 // TODO
-void Retransmit::loop_retransmit (void) 
+void Retransmit::loop (l2net &l2) 
 {
     retransq *cur, *prev ;
 
@@ -64,7 +63,7 @@ void Retransmit::loop_retransmit (void)
 	{
 	    if (cur->timenext < current_time)
 	    {
-		coap_->send (**master_addr_, *(cur->m)) ;
+		cur->msg->send (l2, **master_addr_) ;
 		cur->ntrans++ ;
 		cur->timenext.add (2*time::diff (cur->timenext, cur->timelast));
 		cur->timelast.cur () ;
@@ -75,7 +74,7 @@ void Retransmit::loop_retransmit (void)
     }
 }
 
-void Retransmit::check_msg_received (Message &in) 
+void Retransmit::check_msg_received (Msg &in) 
 {
     switch (in.get_type ())
     {
@@ -87,7 +86,7 @@ void Retransmit::check_msg_received (Message &in)
     }
 }
 
-void Retransmit::check_msg_sent (Message &in) 
+void Retransmit::check_msg_sent (Msg &in) 
 {
     switch (in.get_type ())
     {
@@ -123,20 +122,20 @@ void Retransmit::del (retransq *prev, retransq *cur)
 	retransq_ = cur->next ;
     else
 	prev->next = cur->next ;
-    if (cur->m != NULL)
-	delete cur->m ;
+    if (cur->msg != NULL)
+	delete cur->msg ;
     free (cur) ;
 }
 
 // get a message to retransmit, given its message id
-Retransmit::retransq *Retransmit::get_retransmit (Message *m) 
+Retransmit::retransq *Retransmit::get_retransmit (Msg *msg) 
 {
     retransq *cur ;
 
     for (cur = retransq_ ; cur != NULL ; cur = cur->next)
     {
 	// TODO : maybe check the token too
-	if (cur->m->get_id () == m->get_id ())
+	if (cur->msg->get_id () == msg->get_id ())
 	    break ;
     }
     return cur ;

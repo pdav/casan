@@ -5,15 +5,14 @@
  * Retransmission handling
  *
  * This class provides support for a list of messages to retransmit
- * The loop_rentransmit function must be called periodically in order
- * to retransmit and/or expire messages.
+ * The loop function must be called periodically in order to
+ * retransmit and/or expire messages.
  */
 
 #include "defs.h"
 #include "enum.h"
-#include "coap.h"
-#include "message.h"
-#include "l2eth.h"
+#include "msg.h"
+#include "l2.h"
 #include "memory_free.h"
 #include "time.h"
 
@@ -21,32 +20,31 @@
 
 class Retransmit {
     public:
-	Retransmit (Coap *c, l2addr **master) ;
+	Retransmit (l2addr **master) ;
 	~Retransmit (void) ;
 
-	void add (Message *m) ;		// add a message in retrans queue
-	void del (Message *m) ;		// delete a message from retrans queue
-	void loop_retransmit (void) ;	// to be called regularly
+	void add (Msg *m) ;		// add a message in retrans queue
+	void del (Msg *m) ;		// delete a message from retrans queue
+	void loop (l2net &l2) ;		// to be called regularly
 	void reset (void) ;
-	void check_msg_received (Message &in) ;
-	void check_msg_sent (Message &in) ;
+	void check_msg_received (Msg &in) ;
+	void check_msg_sent (Msg &in) ;
 
     private:
 	struct retransq
 	{
-	    Message *m ;
-	    time timelast ;			// time of last transmission
-	    time timenext ;			// time of next transmission
-	    uint8_t ntrans ;			// # of retransmissions 
-	    retransq *next ;			// next in queue
+	    Msg *msg ;
+	    time timelast ;		// time of last transmission
+	    time timenext ;		// time of next transmission
+	    uint8_t ntrans ;		// # of retransmissions 
+	    retransq *next ;		// next in queue
 	} ;
 
 	void del (retransq *r) ;
 	void del (retransq *prev, retransq *cur) ;
-	retransq *get_retransmit (Message *m) ;
+	retransq *get_retransmit (Msg *m) ;
 
 	retransq *retransq_ ;
-	Coap  *coap_ ;
 	l2addr **master_addr_ ;
 } ;
 

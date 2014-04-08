@@ -7,7 +7,7 @@
 #include "option.h"
 #include "l2.h"
 #include "l2eth.h"
-#include "coap.h"
+#include "msg.h"
 #include "retransmit.h"
 #include "rmanager.h"
 #include "memory_free.h"
@@ -38,18 +38,18 @@ class Sos {
 	Rmanager *rmanager_ ;
 
     private:
-	bool is_ctl_msg (Message &m) ;
-	bool is_hello (Message &m) ;
-	bool is_associate (Message &m) ;
+	bool is_ctl_msg (Msg &m) ;
+	bool is_hello (Msg &m) ;
+	bool is_associate (Msg &m) ;
 
-	void mk_ctl_msg (Message &m) ;
+	void mk_ctl_msg (Msg &m) ;
 	void mk_discover () ;
-	void mk_ack_assoc (Message &in, Message &out) ;
+	void mk_ack_assoc (Msg &in, Msg &out) ;
 
 	void print_coap_ret_type (l2_recv_t ret) ;
+	void print_status (uint8_t status) ;
 
 	Retransmit *retransmission_handler_ ;
-	Coap *coap_ ;
 	l2addr *master_ ;
 	l2net *l2_ ;
 	uint8_t status_ ;

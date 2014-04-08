@@ -26,7 +26,7 @@ l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
 l2net_eth e ;
 Sos *sos ;
 
-uint8_t process_light (Message &in, Message &out) 
+uint8_t process_light (Msg &in, Msg &out) 
 {
     Serial.println (F ("process_light")) ;
 
@@ -44,7 +44,7 @@ uint8_t process_light (Message &in, Message &out)
     return 0 ;
 }
 
-uint8_t process_temp (Message &in, Message &out) 
+uint8_t process_temp (Msg &in, Msg &out) 
 {
     Serial.println (F ("process_temp")) ;
 
@@ -62,7 +62,7 @@ uint8_t process_temp (Message &in, Message &out)
     return 0 ;
 }
 
-uint8_t process_led (Message &in, Message &out) 
+uint8_t process_led (Msg &in, Msg &out) 
 {
     Serial.println (F ("process_led")) ;
 
@@ -105,14 +105,14 @@ void setup ()
 
 void test_values_temp (void)
 {
-    Message in, out ;
+    Msg in, out ;
     process_temp (in, out) ;
     out.print () ;
 }
 
 void test_values_light (void)
 {
-    Message in, out ;
+    Msg in, out ;
     process_light (in, out) ;
     out.print () ;
 }
@@ -131,8 +131,8 @@ void test_values_led (void)
     option opt_high (option::MO_Uri_Query, (unsigned char*) h, strlen (h)) ;
     option opt_low (option::MO_Uri_Query, (unsigned char*) l, strlen (l)) ;
 
-    Message in, out ;
-    Message in2 ;
+    Msg in, out ;
+    Msg in2 ;
 
     in.push_option (opt_high) ;
     process_led (in, out) ;
@@ -154,7 +154,8 @@ void loop ()
 {
     static int n = 0 ;
 
-    if (n++ % 100000 == 0)
+    // if (n++ % 100000 == 0)
+    if (n++ % 10000 == 0)
     {
 	PRINT_DEBUG_STATIC ("\033[36m\tloop\033[00m") ;
 	// check memory leak

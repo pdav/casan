@@ -17,7 +17,7 @@ bool Resource::check_name (const char *name, int len)
     return strncmp (name_, name, len) == 0 ;
 }
 
-void Resource::add_handler (coap_code_t type, uint8_t (*handler)(Message &in, Message &out)) 
+void Resource::add_handler (coap_code_t type, uint8_t (*handler)(Msg &in, Msg &out)) 
 {
     switch (type) {
 	case COAP_CODE_GET :

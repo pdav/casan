@@ -19,9 +19,9 @@ void setup () {
 
 void test_msg (void) {
     PRINT_DEBUG_STATIC ("STEP 1: create 2 empty messages") ;
-    Message m1 ;
+    Msg m1 ;
     m1.print () ;
-    Message m2 ;
+    Msg m2 ;
     m2.print () ;
 
     PRINT_DEBUG_STATIC ("STEP 2: create options") ;

@@ -22,17 +22,17 @@ void Rmanager::add_resource (Resource *r)
 
 
 // returns  0 if ok 
-uint8_t Rmanager::request_resource (Message &in, Message &out) 
+uint8_t Rmanager::request_resource (Msg &in, Msg &out) 
 {
     uint8_t r = 1 ;
 
-    in.reset_get_option () ;
+    in.reset_next_option () ;
 
-    for (option *o = in.get_option () ; o != NULL ; o = in.get_option ())
+    for (option *o = in.next_option () ; o != NULL ; o = in.next_option ())
     {
 	if (o->optcode () == option::MO_Uri_Path)
 	{
-	    // if the request is to get all resources
+	    // request for all resources
 	    if (o->optlen () >= (int) (sizeof SOS_RESOURCES_ALL -1) && 
 			strncmp ((const char *) o->val (), 
 				    SOS_RESOURCES_ALL, 
@@ -64,7 +64,7 @@ uint8_t Rmanager::request_resource (Message &in, Message &out)
 		r = (*h.handler) (in, out) ;
 
 		found = false ;
-		for (option *o2 = out.get_option () ; o2 != NULL ; o2 = out.get_option ())
+		for (option *o2 = out.next_option () ; o2 != NULL ; o2 = out.next_option ())
 		{
 		    if (o2->optcode () == option::MO_Content_Format)
 		    {
@@ -88,7 +88,7 @@ uint8_t Rmanager::request_resource (Message &in, Message &out)
     return r ;
 }
 
-void Rmanager::get_all_resources (Message &out) 
+void Rmanager::get_all_resources (Msg &out) 
 {
     char buf [150] ;
     int size = 0 ;

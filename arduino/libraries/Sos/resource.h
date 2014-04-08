@@ -4,11 +4,11 @@
 #include "enum.h"
 #include <Arduino.h>
 #include "defs.h"
-#include "message.h"
+#include "msg.h"
 
 typedef struct handler_
 {
-    uint8_t (*handler) (Message &in, Message &out) ;
+    uint8_t (*handler) (Msg &in, Msg &out) ;
 } handler_s;
 
 class Resource {
@@ -17,7 +17,7 @@ class Resource {
 	//~Resource();
 
 	bool check_name (const char *name, int len);
-	void add_handler (coap_code_t type, uint8_t (*handler) (Message &in, Message &out)) ;
+	void add_handler (coap_code_t type, uint8_t (*handler) (Msg &in, Msg &out)) ;
 	handler_s get_handler (coap_code_t type) ;
 
 	// FIXME : make these private (they are used in rmanager.cpp)

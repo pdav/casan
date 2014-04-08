@@ -33,9 +33,8 @@ Sos::Sos (l2net *l2, long int uuid)
     nttl_ = SOS_DEFAULT_TTL ;
     uuid_ = uuid ;
 
-    coap_ = new Coap (l2_) ;
     rmanager_ = new Rmanager () ;
-    retransmission_handler_ = new Retransmit (coap_, &master_) ;
+    retransmission_handler_ = new Retransmit (&master_) ;
     status_ = SL_COLDSTART ;
 
     current_time.cur () ;
@@ -79,35 +78,28 @@ void Sos::reset (void)
 
 void Sos::loop () 
 {
-    Message in ;
-    Message out ;
+    Msg in ;
+    Msg out ;
     l2_recv_t ret ;
     uint8_t oldstatus ;
 
-    retransmission_handler_->loop_retransmit () ; 	// check all retrans.
+    retransmission_handler_->loop (*l2_) ; 	// check all retrans.
     current_time.cur () ;
 
     oldstatus = status_ ;
     switch (status_) 
     {
 	case SL_COLDSTART :
-	    // Serial.println (F ("SL_COLDSTART")) ;
 	    mk_discover () ;
-
 	    status_ = SL_WAITING_UNKNOWN ;
-	    // the next waiting time laps for a message
 	    next_time_inc_ = SOS_DELAY ;
-
 	    // next time we will send a register msg
 	    next_register_ = current_time ;
 	    next_register_.add (next_time_inc_) ;
-
-	    // no break: fall through
+	    break ;
 
 	case SL_WAITING_UNKNOWN :
-	    // Serial.println (F ("\033[33mSL_WAITING_UNKNOWN\033[00m")) ;
-	    while (status_ == SL_WAITING_UNKNOWN &&
-			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
+	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
 	    {
 		// print_coap_ret_type (ret) ;
 		if (ret == L2_RECV_RECV_OK) 
@@ -122,7 +114,7 @@ void Sos::loop ()
 			if (is_hello (in)) 
 			{
 			    Serial.println ("Received a CTL HELLO msg") ;
-			    coap_->get_src (master_) ;
+			    in.get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
@@ -158,12 +150,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_WAITING_KNOWN :
-	    // Serial.println (F ("\033[33mSL_WAITING_KNOWN\033[00m")) ;
-
-	    // As in SL_WAITING_UNKNOWN, we do not consider messages
-	    // other than ASSOC & HELLO
-	    while (status_ == SL_WAITING_KNOWN &&
-			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
+	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
 	    {
 		if (ret == L2_RECV_RECV_OK) 
 		{
@@ -172,7 +159,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_src (master_) ;
+			    in.get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 
 			    next_time_inc_ = SOS_DELAY ;
@@ -224,10 +211,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_RENEW :
-	    // Serial.println (F ("\033[33mSL_RENEW\033[00m")) ;
-
-	    while (status_ == SL_RENEW &&
-			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
+	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
 	    {
 		if (ret == L2_RECV_RECV_OK) 
 		{
@@ -236,7 +220,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_src (master_) ;
+			    in.get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
@@ -259,7 +243,6 @@ void Sos::loop ()
 
 	    }
 
-	    // it is possible to don't be in renew status
 	    if (status_ == SL_RENEW)
 	    {
 		if ( next_register_ < current_time)
@@ -289,10 +272,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_RUNNING :	// TODO
-	    // Serial.println (F ("\033[33mSL_RUNNING\033[00m")) ;
-
-	    while (status_ == SL_RUNNING &&
-			    (ret = coap_->recv (in)) != L2_RECV_EMPTY)
+	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
 	    {
 		if (ret == L2_RECV_RECV_OK) 
 		{
@@ -301,7 +281,7 @@ void Sos::loop ()
 		    {
 			if (is_hello (in)) 
 			{
-			    coap_->get_src (master_) ;
+			    in.get_src (master_) ;
 			    current_message_id_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
@@ -328,7 +308,7 @@ void Sos::loop ()
 			else
 			{
 			    Serial.println (F ("\033[36mWe sent the answer\033[00m")) ;
-			    coap_->send (*master_, out) ;
+			    out.send (*l2_, *master_) ;
 			}
 		    }
 		}
@@ -343,7 +323,7 @@ void Sos::loop ()
 		    o.optval (l2_->mtu ()) ;
 		    out.push_option (o) ;
 		    out.set_code (COAP_RETURN_CODE (4,13)) ;
-		    coap_->send (*master_, out) ;
+		    out.send (*l2_, *master_) ;
 		}
 	    }
 
@@ -373,20 +353,20 @@ void Sos::loop ()
 
     if (oldstatus != status_)
     {
-	Serial.print (F ("Status ")) ;
-	Serial.print (oldstatus) ;
+	Serial.print (F ("Status: ")) ;
+	print_status (oldstatus) ;
 	Serial.print (F ("->")) ;
-	Serial.print (status_) ;
+	print_status (status_) ;
 	Serial.println () ;
     }
 
     // delay (5) ;
 }
 
-void Sos::mk_ack_assoc (Message &in, Message &out)
+void Sos::mk_ack_assoc (Msg &in, Msg &out)
 {
     // we get the new master
-    coap_->get_src (master_) ;
+    in.get_src (master_) ;
 
     // the current mid is the next after the id of the received msg
     current_message_id_ = in.get_id () + 1 ;
@@ -404,7 +384,7 @@ void Sos::mk_ack_assoc (Message &in, Message &out)
     rmanager_->get_all_resources (out) ;
 
     // send the packet
-    coap_->send (*master_, out) ;
+    out.send (*l2_, *master_) ;
 
     // we received an assoc msg : the timer is renewed
     next_time_inc_ = SOS_DELAY ;
@@ -424,12 +404,12 @@ void Sos::mk_ack_assoc (Message &in, Message &out)
  * SOS control messages
  */
 
-bool Sos::is_ctl_msg (Message &m)
+bool Sos::is_ctl_msg (Msg &m)
 {
     int i = 0 ;
 
-    m.reset_get_option () ;
-    for (option *o = m.get_option () ; o != NULL ; o = m.get_option ())
+    m.reset_next_option () ;
+    for (option *o = m.next_option () ; o != NULL ; o = m.next_option ())
     {
 	if (o->optcode () == option::MO_Uri_Path)
 	{
@@ -442,14 +422,14 @@ bool Sos::is_ctl_msg (Message &m)
 	    i++ ;
 	}
     }
-    m.reset_get_option () ;
+    m.reset_next_option () ;
     if (i != NTAB (sos_namespace))
 	return false ;
 
     return true ;
 }
 
-void Sos::mk_ctl_msg (Message &m)
+void Sos::mk_ctl_msg (Msg &m)
 {
     option path1 (option::MO_Uri_Path, (void*) sos_namespace [0].path,
 						sos_namespace [0].len) ;
@@ -461,8 +441,8 @@ void Sos::mk_ctl_msg (Message &m)
 
 void Sos::mk_discover () 
 {
-    Message m ;
-    char message[SOS_BUF_LEN] ;
+    Msg m ;
+    char str [SOS_BUF_LEN] ;
 
     Serial.println (F ("Sending Discover")) ;
 
@@ -471,25 +451,25 @@ void Sos::mk_discover ()
     m.set_code (COAP_CODE_POST) ;
     mk_ctl_msg (m) ;
 
-    snprintf (message, SOS_BUF_LEN, SOS_DISCOVER_SLAVEID, uuid_) ;
-    option o1 (option::MO_Uri_Query, (unsigned char*)message, strlen(message)) ;
+    snprintf (str, SOS_BUF_LEN, SOS_DISCOVER_SLAVEID, uuid_) ;
+    option o1 (option::MO_Uri_Query, str, strlen (str)) ;
     m.push_option (o1) ;
 
-    snprintf (message, SOS_BUF_LEN, SOS_DISCOVER_MTU,l2_->mtu ()) ;
-    option o2 (option::MO_Uri_Query, (unsigned char*)message, strlen(message)) ;
+    snprintf (str, SOS_BUF_LEN, SOS_DISCOVER_MTU, l2_->mtu ()) ;
+    option o2 (option::MO_Uri_Query, str, strlen (str)) ;
     m.push_option (o2) ;
 
-    coap_->send (*master_, m) ;
+    m.send (*l2_, *master_) ;
 }
 
-bool Sos::is_associate (Message &m)
+bool Sos::is_associate (Msg &m)
 {
     bool found = false ;
 
-    m.reset_get_option () ;
+    m.reset_next_option () ;
     if (m.get_type () == COAP_TYPE_CON && m.get_code () == COAP_CODE_POST)
     {
-	for (option *o = m.get_option () ; o != NULL ; o = m.get_option ()) 
+	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ()) 
 	{
 	    if (o->optcode () == option::MO_Uri_Query)
 	    {
@@ -517,16 +497,15 @@ bool Sos::is_associate (Message &m)
 }
 
 // check if a hello msg is received & new
-bool Sos::is_hello (Message &m)
+bool Sos::is_hello (Msg &m)
 {
     bool found = false ;
 
     // a hello msg is NON POST
     if (m.get_type () == COAP_TYPE_NON && m.get_code () == COAP_CODE_POST)
     {
-	m.reset_get_option () ;
-
-	for (option *o = m.get_option () ; o != NULL ; o = m.get_option ()) 
+	m.reset_next_option () ;
+	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ()) 
 	{
 	    if (o->optcode () == option::MO_Uri_Query)
 	    {
@@ -552,7 +531,7 @@ bool Sos::is_hello (Message &m)
 }
 
 // maybe for further implementation
-void check_msg (Message &in, Message &out)
+void check_msg (Msg &in, Msg &out)
 {
 }
 
@@ -575,6 +554,32 @@ void Sos::print_coap_ret_type (l2_recv_t ret)
 	    break ;
 	default :
 	    PRINT_DEBUG_STATIC ("ERROR RECV") ;
+	    break ;
+    }
+}
+
+void Sos::print_status (uint8_t status)
+{
+    switch (status)
+    {
+	case SL_COLDSTART :
+	    Serial.print (F ("SL_COLDSTART")) ;
+	    break ;
+	case SL_WAITING_UNKNOWN :
+	    Serial.print (F ("SL_WAITING_UNKNOWN")) ;
+	    break ;
+	case SL_WAITING_KNOWN :
+	    Serial.print (F ("SL_WAITING_KNOWN")) ;
+	    break ;
+	case SL_RENEW :
+	    Serial.print (F ("SL_RENEW")) ;
+	    break ;
+	case SL_RUNNING :
+	    Serial.print (F ("SL_RUNNING")) ;
+	    break ;
+	default :
+	    Serial.print (F ("???")) ;
+	    Serial.print (status) ;
 	    break ;
     }
 }
