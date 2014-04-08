@@ -49,7 +49,7 @@ class option
 
 	option () ;				// constructor
 	option (optcode_t c) ;			// constructor
-	option (optcode_t c, void *v, int l) ;	// constructor
+	option (optcode_t c, const void *v, int l) ;	// constructor
 	option (optcode_t c, uint v) ;		// constructor
 	option (const option &o) ;		// copy constructor
 	option &operator= (const option &o) ;	// copy assignment constructor

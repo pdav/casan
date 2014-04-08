@@ -129,7 +129,7 @@ option::option (optcode_t optcode)
     optcode_ = optcode ;
 }
 
-option::option (optcode_t optcode, void *optval, int optlen)
+option::option (optcode_t optcode, const void *optval, int optlen)
 {
     bool err = false;
     CHK_OPTCODE (optcode, err) ;

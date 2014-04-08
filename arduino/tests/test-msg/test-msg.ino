@@ -1,5 +1,8 @@
 /*
  * Test program for the "message" and "option" classes
+ *
+ * Create and destroy messages with options
+ * No packet is sent on the network
  */
 
 #include <SPI.h>
@@ -30,38 +33,6 @@ void test_msg (void) {
     option ouq1 (option::MO_Uri_Query, (void *) URIQUERY1, sizeof URIQUERY1-1) ;
     option ouq2 (option::MO_Uri_Query, (void *) URIQUERY2, sizeof URIQUERY2-1) ;
     option ouq3 (option::MO_Uri_Query, (void *) URIQUERY3, sizeof URIQUERY3-1) ;
-
-#if 0
-    PRINT_DEBUG_STATIC ("AVANT") ;
-    PRINT_FREE_MEM ;
-    PRINT_DEBUG_STATIC ("OS3") ; ouq3.print () ;
-    ouq3 = ouq1 ;
-    PRINT_DEBUG_STATIC ("APRÈS ouq3 = ouq1 ;") ;
-    PRINT_FREE_MEM ;
-    PRINT_DEBUG_STATIC ("OS3") ; ouq3.print () ;
-    ouq3 = ouq2 ;
-    PRINT_DEBUG_STATIC ("APRÈS ouq3 = ouq2 ;") ;
-    PRINT_FREE_MEM ;
-    PRINT_DEBUG_STATIC ("OS3") ; ouq3.print () ;
-    ouq1 = oup1 ;
-    PRINT_DEBUG_STATIC ("APRÈS ouq1 = oup1 ;") ;
-    PRINT_FREE_MEM ;
-    PRINT_DEBUG_STATIC ("OS1") ; ouq1.print () ;
-    ouq2 = ouq1 ;
-    PRINT_DEBUG_STATIC ("APRÈS ouq2 = ouq1 ;") ;
-    PRINT_FREE_MEM ;
-    PRINT_DEBUG_STATIC ("OS2") ; ouq2.print () ;
-    ouq3 = ouq2 ;
-    PRINT_DEBUG_STATIC ("APRÈS ouq3 = ouq2 ;") ;
-    PRINT_FREE_MEM ;
-    PRINT_DEBUG_STATIC ("OS3") ; ouq3.print () ;
-
-    ouq1.print () ;
-    ouq2.print () ;
-    ouq3.print () ;
-    oup1.print () ;
-    oup2.print () ;
-#endif
 
     // REGISTER message
     m1.set_type (COAP_TYPE_CON) ;
