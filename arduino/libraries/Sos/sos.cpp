@@ -34,7 +34,7 @@ Sos::Sos (l2net *l2, long int uuid)
     uuid_ = uuid ;
 
     rmanager_ = new Rmanager () ;
-    retransmission_handler_ = new Retrans (&master_) ;
+    retrans_ = new Retrans (&master_) ;
     status_ = SL_COLDSTART ;
 
     current_time.cur () ;
@@ -72,7 +72,7 @@ void Sos::reset (void)
     current_message_id_ = 1 ;
     nttl_ = SOS_DEFAULT_TTL ;
     rmanager_->reset () ;
-    retransmission_handler_->reset () ;
+    retrans_->reset () ;
     reset_master () ;
 }
 
@@ -83,7 +83,7 @@ void Sos::loop ()
     l2_recv_t ret ;
     uint8_t oldstatus ;
 
-    retransmission_handler_->loop (*l2_) ; 	// check all retrans.
+    retrans_->loop (*l2_) ; 		// check needed retransmissions
     current_time.cur () ;
 
     oldstatus = status_ ;
@@ -105,7 +105,7 @@ void Sos::loop ()
 		if (ret == L2_RECV_RECV_OK) 
 		{
 		    Serial.println ("Received a msg") ;
-		    retransmission_handler_->check_msg_received (in) ; 
+		    retrans_->check_msg_received (in) ; 
 
 		    // In this state, we only consider control messages
 		    if (is_ctl_msg (in))
@@ -154,7 +154,7 @@ void Sos::loop ()
 	    {
 		if (ret == L2_RECV_RECV_OK) 
 		{
-		    retransmission_handler_->check_msg_received (in) ; 
+		    retrans_->check_msg_received (in) ; 
 		    if (is_ctl_msg (in))
 		    {
 			if (is_hello (in)) 
@@ -215,7 +215,7 @@ void Sos::loop ()
 	    {
 		if (ret == L2_RECV_RECV_OK) 
 		{
-		    retransmission_handler_->check_msg_received (in) ; 
+		    retrans_->check_msg_received (in) ; 
 		    if (is_ctl_msg (in))
 		    {
 			if (is_hello (in)) 
@@ -276,7 +276,7 @@ void Sos::loop ()
 	    {
 		if (ret == L2_RECV_RECV_OK) 
 		{
-		    retransmission_handler_->check_msg_received (in) ; 
+		    retrans_->check_msg_received (in) ; 
 		    if (is_ctl_msg (in))
 		    {
 			if (is_hello (in)) 

@@ -49,7 +49,7 @@ class Sos {
 	void print_coap_ret_type (l2_recv_t ret) ;
 	void print_status (uint8_t status) ;
 
-	Retrans *retransmission_handler_ ;
+	Retrans *retrans_ ;
 	l2addr *master_ ;
 	l2net *l2_ ;
 	uint8_t status_ ;
