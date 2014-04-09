@@ -55,7 +55,7 @@ class Sos {
 	uint8_t status_ ;
 	long int nttl_ ;			// TTL get by assoc msg
 	long int hlid_ ;			// hello ID
-	int current_message_id_ ;
+	int curid_ ;				// current message id
 	long int uuid_ ;
 	unsigned long next_time_inc_ ;
 	time next_register_ ;

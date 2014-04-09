@@ -27,7 +27,7 @@ Sos::Sos (l2net *l2, long int uuid)
 
     // XXXX
     // ///////////////// l2_->set_master_addr (master_) ;
-    current_message_id_ = 1 ;
+    curid_ = 1 ;
 
     l2_ = l2 ;
     nttl_ = SOS_DEFAULT_TTL ;
@@ -69,7 +69,7 @@ void Sos::register_resource (Resource *r)
 void Sos::reset (void) 
 {
     status_ = SL_COLDSTART ;
-    current_message_id_ = 1 ;
+    curid_ = 1 ;
     nttl_ = SOS_DEFAULT_TTL ;
     rmanager_->reset () ;
     retrans_->reset () ;
@@ -115,7 +115,7 @@ void Sos::loop ()
 			{
 			    Serial.println ("Received a CTL HELLO msg") ;
 			    in.get_src (master_) ;
-			    current_message_id_ = in.get_id () + 1 ;
+			    curid_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
 			    // ((l2addr_eth *) master_)->print () ;
@@ -160,7 +160,7 @@ void Sos::loop ()
 			if (is_hello (in)) 
 			{
 			    in.get_src (master_) ;
-			    current_message_id_ = in.get_id () + 1 ;
+			    curid_ = in.get_id () + 1 ;
 
 			    next_time_inc_ = SOS_DELAY ;
 			    next_register_ = current_time ;
@@ -221,7 +221,7 @@ void Sos::loop ()
 			if (is_hello (in)) 
 			{
 			    in.get_src (master_) ;
-			    current_message_id_ = in.get_id () + 1 ;
+			    curid_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
 			    next_time_inc_ = SOS_DELAY ;
@@ -282,7 +282,7 @@ void Sos::loop ()
 			if (is_hello (in)) 
 			{
 			    in.get_src (master_) ;
-			    current_message_id_ = in.get_id () + 1 ;
+			    curid_ = in.get_id () + 1 ;
 			    status_ = SL_WAITING_KNOWN ;
 
 			    next_time_inc_ = SOS_DELAY ;
@@ -369,7 +369,7 @@ void Sos::mk_ack_assoc (Msg &in, Msg &out)
     in.get_src (master_) ;
 
     // the current mid is the next after the id of the received msg
-    current_message_id_ = in.get_id () + 1 ;
+    curid_ = in.get_id () + 1 ;
 
     // we are now in running mode
     status_ = SL_RUNNING ;
@@ -446,7 +446,7 @@ void Sos::mk_discover ()
 
     Serial.println (F ("Sending Discover")) ;
 
-    m.set_id (current_message_id_++) ;
+    m.set_id (curid_++) ;
     m.set_type (COAP_TYPE_NON) ;
     m.set_code (COAP_CODE_POST) ;
     mk_ctl_msg (m) ;
