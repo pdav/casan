@@ -92,9 +92,6 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 {
     bool success ;
 
-    Serial.print (F ("COAP DECODE, rbuflen=")) ;
-    Serial.print (rbuflen) ;
-    Serial.println () ;
     reset () ;
     success = true ;
 
@@ -166,11 +163,6 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 	    /* register option */
 	    if (success)
 	    {
-		Serial.print (F ("Read opt=")) ;
-		Serial.print (opt_nb) ;
-		Serial.print (F (", Len=")) ;
-		Serial.print (opt_len) ;
-		Serial.println () ;
 		o.optcode (option::optcode_t (opt_nb)) ;
 		o.optval ((void *)(rbuf + i), (int) opt_len) ;
 		push_option (o) ;
