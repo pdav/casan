@@ -10,26 +10,24 @@
 void setup () {
     Serial.begin(38400) ;		// no space before left parenthesis
     Serial.println (F ("start")) ;
-    current_time.cur () ;
+    current_time.sync () ;
 }
 
 void test_diff (void)
 {
     time x ;
     timediff_t diff ;
-    long int diff32 ;
 
-    Serial.print (F ("x : ")) ;
+    Serial.print (F ("x (unitialized) : ")) ;
     x.print () ;
 
     Serial.print (F ("current_time : ")) ;
-    current_time.cur () ;
+    current_time.sync () ;
     current_time.print () ;
 
     Serial.print (F ("diff : ")) ;
-    diff = time::diff (x, current_time) ;
-    diff32 = diff ;
-    Serial.println (diff32) ;
+    diff = x - current_time ;
+    Serial.println ((long int) diff) ;
 
     if (current_time < x)
 	Serial.println (F ("\033[31m ISSUE : current_time < x \033[00m ")) ;
@@ -42,6 +40,7 @@ void test_diff (void)
 void test_operators (void)
 {
     time x, y ;
+    timediff_t d ;
 
     Serial.print (F ("x : ")) ;
     x.print () ;
@@ -55,20 +54,28 @@ void test_operators (void)
     Serial.print (F ("current_time : ")) ;
     current_time.print () ;
 
-    Serial.println (F ("x.add (5000) ;")) ;
-    x.add (5000) ;
+    Serial.println (F ("x + 5000 ; ")) ;
+    x = x + 5000 ;
     Serial.print (F ("x : ")) ;
     x.print () ;
 
-    Serial.println (F ("y = x ; y.add (5000)")) ;
+    Serial.println (F ("y = x ; y = y + 5000 ; ")) ;
     y = x ;
-    y.add (5000) ;
+    y = y + 5000 ;
     Serial.print (F ("y : ")) ;
     y.print () ;
     Serial.print (F ("x : ")) ;
     x.print () ;
 
-    current_time.cur () ;
+    Serial.println (F ("d = y - x : ")) ;
+    d = y - x ;
+    Serial.println ((unsigned long int) d) ;
+
+    Serial.println (F ("y = y - 5000 ;")) ;
+    y = y - 5000 ;
+    y.print () ;
+
+    current_time.sync () ;
 }
 
 void loop () {

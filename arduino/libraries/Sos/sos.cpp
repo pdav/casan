@@ -7,6 +7,17 @@
 #define	SOS_DISCOVER_MTU	"mtu=%d"
 #define	SOS_ASSOC		"assoc=%ld"
 
+#define	SOS_BUF_LEN		50	// > sizeof hello=.../slave=..../etc
+
+// all timer values are expressed in ms
+#define	TIMER_DISCOVER		1*1000		// delay between discover msg
+#define	TIMER_KNOWN		30*1000		// time in waiting_known
+
+#define SOS_DELAY_INCR		50
+#define SOS_DELAY_MAX		2000
+#define SOS_DELAY		1500		// ?
+#define SOS_DEFAULT_TTL		30000
+
 static struct
 {
     const char *path ;
@@ -20,24 +31,23 @@ static struct
 extern l2addr_eth l2addr_eth_broadcast ;
 
 // TODO : set all variables
-Sos::Sos (l2net *l2, long int uuid)
+Sos::Sos (l2net *l2, long int slaveid)
 {
     master_ = l2->bcastaddr () ;
     reset_master () ;		// master_ becomes a broadcast
 
-    // XXXX
-    // ///////////////// l2_->set_master_addr (master_) ;
     curid_ = 1 ;
 
     l2_ = l2 ;
     nttl_ = SOS_DEFAULT_TTL ;
-    uuid_ = uuid ;
+    slaveid_ = slaveid ;
+    hlid_ = 0 ;
 
     rmanager_ = new Rmanager () ;
     retrans_ = new Retrans (&master_) ;
     status_ = SL_COLDSTART ;
 
-    current_time.cur () ;
+    current_time.sync () ;
 }
 
 void Sos::reset_master (void) 
@@ -45,7 +55,8 @@ void Sos::reset_master (void)
     if (master_)
     {
 	PRINT_DEBUG_STATIC ("OLD ADDR") ;
-	((l2addr_eth *) master_)->print () ;
+	master_->print () ;
+	Serial.println () ;
     }
     else
     {
@@ -54,8 +65,9 @@ void Sos::reset_master (void)
     }
 
     PRINT_DEBUG_STATIC ("\033[36mset master addr to broadcast\033[00m") ;
-    *((l2addr_eth *) master_) = l2addr_eth_broadcast ;
-    ((l2addr_eth *) master_)->print () ;
+    master_ = l2_->bcastaddr () ;
+    master_->print () ;
+    Serial.println () ;
     hlid_ = 0 ;
 }
 
@@ -66,6 +78,7 @@ void Sos::register_resource (Resource *r)
 
 // TODO : we need to restart all the application, 
 // delete all the history of the exchanges
+// XXX: not used at this time
 void Sos::reset (void) 
 {
     status_ = SL_COLDSTART ;
@@ -84,24 +97,21 @@ void Sos::loop ()
     uint8_t oldstatus ;
 
     retrans_->loop (*l2_) ; 		// check needed retransmissions
-    current_time.cur () ;
+    current_time.sync () ;
 
-    oldstatus = status_ ;
-    switch (status_) 
+    oldstatus = status_ ;		// keep old value for debug display
+    switch (status_)
     {
 	case SL_COLDSTART :
-	    mk_discover () ;
-	    status_ = SL_WAITING_UNKNOWN ;
+	    send_discover () ;
 	    next_time_inc_ = SOS_DELAY ;
-	    // next time we will send a register msg
-	    next_register_ = current_time ;
-	    next_register_.add (next_time_inc_) ;
+	    next_discover_ = current_time + next_time_inc_ ;
+	    status_ = SL_WAITING_UNKNOWN ;
 	    break ;
 
 	case SL_WAITING_UNKNOWN :
 	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
 	    {
-		// print_coap_ret_type (ret) ;
 		if (ret == L2_RECV_RECV_OK) 
 		{
 		    Serial.println ("Received a msg") ;
@@ -120,13 +130,12 @@ void Sos::loop ()
 
 			    // ((l2addr_eth *) master_)->print () ;
 			    next_time_inc_ = SOS_DELAY ;
-			    next_register_ = current_time ;
-			    next_register_.add (next_time_inc_) ;
+			    next_discover_ = current_time + next_time_inc_ ;
 			} 
 			else if (is_associate (in)) 
 			{
 			    Serial.println ("Received a CTL ASSOC msg") ;
-			    mk_ack_assoc (in, out) ;
+			    send_assoc_answer (in, out) ;
 			} 
 			else 
 			{
@@ -136,16 +145,15 @@ void Sos::loop ()
 		}
 	    }
 
-	    if (next_register_ < current_time)
+	    if (current_time > next_discover_)
 	    {
-		mk_discover () ;
+		send_discover () ;
 
 		// compute the next waiting time laps for a message
 		next_time_inc_ = 
 			(next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
 			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
-		next_register_ = current_time ;
-		next_register_.add (next_time_inc_) ;
+		next_discover_ = current_time + next_time_inc_ ;
 	    }
 	    break ;
 
@@ -163,13 +171,11 @@ void Sos::loop ()
 			    curid_ = in.get_id () + 1 ;
 
 			    next_time_inc_ = SOS_DELAY ;
-			    next_register_ = current_time ;
-			    next_register_.add (next_time_inc_) ;
-
+			    next_discover_ = current_time + next_time_inc_ ;
 			} 
 			else if (is_associate (in)) 
 			{
-			    mk_ack_assoc (in, out) ;
+			    send_assoc_answer (in, out) ;
 			} 
 			else 
 			{
@@ -185,26 +191,24 @@ void Sos::loop ()
 		// if we reach the max increment and the time is over
 		// we enter the "waiting unknown" status
 		if (next_time_inc_ == SOS_DELAY_MAX && 
-				time::diff (next_register_, current_time) <= 0)
+				next_discover_ - current_time <= 0)
 		{
 		    reset_master () ;	// master_ becomes a broadcast
 
 		    next_time_inc_ = SOS_DELAY ;
-		    next_register_ = current_time ;
-		    next_register_.add (next_time_inc_) ;
+		    next_discover_ = current_time + next_time_inc_ ;
 
 		    status_ = SL_WAITING_UNKNOWN ;
 		}
 
-		if (next_register_ < current_time)
+		if (current_time > next_discover_)
 		{
-		    mk_discover () ;
+		    send_discover () ;
 
 		    next_time_inc_ = 
 			    (next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
 			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
-		    next_register_ = current_time ;
-		    next_register_.add (next_time_inc_) ;
+		    next_discover_ = current_time + next_time_inc_ ;
 		}
 	    }
 
@@ -225,14 +229,13 @@ void Sos::loop ()
 			    status_ = SL_WAITING_KNOWN ;
 
 			    next_time_inc_ = SOS_DELAY ;
-			    next_register_ = current_time ;
-			    next_register_.add (next_time_inc_) ;
+			    next_discover_ = current_time + next_time_inc_ ;
 
-			    mk_discover () ;
+			    send_discover () ;
 			} 
 			else if (is_associate (in)) 
 			{
-			    mk_ack_assoc (in, out) ;
+			    send_assoc_answer (in, out) ;
 			} 
 			else 
 			{
@@ -245,27 +248,26 @@ void Sos::loop ()
 
 	    if (status_ == SL_RENEW)
 	    {
-		if ( next_register_ < current_time)
+		if (current_time > next_discover_)
 		{
 		    next_time_inc_ = 
 			    (next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
 			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
 
-		    next_register_ = current_time ;
-		    next_register_.add (next_time_inc_) ;
+		    next_discover_ = current_time + next_time_inc_ ;
 
-		    mk_discover () ;
+		    send_discover () ;
 		}
 
 		// we test if we have to go back in waiting unknown status 
 		// = ttl timeout
-		if (time::diff (ttl_timeout_, current_time) <= 0)
+		if (ttl_timeout_ - current_time <= 0)
 		{
 		    reset_master () ;	// master_ becomes a broadcast
 
 		    status_ = SL_WAITING_UNKNOWN ;
 		    next_time_inc_ = SOS_DELAY ;
-		    mk_discover () ;
+		    send_discover () ;
 		}
 	    }
 
@@ -286,12 +288,11 @@ void Sos::loop ()
 			    status_ = SL_WAITING_KNOWN ;
 
 			    next_time_inc_ = SOS_DELAY ;
-			    next_register_ = current_time ;
-			    next_register_.add (next_time_inc_) ;
+			    next_discover_ = current_time + next_time_inc_ ;
 			}
 			else if (is_associate (in)) 
 			{
-			    mk_ack_assoc (in, out) ;
+			    send_assoc_answer (in, out) ;
 			} 
 			else 
 			{
@@ -330,12 +331,11 @@ void Sos::loop ()
 	    if (status_ == SL_RUNNING)
 	    {
 		// if current time <= ttl timeout /2
-		if (time::diff (ttl_timeout_mid_, current_time) <= 0)
+		if (ttl_timeout_mid_ - current_time <= 0)
 		{
-		    mk_discover () ;
+		    send_discover () ;
 		    next_time_inc_ = SOS_DELAY ;
-		    next_register_ = current_time ;
-		    next_register_.add (next_time_inc_) ;
+		    next_discover_ = current_time + next_time_inc_ ;
 		    status_ = SL_RENEW ;
 		}
 	    }
@@ -363,7 +363,7 @@ void Sos::loop ()
     // delay (5) ;
 }
 
-void Sos::mk_ack_assoc (Msg &in, Msg &out)
+void Sos::send_assoc_answer (Msg &in, Msg &out)
 {
     // we get the new master
     in.get_src (master_) ;
@@ -389,15 +389,13 @@ void Sos::mk_ack_assoc (Msg &in, Msg &out)
     // we received an assoc msg : the timer is renewed
     next_time_inc_ = SOS_DELAY ;
 
-    current_time.cur () ;
+    current_time.sync () ;
 
     // the ttl timeout is set to current time + nttl_
-    ttl_timeout_ = current_time ;
-    ttl_timeout_.add (nttl_) ;
+    ttl_timeout_ = current_time + nttl_ ;
 
     // there is a mid-term ttl setted for passing in renew status
-    ttl_timeout_mid_ = current_time ;
-    ttl_timeout_mid_.add (nttl_ / 2) ;
+    ttl_timeout_mid_ = current_time + (nttl_ / 2) ;
 }
 
 /**********************
@@ -417,7 +415,7 @@ bool Sos::is_ctl_msg (Msg &m)
 		return false ;
 	    if (sos_namespace [i].len != o->optlen ())
 		return false ;
-	    if (memcmp (sos_namespace [i].path, (const void *) o->val (), o->optlen ()))
+	    if (memcmp (sos_namespace [i].path, o->val (), o->optlen ()))
 		return false ;
 	    i++ ;
 	}
@@ -439,10 +437,10 @@ void Sos::mk_ctl_msg (Msg &m)
     m.push_option (path2) ;
 }
 
-void Sos::mk_discover () 
+void Sos::send_discover () 
 {
     Msg m ;
-    char str [SOS_BUF_LEN] ;
+    char tmpstr [SOS_BUF_LEN] ;
 
     Serial.println (F ("Sending Discover")) ;
 
@@ -451,12 +449,12 @@ void Sos::mk_discover ()
     m.set_code (COAP_CODE_POST) ;
     mk_ctl_msg (m) ;
 
-    snprintf (str, SOS_BUF_LEN, SOS_DISCOVER_SLAVEID, uuid_) ;
-    option o1 (option::MO_Uri_Query, str, strlen (str)) ;
+    snprintf (tmpstr, sizeof tmpstr, SOS_DISCOVER_SLAVEID, slaveid_) ;
+    option o1 (option::MO_Uri_Query, tmpstr, strlen (tmpstr)) ;
     m.push_option (o1) ;
 
-    snprintf (str, SOS_BUF_LEN, SOS_DISCOVER_MTU, l2_->mtu ()) ;
-    option o2 (option::MO_Uri_Query, str, strlen (str)) ;
+    snprintf (tmpstr, sizeof tmpstr, SOS_DISCOVER_MTU, l2_->mtu ()) ;
+    option o2 (option::MO_Uri_Query, tmpstr, strlen (tmpstr)) ;
     m.push_option (o2) ;
 
     m.send (*l2_, *master_) ;
@@ -466,9 +464,10 @@ bool Sos::is_associate (Msg &m)
 {
     bool found = false ;
 
-    m.reset_next_option () ;
     if (m.get_type () == COAP_TYPE_CON && m.get_code () == COAP_CODE_POST)
     {
+	m.reset_next_option () ;
+
 	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ()) 
 	{
 	    if (o->optcode () == option::MO_Uri_Query)

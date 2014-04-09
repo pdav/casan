@@ -22,6 +22,9 @@ int tmp_sensor = A0 ;
 int light_sensor = A1 ;
 int led = A2 ;
 
+int slaveid = 169 ;
+int mtu = MTU ;
+
 l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
 l2net_eth e ;
 Sos *sos ;
@@ -87,8 +90,8 @@ void setup ()
     Serial.begin(38400) ;
     Serial.println (F ("start")) ;
 
-    e.start (myaddr, false, MTU, SOS_ETH_TYPE) ;
-    sos = new Sos (&e, 169) ;
+    e.start (myaddr, false, mtu, SOS_ETH_TYPE) ;
+    sos = new Sos (&e, slaveid) ;
 
     Resource *r1 = new Resource (PROCESS_1_name, PROCESS_1_title, PROCESS_1_rt) ;
     r1->add_handler (COAP_CODE_GET,process_light) ;

@@ -111,7 +111,7 @@ unsigned char * l2addr_eth::get_raw_addr (void)
     return this->addr_ ;
 }
 
-void l2addr_eth::print () {
+void l2addr_eth::print (void) {
     int i ;
 
     Serial.print (F ("Eth : \033[32m")) ;
@@ -121,7 +121,7 @@ void l2addr_eth::print () {
 	    Serial.print (':') ;
 	Serial.print (addr_ [i], HEX) ;
     }
-    Serial.println ("\033[00m") ;
+    Serial.print ("\033[00m") ;
 }
 
 /******************************************************************************

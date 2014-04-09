@@ -22,13 +22,12 @@ void Retrans::add (Msg *msg)
 {
     retransq *n ;
 
-    current_time.cur () ;		// synchronize current_time
+    current_time.sync () ;		// synchronize current_time
 
     n = (retransq *) malloc (sizeof (retransq)) ;
     n->msg = msg ;
     n->timelast = current_time ;
-    n->timenext = current_time ;
-    n->timenext.add (ALEA (ACK_TIMEOUT * ACK_RANDOM_FACTOR)) ;
+    n->timenext = current_time + ALEA (ACK_TIMEOUT * ACK_RANDOM_FACTOR) ;
     n->ntrans = 0 ;
     n->next = retransq_ ;
     retransq_ = n ;
@@ -65,8 +64,8 @@ void Retrans::loop (l2net &l2)
 	    {
 		cur->msg->send (l2, **master_addr_) ;
 		cur->ntrans++ ;
-		cur->timenext.add (2*time::diff (cur->timenext, cur->timelast));
-		cur->timelast.cur () ;
+		cur->timenext = cur->timenext + (2* (cur->timenext - cur->timelast));
+		cur->timelast.sync () ;
 	    }
 	    prev = cur ;
 	}

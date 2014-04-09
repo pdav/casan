@@ -6,36 +6,10 @@
 
 time current_time ;
 
-time::time ()
+// synchronize current time with help of millis ()
+void time::sync (void)		
 {
-    time_ = 0 ;
-}
-
-time::time (time &t)
-{
-    time_ = t.time_ ;
-}
-
-time::~time ()
-{
-}
-
-bool time::operator< (time &t)
-{
-    return time_ < t.time_ ;
-}
-
-time &time::operator= (time &t)
-{
-    if (this != &t)
-	memcpy (this, &t, sizeof *this) ;
-    return *this ;
-}
-
-// update current time with help of millis ()
-void time::cur (void)		
-{
-    uint32_t ms ;
+    millis_t ms ;
     uint32_t n ;
 
     n = TIME_HIGH (time_) ;
@@ -45,29 +19,11 @@ void time::cur (void)
     time_ = MK_TIME (n, ms) ;
 }
 
-void time::add (unsigned long int time)
-{
-    time_ += (uint64_t) time ;
-}
-
-void time::add (time &t)
-{
-    time_ += t.time_ ;
-}
-
-timediff_t time::diff (time &a, time &b)
-{
-    timediff_t diff ;
-
-    diff = a.time_ - b.time_ ;
-    return diff ;
-}
-
 void time::print ()
 {
     Serial.print (F ("\033[33mtime = \033[00m")) ;
     Serial.print (TIME_HIGH (time_)) ;
-    Serial.print (F ("\033[33m,\033[00m")) ;
+    Serial.print (F ("\033[33m:\033[00m")) ;
     Serial.print (TIME_LOW (time_)) ;
     Serial.println () ;
 }

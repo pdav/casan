@@ -15,7 +15,8 @@ class l2addr
 	virtual ~l2addr () {} ;
 	virtual bool operator== (const l2addr &other) = 0 ;
 	virtual bool operator!= (const l2addr &other) = 0 ;
-	virtual bool operator!= (const unsigned char* mac_addr) = 0 ;
+	virtual bool operator!= (const unsigned char *rawaddr) = 0 ;
+	virtual void print (void) = 0 ;
 } ;
 
 class l2net {
