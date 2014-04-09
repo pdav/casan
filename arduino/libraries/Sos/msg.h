@@ -1,5 +1,5 @@
-#ifndef __MESSAGE_H__
-#define __MESSAGE_H__
+#ifndef __MSG_H__
+#define __MSG_H__
 
 #include "Arduino.h"
 #include "defs.h"
