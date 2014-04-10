@@ -69,6 +69,6 @@ inline time operator- (time lhs, const millis_t &rhs)
     return lhs ;
 }
 
-extern time current_time ;
+extern time curtime ;			// expected to be the current time
 
 #endif

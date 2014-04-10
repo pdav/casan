@@ -5,12 +5,12 @@
  */
 
 // implicitely declared
-// time current_time ;
+// time curtime ;
 
 void setup () {
     Serial.begin(38400) ;		// no space before left parenthesis
     Serial.println (F ("start")) ;
-    current_time.sync () ;
+    curtime.sync () ;
 }
 
 void test_diff (void)
@@ -21,19 +21,19 @@ void test_diff (void)
     Serial.print (F ("x (unitialized) : ")) ;
     x.print () ;
 
-    Serial.print (F ("current_time : ")) ;
-    current_time.sync () ;
-    current_time.print () ;
+    Serial.print (F ("curtime : ")) ;
+    curtime.sync () ;
+    curtime.print () ;
 
     Serial.print (F ("diff : ")) ;
-    diff = x - current_time ;
+    diff = x - curtime ;
     Serial.println ((long int) diff) ;
 
-    if (current_time < x)
-	Serial.println (F ("\033[31m ISSUE : current_time < x \033[00m ")) ;
+    if (curtime < x)
+	Serial.println (F ("\033[31m ISSUE : curtime < x \033[00m ")) ;
 
-    if (x < current_time)
-	Serial.println (F ("\033[32m OK : x < current_time \033[00m ")) ;
+    if (x < curtime)
+	Serial.println (F ("\033[32m OK : x < curtime \033[00m ")) ;
 
 }
 
@@ -45,14 +45,14 @@ void test_operators (void)
     Serial.print (F ("x : ")) ;
     x.print () ;
 
-    Serial.println (F ("x = current_time ")) ;
-    x = current_time ;
+    Serial.println (F ("x = curtime ")) ;
+    x = curtime ;
 
     Serial.print (F ("x : ")) ;
     x.print () ;
 
-    Serial.print (F ("current_time : ")) ;
-    current_time.print () ;
+    Serial.print (F ("curtime : ")) ;
+    curtime.print () ;
 
     Serial.println (F ("x + 5000 ; ")) ;
     x = x + 5000 ;
@@ -75,7 +75,7 @@ void test_operators (void)
     y = y - 5000 ;
     y.print () ;
 
-    current_time.sync () ;
+    curtime.sync () ;
 }
 
 void loop () {

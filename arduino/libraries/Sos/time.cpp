@@ -4,7 +4,7 @@
 #define	TIME_LOW(t)		((uint32_t) (((t)      ) & 0xffffffff))
 #define	MK_TIME(n,ms)		((((uint64_t) (n)) << 32) | ms)
 
-time current_time ;
+time curtime ;
 
 // synchronize current time with help of millis ()
 void time::sync (void)		
