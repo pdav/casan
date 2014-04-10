@@ -6,69 +6,67 @@
  * back to 0 after 50 days, we must provide a longer time scale
  * in order to handle case where we are near to the limit (such
  * as after > before, always...).
+ *
+ * This file include various SOS timers definitions in order
+ * hide implementation details. Note on these timers: they just
+ * keep timepoints such that, when called, they can tell if
+ * a given timer has expired. They don't keep an active time
+ * measure, nor they don't provide callbacks.
  */
 
 #include "Arduino.h"
 #include "defs.h"
 
-typedef int64_t timediff_t ;
-typedef unsigned long int millis_t ;
+typedef uint64_t timediff_t ;
+typedef uint64_t time_t ;
 
-class time
+extern time_t curtime ;
+
+/*
+ * Current time
+ *
+ * To keep current time (for a longer scale than ~50 days), declare
+ * a time_t variable:
+ *	time_t curtime ;
+ * and update it regularly (i.e. in the Arduino loop function) with:
+ *	sync_time (curtime) ;
+ */
+
+extern void sync_time (time_t &cur) ;
+extern void print_time (time_t &t) ;
+
+/*
+ * Timer used in waiting_unknown and waiting_known states
+ */
+
+class Twait
 {
     public:
-	time ()			{ time_ = 0 ; }
-	time (const time &t)	{ time_ = t.time_ ; }
-	~time ()		{}
-
-	time &operator= (time t)	{ time_ = t.time_ ; return *this ; }
-	time operator+= (millis_t t)	{ time_ += t ; return *this ; }
-
-	bool operator<  (time &t)	{ return time_ <  t.time_ ; }
-	bool operator<= (time &t)	{ return time_ <= t.time_ ; }
-	bool operator>  (time &t)	{ return time_ >  t.time_ ; }
-	bool operator>= (time &t)	{ return time_ >= t.time_ ; }
-
-	void sync (void) ;		// synchronize with current time
-
-	void print () ;
-
+	void init (time_t &cur) ;
+	bool next (time_t &cur) ;
+	bool expired (time_t &cur) ;
     private:
-	uint64_t time_ ;		// high:nb of rollovers, low:millis
-
-	friend time operator+ (time lhs, const time &rhs) ;
-	friend time operator+ (time lhs, const timediff_t &rhs) ;
-	friend timediff_t operator- (time lhs, const time &rhs) ;
-	friend time operator- (time lhs, const millis_t &rhs) ;
-
+	time_t next_ ;
+	time_t inc_ ;
+	time_t limit_ ;
 } ;
 
-inline time operator+ (time lhs, const time &rhs)
+/*
+ * Timer used in running and renew states
+ */
+
+class Trenew
 {
-    lhs.time_ += rhs.time_ ;
-    return lhs ;
-}
-
-inline time operator+ (time lhs, const timediff_t &rhs)
-{
-    lhs.time_ += rhs ;
-    return lhs ;
-}
-
-inline timediff_t operator- (time lhs, const time &rhs)
-{
-    timediff_t diff ;
-
-    diff = lhs.time_ - rhs.time_ ;
-    return diff ;
-}
-
-inline time operator- (time lhs, const millis_t &rhs)
-{
-    lhs.time_ -= rhs ;
-    return lhs ;
-}
-
-extern time curtime ;			// expected to be the current time
+    public:
+	void init (time_t &cur, int sttl) ;
+	bool renew (time_t &cur) ;		// time to enter renew state
+	bool next (time_t &cur) ;		// next discover
+	bool expired (time_t &cur) ;		// time to enter waiting_known
+    private:
+	time_t mid_ ;
+	time_t inc_ ;
+	time_t next_ ;
+	time_t limit_ ;
+} ;
 
 #endif

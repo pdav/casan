@@ -16,7 +16,7 @@
 #define	PROCESS_3_rt	"light"
 
 // MTU is less than 0.25 * (free memory in SRAM after initialization)
-#define	MTU		200
+#define	MTU		100
 
 int tmp_sensor = A0 ;
 int light_sensor = A1 ;

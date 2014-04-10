@@ -1,5 +1,13 @@
 #include "sos.h"
 
+/*
+ * SOS main class
+ *
+ * Note: this class supports at most one master on the current L2
+ *   network. If there are more than one master, behaviour is not
+ *   guaranteed.
+ */
+
 #define	SOS_NAMESPACE1		".well-known"
 #define	SOS_NAMESPACE2		"sos"
 #define	SOS_HELLO		"hello=%ld"
@@ -9,14 +17,6 @@
 
 #define	SOS_BUF_LEN		50	// > sizeof hello=.../slave=..../etc
 
-// all timer values are expressed in ms
-#define	TIMER_DISCOVER		1*1000		// delay between discover msg
-#define	TIMER_KNOWN		30*1000		// time in waiting_known
-
-#define SOS_DELAY_INCR		50
-#define SOS_DELAY_MAX		2000
-#define SOS_DELAY		1500		// ?
-#define SOS_DEFAULT_TTL		30000
 
 static struct
 {
@@ -30,314 +30,267 @@ static struct
 
 extern l2addr_eth l2addr_eth_broadcast ;
 
-// TODO : set all variables
 Sos::Sos (l2net *l2, long int slaveid)
 {
-    master_ = l2->bcastaddr () ;
-    reset_master () ;		// master_ becomes a broadcast
-
-    curid_ = 1 ;
+    memset (this, 0, sizeof *this) ;
 
     l2_ = l2 ;
-    nttl_ = SOS_DEFAULT_TTL ;
     slaveid_ = slaveid ;
-    hlid_ = 0 ;
+
+    curtime = 0 ;			// global variable
+    sync_time (curtime) ;
+
+    reset_master () ;			// master_ is reset to broadcast
+
+    hlid_ = -1 ;
+    curid_ = 1 ;
 
     rmanager_ = new Rmanager () ;
     retrans_ = new Retrans (&master_) ;
     status_ = SL_COLDSTART ;
-
-    current_time.sync () ;
 }
 
-void Sos::reset_master (void) 
+void Sos::reset_master (void)
 {
-    if (master_)
-    {
-	PRINT_DEBUG_STATIC ("OLD ADDR") ;
-	master_->print () ;
-	Serial.println () ;
-    }
-    else
-    {
-	// Can't happen
-	PRINT_DEBUG_STATIC ("\033[31mERROR : master not set yet ! \033[00m") ;
-    }
+    if (master_ != NULL)
+	free (master_) ;
+    master_ = NULL ;
+    hlid_ = -1 ;
 
-    PRINT_DEBUG_STATIC ("\033[36mset master addr to broadcast\033[00m") ;
-    master_ = l2_->bcastaddr () ;
-    master_->print () ;
-    Serial.println () ;
-    hlid_ = 0 ;
+    Serial.println (F ("Master reset to broadcast address")) ;
 }
 
-void Sos::register_resource (Resource *r) 
+void Sos::change_master (long int hlid)
+{
+    if (master_ != NULL)
+	delete master_ ;
+    master_ = l2_->get_src () ;		// get a new address
+    hlid_ = hlid ;
+
+    Serial.print (F ("Master set to ")) ;
+    master_->print () ;
+    Serial.print (F (", helloid=")) ;
+    Serial.print (hlid_) ;
+    Serial.println () ;
+}
+
+// a cannot be a NULL pointer
+bool Sos::same_master (l2addr *a)
+{
+    return master_ != NULL && *a == *master_ ;
+}
+
+void Sos::register_resource (Resource *r)
 {
     rmanager_->add_resource (r) ;
 }
 
-// TODO : we need to restart all the application, 
+// TODO : we need to restart all the application,
 // delete all the history of the exchanges
 // XXX: not used at this time
-void Sos::reset (void) 
+void Sos::reset (void)
 {
     status_ = SL_COLDSTART ;
     curid_ = 1 ;
-    nttl_ = SOS_DEFAULT_TTL ;
     rmanager_->reset () ;
     retrans_->reset () ;
     reset_master () ;
 }
 
-void Sos::loop () 
+/*
+ * Main SOS loop
+ * This method must be called regularly (typically in the loop function
+ * of the Arduino framework) in order to process SOS events.
+ */
+
+void Sos::loop ()
 {
     Msg in ;
     Msg out ;
     l2_recv_t ret ;
     uint8_t oldstatus ;
-
-    retrans_->loop (*l2_) ; 		// check needed retransmissions
-    current_time.sync () ;
+    long int hlid ;
+    l2addr *srcaddr ;
 
     oldstatus = status_ ;		// keep old value for debug display
+    sync_time (curtime) ;		// get current time
+    retrans_->loop (*l2_, curtime) ;	// check needed retransmissions
+
+    srcaddr = NULL ;
+
+    ret = in.recv (*l2_) ;		// get received message
+    if (ret != L2_RECV_EMPTY && ret != L2_RECV_WRONG_ETHTYPE)
+    {
+	Serial.print (F ("Received msg code=")) ;
+	Serial.print (ret) ;
+	Serial.println () ;
+    }
+    if (ret == L2_RECV_RECV_OK)
+	srcaddr = l2_->get_src () ;	// get a new address
+
     switch (status_)
     {
 	case SL_COLDSTART :
-	    send_discover () ;
-	    next_time_inc_ = SOS_DELAY ;
-	    next_discover_ = current_time + next_time_inc_ ;
+	    send_discover (out) ;
+	    twait_.init (curtime) ;
 	    status_ = SL_WAITING_UNKNOWN ;
 	    break ;
 
 	case SL_WAITING_UNKNOWN :
-	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
+	    if (ret == L2_RECV_RECV_OK)
 	    {
-		if (ret == L2_RECV_RECV_OK) 
+		Serial.println (F ("Received a msg")) ;
+		retrans_->check_msg_received (in) ;
+
+		if (is_ctl_msg (in))
 		{
-		    Serial.println ("Received a msg") ;
-		    retrans_->check_msg_received (in) ; 
-
-		    // In this state, we only consider control messages
-		    if (is_ctl_msg (in))
+		    if (is_hello (in, hlid))
 		    {
-			Serial.println ("Received a CTL msg") ;
-			if (is_hello (in)) 
-			{
-			    Serial.println ("Received a CTL HELLO msg") ;
-			    in.get_src (master_) ;
-			    curid_ = in.get_id () + 1 ;
-			    status_ = SL_WAITING_KNOWN ;
-
-			    // ((l2addr_eth *) master_)->print () ;
-			    next_time_inc_ = SOS_DELAY ;
-			    next_discover_ = current_time + next_time_inc_ ;
-			} 
-			else if (is_associate (in)) 
-			{
-			    Serial.println ("Received a CTL ASSOC msg") ;
-			    send_assoc_answer (in, out) ;
-			} 
-			else 
-			{
-			    Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
-			}
+			Serial.println (F ("Received a CTL HELLO msg")) ;
+			change_master (hlid) ;
+			twait_.init (curtime) ;
+			status_ = SL_WAITING_KNOWN ;
 		    }
+		    else if (is_assoc (in, sttl_))
+		    {
+			Serial.println (F ("Received a CTL ASSOC msg")) ;
+			change_master (0) ;	// arbitrary hlid
+			send_assoc_answer (in, out) ;
+			trenew_.init (curtime, sttl_) ;
+			status_ = SL_RUNNING ;
+		    }
+		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
 		}
 	    }
 
-	    if (current_time > next_discover_)
-	    {
-		send_discover () ;
+	    if (status_ == SL_WAITING_UNKNOWN && twait_.next (curtime))
+		send_discover (out) ;
 
-		// compute the next waiting time laps for a message
-		next_time_inc_ = 
-			(next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
-			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
-		next_discover_ = current_time + next_time_inc_ ;
-	    }
 	    break ;
 
 	case SL_WAITING_KNOWN :
-	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
+	    if (ret == L2_RECV_RECV_OK)
 	    {
-		if (ret == L2_RECV_RECV_OK) 
-		{
-		    retrans_->check_msg_received (in) ; 
-		    if (is_ctl_msg (in))
-		    {
-			if (is_hello (in)) 
-			{
-			    in.get_src (master_) ;
-			    curid_ = in.get_id () + 1 ;
+		Serial.println (F ("Received a msg")) ;
+		retrans_->check_msg_received (in) ;
 
-			    next_time_inc_ = SOS_DELAY ;
-			    next_discover_ = current_time + next_time_inc_ ;
-			} 
-			else if (is_associate (in)) 
+		if (is_ctl_msg (in))
+		{
+		    if (is_hello (in, hlid))
+		    {
+			Serial.println (F ("Received a CTL HELLO msg")) ;
+			if (same_master (srcaddr))
 			{
-			    send_assoc_answer (in, out) ;
-			} 
-			else 
-			{
-			    Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
+			    if (hlid != hlid_)
+				change_master (hlid) ;
 			}
+			else change_master (hlid) ;
 		    }
+		    else if (is_assoc (in, sttl_))
+		    {
+			Serial.println (F ("Received a CTL ASSOC msg")) ;
+			if (! same_master (srcaddr))
+			    change_master (0) ;	// arbitrary hlid
+			send_assoc_answer (in, out) ;
+			trenew_.init (curtime, sttl_) ;
+			status_ = SL_RUNNING ;
+		    }
+		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
 		}
 	    }
 
-	    // it is possible to don't be in waiting known status
 	    if (status_ == SL_WAITING_KNOWN)
 	    {
-		// if we reach the max increment and the time is over
-		// we enter the "waiting unknown" status
-		if (next_time_inc_ == SOS_DELAY_MAX && 
-				next_discover_ - current_time <= 0)
+		if (twait_.expired (curtime))
 		{
-		    reset_master () ;	// master_ becomes a broadcast
-
-		    next_time_inc_ = SOS_DELAY ;
-		    next_discover_ = current_time + next_time_inc_ ;
-
+		    reset_master () ;		// master_ is no longer known
+		    send_discover (out) ;
+		    twait_.init (curtime) ;	// reset timer
 		    status_ = SL_WAITING_UNKNOWN ;
 		}
-
-		if (current_time > next_discover_)
+		else if (twait_.next (curtime))
 		{
-		    send_discover () ;
-
-		    next_time_inc_ = 
-			    (next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
-			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
-		    next_discover_ = current_time + next_time_inc_ ;
+		    send_discover (out) ;
 		}
 	    }
 
 	    break ;
 
+	case SL_RUNNING :
 	case SL_RENEW :
-	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
+	    if (ret == L2_RECV_RECV_OK)
 	    {
-		if (ret == L2_RECV_RECV_OK) 
+		Serial.println (F ("Received a msg")) ;
+		retrans_->check_msg_received (in) ;
+
+		if (is_ctl_msg (in))
 		{
-		    retrans_->check_msg_received (in) ; 
-		    if (is_ctl_msg (in))
+		    if (is_hello (in, hlid))
 		    {
-			if (is_hello (in)) 
+			Serial.println (F ("Received a CTL HELLO msg")) ;
+			if (! same_master (srcaddr) || hlid != hlid_)
 			{
-			    in.get_src (master_) ;
-			    curid_ = in.get_id () + 1 ;
+			    change_master (hlid) ;
+			    twait_.init (curtime) ;
 			    status_ = SL_WAITING_KNOWN ;
-
-			    next_time_inc_ = SOS_DELAY ;
-			    next_discover_ = current_time + next_time_inc_ ;
-
-			    send_discover () ;
-			} 
-			else if (is_associate (in)) 
-			{
-			    send_assoc_answer (in, out) ;
-			} 
-			else 
-			{
-			    Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
 			}
 		    }
-		}
-
-	    }
-
-	    if (status_ == SL_RENEW)
-	    {
-		if (current_time > next_discover_)
-		{
-		    next_time_inc_ = 
-			    (next_time_inc_ + SOS_DELAY_INCR) > SOS_DELAY_MAX ? 
-			    SOS_DELAY_MAX : next_time_inc_ + SOS_DELAY_INCR ;
-
-		    next_discover_ = current_time + next_time_inc_ ;
-
-		    send_discover () ;
-		}
-
-		// we test if we have to go back in waiting unknown status 
-		// = ttl timeout
-		if (ttl_timeout_ - current_time <= 0)
-		{
-		    reset_master () ;	// master_ becomes a broadcast
-
-		    status_ = SL_WAITING_UNKNOWN ;
-		    next_time_inc_ = SOS_DELAY ;
-		    send_discover () ;
-		}
-	    }
-
-	    break ;
-
-	case SL_RUNNING :	// TODO
-	    if ((ret = in.recv (*l2_)) != L2_RECV_EMPTY)
-	    {
-		if (ret == L2_RECV_RECV_OK) 
-		{
-		    retrans_->check_msg_received (in) ; 
-		    if (is_ctl_msg (in))
+		    else if (is_assoc (in, sttl_))
 		    {
-			if (is_hello (in)) 
-			{
-			    in.get_src (master_) ;
-			    curid_ = in.get_id () + 1 ;
-			    status_ = SL_WAITING_KNOWN ;
-
-			    next_time_inc_ = SOS_DELAY ;
-			    next_discover_ = current_time + next_time_inc_ ;
-			}
-			else if (is_associate (in)) 
+			Serial.println (F ("Received a CTL ASSOC msg")) ;
+			if (same_master (srcaddr))
 			{
 			    send_assoc_answer (in, out) ;
-			} 
-			else 
-			{
-			    Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
+			    trenew_.init (curtime, sttl_) ;
+			    status_ = SL_RUNNING ;
 			}
+		    }
+		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
+		}
+		else
+		{
+		    uint8_t r2 = rmanager_->request_resource (in, out) ;
+
+		    if (r2 > 0)
+		    {
+			Serial.println (F ("\033[31mThere is a problem with the request\033[00m")) ;
 		    }
 		    else
 		    {
-			uint8_t ret = rmanager_->request_resource (in, out) ;
-			if (ret > 0)
-			{
-			    Serial.println (F ("\033[31mThere is a problem with the request\033[00m")) ;
-			}
-			else
-			{
-			    Serial.println (F ("\033[36mWe sent the answer\033[00m")) ;
-			    out.send (*l2_, *master_) ;
-			}
+			Serial.println (F ("\033[36mWe sent the answer\033[00m")) ;
+			out.send (*l2_, *master_) ;
 		    }
 		}
-		else if (ret == L2_RECV_TRUNCATED)
-		{
-		    Serial.println (F ("\033[36mRequest too large\033[00m")) ;
-		    out.set_type (COAP_TYPE_ACK) ;
-		    out.set_id (in.get_id ()) ;
-		    out.set_token (in.get_toklen (), in.get_token ()) ;
-		    option o ;
-		    o.optcode (option::MO_Size1) ;
-		    o.optval (l2_->mtu ()) ;
-		    out.push_option (o) ;
-		    out.set_code (COAP_RETURN_CODE (4,13)) ;
-		    out.send (*l2_, *master_) ;
-		}
+	    }
+	    else if (ret == L2_RECV_TRUNCATED)
+	    {
+		Serial.println (F ("\033[36mRequest too large\033[00m")) ;
+		out.set_type (COAP_TYPE_ACK) ;
+		out.set_id (in.get_id ()) ;
+		out.set_token (in.get_toklen (), in.get_token ()) ;
+		option o (option::MO_Size1, l2_->mtu ()) ;
+		out.push_option (o) ;
+		out.set_code (COAP_RETURN_CODE (4,13)) ;
+		out.send (*l2_, *master_) ;
 	    }
 
-	    if (status_ == SL_RUNNING)
+	    if (status_ == SL_RUNNING && trenew_.renew (curtime))
 	    {
-		// if current time <= ttl timeout /2
-		if (ttl_timeout_mid_ - current_time <= 0)
-		{
-		    send_discover () ;
-		    next_time_inc_ = SOS_DELAY ;
-		    next_discover_ = current_time + next_time_inc_ ;
-		    status_ = SL_RENEW ;
-		}
+		send_discover (out) ;
+		status_ = SL_RENEW ;
+	    }
+
+	    if (status_ == SL_RENEW && trenew_.next (curtime))
+	    {
+		send_discover (out) ;
+	    }
+
+	    if (status_ == SL_RENEW && trenew_.expired (curtime))
+	    {
+		reset_master () ;	// master_ is no longer known
+		send_discover (out) ;
+		twait_.init (curtime) ;	// reset timer
+		status_ = SL_WAITING_UNKNOWN ;
 	    }
 
 	    //	deduplicate () ;
@@ -355,24 +308,20 @@ void Sos::loop ()
     {
 	Serial.print (F ("Status: ")) ;
 	print_status (oldstatus) ;
-	Serial.print (F ("->")) ;
+	Serial.print (F (" -> ")) ;
 	print_status (status_) ;
 	Serial.println () ;
     }
 
-    // delay (5) ;
+    if (srcaddr != NULL)
+	delete srcaddr ;
 }
 
 void Sos::send_assoc_answer (Msg &in, Msg &out)
 {
-    // we get the new master
-    in.get_src (master_) ;
+    l2addr *dest ;
 
-    // the current mid is the next after the id of the received msg
-    curid_ = in.get_id () + 1 ;
-
-    // we are now in running mode
-    status_ = SL_RUNNING ;
+    dest = l2_->get_src () ;
 
     // send back an acknowledgement message
     out.set_type (COAP_TYPE_ACK) ;
@@ -384,18 +333,9 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
     rmanager_->get_all_resources (out) ;
 
     // send the packet
-    out.send (*l2_, *master_) ;
+    out.send (*l2_, *dest) ;
 
-    // we received an assoc msg : the timer is renewed
-    next_time_inc_ = SOS_DELAY ;
-
-    current_time.sync () ;
-
-    // the ttl timeout is set to current time + nttl_
-    ttl_timeout_ = current_time + nttl_ ;
-
-    // there is a mid-term ttl setted for passing in renew status
-    ttl_timeout_mid_ = current_time + (nttl_ / 2) ;
+    free (dest) ;
 }
 
 /**********************
@@ -437,13 +377,14 @@ void Sos::mk_ctl_msg (Msg &m)
     m.push_option (path2) ;
 }
 
-void Sos::send_discover () 
+void Sos::send_discover (Msg &m)
 {
-    Msg m ;
     char tmpstr [SOS_BUF_LEN] ;
+    l2addr *dest ;
 
     Serial.println (F ("Sending Discover")) ;
 
+    m.reset () ;
     m.set_id (curid_++) ;
     m.set_type (COAP_TYPE_NON) ;
     m.set_code (COAP_CODE_POST) ;
@@ -457,29 +398,29 @@ void Sos::send_discover ()
     option o2 (option::MO_Uri_Query, tmpstr, strlen (tmpstr)) ;
     m.push_option (o2) ;
 
-    m.send (*l2_, *master_) ;
+    dest = (master_ != NULL) ? master_ : l2_->bcastaddr () ;
+
+    m.send (*l2_, *dest) ;
 }
 
-bool Sos::is_associate (Msg &m)
+bool Sos::is_assoc (Msg &m, long int &sttl)
 {
     bool found = false ;
 
     if (m.get_type () == COAP_TYPE_CON && m.get_code () == COAP_CODE_POST)
     {
 	m.reset_next_option () ;
-
-	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ()) 
+	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ())
 	{
 	    if (o->optcode () == option::MO_Uri_Query)
 	    {
-		long int n ;
-
 		// we benefit from the added nul byte at the end of val
-		if (sscanf ((const char *) o->val (), SOS_ASSOC, &n) == 1)
+		if (sscanf ((const char *) o->val (), SOS_ASSOC, &sttl) == 1)
 		{
-		    nttl_ = n * 1000 ;
-		    PRINT_DEBUG_STATIC ("\033[31m TTL recv \033[00m ") ;
-		    PRINT_DEBUG_DYNAMIC (nttl_) ;
+		    Serial.print (F ("\033[31m TTL recv \033[00m ")) ;
+		    Serial.print (sttl) ;
+		    Serial.println () ;
+		    sttl *= 1000 ;	// convert into ms (fits in long int)
 		    found = true ;
 		    // continue, just in case there are other query strings
 		}
@@ -495,8 +436,8 @@ bool Sos::is_associate (Msg &m)
     return found ;
 }
 
-// check if a hello msg is received & new
-bool Sos::is_hello (Msg &m)
+// check if a hello msg is received
+bool Sos::is_hello (Msg &m, long int &hlid)
 {
     bool found = false ;
 
@@ -504,34 +445,18 @@ bool Sos::is_hello (Msg &m)
     if (m.get_type () == COAP_TYPE_NON && m.get_code () == COAP_CODE_POST)
     {
 	m.reset_next_option () ;
-	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ()) 
+	for (option *o = m.next_option () ; o != NULL ; o = m.next_option ())
 	{
 	    if (o->optcode () == option::MO_Uri_Query)
 	    {
-		long int n ;
-
 		// we benefit from the added nul byte at the end of val
-		if (sscanf ((const char *) o->val (), SOS_HELLO, &n) == 1)
-		{
-		    // we only consider a new hello msg if there is
-		    // a new hlid number
-		    if (hlid_ != n)
-		    {
-			    hlid_ = n ;
-			    found = true ;
-		    }
-
-		}
+		if (sscanf ((const char *) o->val (), SOS_HELLO, &hlid) == 1)
+		    found = true ;
 	    }
 	}
     }
 
     return found ;
-}
-
-// maybe for further implementation
-void check_msg (Msg &in, Msg &out)
-{
 }
 
 /*****************************************

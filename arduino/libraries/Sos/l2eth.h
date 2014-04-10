@@ -56,9 +56,11 @@ class l2net_eth : public l2net
 	// the instance private variable (see rbuf_/rbuflen_ below)
 	l2_recv_t recv (void) ;
 
-	l2addr *bcastaddr (void) ;
-	void get_src (l2addr *mac) ;
-	void get_dst (l2addr *mac) ;
+	l2addr *bcastaddr (void) ;	// return a static variable
+	void get_src (l2addr *mac) ;	// fill an existing l2addr_eth
+	void get_dst (l2addr *mac) ;	// fill an existing l2addr_eth
+	l2addr *get_src (void) ;	// get a new l2addr_eth
+	l2addr *get_dst (void) ;	// get a new l2addr_eth
 
 	// Ethernet payload (not including MAC header, of course)
 	uint8_t *get_payload (int offset) ;

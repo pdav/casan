@@ -27,10 +27,14 @@ class l2net {
 	// the instance private variable (see _rbuf/_rbuflen below)
 	virtual l2_recv_t recv (void) = 0 ;
 
-	virtual l2addr *bcastaddr (void) = 0 ;
-	virtual void get_src (l2addr *mac) = 0 ;
-	virtual void get_dst (l2addr *mac) = 0 ;
-	virtual uint8_t *get_payload (int offset) = 0 ;
+	virtual l2addr *bcastaddr (void) = 0 ;		// global variable
+
+	// get various informations from the currently receveid message
+	virtual void get_src (l2addr *mac) = 0 ;	// fill existing l2addr
+	virtual void get_dst (l2addr *mac) = 0 ;	// fill existing l2addr
+	virtual l2addr *get_src (void) = 0 ;		// get a new l2addr
+	virtual l2addr *get_dst (void) = 0 ;		// get a new l2addr
+	virtual uint8_t *get_payload (int offset) = 0 ;	// ptr in message
 	virtual size_t get_paylen (void) = 0 ;
 
 	size_t mtu (void) { return mtu_ ; }

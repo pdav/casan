@@ -21,9 +21,6 @@ class Sos {
 	Sos (l2net *l2, long int slaveid) ;
 	~Sos () ;
 
-	// reset address of the master (broadcast) and set hlid_ to 0
-	void reset_master (void) ;	
-
 	void register_resource (Resource *r) ;
 
 	void reset (void) ;
@@ -32,29 +29,34 @@ class Sos {
 	Rmanager *rmanager_ ;
 
     private:
+	void reset_master (void) ;
+	void change_master (long int hlid) ;
+	bool same_master (l2addr *a) ;	
+
 	bool is_ctl_msg (Msg &m) ;
-	bool is_hello (Msg &m) ;
-	bool is_associate (Msg &m) ;
+	bool is_hello (Msg &m, long int &hlid) ;
+	bool is_assoc (Msg &m, long int &sttl) ;
 
 	void mk_ctl_msg (Msg &m) ;
-	void send_discover () ;
+	void send_discover (Msg &m) ;
 	void send_assoc_answer (Msg &in, Msg &out) ;
 
 	void print_coap_ret_type (l2_recv_t ret) ;
 	void print_status (uint8_t status) ;
 
+	time_t curtime_ ;
 	Retrans *retrans_ ;
-	l2addr *master_ ;
+	l2addr *master_ ;		// NULL <=> broadcast
 	l2net *l2_ ;
+	long int slaveid_ ;		// slave id, manually config'd
 	uint8_t status_ ;
-	long int nttl_ ;			// TTL get by assoc msg
-	long int hlid_ ;			// hello ID
-	int curid_ ;				// current message id
-	long int slaveid_ ;
-	unsigned long next_time_inc_ ;
-	time next_discover_ ;
-	time ttl_timeout_ ;
-	time ttl_timeout_mid_ ; 		// nttl /2
+	long int sttl_ ;		// slave ttl, given in assoc msg
+	long int hlid_ ;		// hello ID
+	int curid_ ;			// current message id
+
+	// various timers handled by function
+	Twait  twait_ ;
+	Trenew trenew_ ;
 } ;
 
 #endif

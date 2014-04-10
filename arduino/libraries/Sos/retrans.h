@@ -25,7 +25,7 @@ class Retrans {
 
 	void add (Msg *m) ;		// add a message in retrans queue
 	void del (Msg *m) ;		// delete a message from retrans queue
-	void loop (l2net &l2) ;		// to be called regularly
+	void loop (l2net &l2, time_t &curtime) ; // to be called regularly
 	void reset (void) ;
 	void check_msg_received (Msg &in) ;
 	void check_msg_sent (Msg &in) ;
@@ -34,8 +34,8 @@ class Retrans {
 	struct retransq
 	{
 	    Msg *msg ;
-	    time timelast ;		// time of last transmission
-	    time timenext ;		// time of next transmission
+	    time_t timelast ;		// time of last transmission
+	    time_t timenext ;		// time of next transmission
 	    uint8_t ntrans ;		// # of retransmissions 
 	    retransq *next ;		// next in queue
 	} ;

@@ -121,11 +121,11 @@ void l2addr_eth::print (void) {
 	    Serial.print (':') ;
 	Serial.print (addr_ [i], HEX) ;
     }
-    Serial.print ("\033[00m") ;
+    Serial.print (F ("\033[00m")) ;
 }
 
 /******************************************************************************
- * l2addr_eth methods
+ * l2net_eth methods
  */
 
 l2net_eth::l2net_eth (void)
@@ -309,18 +309,31 @@ void l2net_eth::get_dst (l2addr *mac)
     a->set_raw_addr (rbuf_ + ETH_OFFSET_DST_ADDR) ;
 }
 
+l2addr *l2net_eth::get_src (void)
+{
+    l2addr_eth *a = new l2addr_eth ;
+    get_src (a) ;
+    return a ;
+}
+
+l2addr *l2net_eth::get_dst (void)
+{
+    l2addr_eth *a = new l2addr_eth ;
+    get_dst (a) ;
+    return a ;
+}
+
 uint8_t *l2net_eth::get_payload (int offset) 
 {
     return rbuf_ + ETH_OFFSET_PAYLOAD + offset ;
 }
 
-// we add 2 bytes to know the real payload
 size_t l2net_eth::get_paylen (void) 
 {
     size_t sos_paylen ;
 
     sos_paylen = INT16 (rbuf_ [ETH_OFFSET_SIZE], rbuf_ [ETH_OFFSET_SIZE + 1]) ;
-    return sos_paylen ;
+    return sos_paylen - 2 ;		// SOS size includes size itself
 }
 
 void l2net_eth::dump_packet (size_t start, size_t maxlen)

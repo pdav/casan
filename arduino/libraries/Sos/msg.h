@@ -29,10 +29,8 @@ class Msg {
 	void reset (void) ;
 
 	// Receive message
-
 	l2_recv_t recv (l2net &l2) ;
-	void get_src (l2addr *mac) ;
-	void set_master_addr (l2addr *master_addr) ;
+
 	// accessors (for received messages)
 	uint8_t  get_type (void)	{ return type_ ; }
 	uint8_t  get_code (void)	{ return code_ ; }
@@ -41,6 +39,7 @@ class Msg {
 	uint8_t *get_token (void)	{ return token_ ; }
 	uint16_t get_paylen (void)	{ return paylen_ ; }
 	uint8_t *get_payload (void)	{ return payload_ ; }
+	void     get_src (l2addr *mac) ;
 
 	uint8_t *get_payload_copy (void) ;
 

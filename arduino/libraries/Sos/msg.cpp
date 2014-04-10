@@ -49,10 +49,6 @@ void Msg::reset (void)
     memset (this, 0, sizeof *this) ;
 }
 
-void Msg::set_master_addr (l2addr *master_addr)
-{
-}
-
 /******************************************************************************
  * Receive message
  *
@@ -123,7 +119,7 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 	opt_nb = 0 ;
 	while (! truncated && success && i < rbuflen && rbuf [i] != 0xff)
 	{
-	    int opt_delta (0), opt_len (0) ;
+	    int opt_delta = 0, opt_len = 0 ;
 	    option o ;
 
 	    opt_delta = (rbuf [i] >> 4) & 0x0f ;
@@ -176,7 +172,7 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 	    }
 	}
 
-	paylen_ = rbuflen - i - 1 ;
+	paylen_ = rbuflen - i ;
 	if (! truncated && success && paylen_ > 0)
 	{
 	    if (rbuf [i] != 0xff)
@@ -394,7 +390,7 @@ void Msg::push_option (option &o)
 {
     optlist *newo, *prev, *cur ;
 
-    newo = (optlist *) malloc (sizeof *newo) ;
+    newo = new optlist ;
     newo->o = new option (o) ;
     prev = NULL ;
     cur = optlist_ ;
@@ -436,7 +432,7 @@ void Msg::msgcopy (const Msg &m)
     {
 	optlist *newo ;
 
-	newo = (optlist *) malloc (sizeof *newo) ;
+	newo = new optlist ;
 	newo->o = new option (*ol2->o) ;
 	newo->next = NULL ;
 	if (ol1 == NULL)
@@ -479,11 +475,11 @@ void Msg::print (void)
     Serial.print (get_id ()) ;
     Serial.print (F (", type=")) ;
     switch (get_type ()) {
-	case COAP_TYPE_CON : Serial.print ("CON") ; break ;
-	case COAP_TYPE_NON : Serial.print ("NON") ; break ;
-	case COAP_TYPE_ACK : Serial.print ("ACK") ; break ;
-	case COAP_TYPE_RST : Serial.print ("RST") ; break ;
-	default : Serial.print ("\033[31mERROR\033[00m") ;
+	case COAP_TYPE_CON : Serial.print (F ("CON")) ; break ;
+	case COAP_TYPE_NON : Serial.print (F ("NON")) ; break ;
+	case COAP_TYPE_ACK : Serial.print (F ("ACK")) ; break ;
+	case COAP_TYPE_RST : Serial.print (F ("RST")) ; break ;
+	default : Serial.print (F ("\033[31mERROR\033[00m")) ;
     }
     Serial.print (F (", code=")) ;
     Serial.print (get_code () >> 5, HEX) ;
