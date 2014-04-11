@@ -58,7 +58,7 @@ class Twait
 class Trenew
 {
     public:
-	void init (time_t &cur, int sttl) ;
+	void init (time_t &cur, time_t sttl) ;
 	bool renew (time_t &cur) ;		// time to enter renew state
 	bool next (time_t &cur) ;		// next discover
 	bool expired (time_t &cur) ;		// time to enter waiting_known

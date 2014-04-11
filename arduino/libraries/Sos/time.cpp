@@ -88,7 +88,7 @@ bool Twait::expired (time_t &cur)
  * trenew: to send Discover messages in renew state
  */
 
-void Trenew::init (time_t &cur, int sttl)
+void Trenew::init (time_t &cur, time_t sttl)
 {
     inc_ = sttl / 2 ;
     next_ = cur + inc_ ;
