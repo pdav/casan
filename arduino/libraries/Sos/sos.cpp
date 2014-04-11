@@ -359,12 +359,14 @@ bool Sos::is_ctl_msg (Msg &m)
 
 void Sos::mk_ctl_msg (Msg &m)
 {
-    option path1 (option::MO_Uri_Path, (void*) sos_namespace [0].path,
-						sos_namespace [0].len) ;
-    option path2 (option::MO_Uri_Path, (void*) sos_namespace [1].path,
-						sos_namespace [1].len) ;
-    m.push_option (path1) ;
-    m.push_option (path2) ;
+    int i ;
+
+    for (i = 0 ; i < NTAB (sos_namespace) ; i++)
+    {
+	option path (option::MO_Uri_Path, (void *) sos_namespace [i].path,
+					sos_namespace [i].len) ;
+	m.push_option (path) ;
+    }
 }
 
 void Sos::send_discover (Msg &m)
