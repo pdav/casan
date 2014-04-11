@@ -4,7 +4,7 @@
  * Timers values (expressed in ms)
  */
 
-#define	TIMER_WAIT		1*1000		// delay between discover msg
+#define	TIMER_WAIT_START	1*1000		// initial between discover msg
 #define	TIMER_WAIT_INC		1*1000
 #define	TIMER_WAIT_INC_MAX	10*1000
 #define	TIMER_WAIT_MAX		30*1000		// time in waiting_known
@@ -60,7 +60,7 @@ void print_time (time_t &t)
 void Twait::init (time_t &cur)
 {
     limit_ = cur + TIMER_WAIT_MAX ;
-    inc_ = TIMER_WAIT ;
+    inc_ = TIMER_WAIT_START ;
     next_ = cur + inc_ ;
 }
 
