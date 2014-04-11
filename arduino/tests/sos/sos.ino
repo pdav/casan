@@ -157,8 +157,8 @@ void loop ()
 {
     static int n = 0 ;
 
-    // if (n++ % 100000 == 0)
-    if (n++ % 10000 == 0)
+    if (n++ % 100000 == 0)
+    // if (n++ % 10000 == 0)
     {
 	PRINT_DEBUG_STATIC ("\033[36m\tloop\033[00m") ;
 	// check memory leak

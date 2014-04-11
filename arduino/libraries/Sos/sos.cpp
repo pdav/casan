@@ -119,12 +119,6 @@ void Sos::loop ()
     srcaddr = NULL ;
 
     ret = in.recv (*l2_) ;		// get received message
-    if (ret != L2_RECV_EMPTY && ret != L2_RECV_WRONG_ETHTYPE)
-    {
-	Serial.print (F ("Received msg code=")) ;
-	Serial.print (ret) ;
-	Serial.println () ;
-    }
     if (ret == L2_RECV_RECV_OK)
 	srcaddr = l2_->get_src () ;	// get a new address
 
@@ -139,7 +133,6 @@ void Sos::loop ()
 	case SL_WAITING_UNKNOWN :
 	    if (ret == L2_RECV_RECV_OK)
 	    {
-		Serial.println (F ("Received a msg")) ;
 		retrans_->check_msg_received (in) ;
 
 		if (is_ctl_msg (in))
@@ -171,7 +164,6 @@ void Sos::loop ()
 	case SL_WAITING_KNOWN :
 	    if (ret == L2_RECV_RECV_OK)
 	    {
-		Serial.println (F ("Received a msg")) ;
 		retrans_->check_msg_received (in) ;
 
 		if (is_ctl_msg (in))
@@ -220,7 +212,6 @@ void Sos::loop ()
 	case SL_RENEW :
 	    if (ret == L2_RECV_RECV_OK)
 	    {
-		Serial.println (F ("Received a msg")) ;
 		retrans_->check_msg_received (in) ;
 
 		if (is_ctl_msg (in))
@@ -247,10 +238,12 @@ void Sos::loop ()
 		    }
 		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
 		}
-		else
+		else		// not a control message
 		{
-		    uint8_t r2 = rmanager_->request_resource (in, out) ;
+		    uint8_t r2 ;
 
+		    // deduplicate () ;
+		    r2 = rmanager_->request_resource (in, out) ;
 		    if (r2 > 0)
 		    {
 			Serial.println (F ("\033[31mThere is a problem with the request\033[00m")) ;
@@ -292,9 +285,6 @@ void Sos::loop ()
 		twait_.init (curtime) ;	// reset timer
 		status_ = SL_WAITING_UNKNOWN ;
 	    }
-
-	    //	deduplicate () ;
-	    rmanager_->request_resource (in, out) ;
 
 	    break ;
 
@@ -403,7 +393,7 @@ void Sos::send_discover (Msg &m)
     m.send (*l2_, *dest) ;
 }
 
-bool Sos::is_assoc (Msg &m, long int &sttl)
+bool Sos::is_assoc (Msg &m, time_t &sttl)
 {
     bool found = false ;
 
@@ -414,13 +404,15 @@ bool Sos::is_assoc (Msg &m, long int &sttl)
 	{
 	    if (o->optcode () == option::MO_Uri_Query)
 	    {
+		long int n ;		// sscanf "%ld" waits for a long int
+
 		// we benefit from the added nul byte at the end of val
-		if (sscanf ((const char *) o->val (), SOS_ASSOC, &sttl) == 1)
+		if (sscanf ((const char *) o->val (), SOS_ASSOC, &n) == 1)
 		{
 		    Serial.print (F ("\033[31m TTL recv \033[00m ")) ;
-		    Serial.print (sttl) ;
+		    Serial.print (n) ;
 		    Serial.println () ;
-		    sttl *= 1000 ;	// convert into ms (fits in long int)
+		    sttl = ((time_t) n) * 1000 ;
 		    found = true ;
 		    // continue, just in case there are other query strings
 		}

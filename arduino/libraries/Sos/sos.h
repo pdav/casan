@@ -35,7 +35,7 @@ class Sos {
 
 	bool is_ctl_msg (Msg &m) ;
 	bool is_hello (Msg &m, long int &hlid) ;
-	bool is_assoc (Msg &m, long int &sttl) ;
+	bool is_assoc (Msg &m, time_t &sttl) ;
 
 	void mk_ctl_msg (Msg &m) ;
 	void send_discover (Msg &m) ;
@@ -50,7 +50,7 @@ class Sos {
 	l2net *l2_ ;
 	long int slaveid_ ;		// slave id, manually config'd
 	uint8_t status_ ;
-	long int sttl_ ;		// slave ttl, given in assoc msg
+	time_t sttl_ ;			// slave ttl, given in assoc msg
 	long int hlid_ ;		// hello ID
 	int curid_ ;			// current message id
 
