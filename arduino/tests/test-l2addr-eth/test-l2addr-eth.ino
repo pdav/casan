@@ -2,8 +2,8 @@
  * Test program for the "l2addr_eth" class
  */
 
-#include <SPI.h>
 #include "sos.h"
+#include "l2-eth.h"
 
 #define	DEBUGINTERVAL	1
 

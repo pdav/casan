@@ -2,7 +2,6 @@
  * Test program for sending and receiving SOS/CoAP messages
  */
 
-#include <SPI.h>
 #include "sos.h"
 
 #define	PATH1		".well-known"
@@ -11,12 +10,16 @@
 
 #define	DEBUGINTERVAL	5
 
+// #if L2_ETH
+#include "l2-eth.h"
+
 l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
 l2addr *dest = & l2addr_eth_broadcast ;
 l2net_eth e ;
 
 bool promisc = false ;
 int mtu = 200 ;
+// #endif
 
 void setup ()
 {

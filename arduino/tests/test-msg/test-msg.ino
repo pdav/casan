@@ -5,7 +5,6 @@
  * No packet is sent on the network
  */
 
-#include <SPI.h>
 #include "sos.h"
 
 #define PATH1	"/path1"

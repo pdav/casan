@@ -2,9 +2,8 @@
  * Test program for the "l2addr_eth" class
  */
 
-#include <SPI.h>
 #include "sos.h"
-#include "l2eth.h"
+#include "l2-eth.h"
 
 l2addr *dest_addr = new l2addr_eth ("ff:ff:ff:ff:ff:ff") ;
 l2addr *my_addr = new l2addr_eth ("00:01:02:03:04:05") ;

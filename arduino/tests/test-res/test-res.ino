@@ -2,8 +2,9 @@
  * Test program for SOS resource management
  */
 
-#include <SPI.h>
 #include "sos.h"
+
+#include "l2-eth.h"
 
 #define	DEBUGINTERVAL	5
 

@@ -8,6 +8,7 @@ TARGET			= .
 BOARD_TAG		= uno
 # no need for ARDUINO_CORE_PATH	for uno
 MONITOR_PORT		= /dev/ttyACM3
+ARDUINO_LIBS		= Sos L2-eth SPI Ethernet
 
 #### For Zigduino r2 platform
 # BOARD_TAG		= zigduino_r2
@@ -15,7 +16,6 @@ MONITOR_PORT		= /dev/ttyACM3
 # MONITOR_PORT		= /dev/ttyUSB0
 
 USER_LIB_PATH		= $(realpath ../../libraries)
-ARDUINO_LIBS		= Sos SPI Ethernet
 
 include $(ARDMK_DIR)/Arduino.mk
 
