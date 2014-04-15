@@ -201,6 +201,38 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	W5100.execCmdSn (SOCK0, Sock_SEND_MAC) ;
 
 	free (sbuf) ;
+#if 0
+	/*
+	 * This code differs from the previous one by attempting
+	 * to avoid the use of new buffer to store the whole
+	 * message. Instead, it tries to send 2 parts (header +
+	 * payload).
+	 * It does not work. No time to investigate, and the
+	 * Wiz5100 datasheet is not helpful.
+	 */
+
+	l2addr_eth *m = (l2addr_eth *) &dest ;
+	byte hdr [ETH_OFFSET_PAYLOAD] ;
+
+	// Standard Ethernet MAC header (14 bytes)
+	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
+	memcpy (hdr + ETH_OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
+	hdr [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
+	hdr [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
+
+	// SOS message size (2 bytes)
+	hdr [ETH_OFFSET_SIZE    ] = BYTE_HIGH (len + 2) ;
+	hdr [ETH_OFFSET_SIZE + 1] = BYTE_LOW  (len + 2) ;
+
+	// Place header in buffer
+	W5100.send_data_processing (SOCK0, hdr, ETH_OFFSET_PAYLOAD) ;
+
+	// Place payload in buffer
+	W5100.send_data_processing (SOCK0, data, len) ;
+
+	// Send packet
+	W5100.execCmdSn (SOCK0, Sock_SEND_MAC) ;
+#endif
 
 	success = true ;
     }
