@@ -6,7 +6,6 @@ Example sketches for Arduino slave
 
 Older sketches
 --------------
-* blink
 * coap
 * eth
 * l2addr

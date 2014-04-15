@@ -53,31 +53,50 @@ Sos::Sos (l2net *l2, long int slaveid)
 void Sos::reset_master (void)
 {
     if (master_ != NULL)
-	free (master_) ;
+	delete master_ ;
     master_ = NULL ;
     hlid_ = -1 ;
 
     Serial.println (F ("Master reset to broadcast address")) ;
 }
 
+// a cannot be a NULL pointer
+bool Sos::same_master (l2addr *a)
+{
+    return master_ != NULL && *a == *master_ ;
+}
+
 void Sos::change_master (long int hlid)
 {
+    l2addr *newmaster ;
+
+    newmaster = l2_->get_src () ;	// get a new address
     if (master_ != NULL)
-	delete master_ ;
-    master_ = l2_->get_src () ;		// get a new address
-    hlid_ = hlid ;
+    {
+	if (*newmaster == *master_)
+	{
+	    if (hlid != -1)
+		hlid_ = hlid ;
+	    delete newmaster ;
+	}
+	else
+	{
+	    delete master_ ;
+	    master_ = newmaster ;
+	    hlid_ = hlid ;
+	}
+    }
+    else
+    {
+	master_ = newmaster ;
+	hlid_ = hlid ;
+    }
 
     Serial.print (F ("Master set to ")) ;
     master_->print () ;
     Serial.print (F (", helloid=")) ;
     Serial.print (hlid_) ;
     Serial.println () ;
-}
-
-// a cannot be a NULL pointer
-bool Sos::same_master (l2addr *a)
-{
-    return master_ != NULL && *a == *master_ ;
 }
 
 void Sos::register_resource (Resource *r)
@@ -147,7 +166,8 @@ void Sos::loop ()
 		    else if (is_assoc (in, sttl_))
 		    {
 			Serial.println (F ("Received a CTL ASSOC msg")) ;
-			change_master (0) ;	// arbitrary hlid
+			hlid = -1 ;	// "unknown" hlid
+			change_master (hlid) ;
 			send_assoc_answer (in, out) ;
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
@@ -171,18 +191,13 @@ void Sos::loop ()
 		    if (is_hello (in, hlid))
 		    {
 			Serial.println (F ("Received a CTL HELLO msg")) ;
-			if (same_master (srcaddr))
-			{
-			    if (hlid != hlid_)
-				change_master (hlid) ;
-			}
-			else change_master (hlid) ;
+			change_master (hlid) ;
 		    }
 		    else if (is_assoc (in, sttl_))
 		    {
 			Serial.println (F ("Received a CTL ASSOC msg")) ;
-			if (! same_master (srcaddr))
-			    change_master (0) ;	// arbitrary hlid
+			hlid = -1 ;		// unknown hlid
+			change_master (hlid) ;
 			send_assoc_answer (in, out) ;
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
@@ -238,21 +253,11 @@ void Sos::loop ()
 		    }
 		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
 		}
-		else		// not a control message
+		else		// request for a normal resource
 		{
-		    uint8_t r2 ;
-
 		    // deduplicate () ;
-		    r2 = rmanager_->request_resource (in, out) ;
-		    if (r2 > 0)
-		    {
-			Serial.println (F ("\033[31mThere is a problem with the request\033[00m")) ;
-		    }
-		    else
-		    {
-			Serial.println (F ("\033[36mWe sent the answer\033[00m")) ;
-			out.send (*l2_, *master_) ;
-		    }
+		    rmanager_->request_resource (in, out) ;
+		    out.send (*l2_, *master_) ;
 		}
 	    }
 	    else if (ret == L2_RECV_TRUNCATED)
@@ -315,17 +320,17 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
 
     // send back an acknowledgement message
     out.set_type (COAP_TYPE_ACK) ;
-    out.set_code (COAP_RETURN_CODE (2,5)) ;
+    out.set_code (COAP_RETURN_CODE (2, 5)) ;
     out.set_id (in.get_id ()) ;
-    // mk_ctl_msg (out) ; useless because it's an ACK
 
     // will get the resources and set them in the payload in the right format
-    rmanager_->get_all_resources (out) ;
+    rmanager_->get_resource_list (out) ;
 
     // send the packet
-    out.send (*l2_, *dest) ;
+    if (! out.send (*l2_, *dest))
+	Serial.println (F ("Error: cannot send the assoc answer message")) ;
 
-    free (dest) ;
+    delete dest ;
 }
 
 /**********************
@@ -500,4 +505,9 @@ void Sos::print_status (uint8_t status)
 	    Serial.print (status) ;
 	    break ;
     }
+}
+
+void Sos::print_resources (void)
+{
+    rmanager_->print () ;
 }

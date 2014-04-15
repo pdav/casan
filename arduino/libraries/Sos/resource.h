@@ -14,10 +14,13 @@ typedef struct handler_
 class Resource {
     public:
 	Resource (const char *name, const char *title, const char *rt) ;
-	//~Resource();
+	~Resource() ;
 
 	bool check_name (const char *name, int len);
 	void add_handler (coap_code_t type, uint8_t (*handler) (Msg &in, Msg &out)) ;
+
+	void print (void) ;
+
 	handler_s get_handler (coap_code_t type) ;
 
 	// FIXME : make these private (they are used in rmanager.cpp)

@@ -15,12 +15,16 @@
 #define URIQUERY2 "uriquery=2"
 #define URIQUERY3 "uriquery=3"
 
-void setup () {
-    Serial.begin(38400) ;
-    Serial.println (F ("start")) ;
+#define	DEBUGINTERVAL	1
+
+void setup ()
+{
+    Serial.begin (38400) ;
+    debug.start (DEBUGINTERVAL) ;
 }
 
-void test_msg (void) {
+void test_msg (void)
+{
     PRINT_DEBUG_STATIC ("STEP 1: create 2 empty messages") ;
     Msg m1 ;
     m1.print () ;
@@ -79,11 +83,11 @@ void test_msg (void) {
     return ;
 }
 
-void loop () {
-    PRINT_DEBUG_STATIC ("\033[36m\tloop \033[00m ") ;
-    // check memory leak
-    PRINT_FREE_MEM ;
-    test_msg () ;
-
-    delay (1000) ;
+void loop ()
+{
+    if (debug.heartbeat ())
+    {
+	PRINT_FREE_MEM ;
+	test_msg () ;
+    }
 }

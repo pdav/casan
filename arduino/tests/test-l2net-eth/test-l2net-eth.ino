@@ -13,12 +13,14 @@ l2net_eth e ;
 bool promisc = false ;
 int mtu = 500 ;
 
+#define	DEBUGINTERVAL	15
+
 
 void setup ()
 {
-    Serial.begin(38400) ;
-    Serial.println (F ("start")) ;
+    Serial.begin (38400) ;
     e.start (my_addr, promisc, mtu, SOS_ETH_TYPE) ;
+    debug.start (DEBUGINTERVAL) ;
 }
 
 void recv_eth (void)
@@ -68,7 +70,7 @@ void recv_eth (void)
     }
 }
 
-char testpkt [] = "This is a test packet to broadcast address" ;
+char testpkt [] = "This is a very long test packet (more than 46 bytes) to send to a broadcast address" ;
 
 void send_eth (void)
 {
@@ -81,16 +83,12 @@ void send_eth (void)
 }
 
 
-long int n ;
-
 void loop ()
 {
-    if (n++ % 100000 == 0)
+    if (debug.heartbeat ())
     {
-	PRINT_DEBUG_STATIC ("\033[36m\tloop \033[00m ") ;
-	PRINT_FREE_MEM ;		// check memory leak
+	PRINT_FREE_MEM ;
 	send_eth () ;
-	n = 1 ;
     }
 
     recv_eth () ;

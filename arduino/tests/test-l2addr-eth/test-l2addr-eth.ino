@@ -5,10 +5,12 @@
 #include <SPI.h>
 #include "sos.h"
 
+#define	DEBUGINTERVAL	1
+
 void setup ()
 {
-    Serial.begin(38400) ;
-    Serial.println (F ("start")) ;
+    Serial.begin (38400) ;
+    debug.start (DEBUGINTERVAL) ;
 }
 
 void test_l2addr (void)
@@ -48,8 +50,9 @@ void test_l2addr (void)
 
 void loop () 
 {
-    PRINT_DEBUG_STATIC ("\033[36m\tloop\033[00m") ;
-    // to check if we have memory leak
-    PRINT_FREE_MEM ;
+    if (debug.heartbeat ())
+    {
+	PRINT_FREE_MEM ;
+    }
     test_l2addr () ;
 }

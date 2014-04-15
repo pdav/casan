@@ -13,6 +13,7 @@
 #include "memory_free.h"
 #include "time.h"
 #include "resource.h"
+#include "debug.h"
 
 #define	SOS_ETH_TYPE		0x88b5		// public use for prototype
 
@@ -21,12 +22,13 @@ class Sos {
 	Sos (l2net *l2, long int slaveid) ;
 	~Sos () ;
 
-	void register_resource (Resource *r) ;
-
 	void reset (void) ;
 	void loop () ;
 
-	Rmanager *rmanager_ ;
+	void register_resource (Resource *r) ;
+	void print_resources (void) ;
+
+	Rmanager *rmanager_ ;		// XXX for test-rmanager.ino
 
     private:
 	void reset_master (void) ;

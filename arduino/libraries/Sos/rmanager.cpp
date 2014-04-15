@@ -10,179 +10,177 @@ Rmanager::~Rmanager ()
     reset () ;
 }
 
-void Rmanager::add_resource (Resource *r) 
+void Rmanager::add_resource (Resource *res) 
 {
     rmanager_list *newr ;
     
-    newr = (rmanager_list *) malloc (sizeof (rmanager_list)) ;
+    newr = new rmanager_list ;
     newr->next = resources_ ;
-    newr->r = r ;
+    newr->res = res ;
     resources_ = newr ;
 }
 
-
-// returns  0 if ok 
-uint8_t Rmanager::request_resource (Msg &in, Msg &out) 
+void Rmanager::request_resource (Msg &in, Msg &out) 
 {
-    uint8_t r = 1 ;
+    option *o ;
+    bool rfound = false ;		// resource found
 
     in.reset_next_option () ;
-
-    for (option *o = in.next_option () ; o != NULL ; o = in.next_option ())
+    for (o = in.next_option () ; o != NULL ; o = in.next_option ())
     {
 	if (o->optcode () == option::MO_Uri_Path)
 	{
 	    // request for all resources
-	    if (o->optlen () >= (int) (sizeof SOS_RESOURCES_ALL -1) && 
-			strncmp ((const char *) o->val (), 
-				    SOS_RESOURCES_ALL, 
-				    (sizeof SOS_RESOURCES_ALL -1)) == 0)
+	    if (o->optlen () == (int) (sizeof SOS_RESOURCES_ALL - 1)
+		&& memcmp (o->val (), SOS_RESOURCES_ALL, 
+				    sizeof SOS_RESOURCES_ALL - 1) == 0)
 	    {
+		rfound = true ;
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
 		out.set_token (in.get_toklen (), in.get_token ()) ;
-		out.set_code (COAP_RETURN_CODE (2,5)) ;
-		get_all_resources (out) ;
-		r = 0 ;
+		out.set_code (COAP_RETURN_CODE (2, 5)) ;
+		get_resource_list (out) ;
 	    }
 	    else
 	    {
-		rmanager_list *tmp ;
 		Resource *res ;
-		bool found ;
+		option *ocf ;
+		uint8_t r ;
 
-		tmp = get_resource_instance (o) ;
-		if (tmp == NULL)
-		    r = 1 ;
-
-		out.set_type (COAP_TYPE_ACK) ;
-		out.set_id (in.get_id ()) ;
-		out.set_token (in.get_toklen (), in.get_token ()) ;
-		
-		res = tmp->r ;
-		handler_s h = res->get_handler ((coap_code_t) in.get_code ()) ;
-		r = (*h.handler) (in, out) ;
-
-		found = false ;
-		for (option *o2 = out.next_option () ; o2 != NULL ; o2 = out.next_option ())
+		print () ;
+		res = resource_by_name ((char *) o->val (), o->optlen ()) ;
+		if (res != NULL)
 		{
-		    if (o2->optcode () == option::MO_Content_Format)
+		    rfound = true ;
+		    out.set_type (COAP_TYPE_ACK) ;
+		    out.set_id (in.get_id ()) ;
+		    out.set_token (in.get_toklen (), in.get_token ()) ;
+
+		    // call handler
+		    handler_s h = res->get_handler ((coap_code_t) in.get_code ()) ;
+		    r = (*h.handler) (in, out) ;
+		    out.set_code (r) ;
+
+		    // add Content Format option if not created by handler
+		    out.reset_next_option () ;
+		    for (ocf = out.next_option () ; ocf != NULL ; ocf = out.next_option ())
+			if (ocf->optcode () == option::MO_Content_Format)
+			    break ;
+		    
+		    if (ocf == NULL)
 		    {
-			found = true ;
-			break ;
+			ocf = new option (option::MO_Content_Format, option::cf_text_plain) ;
+			out.push_option (*ocf) ;
+			delete ocf ;
 		    }
 		}
-		
-		if (! found)
-		{
-		    option o3 ;
-
-		    o3.optcode (option::MO_Content_Format) ;
-		    o3.optval (option::cf_text_plain) ;
-		    out.push_option (o3) ;
-		}
 	    }
-	}
-    }
-
-    return r ;
-}
-
-void Rmanager::get_all_resources (Msg &out) 
-{
-    char buf [150] ;
-    int size = 0 ;
-
-    for (int i = 0 ; i < (int) sizeof buf ; i++)
-	buf [i] = '\0' ;
-
-    // We have to send a message with a payload like : 
-    // </temp> ;title="the temp" ;rt="Temp",</light> ;title="Luminosity" ;rt="light-lux"
-    for (rmanager_list *tmp = resources_ ; tmp != NULL ; tmp = tmp->next) 
-    {
-	int len ;
-
-	len = out.get_paylen () ;
-	if (len)
-	{
-	    size = len + 1 ;		// 1 for ','
-	    if (size < (int) sizeof buf)
-	    {
-		char *tmp = (char *) out.get_payload_copy () ;
-		snprintf (buf, size + 1, "%s,", tmp ) ;
-		free (tmp) ;
-	    }
-	}
-
-	len = strlen (tmp->r->name_) + strlen (tmp->r->title_) + strlen (tmp->r->rt_) ; 
-	size += len + 17 ; // for the '<> ;title="" ;rt=""'
-
-	if (size < (int) sizeof buf)
-	{
-	    snprintf (buf, size +1, "%s<%s> ;title=\"%s\" ;rt=\"%s\"",
-			    buf, tmp->r->name_, tmp->r->title_, tmp->r->rt_) ;
-	    out.set_payload (size, (uint8_t *) buf) ;
-	}
-    }
-}
-
-void Rmanager::delete_resource (rmanager_list *r) 
-{
-    if (r == NULL)
-    {
-	return ;
-    }
-    else if (r == resources_)
-    {
-	resources_ = resources_->next ;
-    }
-    else
-    {
-	rmanager_list *tmp = resources_ ;
-	while (tmp->next != r)
-	    tmp = tmp->next ;
-	tmp->next = r->next ;
-    }
-    delete r->r ;
-    free (r) ;
-}
-
-void Rmanager::reset () 
-{
-    while (resources_ != NULL) {
-	delete_resource (resources_) ;
-    }
-}
-
-// We have to know how a resource will be requested
-rmanager_list *Rmanager::get_resource_instance (option *o) 
-{
-    rmanager_list *tmp ;
-
-    tmp = NULL ;
-    for (tmp = resources_ ; tmp != NULL ; tmp = tmp->next)
-	if (tmp->r->check_name ((char *) o->val (), o->optlen ()))
 	    break ;
+	}
+    }
 
-    return tmp ;
+    if (! rfound)
+    {
+	out.set_type (COAP_TYPE_ACK) ;
+	out.set_id (in.get_id ()) ;
+	out.set_token (in.get_toklen (), in.get_token ()) ;
+	out.set_code (COAP_RETURN_CODE (4, 4)) ;
+    }
+}
+
+/*
+ * Prepare the payload for an assoc answer message (answer to the
+ *	CON POST /.well-known/sos ? assoc=<sttl>
+ * message).
+ *
+ * The answer will have a payload similar to:
+ *	</temp> ;
+ *		title="the temp";
+ *		rt="Temp",</light>;
+ *		title="Luminosity";
+ *		rt="light-lux"
+ * (with the newlines removed)
+ */
+
+void Rmanager::get_resource_list (Msg &out) 
+{
+    char buf [150] ;				// XXX
+    int size ;
+    rmanager_list *r ;
+
+    size = 0 ;
+    for (r = resources_ ; r != NULL ; r = r->next) 
+    {
+	int len = sizeof "<>;title=..;rt=.." - 1 ;	// without '\0'
+
+	len += strlen (r->res->name_) ;
+	len += strlen (r->res->title_) ;
+	len += strlen (r->res->rt_) ;
+
+	if (size > 0)
+	{
+	    if (size + 1 < (int) sizeof buf)
+		buf [size++] = ',' ;
+	    else
+		break ;
+	}
+
+	if (size + len < (int) sizeof buf)
+	{
+	    // adds an unused '\0' at the end: keep enough space for this byte!
+	    sprintf (buf + size, "<%s>;title=\"%s\";rt=\"%s\"",
+				r->res->name_, r->res->title_, r->res->rt_) ;
+	    size += len ;
+	}
+	else break ;
+    }
+    out.set_payload ((uint8_t *) buf, size) ;
+}
+
+void Rmanager::delete_resource (rmanager_list *rl) 
+{
+    rmanager_list *cur, *prev ;
+
+    prev = NULL ;
+    cur = resources_ ;
+    while (cur != NULL)
+    {
+	if (cur == rl)
+	{
+	    if (prev == NULL)
+		resources_ = cur->next ;
+	    else
+		prev->next = cur->next ;
+	    delete cur->res ;
+	    delete cur ;
+	    cur = NULL ;			// leave loop
+	}
+	else cur = cur->next ;
+    }
+}
+
+void Rmanager::reset (void) 
+{
+    while (resources_ != NULL)
+	delete_resource (resources_) ;
+}
+
+// Find a particular resource by its name
+Resource *Rmanager::resource_by_name (const char *name, int len)
+{
+    rmanager_list *rl ;
+
+    for (rl = resources_ ; rl != NULL ; rl = rl->next)
+	if (rl->res->check_name (name, len))
+	    break ;
+    return rl != NULL ? rl->res : NULL ;
 }
 
 void Rmanager::print (void)
 {
-    char buf [150] ;
+    rmanager_list *rl ;
 
-    for (rmanager_list *tmp = resources_ ; tmp != NULL ; tmp = tmp->next)
-    {
-	Serial.print (F ("resource name : ")) ;
-	memcpy (buf, tmp->r->name_, strlen (tmp->r->name_)+1) ;
-	Serial.println (buf) ;
-
-	Serial.print (F ("resource title : ")) ;
-	memcpy (buf, tmp->r->title_, strlen (tmp->r->title_)+1) ;
-	Serial.println (buf) ;
-
-	Serial.print (F ("resource rt : ")) ;
-	memcpy (buf, tmp->r->rt_, strlen (tmp->r->rt_)+1) ;
-	Serial.println (buf) ;
-    }
+    for (rl = resources_ ; rl != NULL ; rl = rl->next)
+	rl->res->print () ;
 }

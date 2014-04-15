@@ -4,9 +4,12 @@
  * Test program for the "time" class
  */
 
-void setup () {
-    Serial.begin(38400) ;		// no space before left parenthesis
-    Serial.println (F ("start")) ;
+#define	DEBUGINTERVAL	10
+
+void setup ()
+{
+    Serial.begin (38400) ;
+    debug.start (DEBUGINTERVAL) ;
     sync_time (curtime) ;
 }
 
@@ -83,17 +86,16 @@ void test_operators (void)
     sync_time (curtime) ;
 }
 
-void loop () {
-    PRINT_DEBUG_STATIC ("\033[36m\tloop \033[00m ") ;
+void loop ()
+{
+    if (debug.heartbeat ())
+    {
+	PRINT_FREE_MEM ;
 
-    // to check if we have memory leak
-    PRINT_FREE_MEM ;
-
-    unsigned long t = millis () ;
-    PRINT_DEBUG_STATIC ("MILLIS : ") ;
-    PRINT_DEBUG_DYNAMIC (t) ;
-    test_diff () ;
-    test_operators () ;
-
-    delay (10000) ;
+	unsigned long t = millis () ;
+	PRINT_DEBUG_STATIC ("MILLIS : ") ;
+	PRINT_DEBUG_DYNAMIC (t) ;
+	test_diff () ;
+	test_operators () ;
+    }
 }

@@ -139,4 +139,3 @@ Retrans::retransq *Retrans::get (Msg *msg)
     }
     return cur ;
 }
-

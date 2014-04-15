@@ -5,18 +5,22 @@
 #include <SPI.h>
 #include "sos.h"
 
-#define	PROCESS_1_name	"light"
-#define	PROCESS_1_title	"light"
-#define	PROCESS_1_rt	"light"
-#define	PROCESS_2_name	"temp"
-#define	PROCESS_2_title	"temperature"
-#define	PROCESS_2_rt	"celcius"
-#define	PROCESS_3_name	"led"
-#define	PROCESS_3_title	"led"
-#define	PROCESS_3_rt	"light"
+#define	R1_name		"light"
+#define	R1_title	"light"
+#define	R1_rt		"light"
+
+#define	R2_name		"temp"
+#define	R2_title	"temperature"
+#define	R2_rt		"celcius"
+
+#define	R3_name		"led"
+#define	R3_title	"led"
+#define	R3_rt		"light"
 
 // MTU is less than 0.25 * (free memory in SRAM after initialization)
-#define	MTU		100
+#define	MTU		200
+
+#define	DEBUGINTERVAL	10
 
 int tmp_sensor = A0 ;
 int light_sensor = A1 ;
@@ -40,9 +44,8 @@ uint8_t process_light (Msg &in, Msg &out)
     int sensorValue = analogRead (light_sensor) ;
     snprintf (message, 10, "%d", sensorValue) ;
 
-    out.set_payload ( strlen (message), (unsigned char *) message) ;
-
-    out.set_code (COAP_RETURN_CODE (2,5)) ;
+    out.set_payload ((uint8_t *) message,  strlen (message)) ;
+    out.set_code (COAP_RETURN_CODE (2, 5)) ;
 
     return 0 ;
 }
@@ -58,9 +61,8 @@ uint8_t process_temp (Msg &in, Msg &out)
     int sensorValue = analogRead (tmp_sensor) ;
     snprintf (message, 10, "%d", sensorValue) ;
 
-    out.set_payload ( strlen (message), (unsigned char *) message) ;
-
-    out.set_code (COAP_RETURN_CODE (2,5)) ;
+    out.set_payload ((uint8_t *) message,  strlen (message)) ;
+    out.set_code (COAP_RETURN_CODE (2, 5)) ;
 
     return 0 ;
 }
@@ -87,22 +89,22 @@ void setup ()
     pinMode (light_sensor, INPUT) ;     
     pinMode (led, OUTPUT) ;     
 
-    Serial.begin(38400) ;
-    Serial.println (F ("start")) ;
-
+    Serial.begin (38400) ;
     e.start (myaddr, false, mtu, SOS_ETH_TYPE) ;
     sos = new Sos (&e, slaveid) ;
 
-    Resource *r1 = new Resource (PROCESS_1_name, PROCESS_1_title, PROCESS_1_rt) ;
-    r1->add_handler (COAP_CODE_GET,process_light) ;
+    debug.start (DEBUGINTERVAL) ;
+
+    Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
+    r1->add_handler (COAP_CODE_GET, process_light) ;
     sos->register_resource (r1) ;
     
-    Resource *r2 = new Resource (PROCESS_2_name, PROCESS_2_title, PROCESS_2_rt) ;
-    r2->add_handler (COAP_CODE_GET,process_temp) ;
+    Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
+    r2->add_handler (COAP_CODE_GET, process_temp) ;
     sos->register_resource (r2) ;
     
-    Resource *r3 = new Resource (PROCESS_3_name, PROCESS_3_title, PROCESS_3_rt) ;
-    r3->add_handler (COAP_CODE_GET,process_led) ;
+    Resource *r3 = new Resource (R3_name, R3_title, R3_rt) ;
+    r3->add_handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r3) ;
 }
 
@@ -155,15 +157,9 @@ void test_values (void)
 
 void loop () 
 {
-    static int n = 0 ;
-
-    if (n++ % 100000 == 0)
-    // if (n++ % 10000 == 0)
+    if (debug.heartbeat ())
     {
-	PRINT_DEBUG_STATIC ("\033[36m\tloop\033[00m") ;
-	// check memory leak
 	PRINT_FREE_MEM ;
-	n = 1 ;
     }
 
     //test_values () ;

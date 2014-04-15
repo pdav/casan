@@ -34,7 +34,7 @@ class Msg {
 	// accessors (for received messages)
 	uint8_t  get_type (void)	{ return type_ ; }
 	uint8_t  get_code (void)	{ return code_ ; }
-	uint16_t get_id (void)		{ return code_ ; }
+	uint16_t get_id (void)		{ return id_ ; }
 	uint8_t  get_toklen (void)	{ return toklen_ ; }
 	uint8_t *get_token (void)	{ return token_ ; }
 	uint16_t get_paylen (void)	{ return paylen_ ; }
@@ -59,7 +59,7 @@ class Msg {
 	void set_id   (uint16_t id)	{ id_ = id ; }
 
 	void set_token (uint8_t toklen, uint8_t *token) ;
-	void set_payload (uint16_t paylen, uint8_t *payload) ;
+	void set_payload (uint8_t *payload, uint16_t paylen) ;
 
 	void push_option (option &o) ;
 

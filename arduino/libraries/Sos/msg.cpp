@@ -182,7 +182,7 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 	    else
 	    {
 		i++ ;
-		set_payload (paylen_, rbuf + i) ;
+		set_payload (rbuf + i, paylen_) ;
 	    }
 	}
 	else paylen_ = 0 ;			// protect further operations
@@ -376,7 +376,7 @@ void Msg::set_token (uint8_t toklen, uint8_t *token)
     memcpy (token_, token, toklen) ;
 }
 
-void Msg::set_payload (uint16_t paylen, uint8_t *payload) 
+void Msg::set_payload (uint8_t *payload, uint16_t paylen) 
 {
     paylen_ = paylen ;
     if (payload_ != NULL)
@@ -471,6 +471,9 @@ option *Msg::next_option (void)
 
 void Msg::print (void) 
 {
+    char *p ;
+    int len ;
+
     Serial.print (F ("\033[36mmsg\033[00m\tid=")) ;
     Serial.print (get_id ()) ;
     Serial.print (F (", type=")) ;
@@ -496,14 +499,13 @@ void Msg::print (void)
 	Serial.println () ;
     }
 
+    p = (char *) get_payload () ;
+    len = get_paylen () ;
     Serial.print (F (", paylen=")) ;
-    Serial.print (get_paylen ()) ;
-    if (get_paylen () > 0) {
-	Serial.print (F ("  payload=")) ;
-	uint8_t *pcopy = get_payload_copy () ;
-	Serial.print ((char *) pcopy) ;
-	free (pcopy) ;
-    }
+    Serial.print (len) ;
+    Serial.print (F (", payload=")) ;
+    for (int i = 0 ; i < len ; i++)
+	Serial.print (p [i]) ;
     Serial.println () ;
 
     reset_next_option () ;
