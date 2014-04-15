@@ -170,7 +170,7 @@ void Sos::loop ()
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
 		    }
-		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
+		    else Serial.println (F ("\033[31mUnkwnon CTL\033[00m")) ;
 		}
 	    }
 
@@ -200,7 +200,7 @@ void Sos::loop ()
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
 		    }
-		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
+		    else Serial.println (F ("\033[31Unknown CTL\033[00m")) ;
 		}
 	    }
 
@@ -249,7 +249,7 @@ void Sos::loop ()
 			    status_ = SL_RUNNING ;
 			}
 		    }
-		    else Serial.println (F ("\033[31mignored ctl msg\033[00m")) ;
+		    else Serial.println (F ("\033[31Unknown CTL\033[00m")) ;
 		}
 		else		// request for a normal resource
 		{
