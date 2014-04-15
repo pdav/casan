@@ -1,9 +1,15 @@
 /*
- * Test program for the "l2addr_eth" class
+ * Test program for the "l2addr_*" class
  */
 
 #include "sos.h"
-#include "l2-eth.h"
+
+#ifdef L2_ETH
+    #include "l2-eth.h"
+#endif
+#ifdef L2_154
+    #include "l2-154.h"
+#endif
 
 #define	DEBUGINTERVAL	1
 
@@ -15,8 +21,14 @@ void setup ()
 
 void test_l2addr (void)
 {
+#ifdef L2_ETH
     l2addr_eth *x = new l2addr_eth ("0a:0b:0c:0a:0b:0c") ;
     l2addr_eth *y = new l2addr_eth ("00:00:00:00:00:00") ;
+#endif
+#ifdef L2_154
+    l2addr_154 *x = new l2addr_154 ("ca:fe") ;
+    l2addr_154 *y = new l2addr_154 ("be:ef") ;
+#endif
 
     if (*x == *y)
     {
