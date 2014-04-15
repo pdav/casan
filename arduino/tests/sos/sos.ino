@@ -2,53 +2,42 @@
  * Example program for SOS
  */
 
-#include <SPI.h>
 #include "sos.h"
 
-#define	R1_name		"light"
-#define	R1_title	"light"
-#define	R1_rt		"light"
+#ifdef L2_ETH
+    #include "l2-eth.h"
 
-#define	R2_name		"temp"
-#define	R2_title	"temperature"
-#define	R2_rt		"celcius"
+    l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
+    l2net_eth l2 ;
+    // MTU is less than 0.25 * (free memory in SRAM after initialization)
+    #define	MTU		200
+#endif
+#ifdef L2_154
+    #include "l2-154.h"
 
-#define	R3_name		"led"
-#define	R3_title	"led"
-#define	R3_rt		"light"
+    l2addr *myaddr = new l2addr_154 ("45:67") ;
+    l2net_154 l2 ;
+    #define	CHANNEL		25
+    #define	PANID		CONST16 (0xca, 0xfe)
+    #define	MTU		0
+#endif
 
-// MTU is less than 0.25 * (free memory in SRAM after initialization)
-#define	MTU		200
+#define	R1_name		"temp"
+#define	R1_title	"temperature"
+#define	R1_rt		"celcius"
+
+#define	R2_name		"led"
+#define	R2_title	"led"
+#define	R2_rt		"light"
 
 #define	DEBUGINTERVAL	10
 
 int tmp_sensor = A0 ;
-int light_sensor = A1 ;
 int led = A2 ;
 
 int slaveid = 169 ;
-int mtu = MTU ;
 
-l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
-l2net_eth e ;
 Sos *sos ;
-
-uint8_t process_light (Msg &in, Msg &out) 
-{
-    Serial.println (F ("process_light")) ;
-
-    char message[10] ;
-    for (int i (0) ; i < 10 ; i++)
-	message[i] = '\0' ;
-
-    int sensorValue = analogRead (light_sensor) ;
-    snprintf (message, 10, "%d", sensorValue) ;
-
-    out.set_payload ((uint8_t *) message,  strlen (message)) ;
-    out.set_code (COAP_RETURN_CODE (2, 5)) ;
-
-    return 0 ;
-}
 
 uint8_t process_temp (Msg &in, Msg &out) 
 {
@@ -86,39 +75,32 @@ uint8_t process_led (Msg &in, Msg &out)
 void setup () 
 {
     pinMode (tmp_sensor, INPUT) ;     
-    pinMode (light_sensor, INPUT) ;     
     pinMode (led, OUTPUT) ;     
 
     Serial.begin (38400) ;
-    e.start (myaddr, false, mtu, SOS_ETH_TYPE) ;
-    sos = new Sos (&e, slaveid) ;
+#ifdef L2_ETH
+    l2.start (myaddr, false, MTU, SOS_ETH_TYPE) ;
+#endif
+#ifdef L2_154
+    l2.start (myaddr, false, MTU, CHANNEL, PANID) ;
+#endif
+    sos = new Sos (&l2, slaveid) ;
 
     debug.start (DEBUGINTERVAL) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
-    r1->add_handler (COAP_CODE_GET, process_light) ;
+    r1->add_handler (COAP_CODE_GET, process_temp) ;
     sos->register_resource (r1) ;
-    
+
     Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
-    r2->add_handler (COAP_CODE_GET, process_temp) ;
+    r2->add_handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r2) ;
-    
-    Resource *r3 = new Resource (R3_name, R3_title, R3_rt) ;
-    r3->add_handler (COAP_CODE_GET, process_led) ;
-    sos->register_resource (r3) ;
 }
 
 void test_values_temp (void)
 {
     Msg in, out ;
     process_temp (in, out) ;
-    out.print () ;
-}
-
-void test_values_light (void)
-{
-    Msg in, out ;
-    process_light (in, out) ;
     out.print () ;
 }
 
@@ -150,7 +132,6 @@ void test_values_led (void)
 void test_values (void)
 {
     test_values_temp () ;
-    test_values_light () ;
     test_values_led () ;
     delay (500) ;
 }

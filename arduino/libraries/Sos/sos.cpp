@@ -28,8 +28,6 @@ static struct
     {  SOS_NAMESPACE2, sizeof SOS_NAMESPACE2 - 1 },
 } ;
 
-extern l2addr_eth l2addr_eth_broadcast ;
-
 Sos::Sos (l2net *l2, long int slaveid)
 {
     memset (this, 0, sizeof *this) ;

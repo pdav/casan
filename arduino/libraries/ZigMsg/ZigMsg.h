@@ -173,7 +173,7 @@ class cZigMsg
 
 	// Send and receive frames
 
-	bool sendto (addr2_t a, uint8_t len, uint8_t payload []) ;
+	bool sendto (addr2_t a, uint8_t len, const uint8_t payload []) ;
 	ZigReceivedFrame *get_received (void) ;	// get current frame (or NULL)
 	void skip_received (void) ;	// skip to next read frame
 

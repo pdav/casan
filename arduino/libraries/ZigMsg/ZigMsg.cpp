@@ -154,7 +154,7 @@ void cZigMsg::start(void)
  * Send a message
  */
 
-bool cZigMsg::sendto (addr2_t a, uint8_t len, uint8_t payload [])
+bool cZigMsg::sendto (addr2_t a, uint8_t len, const uint8_t payload [])
 {
     uint8_t frame [MAX_FRAME_SIZE] ;	// not counting PHR
     uint16_t fcf ;			// frame control field
@@ -239,6 +239,8 @@ ZigReceivedFrame *cZigMsg::get_received (void)
 	/* decode Frame Control Field */
 	r->fcf = Z_GET_INT16 (p) ;
 	p += 2 ;
+
+	r->frametype = Z_GET_FRAMETYPE (r->fcf) ;
 
 	/* Sequence Number */
 	r->seq = *p++ ;

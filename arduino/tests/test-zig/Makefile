@@ -7,7 +7,7 @@ BOARD_TAG		= zigduino_r2
 
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 
-MONITOR_PORT		= /dev/ttyUSB0
+MONITOR_PORT		= /dev/ttyUSB1
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 # ARDUINO_LIBS		= ZigMsg # sos sos/utility SPI
