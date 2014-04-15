@@ -287,7 +287,7 @@ bool msg::coap_decode (void)
 {
     bool success ;
 
-    if (COAP_VERSION (msg_ + 2) != SOS_VERSION)
+    if (COAP_VERSION (msg_) != SOS_VERSION)
     {
 	success = false ;
     }
@@ -297,9 +297,7 @@ bool msg::coap_decode (void)
 	int opt_nb ;
 
 	success = true ;
-
-	msglen_ = INT16 (msg_ [0], msg_ [1]) ;
-	i = 2 ;
+	i = 0 ;
 
 	type_ = msgtype_t (COAP_TYPE (msg_ + i)) ;
 	toklen_ = COAP_TOKLEN (msg_ + i) ;
