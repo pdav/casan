@@ -165,7 +165,7 @@ void msg::coap_encode (void)
      * Format message, part 1 : compute message size
      */
 
-    msglen_ = 6 + toklen_ ;
+    msglen_ = 4 + toklen_ ;
 
     optlist_.sort () ;			// sort option list
     opt_nb = 0 ;
@@ -210,10 +210,6 @@ void msg::coap_encode (void)
     msg_ = new byte [msglen_] ;
 
     i = 0 ;
-
-    // SOS specific: message size
-    msg_ [i++] = BYTE_HIGH (msglen_) ;
-    msg_ [i++] = BYTE_LOW  (msglen_) ;
 
     // header
     msg_ [i++] = FORMAT_BYTE0 (SOS_VERSION, type_, toklen_) ;

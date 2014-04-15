@@ -24,8 +24,7 @@
 
 #include "l2.h"
 #include "l2eth.h"
-
-#define	PRINT_HEX_DIGIT(os,c)	do { char d = (c) & 0xf ; d =  d < 10 ? d + '0' : d - 10 + 'a' ; (os) << d ; } while (false)
+#include "byte.h"
 
 namespace sos {
 
@@ -200,7 +199,22 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
 #ifdef USE_PF_PACKET
     struct sockaddr_ll sll ;
     l2addr_eth *a = (l2addr_eth *) daddr ;
+    byte *buf ;
     int r ;
+
+    /*
+     * Ethernet specific: add message length at the beginnin of the payload
+     */
+
+    len += 2 ;
+    buf = new byte [len] ;
+    buf [0] = BYTE_HIGH (len) ;
+    buf [1] = BYTE_LOW (len) ;
+    std::memcpy (buf + 2, data, len - 2) ;
+
+    /*
+     * Send Ethernet raw packet
+     */
 
     std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;

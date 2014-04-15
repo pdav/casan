@@ -27,8 +27,6 @@
 #define	XBEE_MIN_FRAME_SIZE	5		// start:1+len:2+api:1+cksum:1
 #define	XBEE_MAX_FRAME_SIZE	115		// RX 64bit addr, 100 bytes
 
-#define	PRINT_HEX_DIGIT(os,c)	do { char d = (c) & 0xf ; d =  d < 10 ? d + '0' : d - 10 + 'a' ; (os) << d ; } while (false)
-
 namespace sos {
 
 /******************************************************************************
