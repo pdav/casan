@@ -4,13 +4,15 @@ AVR_TOOLS_DIR		= /usr
 
 TARGET			= .
 
+#### For Arduino Uno platform
 BOARD_TAG		= uno
 # no need for ARDUINO_CORE_PATH	for uno
+MONITOR_PORT		= /dev/ttyACM3
 
+#### For Zigduino r2 platform
 # BOARD_TAG		= zigduino_r2
 # ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
-
-MONITOR_PORT		= /dev/ttyACM3
+# MONITOR_PORT		= /dev/ttyUSB0
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 ARDUINO_LIBS		= Sos SPI Ethernet
