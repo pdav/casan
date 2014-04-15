@@ -1,5 +1,5 @@
-#ifndef L2ETH_H
-#define	L2ETH_H
+#ifndef L2_ETH_H
+#define	L2_ETH_H
 
 /*
  * These classes are used for Ethernet specialization

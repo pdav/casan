@@ -6,7 +6,7 @@
 #include "enum.h"
 #include "option.h"
 #include "l2.h"
-#include "l2eth.h"
+#include "l2-eth.h"
 #include "msg.h"
 #include "retrans.h"
 #include "rmanager.h"

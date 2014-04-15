@@ -1,4 +1,4 @@
-#include "l2eth.h"
+#include "l2-eth.h"
 
 /*
  * Ethernet classes for SOS
