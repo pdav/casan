@@ -60,7 +60,7 @@ l2addr_154::l2addr_154 (const char *a)
     if (i < I154ADDRLEN)
 	buf [i] = b ;
 
-    addr_ = CONST16 (buf [0], buf [1]) ;
+    addr_ = CONST16 (buf [1], buf [0]) ;
 }
 
 // copy constructor
