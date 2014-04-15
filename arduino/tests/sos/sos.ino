@@ -157,10 +157,7 @@ void test_values (void)
 
 void loop () 
 {
-    if (debug.heartbeat ())
-    {
-	PRINT_FREE_MEM ;
-    }
+    debug.heartbeat () ;
 
     //test_values () ;
     sos->loop () ;

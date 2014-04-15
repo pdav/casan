@@ -70,11 +70,9 @@ void test_send (void)
     res_send (2, ok) ;
 }
 
-void loop () {
+void loop ()
+{
     if (debug.heartbeat ())
-    {
-	PRINT_FREE_MEM ;
 	test_send () ;
-    }
     test_recv () ;
 }

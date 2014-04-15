@@ -50,9 +50,6 @@ void test_l2addr (void)
 
 void loop () 
 {
-    if (debug.heartbeat ())
-    {
-	PRINT_FREE_MEM ;
-    }
+    debug.heartbeat () ;
     test_l2addr () ;
 }

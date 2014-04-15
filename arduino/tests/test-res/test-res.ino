@@ -97,7 +97,6 @@ void loop ()
 
     if (debug.heartbeat ())
     {
-	PRINT_FREE_MEM ;
 	if (n % NTAB (resname) == 0)
 	    sos->print_resources () ;
 	test_resource (resname [n++ % NTAB (resname)]) ;

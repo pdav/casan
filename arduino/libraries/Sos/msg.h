@@ -6,7 +6,6 @@
 #include "enum.h"
 #include "l2.h"
 #include "option.h"
-#include "memory_free.h"
 
 #define COAP_RETURN_CODE(x,y) ((x << 5) | (y & 0x1f))
 

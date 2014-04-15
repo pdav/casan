@@ -86,8 +86,5 @@ void test_msg (void)
 void loop ()
 {
     if (debug.heartbeat ())
-    {
-	PRINT_FREE_MEM ;
 	test_msg () ;
-    }
 }

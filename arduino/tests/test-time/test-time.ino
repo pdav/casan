@@ -90,8 +90,6 @@ void loop ()
 {
     if (debug.heartbeat ())
     {
-	PRINT_FREE_MEM ;
-
 	unsigned long t = millis () ;
 	PRINT_DEBUG_STATIC ("MILLIS : ") ;
 	PRINT_DEBUG_DYNAMIC (t) ;

@@ -86,10 +86,7 @@ void send_eth (void)
 void loop ()
 {
     if (debug.heartbeat ())
-    {
-	PRINT_FREE_MEM ;
 	send_eth () ;
-    }
 
     recv_eth () ;
 }
