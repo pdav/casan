@@ -48,7 +48,6 @@ void Rmanager::request_resource (Msg &in, Msg &out)
 		option *ocf ;
 		uint8_t r ;
 
-		print () ;
 		res = resource_by_name ((char *) o->val (), o->optlen ()) ;
 		if (res != NULL)
 		{
