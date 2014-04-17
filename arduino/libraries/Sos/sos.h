@@ -25,6 +25,9 @@ class Sos {
 	void register_resource (Resource *res) ;
 	void print_resources (void) ;
 
+	// private methods which are made public for test programs
+	void request_resource (Msg &in, Msg &out) ;
+
     private:
 	struct reslist
 	{
@@ -64,7 +67,6 @@ class Sos {
 	void send_discover (Msg &m) ;
 	void send_assoc_answer (Msg &in, Msg &out) ;
 
-	void request_resource (Msg &in, Msg &out) ;
 	void get_well_known (Msg &out) ;
 	Resource *get_resource (const char *name) ;
 

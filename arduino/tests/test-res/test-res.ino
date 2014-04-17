@@ -4,7 +4,26 @@
 
 #include "sos.h"
 
-#include "l2-eth.h"
+#ifdef L2_ETH
+    #include "l2-eth.h"
+
+    l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
+    l2net_eth l2 ;
+
+    // MTU is less than 0.25 * (free memory in SRAM after initialization)
+    #define	MTU	200
+#endif
+
+#ifdef L2_154
+    #include "l2-154.h"
+
+    l2addr *myaddr = new l2addr_154 ("be:ef") ;
+    l2net_154 l2 ;
+
+    #define	CHANNEL		25
+    #define	PANID		CONST16 (0xca, 0xfe)
+    #define	MTU		0
+#endif
 
 #define	DEBUGINTERVAL	5
 
@@ -19,14 +38,10 @@
 #define PATH_WK		".well-known"
 #define	PATH_SOS	"sos"
 
-l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
-l2net_eth e ;
 Sos *sos ;
 
-bool promisc = false ;
 int slaveid = 169 ;
-int mtu = 200 ;
-
+bool promisc = false ;
 
 const char *resname [] =
 {
@@ -53,9 +68,16 @@ uint8_t process_temp (Msg &in, Msg &out)
 void setup ()
 {
     Serial.begin (38400) ;
-    e.start (myaddr, promisc, mtu, SOS_ETH_TYPE) ;
-    sos = new Sos (&e, slaveid) ;
     debug.start (DEBUGINTERVAL) ;
+
+#ifdef L2_ETH
+    l2.start (myaddr, promisc, MTU, SOS_ETH_TYPE) ;
+#endif
+#ifdef L2_154
+    l2.start (myaddr, promisc, MTU, CHANNEL, PANID) ;
+#endif
+
+    sos = new Sos (&l2, slaveid) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
     r1->add_handler (COAP_CODE_GET, process_light) ;
@@ -85,7 +107,7 @@ void test_resource (const char *name)
     Serial.println (F ("Simulated message IN: ")) ;
     in.print () ;
 
-    sos->rmanager_->request_resource (in, out) ;
+    sos->request_resource (in, out) ;
 
     Serial.println (F ("Simulated message OUT: ")) ;
     out.print () ;
