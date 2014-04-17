@@ -88,39 +88,11 @@ bool l2addr_154::operator!= (const l2addr &other)
     return this->addr_ != oe->addr_ ;
 }
 
-#if 0
-// Raw MAC address (array of 2 bytes)
-bool l2addr_154::operator!= (const unsigned char *other)
-{
-    return memcmp (this->addr_, other, I154ADDRLEN) != 0 ;
-}
-#endif
-
-#if 0
-void l2addr_154::set_raw_addr (const unsigned char *mac_addr) 
-{
-    memcpy (this->addr_, mac_addr, I154ADDRLEN) ;
-}
-
-unsigned char * l2addr_154::get_raw_addr (void) 
-{
-    return this->addr_ ;
-}
-#endif
-
 void l2addr_154::print (void) {
     Serial.print (F ("802.15.4 : \033[32m")) ;
     Serial.print (BYTE_HIGH (addr_), HEX) ;
     Serial.print (':') ;
     Serial.print (BYTE_LOW (addr_), HEX) ;
-#if 0
-    for (int i = 0 ; i < I154ADDRLEN ; i++)
-    {
-	if (i > 0)
-	    Serial.print (':') ;
-	Serial.print (addr_ [i], HEX) ;
-    }
-#endif
     Serial.print (F ("\033[00m")) ;
 }
 

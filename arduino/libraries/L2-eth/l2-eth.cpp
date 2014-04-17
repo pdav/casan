@@ -101,16 +101,6 @@ bool l2addr_eth::operator!= (const unsigned char *other)
     return memcmp (this->addr_, other, ETHADDRLEN) != 0 ;
 }
 
-void l2addr_eth::set_raw_addr (const unsigned char *mac_addr) 
-{
-    memcpy (this->addr_, mac_addr, ETHADDRLEN) ;
-}
-
-unsigned char * l2addr_eth::get_raw_addr (void) 
-{
-    return this->addr_ ;
-}
-
 void l2addr_eth::print (void) {
     int i ;
 
@@ -153,7 +143,7 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
     rbuf_ = (byte *) malloc (mtu_ + ETH_OFFSET_PAYLOAD) ;
 
     W5100.init () ;
-    W5100.setMACAddress (myaddr_.get_raw_addr ()) ;
+    W5100.setMACAddress (myaddr_->addr_) ;
     cmd = SnMR::MACRAW ;
     if (! promisc)
 	cmd |= S0_MR_MF ;		// MAC filter for socket 0
@@ -184,8 +174,8 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	sbuf = (byte *) malloc (sbuflen) ;
 
 	// Standard Ethernet MAC header (14 bytes)
-	memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
-	memcpy (sbuf + ETH_OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
+	memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
+	memcpy (sbuf + ETH_OFFSET_SRC_ADDR, myaddr_.addr_, ETHADDRLEN) ;
 	sbuf [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
 	sbuf [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
 
@@ -215,8 +205,8 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	byte hdr [ETH_OFFSET_PAYLOAD] ;
 
 	// Standard Ethernet MAC header (14 bytes)
-	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->get_raw_addr (), ETHADDRLEN) ;
-	memcpy (hdr + ETH_OFFSET_SRC_ADDR, myaddr_.get_raw_addr (), ETHADDRLEN) ;
+	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
+	memcpy (hdr + ETH_OFFSET_SRC_ADDR, myaddr_.addr_, ETHADDRLEN) ;
 	hdr [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
 	hdr [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
 
@@ -332,13 +322,13 @@ l2addr *l2net_eth::bcastaddr (void)
 void l2net_eth::get_src (l2addr *mac) 
 {
     l2addr_eth *a = (l2addr_eth *) mac ;
-    a->set_raw_addr (rbuf_ + ETH_OFFSET_SRC_ADDR) ;
+    memcpy (a->addr_, rbuf_ + ETH_OFFSET_SRC_ADDR, ETHADDRLEN) ;
 }
 
 void l2net_eth::get_dst (l2addr *mac) 
 {
     l2addr_eth *a = (l2addr_eth *) mac ;
-    a->set_raw_addr (rbuf_ + ETH_OFFSET_DST_ADDR) ;
+    memcpy (a->addr_, rbuf_ + ETH_OFFSET_DST_ADDR, ETHADDRLEN) ;
 }
 
 l2addr *l2net_eth::get_src (void)

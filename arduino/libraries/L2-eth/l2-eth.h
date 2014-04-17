@@ -27,15 +27,10 @@ class l2addr_eth : public l2addr
 	bool operator!= (const unsigned char *) ;	// 6 bytes
 	void print (void) ;
 
-	unsigned char *get_raw_addr (void) ;
-
     protected:
-	void set_raw_addr (const unsigned char *mac_addr) ;
+	byte addr_ [ETHADDRLEN] ;
 
 	friend class l2net_eth ;
-
-    private:
-	byte addr_ [ETHADDRLEN] ;
 } ;
 
 extern l2addr_eth l2addr_eth_broadcast ;
