@@ -73,11 +73,6 @@ l2_recv_t Msg::recv (l2net &l2)
     return r ;
 }
 
-void Msg::get_src (l2addr *mac)
-{
-    l2_->get_src (mac) ;
-}
-
 /*
  * Returns true if message is decoding was successful
  * If message has been truncated, decoding is done only for

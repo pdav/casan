@@ -177,29 +177,17 @@ l2addr *l2net_154::bcastaddr (void)
     return &l2addr_154_broadcast ;
 }
 
-void l2net_154::get_src (l2addr *mac) 
-{
-    l2addr_154 *a = (l2addr_154 *) mac ;
-    a->addr_ = curframe_->srcaddr ;
-}
-
-void l2net_154::get_dst (l2addr *mac) 
-{
-    l2addr_154 *a = (l2addr_154 *) mac ;
-    a->addr_ = curframe_->dstaddr ;
-}
-
 l2addr *l2net_154::get_src (void)
 {
     l2addr_154 *a = new l2addr_154 ;
-    get_src (a) ;
+    a->addr_ = curframe_->srcaddr ;
     return a ;
 }
 
 l2addr *l2net_154::get_dst (void)
 {
     l2addr_154 *a = new l2addr_154 ;
-    get_dst (a) ;
+    a->addr_ = curframe_->dstaddr ;
     return a ;
 }
 

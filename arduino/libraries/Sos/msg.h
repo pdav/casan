@@ -38,7 +38,6 @@ class Msg {
 	uint8_t *get_token (void)	{ return token_ ; }
 	uint16_t get_paylen (void)	{ return paylen_ ; }
 	uint8_t *get_payload (void)	{ return payload_ ; }
-	void     get_src (l2addr *mac) ;
 
 	uint8_t *get_payload_copy (void) ;
 

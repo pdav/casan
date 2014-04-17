@@ -316,29 +316,17 @@ l2addr *l2net_eth::bcastaddr (void)
     return &l2addr_eth_broadcast ;
 }
 
-void l2net_eth::get_src (l2addr *mac) 
-{
-    l2addr_eth *a = (l2addr_eth *) mac ;
-    memcpy (a->addr_, rbuf_ + ETH_OFFSET_SRC_ADDR, ETHADDRLEN) ;
-}
-
-void l2net_eth::get_dst (l2addr *mac) 
-{
-    l2addr_eth *a = (l2addr_eth *) mac ;
-    memcpy (a->addr_, rbuf_ + ETH_OFFSET_DST_ADDR, ETHADDRLEN) ;
-}
-
 l2addr *l2net_eth::get_src (void)
 {
     l2addr_eth *a = new l2addr_eth ;
-    get_src (a) ;
+    memcpy (a->addr_, rbuf_ + ETH_OFFSET_SRC_ADDR, ETHADDRLEN) ;
     return a ;
 }
 
 l2addr *l2net_eth::get_dst (void)
 {
     l2addr_eth *a = new l2addr_eth ;
-    get_dst (a) ;
+    memcpy (a->addr_, rbuf_ + ETH_OFFSET_DST_ADDR, ETHADDRLEN) ;
     return a ;
 }
 
