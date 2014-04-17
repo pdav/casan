@@ -15,8 +15,8 @@ class Debug
 	bool heartbeat (void) ;		// true if action done
 
     private:
-	long int interv_ ;		// interval between actions
-	long int next_ ;		// next action
+	unsigned long int interv_ ;	// interval between actions
+	unsigned long int next_ ;	// next action
 } ;
 
 extern Debug debug ;

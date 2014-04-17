@@ -62,6 +62,10 @@ class Msg {
 
 	void push_option (option &o) ;
 
+	// not so basic methods
+	void content_format (bool reset, option::content_format cf) ;
+	option::content_format content_format (void) ;
+
 	void print (void) ;
 
     private:

@@ -1,8 +1,7 @@
 #include "retrans.h"
 
-Retrans::Retrans (l2addr **master) 
+Retrans::Retrans () 
 {
-    master_addr_ = master ;
     retransq_ = NULL ;
 }
 
@@ -15,6 +14,11 @@ void Retrans::reset (void)
 {
     while (retransq_ != NULL)
 	del (NULL, retransq_) ;
+}
+
+void Retrans::master (l2addr **master)
+{
+    master_addr_ = master ;
 }
 
 // insert a new message in the retransmission list
@@ -41,35 +45,44 @@ void Retrans::del (Msg *msg)
 // TODO
 void Retrans::loop (l2net &l2, time_t &curtime)
 {
-    retransq *cur, *prev ;
-
     // Serial.println (F ("retransmit loop")) ;
 
-    prev = NULL ;
-    cur = retransq_ ;
-    while (cur != NULL)
+    if (*master_addr_ == NULL)
     {
-	retransq *next ;
+	// master has been reset by the SOS engine (waiting-unknown state)
+	reset () ;
+	return ;
+    }
+    else
+    {
+	retransq *cur, *prev ;
 
-	next = cur->next ;
-	if (cur->ntrans >= MAX_RETRANSMIT)
+	prev = NULL ;
+	cur = retransq_ ;
+	while (cur != NULL)
 	{
-	    // remove the message from the queue
-	    del (prev, cur) ;
-	    // prev is not modified
-	}
-	else
-	{
-	    if (cur->timenext < curtime)
+	    retransq *next ;
+
+	    next = cur->next ;
+	    if (cur->ntrans >= MAX_RETRANSMIT)
 	    {
-		cur->msg->send (l2, **master_addr_) ;
-		cur->ntrans++ ;
-		cur->timenext = cur->timenext + (2* (cur->timenext - cur->timelast));
-		sync_time (cur->timelast) ;
+		// remove the message from the queue
+		del (prev, cur) ;
+		// prev is not modified
 	    }
-	    prev = cur ;
+	    else
+	    {
+		if (cur->timenext < curtime)
+		{
+		    cur->msg->send (l2, **master_addr_) ;
+		    cur->ntrans++ ;
+		    cur->timenext = cur->timenext + (2* (cur->timenext - cur->timelast));
+		    sync_time (cur->timelast) ;
+		}
+		prev = cur ;
+	    }
+	    cur = next ;
 	}
-	cur = next ;
     }
 }
 

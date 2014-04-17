@@ -19,9 +19,9 @@ Resource::~Resource ()
     free (rt_) ;
 }
 
-bool Resource::check_name (const char *name, int len) 
+bool Resource::check_name (const char *name) 
 {
-    return strncmp (name_, name, len) == 0 ;
+    return strcmp (name_, name) == 0 ;
 }
 
 void Resource::add_handler (coap_code_t type, uint8_t (*handler)(Msg &in, Msg &out)) 
@@ -45,6 +45,27 @@ handler_s Resource::get_handler (coap_code_t type)
 	case COAP_CODE_DELETE:	return thandler_ [3] ;
 	default :		return thandler_ [0] ;
     }
+}
+
+/*
+ * Get a "well-known"-type text
+ *	<temp>;title="Temperature";rt="celcius"
+ * Returns length of string (including final \0), or -1 if it not fits
+ * in the given buffer (of length maxlen)
+ */
+
+int Resource::get_well_known (char *buf, size_t maxlen)
+{
+    int len ;
+    
+    len = sizeof "<>;title=..;rt=.." ;		// including '\0'
+    len += strlen (name_) + strlen (title_) + strlen (rt_) ;
+    if (len > maxlen)
+	len = -1 ;
+    else
+	sprintf (buf, "<%s>;title=\"%s\";rt=\"%s\"", name_, title_, rt_) ;
+
+    return len ;
 }
 
 void Resource::print (void)

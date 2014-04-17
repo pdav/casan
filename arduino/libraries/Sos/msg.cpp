@@ -469,6 +469,47 @@ option *Msg::next_option (void)
     return o ;
 }
 
+option::content_format Msg::content_format (void)
+{
+    optlist *ol ;
+    option::content_format cf ;
+    
+    cf = option::cf_none ;		// not found by default ;
+    for (ol = optlist_ ; ol != NULL ; ol = ol->next)
+    {
+	if (ol->o->optcode () == option::MO_Content_Format)
+	{
+	    cf = (option::content_format) ol->o->optval () ;
+	    break ;
+	}
+    }
+    return cf ;
+}
+
+void Msg::content_format (bool reset, option::content_format cf)
+{
+    optlist *ol ;
+
+    // look for the ContentFormat option
+    for (ol = optlist_ ; ol != NULL ; ol = ol->next)
+	if (ol->o->optcode () == option::MO_Content_Format)
+	    break ;
+
+    if (ol != NULL)			// found
+    {
+	if (reset)			// reset it to the new value?
+	    ol->o->optval (cf) ;	// yes
+    }
+    else				// not found: add this option
+    {
+	option *ocf ;
+
+	ocf = new option (option::MO_Content_Format, option::cf_text_plain) ;
+	push_option (*ocf) ;
+	delete ocf ;
+    }
+}
+
 void Msg::print (void) 
 {
     char *p ;

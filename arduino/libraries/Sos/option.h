@@ -35,7 +35,7 @@ class option
 	} optcode_t ;
 	typedef enum
 	{
-	    OF_NONE = 0,
+	    OF_NONE		 = 0,
 	    OF_OPAQUE,
 	    OF_STRING,
 	    OF_EMPTY,
@@ -44,8 +44,9 @@ class option
 	typedef unsigned long int uint ;
 
 	typedef enum {
-			cf_text_plain			= 0,
-			} content_format ;
+	    cf_none		= -1,		// non-existent option
+	    cf_text_plain	= 0,
+	} content_format ;
 
 	option () ;				// constructor
 	option (optcode_t c) ;			// constructor

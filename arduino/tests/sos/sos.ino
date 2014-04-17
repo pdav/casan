@@ -95,6 +95,8 @@ void setup ()
     Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
     r2->add_handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r2) ;
+
+    sos->print_resources () ;
 }
 
 void test_values_temp (void)

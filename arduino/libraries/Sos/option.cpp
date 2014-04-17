@@ -252,7 +252,7 @@ void *option::optval (int *len)
     return (optval_ == 0) ? staticval_ : optval_ ;
 }
 
-void * option::val (void)
+void *option::val (void)
 {
     return (void *) (optval_ == 0) ? staticval_ : optval_ ;
 }

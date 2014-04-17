@@ -19,8 +19,10 @@
 
 class Retrans {
     public:
-	Retrans (l2addr **master) ;
+	Retrans () ;
 	~Retrans (void) ;
+
+	void master (l2addr **master) ;	// reference to current master
 
 	void add (Msg *m) ;		// add a message in retrans queue
 	void del (Msg *m) ;		// delete a message from retrans queue

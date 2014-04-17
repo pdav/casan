@@ -16,20 +16,21 @@ class Resource {
 	Resource (const char *name, const char *title, const char *rt) ;
 	~Resource() ;
 
-	bool check_name (const char *name, int len);
+	bool check_name (const char *name);
 	void add_handler (coap_code_t type, uint8_t (*handler) (Msg &in, Msg &out)) ;
 
+	int get_well_known (char *buf, size_t maxlen) ;
 	void print (void) ;
 
 	handler_s get_handler (coap_code_t type) ;
 
-	// FIXME : make these private (they are used in rmanager.cpp)
+    private :
+	handler_s thandler_ [4];
+
 	char *name_ ;
 	char *title_ ;
 	char *rt_ ;
 
-    private :
-	handler_s thandler_ [4];
 };
 
 #endif
