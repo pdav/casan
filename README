@@ -1,6 +1,0 @@
-Source code for the Sensor Operating System (SOS).
-
-This directory is structured as follows:
-
-master			code for the master processor
-arduino			code for the slave processor running on Arduino
