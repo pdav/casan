@@ -64,12 +64,8 @@ class l2net_154 : public l2net
 	void dump_packet (size_t start, size_t maxlen) ;
 
     private:
-	ZigReceivedFrame *curframe_ ;
 	addr2_t myaddr_ ;
-
-	byte *rbuf_ ;			// receive buffer (of size mtu_ bytes)
-	size_t pktlen_ ;		// real length of received packet
-	size_t rbuflen_ ;		// length of data received (<= mtu_)
+	ZigReceivedFrame *curframe_ ;
 } ;
 
 #endif

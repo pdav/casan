@@ -11,7 +11,7 @@
     #include "l2-154.h"
 #endif
 
-#define	DEBUGINTERVAL	1
+#define	DEBUGINTERVAL	2
 
 void setup ()
 {
@@ -32,27 +32,27 @@ void test_l2addr (void)
 
     if (*x == *y)
     {
-	x->print () ;
-	y->print () ;
+	x->print () ; Serial.println () ;
+	y->print () ; Serial.println () ;
 	PRINT_DEBUG_STATIC ("x == y (PROBLEM)") ;
     }
     else
     {
-	x->print () ;
-	y->print () ;
+	x->print () ; Serial.println () ;
+	y->print () ; Serial.println () ;
 	PRINT_DEBUG_STATIC ("x != y (OK)") ;
     }
     *x = *y ;
     if (*x == *y)
     {
-	x->print () ;
-	y->print () ;
+	x->print () ; Serial.println () ;
+	y->print () ; Serial.println () ;
 	PRINT_DEBUG_STATIC ("x == y (OK)") ;
     }
     else
     {
-	x->print () ;
-	y->print () ;
+	x->print () ; Serial.println () ;
+	y->print () ; Serial.println () ;
 	PRINT_DEBUG_STATIC ("x != y (BAD)") ;
     }
 
@@ -62,6 +62,6 @@ void test_l2addr (void)
 
 void loop () 
 {
-    debug.heartbeat () ;
-    test_l2addr () ;
+    if (debug.heartbeat ())
+	test_l2addr () ;
 }

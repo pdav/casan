@@ -110,9 +110,9 @@ unsigned char * l2addr_154::get_raw_addr (void)
 
 void l2addr_154::print (void) {
     Serial.print (F ("802.15.4 : \033[32m")) ;
-    Serial.print (BYTE_HIGH (addr_)) ;
+    Serial.print (BYTE_HIGH (addr_), HEX) ;
     Serial.print (':') ;
-    Serial.print (BYTE_LOW (addr_)) ;
+    Serial.print (BYTE_LOW (addr_), HEX) ;
 #if 0
     for (int i = 0 ; i < I154ADDRLEN ; i++)
     {
