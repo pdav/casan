@@ -223,7 +223,7 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
     sll.sll_ifindex = ifidx_ ;
     std::memcpy (sll.sll_addr, a->addr_, ETHADDRLEN) ;
 
-    r = sendto (fd_, data, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
+    r = sendto (fd_, buf, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
     return r ;
 #endif
 #ifdef USE_PCAP
@@ -249,6 +249,16 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     l2addr_eth **a = (l2addr_eth **) saddr ;
     int r ;
     pktype_t pktype ;
+    byte *buf ;
+    int lenlen = *len + 2 ;
+
+    /*
+     * Ethernet specific : use additional 2 bytes for length in
+     * front of the payload
+     */
+
+
+    buf = new byte [lenlen] ;
 
     std::memset (&sll, 0, sizeof sll) ;
     sll.sll_family = AF_PACKET ;
@@ -258,7 +268,7 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 
     ssll = sizeof sll ;
 
-    r = recvfrom (fd_, data, *len, 0, (struct sockaddr *) &sll, &ssll) ;
+    r = recvfrom (fd_, buf, lenlen, 0, (struct sockaddr *) &sll, &ssll) ;
     if (r == -1)
     {
 	*a = nullptr ;
@@ -267,7 +277,16 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     else
     {
 	*a = new l2addr_eth ;
-	*len = r ;
+
+	/*
+	 * Remove Ethernet specific length
+	 */
+
+	*len = INT16 (buf [0], buf [1]) - 2 ;	// true length
+	std::memcpy (data, buf + 2, r - 2) ;
+	delete buf ;
+
+	// *len = r ;
 	switch (sll.sll_pkttype)
 	{
 	    case PACKET_HOST :
