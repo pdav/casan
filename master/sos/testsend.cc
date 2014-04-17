@@ -9,7 +9,7 @@
 #include "global.h"
 
 #include "l2.h"
-#include "l2eth.h"
+#include "l2-eth.h"
 #include "msg.h"
 #include "resource.h"
 #include "sos.h"

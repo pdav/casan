@@ -14,7 +14,7 @@ L2			= -DL2_ETH
 #### For Zigduino r2 platform and 802.15.4
 BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
-MONITOR_PORT		= /dev/ttyUSB0
+MONITOR_PORT		= /dev/zig0		# /dev/ttyUSB0
 ARDUINO_LIBS		= Sos L2-154 ZigMsg
 L2			= -DL2_154
 
@@ -22,7 +22,7 @@ USER_LIB_PATH		= $(realpath ../../libraries)
 
 include $(ARDMK_DIR)/Arduino.mk
 
-CPPFLAGS		+= -U__PROG_TYPES_COMPAT__  $(L2)
+CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(L2)
 
 test : all upload monitor
 

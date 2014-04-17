@@ -18,7 +18,7 @@
 #include "global.h"
 
 #include "l2.h"
-#include "l2802154.h"
+#include "l2-154.h"
 #include "byte.h"
 
 #define	XBEE_START		0x7e
@@ -379,7 +379,7 @@ pktype_t l2net_802154::extract_received_packet (l2addr **saddr, void *data, int 
 	    // get source address and convert it to a l2addr_802154 object
 	    char txtaddr [6] ;
 	    std::snprintf (txtaddr, sizeof txtaddr, "%2x:%2x", 
-		BYTE_HIGH (f->rx_short_.saddr), BYTE_LOW (f->rx_short_.saddr)) ;
+		BYTE_LOW (f->rx_short_.saddr), BYTE_HIGH (f->rx_short_.saddr)) ;
 	    *saddr = new l2addr_802154 (txtaddr) ;
 
 	    // transfer data

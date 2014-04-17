@@ -104,7 +104,7 @@ bool l2addr_eth::operator!= (const unsigned char *other)
 void l2addr_eth::print (void) {
     int i ;
 
-    Serial.print (F ("Eth : \033[32m")) ;
+    Serial.print (F ("\033[32m")) ;
     for (i = 0 ; i < ETHADDRLEN ; i++)
     {
 	if (i > 0)
@@ -143,7 +143,7 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
     rbuf_ = (byte *) malloc (mtu_ + ETH_OFFSET_PAYLOAD) ;
 
     W5100.init () ;
-    W5100.setMACAddress (myaddr_->addr_) ;
+    W5100.setMACAddress (myaddr_.addr_) ;
     cmd = SnMR::MACRAW ;
     if (! promisc)
 	cmd |= S0_MR_MF ;		// MAC filter for socket 0
@@ -271,6 +271,7 @@ l2_recv_t l2net_eth::recv (void)
 	{
 	    rbuflen_ = mtu_ + ETH_OFFSET_PAYLOAD ;
 	    remaining = pktlen_ - rbuflen_ ;
+	    r = L2_RECV_TRUNCATED ;
 	}
 
 	// copy received packet from W5100 internal buffer
@@ -305,10 +306,6 @@ l2_recv_t l2net_eth::recv (void)
 		&& (rbuf_ [ETH_OFFSET_ETHTYPE] != BYTE_HIGH (ethtype_)
 		 || rbuf_ [ETH_OFFSET_ETHTYPE + 1] != BYTE_LOW (ethtype_) ))
 	    r = L2_RECV_WRONG_ETHTYPE ;
-
-	// Truncated?
-	if (r == L2_RECV_RECV_OK && pktlen_ > mtu_)
-	    r = L2_RECV_TRUNCATED ;
     }
 
     return r ;
@@ -350,12 +347,9 @@ uint8_t *l2net_eth::get_payload (int offset)
     return rbuf_ + ETH_OFFSET_PAYLOAD + offset ;
 }
 
-size_t l2net_eth::get_paylen (void) 
+size_t l2net_eth::get_paylen (void)		// original length
 {
-    size_t sos_paylen ;
-
-    sos_paylen = INT16 (rbuf_ [ETH_OFFSET_SIZE], rbuf_ [ETH_OFFSET_SIZE + 1]) ;
-    return sos_paylen - 2 ;		// SOS size includes size itself
+    return pktlen_ ;
 }
 
 void l2net_eth::dump_packet (size_t start, size_t maxlen)

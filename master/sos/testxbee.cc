@@ -9,7 +9,7 @@
 #include "global.h"
 
 #include "l2.h"
-#include "l2802154.h"
+#include "l2-154.h"
 #include "msg.h"
 #include "resource.h"
 #include "sos.h"

@@ -60,7 +60,7 @@ l2addr_154::l2addr_154 (const char *a)
     if (i < I154ADDRLEN)
 	buf [i] = b ;
 
-    addr_ = CONST16 (buf [1], buf [0]) ;
+    addr_ = CONST16 (buf [0], buf [1]) ;
 }
 
 // copy constructor
@@ -89,10 +89,10 @@ bool l2addr_154::operator!= (const l2addr &other)
 }
 
 void l2addr_154::print (void) {
-    Serial.print (F ("802.15.4 : \033[32m")) ;
-    Serial.print (BYTE_HIGH (addr_), HEX) ;
+    Serial.print (F ("\033[32m")) ;
+    Serial.print (BYTE_LOW (addr_), HEX) ;	// first byte: low bits
     Serial.print (':') ;
-    Serial.print (BYTE_LOW (addr_), HEX) ;
+    Serial.print (BYTE_HIGH (addr_), HEX) ;	// second byte: high bits
     Serial.print (F ("\033[00m")) ;
 }
 

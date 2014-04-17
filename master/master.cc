@@ -18,8 +18,8 @@
 #include "utils.h"
 #include "conf.h"			// configuration file
 #include "l2.h"
-#include "l2eth.h"
-#include "l2802154.h"
+#include "l2-eth.h"
+#include "l2-154.h"
 #include "waiter.h"
 #include "msg.h"
 #include "option.h"

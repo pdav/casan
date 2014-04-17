@@ -23,7 +23,7 @@
 #include "global.h"
 
 #include "l2.h"
-#include "l2eth.h"
+#include "l2-eth.h"
 #include "byte.h"
 
 namespace sos {

@@ -8,7 +8,7 @@
     #include "l2-eth.h"
 
     l2addr *myaddr = new l2addr_eth ("00:01:02:03:04:05") ;
-    l2addr *destaddr = new l2addr_eth ("ff:ff:ff:ff:ff:ff") ;
+    l2addr *destaddr = new l2addr_eth ("e8:e0:b7:29:03:63") ;
 
     l2net_eth l2 ;
 
@@ -19,7 +19,7 @@
     #include "l2-154.h"
 
     l2addr *myaddr = new l2addr_154 ("45:67") ;
-    l2addr *destaddr = new l2addr_154 ("ff:ff") ;
+    l2addr *destaddr = new l2addr_154 ("12:34") ;
 
     l2net_154 l2 ;
 
@@ -42,48 +42,53 @@ void setup ()
 #endif
 }
 
+void print_paylen_src_dst (void)
+{
+    l2addr *src, *dst ;
+
+    Serial.print (F (" payload length=")) ;
+    Serial.print (l2.get_paylen ()) ;
+    Serial.print (F (" ")) ;
+    src = l2.get_src () ; src->print () ;
+    Serial.print (F ("->")) ;
+    dst = l2.get_dst () ; dst->print () ;
+    Serial.println () ;
+}
+
 void recv_l2 (void)
 {
     l2_recv_t r ;
-    l2addr *src, *dst ;
-    int paylen ;
 
     r = l2.recv () ;
-    paylen = l2.get_paylen () ;
-    src = l2.get_src () ;
-    dst = l2.get_dst () ;
+
     switch (r)
     {
 	case L2_RECV_EMPTY :
 	    break ;
 	case L2_RECV_RECV_OK :
-	    Serial.print (F ("OK : payload length=")) ;
-	    Serial.print (paylen) ;
-	    Serial.println () ;
+	    Serial.print (F ("OK")) ;
+	    print_paylen_src_dst () ;
 	    l2.dump_packet (0, 20) ;
 	    break ;
 	case L2_RECV_WRONG_DEST :
-	    Serial.print (F ("WRONG DEST : payload length=")) ;
-	    Serial.print (paylen) ;
-	    Serial.println () ;
+	    Serial.print (F ("WRONG DEST")) ;
+	    print_paylen_src_dst () ;
 	    l2.dump_packet (0, 20) ;
 	    break ;
 	case L2_RECV_WRONG_ETHTYPE :
-	    Serial.print (F ("WRONG ETHTYPE : payload length=")) ;
-	    Serial.print (paylen) ;
-	    Serial.println () ;
+	    Serial.print (F ("WRONG ETHTYPE")) ;
+	    print_paylen_src_dst () ;
 	    l2.dump_packet (0, 20) ;
 	    break ;
 	case L2_RECV_TRUNCATED :
-	    Serial.print (F ("TRUNCATED : payload length=")) ;
-	    Serial.print (paylen) ;
-	    Serial.println () ;
+	    Serial.print (F ("TRUNCATED")) ;
+	    print_paylen_src_dst () ;
 	    break ;
 	default :
 	    Serial.print (F ("UNKNOWN : r=")) ;
 	    Serial.print (r) ;
 	    Serial.print (F (", payload length=")) ;
-	    Serial.print (paylen) ;
+	    Serial.print (l2.get_paylen ()) ;
 	    Serial.println () ;
 	    break ;
     }
@@ -95,17 +100,20 @@ void send_l2 (void)
 {
     bool r ;
 
-    r = l2.send (*destaddr, (uint8_t *) testpkt, sizeof testpkt) ;
-    Serial.print (F ("Sent: r=")) ;
+    r = l2.send (* l2.bcastaddr (), (uint8_t *) testpkt, sizeof testpkt - 1) ;
+    Serial.print (F ("Sent broacast: r=")) ;
+    Serial.print (r) ;
+    Serial.println () ;
+
+    r = l2.send (*destaddr, (uint8_t *) testpkt, sizeof testpkt - 1) ;
+    Serial.print (F ("Sent unicast: r=")) ;
     Serial.print (r) ;
     Serial.println () ;
 }
-
 
 void loop ()
 {
     if (debug.heartbeat ())
 	send_l2 () ;
-
     recv_l2 () ;
 }

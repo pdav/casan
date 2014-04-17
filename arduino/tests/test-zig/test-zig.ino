@@ -80,8 +80,8 @@ void print_frame (ZigReceivedFrame *z)
 
     Serial.print (desc_frametype [Z_GET_FRAMETYPE (z->fcf)]) ;
     Serial.print (" Sec=") ;	Serial.print (Z_GET_SEC_ENABLED (z->fcf)) ;
-    Serial.print (" Pending=") ; Serial.print (Z_GET_FRAME_PENDING (z->fcf)) ;
-    Serial.print (" AckReq=") ;	Serial.print (Z_GET_ACK_REQUEST (z->fcf)) ;
+    Serial.print (" Pendg=") ; Serial.print (Z_GET_FRAME_PENDING (z->fcf)) ;
+    Serial.print (" AckRq=") ;	Serial.print (Z_GET_ACK_REQUEST (z->fcf)) ;
     Serial.print (" V=") ;	Serial.print (Z_GET_FRAME_VERSION (z->fcf)) ;
 
     intrapan = Z_GET_INTRA_PAN (z->fcf) ;
