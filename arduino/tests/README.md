@@ -11,6 +11,8 @@ Many of these are low-level test sketches for individual classes:
 * test-res: simulate a response to a request (without access to the network)
 * test-zig : show usage of the ZigMsg low-level library
 
+Note: test-zig is also an IEEE 802.15.4 sniffer.
+
 
 How to add your own sketch here
 -------------------------------
