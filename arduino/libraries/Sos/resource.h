@@ -21,7 +21,6 @@ class Resource {
 	void print (void) ;
 
     private :
-	// handler_s thandler_ [4];
 	handler_t handler_ [4] ;
 
 	char *name_ ;
