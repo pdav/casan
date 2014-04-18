@@ -256,7 +256,7 @@ l2_recv_t l2net_eth::recv (void)
 
 	r = L2_RECV_RECV_OK ;		// default value
 
-	// Extract packet length
+	// Extract w5100 header == length (padded to 60 for a small packet)
 	W5100.recv_data_processing (SOCK0, pl, sizeof pl, 0) ;
 	W5100.execCmdSn (SOCK0, Sock_RECV) ;
 	pktlen_ = INT16 (pl [0], pl [1]) ;
@@ -296,6 +296,11 @@ l2_recv_t l2net_eth::recv (void)
 	    remaining -= n ;
 	}
 
+	// Get true packet length (specific length for Ethernet SOS payload)
+	pktlen_ = INT16 (rbuf_ [ETH_OFFSET_SIZE], rbuf_ [ETH_OFFSET_SIZE+1]) ;
+	pktlen_ -= 2 ;
+
+	// XXX HOW CAN THIS TEST (l2addr_eth*  != byte *) WORK?
 	// Check destination address
 	if (myaddr_ != rbuf_ + ETH_OFFSET_DST_ADDR
 		&& l2addr_eth_broadcast != rbuf_ + ETH_OFFSET_DST_ADDR)

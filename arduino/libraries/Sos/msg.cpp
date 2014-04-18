@@ -79,7 +79,7 @@ l2_recv_t Msg::recv (l2net &l2)
  * CoAP header and token (and considered as a success).
  */
 
-bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
+bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
 {
     bool success ;
 
@@ -112,7 +112,7 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 	 */
 
 	opt_nb = 0 ;
-	while (! truncated && success && i < rbuflen && rbuf [i] != 0xff)
+	while (! truncated && success && i < len && rbuf [i] != 0xff)
 	{
 	    int opt_delta = 0, opt_len = 0 ;
 	    option o ;
@@ -163,11 +163,16 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated)
 	    else
 	    {
 		success = false ;
-		PRINT_DEBUG_STATIC ("\033[31mOPTION unrecognized\033[00m") ;
+		Serial.print (F ("\033[31mOPTION unrecognized\033[00m")) ;
+		Serial.print (F (" opt_delta=")) ;
+		Serial.print (opt_delta) ;
+		Serial.print (F (", opt_len=")) ;
+		Serial.print (opt_len) ;
+		Serial.println () ;
 	    }
 	}
 
-	paylen_ = rbuflen - i ;
+	paylen_ = len - i ;
 	if (! truncated && success && paylen_ > 0)
 	{
 	    if (rbuf [i] != 0xff)
