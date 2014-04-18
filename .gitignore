@@ -2,12 +2,12 @@
 */*.[ao]
 */*/*.[ao]
 *.swp
-*/build-cli/
-*/*/build-cli/
-*/*/*/build-cli/
 */build-uno/
 */*/build-uno/
 */*/*/build-uno/
+*/build-zigduino_r2/
+*/*/build-zigduino_r2/
+*/*/*/build-zigduino_r2/
 send
 recv
 *.out
