@@ -275,6 +275,8 @@ void Sos::get_well_known (Msg &out)
     reslist *rl ;
     int mtu ;
 
+    out.content_format (true, option::cf_text_plain) ;
+
     /*
      * XXX
      * A buffer of size MTU is probably too large: there will
@@ -309,7 +311,7 @@ void Sos::get_well_known (Msg &out)
     }
 
     out.set_payload ((uint8_t *) buf, size) ;
-    out.content_format (true, option::cf_text_plain) ;
+    free (buf) ;
 }
 
 /******************************************************************************
