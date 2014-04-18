@@ -6,10 +6,7 @@
 #include "defs.h"
 #include "msg.h"
 
-typedef struct handler_
-{
-    uint8_t (*handler) (Msg &in, Msg &out) ;
-} handler_s;
+typedef uint8_t (*handler_t) (Msg &in, Msg &out) ;
 
 class Resource {
     public:
@@ -17,15 +14,15 @@ class Resource {
 	~Resource() ;
 
 	bool check_name (const char *name);
-	void add_handler (coap_code_t type, uint8_t (*handler) (Msg &in, Msg &out)) ;
+	void handler (coap_code_t op, handler_t h) ;
+	handler_t handler (coap_code_t op) ;
 
 	int get_well_known (char *buf, size_t maxlen) ;
 	void print (void) ;
 
-	handler_s get_handler (coap_code_t type) ;
-
     private :
-	handler_s thandler_ [4];
+	// handler_s thandler_ [4];
+	handler_t handler_ [4] ;
 
 	char *name_ ;
 	char *title_ ;

@@ -89,11 +89,11 @@ void setup ()
     debug.start (DEBUGINTERVAL) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
-    r1->add_handler (COAP_CODE_GET, process_temp) ;
+    r1->handler (COAP_CODE_GET, process_temp) ;
     sos->register_resource (r1) ;
 
     Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
-    r2->add_handler (COAP_CODE_GET, process_led) ;
+    r2->handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r2) ;
 
     sos->print_resources () ;

@@ -24,27 +24,14 @@ bool Resource::check_name (const char *name)
     return strcmp (name_, name) == 0 ;
 }
 
-void Resource::add_handler (coap_code_t type, uint8_t (*handler)(Msg &in, Msg &out)) 
+void Resource::handler (coap_code_t op, handler_t h)
 {
-    switch (type) {
-	case COAP_CODE_GET :	thandler_ [0].handler = handler ; break ;
-	case COAP_CODE_POST :	thandler_ [1].handler = handler ; break ;
-	case COAP_CODE_PUT :	thandler_ [2].handler = handler ; break ;
-	case COAP_CODE_DELETE :	thandler_ [3].handler = handler ; break ;
-	default :
-	    break ;
-    }
+    handler_ [op] = h ;
 }
 
-handler_s Resource::get_handler (coap_code_t type) 
+handler_t Resource::handler (coap_code_t op)
 {
-    switch (type) {
-	case COAP_CODE_GET:	return thandler_ [0] ;
-	case COAP_CODE_POST:	return thandler_ [1] ;
-	case COAP_CODE_PUT:	return thandler_ [2] ;
-	case COAP_CODE_DELETE:	return thandler_ [3] ;
-	default :		return thandler_ [0] ;
-    }
+    return handler_ [op] ;
 }
 
 /*

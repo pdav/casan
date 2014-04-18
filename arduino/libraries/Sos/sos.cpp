@@ -220,8 +220,8 @@ void Sos::request_resource (Msg &in, Msg &out)
 		    out.set_token (in.get_toklen (), in.get_token ()) ;
 
 		    // call handler
-		    handler_s h = res->get_handler ((coap_code_t) in.get_code ()) ;
-		    out.set_code ((*h.handler) (in, out)) ;
+		    handler_t h = res->handler ((coap_code_t) in.get_code ()) ;
+		    out.set_code ((*h) (in, out)) ;
 
 		    // add Content Format option if not created by handler
 		    out.content_format (false, option::cf_text_plain) ;
@@ -273,7 +273,6 @@ void Sos::get_well_known (Msg &out)
     char *buf ;
     int size ;
     reslist *rl ;
-    int mtu ;
     size_t avail ;
     bool reset ;
 
@@ -290,7 +289,7 @@ void Sos::get_well_known (Msg &out)
 
 	if (size > 0)			// separator "," between resources
 	{
-	    if (size + 2 < mtu)
+	    if (size + 2 < avail)
 	    {
 		buf [size++] = ',' ;
 		buf [size] = '\0' ;
@@ -298,7 +297,7 @@ void Sos::get_well_known (Msg &out)
 	    else break ;		// too large
 	}
 
-	len = rl->res->get_well_known (buf + size, mtu - size) ;
+	len = rl->res->get_well_known (buf + size, avail - size) ;
 	if (len == -1)
 	    break ;
 
