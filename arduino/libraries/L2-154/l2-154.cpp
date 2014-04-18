@@ -12,6 +12,22 @@ addr2_t addr2_broadcast = CONST16 (0xff, 0xff) ;
 
 #define	I154_MTU		127
 
+/*
+ * We assume a fixed size MAC header which includes:
+ * 2 bytes : FCF (with the intra-PAN bit set)
+ * 1 byte  : Sequence number
+ * 2 bytes : destination address
+ * 2 bytes : destination PANID
+ * 2 bytes : source address (without PANID since the intra-PAN bit is set)
+ * and no auxiliary security header field
+ *
+ * The MAC footer includes a 2 bytes checksum.
+ *
+ * Hence, the MSDU (MAC service Data Unit) length is 127 - header - fcs
+ */
+
+#define	I154_SIZE_HEADER	(2+1+2+2+2)
+#define	I154_SIZE_FCS		2		// CRC-16 checksum at the end
 
 /******************************************************************************
  * l2addr_154 methods
@@ -108,6 +124,16 @@ l2net_154::~l2net_154 ()
 {
 }
 
+/*
+ * Start a 802.15.4 network socket
+ *
+ * a : our 802.15.4 address
+ * promisc : true if we want to access this network in promisc mode
+ * mtu : maximum size of a 802.15.4 frame (including MAC header and footer)
+ * chan : channel number
+ * panid : PAN-id
+ */
+
 void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, panid_t panid)
 {
     myaddr_ = ((l2addr_154 *) a)->addr_ ;
@@ -118,7 +144,7 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
 
     if (mtu == 0 || mtu > I154_MTU)
 	mtu = I154_MTU ;		// excluding MAC header
-    mtu_ = mtu ;
+    mtu_ = mtu - (I154_SIZE_HEADER - I154_SIZE_FCS) ;
 
     curframe_ = NULL ;			// no currently received frame
 

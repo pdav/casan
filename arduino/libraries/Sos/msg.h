@@ -62,6 +62,7 @@ class Msg {
 	void push_option (option &o) ;
 
 	// not so basic methods
+	size_t avail_space (void) ;	// available space in msg
 	void content_format (bool reset, option::content_format cf) ;
 	option::content_format content_format (void) ;
 
@@ -77,6 +78,7 @@ class Msg {
 	// TODO : tests, handle errors
 	bool coap_encode (uint8_t sbuf [], size_t &sbuflen) ;
 	bool coap_decode (uint8_t rbuf [], size_t rbuflen, bool truncated) ;
+	size_t coap_size (bool emulpayload) ;	// size of coap-encoded message
 
 	void msgcopy (const Msg &m) ;
 

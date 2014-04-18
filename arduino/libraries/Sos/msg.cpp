@@ -231,37 +231,14 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
     uint16_t opt_nb ;
     uint16_t size ;
     bool success ;
+    bool emulpayload ;
 
     /*
      * Format message, part 1 : compute message size
      */
 
-    size = 4 + toklen_ ;
-
-    reset_next_option () ;
-    opt_nb = 0 ;
-    for (option *o = next_option () ; o != NULL ; o = next_option ())
-    {
-	int opt_delta, opt_len ;
-
-	size++ ;			// 1 byte for opt delta & len
-
-	opt_delta = o->optcode_ - opt_nb ;
-	if (opt_delta >= 269)		// delta >= 269 => 2 bytes
-	    size += 2 ;
-	else if (opt_delta >= 13)	// delta \in [13..268] => 1 byte
-	    size += 1 ;
-	opt_nb = o->optcode_ ;
-
-	opt_len = o->optlen_ ;
-	if (opt_len >= 269)		// len >= 269 => 2 bytes
-	    size += 2 ;
-	else if (opt_len >= 13)		// len \in [13..268] => 1 byte
-	    size += 1 ;
-	size += o->optlen_ ;
-    }
-    if (paylen_ > 0)
-	size += 1 + paylen_ ;		// don't forget 0xff byte
+    emulpayload = false ;		// get the true available space
+    size = coap_size (emulpayload) ;
 
     if (size <= sbuflen)		// Enough space?
     {
@@ -346,6 +323,52 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
     else success = false ;
 
     return success ;
+}
+
+size_t Msg::coap_size (bool emulpayload)
+{
+    uint16_t opt_nb ;
+    size_t size ;
+
+    size = 4 + toklen_ ;
+
+    reset_next_option () ;
+    opt_nb = 0 ;
+    for (option *o = next_option () ; o != NULL ; o = next_option ())
+    {
+	int opt_delta, opt_len ;
+
+	size++ ;			// 1 byte for opt delta & len
+
+	opt_delta = o->optcode_ - opt_nb ;
+	if (opt_delta >= 269)		// delta >= 269 => 2 bytes
+	    size += 2 ;
+	else if (opt_delta >= 13)	// delta \in [13..268] => 1 byte
+	    size += 1 ;
+	opt_nb = o->optcode_ ;
+
+	opt_len = o->optlen_ ;
+	if (opt_len >= 269)		// len >= 269 => 2 bytes
+	    size += 2 ;
+	else if (opt_len >= 13)		// len \in [13..268] => 1 byte
+	    size += 1 ;
+	size += o->optlen_ ;
+    }
+    if (paylen_ > 0 || emulpayload)
+	size += 1 + paylen_ ;		// don't forget 0xff byte
+
+    return size ;
+}
+
+size_t Msg::avail_space (void)
+{
+    size_t size, mtu, avail ;
+
+    size = coap_size (true) ;
+    mtu = l2_->mtu () ;
+
+    avail = (size <= mtu) ? mtu - size : 0 ;
+    return avail ;
 }
 
 uint8_t *Msg::get_payload_copy (void) 

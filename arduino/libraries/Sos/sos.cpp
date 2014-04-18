@@ -274,19 +274,14 @@ void Sos::get_well_known (Msg &out)
     int size ;
     reslist *rl ;
     int mtu ;
+    size_t avail ;
+    bool reset ;
 
-    out.content_format (true, option::cf_text_plain) ;
+    reset = false ;
+    out.content_format (reset, option::cf_text_plain) ;
 
-    /*
-     * XXX
-     * A buffer of size MTU is probably too large: there will
-     * be options (and perhaps a token) which will enlarge the
-     * message. In this case, the problem will be detected by
-     * the L2 send method.
-     */
-
-    mtu = l2_->mtu () ;
-    buf = (char *) malloc (mtu) ;
+    avail = out.avail_space () ;
+    buf = (char *) malloc (avail) ;
 
     size = 0 ;
     for (rl = reslist_ ; rl != NULL ; rl = rl->next) 
@@ -311,6 +306,7 @@ void Sos::get_well_known (Msg &out)
     }
 
     out.set_payload ((uint8_t *) buf, size) ;
+
     free (buf) ;
 }
 

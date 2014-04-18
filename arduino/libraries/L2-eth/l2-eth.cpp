@@ -20,9 +20,10 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 #define	ETH_OFFSET_SIZE		14		// specific to SOS
 #define	ETH_OFFSET_PAYLOAD	16
 
-#define	ETH_CRC_LENGTH		4
+#define	ETH_SIZE_HEADER		ETH_OFFSET_PAYLOAD
+#define	ETH_SIZE_FCS		4
 
-#define	ETH_MTU			1500
+#define	ETH_MTU			1518
 
 
 /******************************************************************************
@@ -128,19 +129,28 @@ l2net_eth::~l2net_eth ()
 	free (rbuf_) ;
 }
 
+/*
+ * Start an Ethernet network socket
+ *
+ * a : our Ethernet address
+ * promisc : true if we want to access this network in promisc mode
+ * mtu : maximum size of an Ethernet frame (including MAC header and footer)
+ * ethtype: Ethernet type used for sending and receiving frames
+ */
+
 void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 {
     int cmd ;
 
     myaddr_ = * (l2addr_eth *) a ;
     ethtype_ = ethtype ;
-    if (mtu == 0)
-	mtu = ETH_MTU - 2 ;		// exluding MAC header + SOS length
-    mtu_ = mtu ;
+    if (mtu == 0 || mtu > ETH_MTU)
+	mtu = ETH_MTU ;
+    mtu_ = mtu - (ETH_SIZE_HEADER + ETH_SIZE_FCS) ; // excl. MAC hdr + SOS len
 
     if (rbuf_ != NULL)
 	free (rbuf_) ;
-    rbuf_ = (byte *) malloc (mtu_ + ETH_OFFSET_PAYLOAD) ;
+    rbuf_ = (byte *) malloc (mtu_ + ETH_SIZE_HEADER) ;
 
     W5100.init () ;
     W5100.setMACAddress (myaddr_.addr_) ;
@@ -162,7 +172,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 {
     bool success = false ;
 
-    if (len + ETH_OFFSET_PAYLOAD <= mtu_)
+    if (len + ETH_SIZE_HEADER <= mtu_)
     {
 	l2addr_eth *m = (l2addr_eth *) &dest ;
 	byte *sbuf ;		// send buffer
@@ -170,7 +180,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	size_t paylen ;		// restricted to mtu, if any
 
 	paylen = len ;		// keep original length
-	sbuflen = len + ETH_OFFSET_PAYLOAD ;	// add MAC header + SOS length
+	sbuflen = len + ETH_SIZE_HEADER ;	// add MAC header + SOS length
 	sbuf = (byte *) malloc (sbuflen) ;
 
 	// Standard Ethernet MAC header (14 bytes)
@@ -202,7 +212,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	 */
 
 	l2addr_eth *m = (l2addr_eth *) &dest ;
-	byte hdr [ETH_OFFSET_PAYLOAD] ;
+	byte hdr [ETH_SIZE_HEADER] ;
 
 	// Standard Ethernet MAC header (14 bytes)
 	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
@@ -215,7 +225,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	hdr [ETH_OFFSET_SIZE + 1] = BYTE_LOW  (len + 2) ;
 
 	// Place header in buffer
-	W5100.send_data_processing (SOCK0, hdr, ETH_OFFSET_PAYLOAD) ;
+	W5100.send_data_processing (SOCK0, hdr, ETH_SIZE_HEADER) ;
 
 	// Place payload in buffer
 	W5100.send_data_processing (SOCK0, data, len) ;
@@ -262,14 +272,14 @@ l2_recv_t l2net_eth::recv (void)
 	pktlen_ = INT16 (pl [0], pl [1]) ;
 	pktlen_ -= 2 ;			// w5100 header includes size itself
 
-	if (pktlen_ <= mtu_ + ETH_OFFSET_PAYLOAD) 
+	if (pktlen_ <= mtu_ + ETH_SIZE_HEADER) 
 	{
 	    rbuflen_ = pktlen_ ;
 	    remaining = 0 ;
 	}
 	else
 	{
-	    rbuflen_ = mtu_ + ETH_OFFSET_PAYLOAD ;
+	    rbuflen_ = mtu_ + ETH_SIZE_HEADER ;
 	    remaining = pktlen_ - rbuflen_ ;
 	    r = L2_RECV_TRUNCATED ;
 	}
