@@ -203,7 +203,7 @@ void Sos::request_resource (Msg &in, Msg &out)
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
 		out.set_token (in.get_toklen (), in.get_token ()) ;
-		out.set_code (COAP_RETURN_CODE (2, 5)) ;
+		out.set_code (COAP_CODE_OK) ;
 		get_well_known (out) ;
 	    }
 	    else
@@ -221,10 +221,16 @@ void Sos::request_resource (Msg &in, Msg &out)
 
 		    // call handler
 		    handler_t h = res->handler ((coap_code_t) in.get_code ()) ;
-		    out.set_code ((*h) (in, out)) ;
-
-		    // add Content Format option if not created by handler
-		    out.content_format (false, option::cf_text_plain) ;
+		    if (h == NULL)
+		    {
+			out.set_code (COAP_CODE_BAD_REQUEST) ;
+		    }
+		    else
+		    {
+			// add Content Format option
+			out.content_format (false, option::cf_text_plain) ;
+			out.set_code ((*h) (in, out)) ;
+		    }
 		}
 	    }
 	    break ;
@@ -236,7 +242,7 @@ void Sos::request_resource (Msg &in, Msg &out)
 	out.set_type (COAP_TYPE_ACK) ;
 	out.set_id (in.get_id ()) ;
 	out.set_token (in.get_toklen (), in.get_token ()) ;
-	out.set_code (COAP_RETURN_CODE (4, 4)) ;
+	out.set_code (COAP_CODE_NOT_FOUND) ;
     }
 }
 
@@ -465,7 +471,7 @@ void Sos::loop ()
 		out.set_token (in.get_toklen (), in.get_token ()) ;
 		option o (option::MO_Size1, l2_->mtu ()) ;
 		out.push_option (o) ;
-		out.set_code (COAP_RETURN_CODE (4,13)) ;
+		out.set_code (COAP_CODE_TOO_LARGE) ;
 		out.send (*l2_, *master_) ;
 	    }
 
@@ -675,7 +681,7 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
 
     // send back an acknowledgement message
     out.set_type (COAP_TYPE_ACK) ;
-    out.set_code (COAP_RETURN_CODE (2, 5)) ;
+    out.set_code (COAP_CODE_OK) ;
     out.set_id (in.get_id ()) ;
 
     // will get the resources and set them in the payload in the right format
