@@ -10,8 +10,6 @@ l2addr_154 l2addr_154_broadcast ("ff:ff") ;
 
 addr2_t addr2_broadcast = CONST16 (0xff, 0xff) ;
 
-#define	I154_MTU		127
-
 /*
  * We assume a fixed size MAC header which includes:
  * 2 bytes : FCF (with the intra-PAN bit set)
@@ -142,8 +140,8 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
     ZigMsg.panid (panid) ;
     ZigMsg.promiscuous (false) ;
 
-    if (mtu == 0 || mtu > I154_MTU)
-	mtu = I154_MTU ;		// excluding MAC header
+    if (mtu == 0 || mtu > I154MTU)
+	mtu = I154MTU ;			// excluding MAC header
     mtu_ = mtu - (I154_SIZE_HEADER - I154_SIZE_FCS) ;
 
     curframe_ = NULL ;			// no currently received frame

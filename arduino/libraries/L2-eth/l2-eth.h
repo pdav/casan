@@ -12,7 +12,7 @@
 #include "enum.h"
 
 #define	ETHADDRLEN	6		// Ethernet address length
-#define	ETHMTU		1536
+#define	ETHMTU		1518
 
 class l2addr_eth : public l2addr
 {

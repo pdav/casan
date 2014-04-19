@@ -23,9 +23,6 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 #define	ETH_SIZE_HEADER		ETH_OFFSET_PAYLOAD
 #define	ETH_SIZE_FCS		4
 
-#define	ETH_MTU			1518
-
-
 /******************************************************************************
  * l2addr_eth methods
  */
@@ -144,8 +141,8 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 
     myaddr_ = * (l2addr_eth *) a ;
     ethtype_ = ethtype ;
-    if (mtu == 0 || mtu > ETH_MTU)
-	mtu = ETH_MTU ;
+    if (mtu == 0 || mtu > ETHMTU)
+	mtu = ETHMTU ;
     mtu_ = mtu - (ETH_SIZE_HEADER + ETH_SIZE_FCS) ; // excl. MAC hdr + SOS len
 
     if (rbuf_ != NULL)
