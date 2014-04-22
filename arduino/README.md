@@ -29,7 +29,7 @@ Documentation
 
 the library documentation
 
-See libraries/sos/doc/.
+See libraries/sos/doc/
 
 
 Notice
