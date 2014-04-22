@@ -31,41 +31,40 @@ class Msg {
 	l2_recv_t recv (l2net &l2) ;
 
 	// accessors (for received messages)
-	uint8_t  get_type (void)	{ return type_ ; }
-	uint8_t  get_code (void)	{ return code_ ; }
-	uint16_t get_id (void)		{ return id_ ; }
-	uint8_t  get_toklen (void)	{ return toklen_ ; }
-	uint8_t *get_token (void)	{ return token_ ; }
-	uint16_t get_paylen (void)	{ return paylen_ ; }
+	uint8_t  get_type    (void)	{ return type_ ; }
+	uint8_t  get_code    (void)	{ return code_ ; }
+	uint16_t get_id      (void)	{ return id_ ; }
+	uint8_t  get_toklen  (void)	{ return toklen_ ; }
+	uint8_t *get_token   (void)	{ return token_ ; }
+	uint16_t get_paylen  (void)	{ return paylen_ ; }
 	uint8_t *get_payload (void)	{ return payload_ ; }
-
-	uint8_t *get_payload_copy (void) ;
-
-	// give an option, and delete the entry in _opt_list
-	option *pop_option (void) ;
-	// give options one by one but without delete the entry in _opt_list
-	// only use case : foreach option
-	option *next_option (void) ;
-	void reset_next_option (void) ;
 
 	// Send message
 
 	bool send (l2net &l2, l2addr &dest) ;
 	// mutators (to send messages)
-	void set_type (uint8_t t)	{ type_ = t ; }
-	void set_code (uint8_t c)	{ code_ = c ; }
-	void set_id   (uint16_t id)	{ id_ = id ; }
-
-	void set_token (uint8_t toklen, uint8_t *token) ;
+	void set_type    (uint8_t t)	{ type_ = t ; }
+	void set_code    (uint8_t c)	{ code_ = c ; }
+	void set_id      (uint16_t id)	{ id_ = id ; }
+	void set_token   (uint8_t toklen, uint8_t *token) ;
 	void set_payload (uint8_t *payload, uint16_t paylen) ;
 
-	void push_option (option &o) ;
+	// Option management
+
+	// give an option, and delete the entry in _opt_list
+	option *pop_option (void) ;	// to analyze a received message
+	// give options one by one but without delete the entry in _opt_list
+	// only use case : foreach option
+	option *next_option (void) ;	// loop through options
+	void reset_next_option (void) ;	// reset loop
+	void push_option (option &o) ;	// to prepare to send a message
 
 	// not so basic methods
 	size_t avail_space (void) ;	// available space in msg
 	void content_format (bool reset, option::content_format cf) ;
 	option::content_format content_format (void) ;
 
+	// debug method
 	void print (void) ;
 
     private:

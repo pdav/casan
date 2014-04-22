@@ -11,14 +11,50 @@
 #define	COAP_CODE(b)	(((b) [1]))
 #define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
 
+/******************************************************************************
+Constructor, destructor, operators
+******************************************************************************/
+
+/*
+ * Constructor
+ */
+
 Msg::Msg ()
 {
     memset (this, 0, sizeof *this) ;
 }
 
+/*
+ * Copy-constructor
+ */
+
 Msg::Msg (const Msg &m) 
 {
     msgcopy (m) ;
+}
+
+/*
+ * Destructor
+ */
+
+Msg::~Msg ()
+{
+    reset () ;
+}
+
+/*
+ * Reset function: free memory, etc.
+ */
+
+void Msg::reset (void)
+{
+    if (payload_ != NULL)
+	delete payload_ ;
+    if (encoded_ != NULL)
+	free (encoded_) ;
+    while (optlist_ != NULL)
+	delete pop_option () ;
+    memset (this, 0, sizeof *this) ;
 }
 
 Msg &Msg::operator= (const Msg &m) 
@@ -31,22 +67,6 @@ Msg &Msg::operator= (const Msg &m)
 bool Msg::operator== (const Msg &m)
 {
     return this->id_ == m.id_ ;
-}
-
-Msg::~Msg ()
-{
-    reset () ;
-}
-
-void Msg::reset (void)
-{
-    if (payload_ != NULL)
-	delete payload_ ;
-    if (encoded_ != NULL)
-	free (encoded_) ;
-    while (optlist_ != NULL)
-	delete pop_option () ;
-    memset (this, 0, sizeof *this) ;
 }
 
 /******************************************************************************
@@ -225,6 +245,10 @@ bool Msg::send (l2net &l2, l2addr &dest)
     return success ;
 }
 
+/*
+ * Encode a message according to the CoAP specification
+ */
+
 bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
 {
     uint16_t i ;
@@ -325,6 +349,11 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
     return success ;
 }
 
+/*
+ * Compute the size of the message when it will be encoded according
+ * to the CoAP specification
+ */
+
 size_t Msg::coap_size (bool emulpayload)
 {
     uint16_t opt_nb ;
@@ -360,6 +389,12 @@ size_t Msg::coap_size (bool emulpayload)
     return size ;
 }
 
+/*
+ * Compute the available space in the message, according to L2 MTU
+ * and size of message when it will be encoded. Typically used to
+ * know available space for the payload.
+ */
+
 size_t Msg::avail_space (void)
 {
     size_t size, mtu, avail ;
@@ -371,27 +406,9 @@ size_t Msg::avail_space (void)
     return avail ;
 }
 
-uint8_t *Msg::get_payload_copy (void) 
-{
-    uint8_t *c = (uint8_t *) malloc (paylen_) ;
-    memcpy (c, payload_, paylen_) ;
-    return c ;
-}
-
-option * Msg::pop_option (void) 
-{
-    option *r = NULL ;
-    if (optlist_ != NULL)
-    {
-	optlist *next ;
-
-	r = optlist_->o ;
-	next = optlist_->next ;
-	delete optlist_ ;
-	optlist_ = next ;
-    }
-    return r ;
-}
+/*
+ * Various mutators to long to be inlined: token and payload
+ */
 
 void Msg::set_token (uint8_t toklen, uint8_t *token)
 {
@@ -408,7 +425,35 @@ void Msg::set_payload (uint8_t *payload, uint16_t paylen)
     memcpy (payload_, payload, paylen_) ;
 }
 
-// push option in the sorted list of options
+
+/******************************************************************************
+ * Option management
+ */
+
+/*
+ * Remove the first option of the option list
+ */
+
+option * Msg::pop_option (void) 
+{
+    option *r = NULL ;
+    if (optlist_ != NULL)
+    {
+	optlist *next ;
+
+	r = optlist_->o ;
+	next = optlist_->next ;
+	delete optlist_ ;
+	optlist_ = next ;
+    }
+    return r ;
+}
+
+/*
+ * Push an option in the option list, which is a sorted list (in order
+ * to optimally encode CoAP options)
+ */
+
 void Msg::push_option (option &o) 
 {
     optlist *newo, *prev, *cur ;
@@ -431,6 +476,46 @@ void Msg::push_option (option &o)
 	prev->next = newo ;
 }
 
+/*
+ * Reset the option iterator (next_option)
+ */
+
+void Msg::reset_next_option (void) 
+{
+    curopt_initialized_ = false ;
+}
+
+/*
+ * Option iterator: each call will return the next element in option list.
+ * Needs to call reset_next_option before first use.
+ */
+
+option *Msg::next_option (void) 
+{
+    option *o ;
+    if (! curopt_initialized_)
+    {
+	curopt_ = optlist_ ;
+	curopt_initialized_ = true ;
+    }
+    if (curopt_ == NULL)
+    {
+	o = NULL ;
+	curopt_initialized_ = false ;
+    }
+    else
+    {
+	o = curopt_->o ;
+	curopt_ = curopt_->next ;
+    }
+    return o ;
+}
+
+
+/*
+ * Copy a whole message, including payload and option list
+ */
+
 void Msg::msgcopy (const Msg &m)
 {
     struct optlist *ol1, *ol2 ;
@@ -439,7 +524,9 @@ void Msg::msgcopy (const Msg &m)
 
     if (payload_)
 	free (payload_) ;
-    payload_ = ((Msg) m).get_payload_copy () ;
+
+    payload_ = (uint8_t *) malloc (paylen_) ;
+    memcpy (payload_, m.payload_, paylen_) ;
 
     enclen_ = 0 ;
     if (encoded_ != NULL)
@@ -466,31 +553,10 @@ void Msg::msgcopy (const Msg &m)
     }
 }
 
-void Msg::reset_next_option (void) 
-{
-    curopt_initialized_ = false ;
-}
-
-option *Msg::next_option (void) 
-{
-    option *o ;
-    if (! curopt_initialized_)
-    {
-	curopt_ = optlist_ ;
-	curopt_initialized_ = true ;
-    }
-    if (curopt_ == NULL)
-    {
-	o = NULL ;
-	curopt_initialized_ = false ;
-    }
-    else
-    {
-	o = curopt_->o ;
-	curopt_ = curopt_->next ;
-    }
-    return o ;
-}
+/*
+ * Returns content_format option, if present, or option::cf_none if not
+ * present.
+ */
 
 option::content_format Msg::content_format (void)
 {
@@ -508,6 +574,12 @@ option::content_format Msg::content_format (void)
     }
     return cf ;
 }
+
+/*
+ * Set content_format option, if not already present in option list.
+ * If the reset argument is true, the content_format option value
+ * is reset to the given value (otherwise, option is not modified).
+ */
 
 void Msg::content_format (bool reset, option::content_format cf)
 {
@@ -532,6 +604,10 @@ void Msg::content_format (bool reset, option::content_format cf)
 	delete ocf ;
     }
 }
+
+/*
+ * Useful for debugging purposes
+ */
 
 void Msg::print (void) 
 {
