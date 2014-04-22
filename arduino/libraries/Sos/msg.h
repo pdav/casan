@@ -1,3 +1,23 @@
+/**
+ * \class Msg
+ *
+ * \brief A message, either received or to be sent
+ *
+ * This class represents a message:
+ *   * to be sent to the network
+ *   * received from the network
+ *
+ * Message attributes are tied to CoAP specification: a message has
+ * a type (CON, NON, ACK, RST), a code (GET, POST, PUT, DELETE, or a numeric
+ * value for an answer in an ACK), an Id, a token, some options and
+ * a payload.
+ *
+ * In order to be sent to the network, a message is transparently
+ * encoded (by the `send` method) according to CoAP specification.
+ * Similarly, a message is transparently decoded (by the `recv`
+ * method) upon reception according to the CoAP specification.
+ */
+
 #ifndef __MSG_H__
 #define __MSG_H__
 
