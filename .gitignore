@@ -8,6 +8,7 @@
 */build-zigduino_r2/
 */*/build-zigduino_r2/
 */*/*/build-zigduino_r2/
+arduino/libraries/doc/
 send
 recv
 *.out

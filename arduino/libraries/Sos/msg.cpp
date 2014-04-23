@@ -1,3 +1,8 @@
+/**
+ * @file msg.cpp
+ * @brief Msg class implementation
+ */
+
 #include "msg.h"
 
 #define	FORMAT_BYTE0(ver,type,toklen)				\
@@ -15,8 +20,8 @@
 Constructor, destructor, operators
 ******************************************************************************/
 
-/*
- * Constructor
+/**
+ * Default constructor: initialize an empty message.
  */
 
 Msg::Msg ()
@@ -24,8 +29,9 @@ Msg::Msg ()
     memset (this, 0, sizeof *this) ;
 }
 
-/*
- * Copy-constructor
+/**
+ * Copy-constructor: copy a message, including its payload and its
+ * options.
  */
 
 Msg::Msg (const Msg &m) 
@@ -33,7 +39,7 @@ Msg::Msg (const Msg &m)
     msgcopy (m) ;
 }
 
-/*
+/**
  * Destructor
  */
 
@@ -42,7 +48,7 @@ Msg::~Msg ()
     reset () ;
 }
 
-/*
+/**
  * Reset function: free memory, etc.
  */
 
@@ -77,6 +83,23 @@ bool Msg::operator== (const Msg &m)
  * - access informations from the received message
  */
 
+/**
+ * @brief Receive and decode a message
+ *
+ * Receive a message on a given L2 network, and decode it
+ * according to CoAP specification if it is a valid incoming
+ * message (`L2_RECV_RECV_OK`) or if it has been truncated
+ * (`L2_RECV_TRUNCATED`). In this case, only the first part
+ * of the message (excluding options and payload) is decoded.
+ * This method may return `L2_RECV_EMPTY` if no message has been
+ * received, or any other value returned by the L2net-* `recv`
+ * methods (such as `L2_RECV_WRONG_ETHERTYPE` in the case of
+ * Ethernet).
+ *
+ * @param l2 L2 network access
+ * @return receive status
+ */
+
 l2_recv_t Msg::recv (l2net &l2)
 {
     l2_recv_t r ;
@@ -93,10 +116,17 @@ l2_recv_t Msg::recv (l2net &l2)
     return r ;
 }
 
-/*
- * Returns true if message is decoding was successful
+/**
+ * @brief Decode a message according to CoAP specification.
+ *
+ * Returns true if message decoding was successful.
  * If message has been truncated, decoding is done only for
  * CoAP header and token (and considered as a success).
+ *
+ * @param rbuf	L2 payload as received by the L2 network
+ * @param len	Length of L2 payload
+ * @param truncated true if the message has been truncated at reception
+ * @return True if decoding was successful (even if truncated)
  */
 
 bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
@@ -219,6 +249,29 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
  * - access informations from the received message
  */
 
+/**
+ * @brief Encode and send a message
+ *
+ * Encode a message according to CoAP specification and
+ * send the result to the given L2 address on the given
+ * L2 network.
+ *
+ * Memory is allocated for the encoded message. It will
+ * be freed when the object will be destroyed (the encoded
+ * message is kept since it may have to be retransmitted).
+ * If the encoded message does not fit in this buffer, this
+ * method reports an error (false value)
+ *
+ * Note: the return value is the value returned by the `send`
+ * method of the appropriate L2net-* class. It means that
+ * the message has been sent to the network hardware, and
+ * does not mean that the message has been successfully sent.
+ *
+ * @param l2 L2 network access
+ * @param dest L2 destination address
+ * @return true if encoding was successfull
+ */
+
 bool Msg::send (l2net &l2, l2addr &dest) 
 {
     int success ;
@@ -245,8 +298,14 @@ bool Msg::send (l2net &l2, l2addr &dest)
     return success ;
 }
 
-/*
- * Encode a message according to the CoAP specification
+/**
+ * @brief Encode a message according to the CoAP specification
+ *
+ * If message does not fit in the given buffer, an error is returned.
+ *
+ * @param sbuf memory allocated for the encoded message
+ * @param sbuflen size of sbuf
+ * @return true if encoding was successfull
  */
 
 bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
@@ -349,9 +408,18 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
     return success ;
 }
 
-/*
+/**
+ * @brief Compute encoded message size
+ * 
  * Compute the size of the message when it will be encoded according
- * to the CoAP specification
+ * to the CoAP specification. This computation is done according to
+ * token, options and payload currently associated with the message.
+ * Since the end of options is marked with a 0xff byte before the
+ * payload, we have to know if a payload will be added in the future
+ * in order to estimate available space in the message.
+ *
+ * @param emulpayload true if a payload will be added in the future
+ * @return estimated size of the encoded message
  */
 
 size_t Msg::coap_size (bool emulpayload)
@@ -389,10 +457,15 @@ size_t Msg::coap_size (bool emulpayload)
     return size ;
 }
 
-/*
+/**
+ * @brief Estimate the available space in the message
+ *
  * Compute the available space in the message, according to L2 MTU
  * and size of message when it will be encoded. Typically used to
  * know available space for the payload.
+ *
+ * @return Available space in the message, or 0 if the message does
+ * not fit.
  */
 
 size_t Msg::avail_space (void)
@@ -430,11 +503,13 @@ void Msg::set_payload (uint8_t *payload, uint16_t paylen)
  * Option management
  */
 
-/*
- * Remove the first option of the option list
+/**
+ * @brief Remove the first option from the option list
+ *
+ * @return First option
  */
 
-option * Msg::pop_option (void) 
+option *Msg::pop_option (void) 
 {
     option *r = NULL ;
     if (optlist_ != NULL)
@@ -449,9 +524,11 @@ option * Msg::pop_option (void)
     return r ;
 }
 
-/*
- * Push an option in the option list, which is a sorted list (in order
- * to optimally encode CoAP options)
+/**
+ * @brief Push an option in the option list
+ *
+ * The option list is kept sorted according to option values
+ * in order to optimally encode CoAP options.
  */
 
 void Msg::push_option (option &o) 
@@ -476,8 +553,11 @@ void Msg::push_option (option &o)
 	prev->next = newo ;
 }
 
-/*
- * Reset the option iterator (next_option)
+/**
+ * @brief Reset the option iterator
+ *
+ * This method resets the internal pointer (in option list) used by the
+ * the option iterator (see `next_option`).
  */
 
 void Msg::reset_next_option (void) 
@@ -485,9 +565,13 @@ void Msg::reset_next_option (void)
     curopt_initialized_ = false ;
 }
 
-/*
- * Option iterator: each call will return the next element in option list.
- * Needs to call reset_next_option before first use.
+/**
+ * @brief Option iterator
+ *
+ * Each call to this method will return the next element in option
+ * list, thanks to an internal pointer which is advanced in this method.
+ * Looping through options must start by a call to
+ * `reset_next_option' before first use.
  */
 
 option *Msg::next_option (void) 
@@ -553,9 +637,13 @@ void Msg::msgcopy (const Msg &m)
     }
 }
 
-/*
- * Returns content_format option, if present, or option::cf_none if not
- * present.
+/**
+ * @brief Returns content_format option
+ *
+ * This method returns the content_format option, if present,
+ * or `option::cf_none` if not present.
+ *
+ * @return value associated with the content_format option or option::cf_none
  */
 
 option::content_format Msg::content_format (void)
@@ -575,10 +663,17 @@ option::content_format Msg::content_format (void)
     return cf ;
 }
 
-/*
- * Set content_format option, if not already present in option list.
+/**
+ * @brief Set content_format option
+ *
+ * If the content_format option is not already present in option list,
+ * this method adds the option.
  * If the reset argument is true, the content_format option value
  * is reset to the given value (otherwise, option is not modified).
+ *
+ * @param reset true if the existing option, if exists, must be reset
+ *	to the given value
+ * @param cf the new value
  */
 
 void Msg::content_format (bool reset, option::content_format cf)

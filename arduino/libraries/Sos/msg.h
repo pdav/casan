@@ -1,21 +1,6 @@
 /**
- * \class Msg
- *
- * \brief A message, either received or to be sent
- *
- * This class represents a message:
- *   * to be sent to the network
- *   * received from the network
- *
- * Message attributes are tied to CoAP specification: a message has
- * a type (CON, NON, ACK, RST), a code (GET, POST, PUT, DELETE, or a numeric
- * value for an answer in an ACK), an Id, a token, some options and
- * a payload.
- *
- * In order to be sent to the network, a message is transparently
- * encoded (by the `send` method) according to CoAP specification.
- * Similarly, a message is transparently decoded (by the `recv`
- * method) upon reception according to the CoAP specification.
+ * @file msg.h
+ * @brief Msg class interface
  */
 
 #ifndef __MSG_H__
@@ -35,6 +20,31 @@
 #define		COAP_OFFSET_CODE	1
 #define		COAP_OFFSET_ID		2
 #define		COAP_OFFSET_TOKEN	4
+
+/**
+ * @class Msg
+ *
+ * @brief An object of class Msg represents a message,
+ * either received or to be sent
+ *
+ * This class represents messages to be sent to the network, or
+ * received from the network.
+ *
+ * Message attributes are tied to CoAP specification: a message has
+ * a type (CON, NON, ACK, RST), a code (GET, POST, PUT, DELETE, or a numeric
+ * value for an answer in an ACK), an Id, a token, some options and
+ * a payload.
+ *
+ * In order to be sent to the network, a message is transparently
+ * encoded (by the `send` method) according to CoAP specification.
+ * Similarly, a message is transparently decoded (by the `recv`
+ * method) upon reception according to the CoAP specification.
+ *
+ * A received message is stored in the appropriate L2 receive buffer
+ * (see the various L2net-* classes). This buffer is allocated at
+ * the program startup and never freed. As such, there can be at most
+ * one received message.
+ */
 
 class Msg {
     public:
