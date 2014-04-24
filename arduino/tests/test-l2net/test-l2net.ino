@@ -57,30 +57,30 @@ void print_paylen_src_dst (void)
 
 void recv_l2 (void)
 {
-    l2_recv_t r ;
+    l2net::l2_recv_t r ;
 
     r = l2.recv () ;
 
     switch (r)
     {
-	case L2_RECV_EMPTY :
+	case l2net::RECV_EMPTY :
 	    break ;
-	case L2_RECV_RECV_OK :
+	case l2net::RECV_OK :
 	    Serial.print (F ("OK")) ;
 	    print_paylen_src_dst () ;
 	    l2.dump_packet (0, 20) ;
 	    break ;
-	case L2_RECV_WRONG_DEST :
+	case l2net::RECV_WRONG_DEST :
 	    Serial.print (F ("WRONG DEST")) ;
 	    print_paylen_src_dst () ;
 	    l2.dump_packet (0, 20) ;
 	    break ;
-	case L2_RECV_WRONG_ETHTYPE :
-	    Serial.print (F ("WRONG ETHTYPE")) ;
+	case l2net::RECV_WRONG_TYPE :
+	    Serial.print (F ("WRONG TYPE")) ;
 	    print_paylen_src_dst () ;
 	    l2.dump_packet (0, 20) ;
 	    break ;
-	case L2_RECV_TRUNCATED :
+	case l2net::RECV_TRUNCATED :
 	    Serial.print (F ("TRUNCATED")) ;
 	    print_paylen_src_dst () ;
 	    break ;

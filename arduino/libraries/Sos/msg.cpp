@@ -88,30 +88,30 @@ bool Msg::operator== (const Msg &m)
  *
  * Receive a message on a given L2 network, and decode it
  * according to CoAP specification if it is a valid incoming
- * message (`L2_RECV_RECV_OK`) or if it has been truncated
- * (`L2_RECV_TRUNCATED`). In this case, only the first part
+ * message (`l2net::RECV_OK`) or if it has been truncated
+ * (`l2net::RECV_TRUNCATED`). In this case, only the first part
  * of the message (excluding options and payload) is decoded.
- * This method may return `L2_RECV_EMPTY` if no message has been
+ * This method may return `l2net::RECV_EMPTY` if no message has been
  * received, or any other value returned by the L2net-* `recv`
- * methods (such as `L2_RECV_WRONG_ETHERTYPE` in the case of
+ * methods (such as `l2net::RECV_WRONG_TYPE` in the case of
  * Ethernet).
  *
  * @param l2 L2 network access
- * @return receive status
+ * @return receive status (see l2net class)
  */
 
-l2_recv_t Msg::recv (l2net &l2)
+l2net::l2_recv_t Msg::recv (l2net &l2)
 {
-    l2_recv_t r ;
+    l2net::l2_recv_t r ;
 
     reset () ;
     l2_ = &l2 ;
     r = l2_->recv () ;
-    if (r == L2_RECV_RECV_OK || r == L2_RECV_TRUNCATED)
+    if (r == l2net::RECV_OK || r == l2net::RECV_TRUNCATED)
     {
-	bool trunc = (r == L2_RECV_TRUNCATED) ;
+	bool trunc = (r == l2net::RECV_TRUNCATED) ;
 	if (! coap_decode (l2_->get_payload (0), l2_->get_paylen (), trunc))
-	    r = L2_RECV_EMPTY ;
+	    r = l2net::RECV_EMPTY ;
     }
     return r ;
 }

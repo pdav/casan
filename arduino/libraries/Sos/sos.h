@@ -9,8 +9,8 @@
 #include "Arduino.h"
 #include "defs.h"
 #include "enum.h"
-#include "option.h"
 #include "l2.h"
+#include "option.h"
 #include "msg.h"
 #include "retrans.h"
 #include "time.h"
@@ -122,7 +122,7 @@ class Sos {
 	void get_well_known (Msg &out) ;
 	Resource *get_resource (const char *name) ;
 
-	void print_coap_ret_type (l2_recv_t ret) ;
+	void print_coap_ret_type (l2net::l2_recv_t ret) ;
 	void print_status (uint8_t status) ;
 } ;
 

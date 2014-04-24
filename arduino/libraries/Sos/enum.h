@@ -22,15 +22,6 @@ typedef enum pktype {
     PK_NONE 
 } pktype_t ;
 
-typedef enum l2_recv {
-    L2_RECV_EMPTY, 
-    L2_RECV_WRONG_ETHTYPE, 
-    L2_RECV_WRONG_DEST,
-    L2_RECV_TRUNCATED,
-    L2_RECV_RECV_OK
-} l2_recv_t;
-
-
 enum sos_slave_status {
     SL_COLDSTART = 1,
     SL_WAITING_UNKNOWN,

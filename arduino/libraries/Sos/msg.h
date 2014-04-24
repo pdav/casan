@@ -58,7 +58,7 @@ class Msg {
 	void reset (void) ;
 
 	// Receive message
-	l2_recv_t recv (l2net &l2) ;
+	l2net::l2_recv_t recv (l2net &l2) ;
 
 	// accessors (for received messages)
 	uint8_t  get_type    (void)	{ return type_ ; }

@@ -240,28 +240,28 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 /*
  * Receive packet
  *
- * returns L2_RECV_EMPTY if no packet has been received
- * returns L2_RECV_WRONG_DEST if destination address is wrong
+ * returns RECV_EMPTY if no packet has been received
+ * returns RECV_WRONG_DEST if destination address is wrong
  *      (i.e. not our MAC address nor the broadcast address)
- * returns L2_RECV_WRONG_ETHTYPE if Ethernet packet type is not the good one
- * returns L2_RECV_TRUNCATED if packet is too large (i.e. has been truncated)
- * returns L2_RECV_RECV_OK if ok
+ * returns RECV_WRONG_TYPE if Ethernet packet type is not the good one
+ * returns RECV_TRUNCATED if packet is too large (i.e. has been truncated)
+ * returns RECV_OK if ok
  */
 
-l2_recv_t l2net_eth::recv (void) 
+l2net::l2_recv_t l2net_eth::recv (void) 
 {
     l2_recv_t r ;
     size_t wizlen ;
 
     wizlen = W5100.getRXReceivedSize (SOCK0) ;	// size of data in RX mem
     if (wizlen == 0)
-	r = L2_RECV_EMPTY ;
+	r = RECV_EMPTY ;
     else
     {
 	uint8_t pl [2] ;		// intermediate storage for pkt len
 	size_t remaining ;
 
-	r = L2_RECV_RECV_OK ;		// default value
+	r = RECV_OK ;		// default value
 
 	// Extract w5100 header == length (padded to 60 for a small packet)
 	W5100.recv_data_processing (SOCK0, pl, sizeof pl, 0) ;
@@ -278,7 +278,7 @@ l2_recv_t l2net_eth::recv (void)
 	{
 	    rbuflen_ = mtu_ + ETH_SIZE_HEADER ;
 	    remaining = pktlen_ - rbuflen_ ;
-	    r = L2_RECV_TRUNCATED ;
+	    r = RECV_TRUNCATED ;
 	}
 
 	// copy received packet from W5100 internal buffer
@@ -311,13 +311,13 @@ l2_recv_t l2net_eth::recv (void)
 	// Check destination address
 	if (myaddr_ != rbuf_ + ETH_OFFSET_DST_ADDR
 		&& l2addr_eth_broadcast != rbuf_ + ETH_OFFSET_DST_ADDR)
-	    r = L2_RECV_WRONG_DEST ;
+	    r = RECV_WRONG_DEST ;
 
 	// Check Ethernet type
-	if (r == L2_RECV_RECV_OK
+	if (r == RECV_OK
 		&& (rbuf_ [ETH_OFFSET_ETHTYPE] != BYTE_HIGH (ethtype_)
 		 || rbuf_ [ETH_OFFSET_ETHTYPE + 1] != BYTE_LOW (ethtype_) ))
-	    r = L2_RECV_WRONG_ETHTYPE ;
+	    r = RECV_WRONG_TYPE ;
     }
 
     return r ;

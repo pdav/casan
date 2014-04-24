@@ -353,7 +353,7 @@ void Sos::loop ()
 {
     Msg in ;
     Msg out ;
-    l2_recv_t ret ;
+    l2net::l2_recv_t ret ;
     uint8_t oldstatus ;
     long int hlid ;
     l2addr *srcaddr ;
@@ -365,7 +365,7 @@ void Sos::loop ()
     srcaddr = NULL ;
 
     ret = in.recv (*l2_) ;		// get received message
-    if (ret == L2_RECV_RECV_OK)
+    if (ret == l2net::RECV_OK)
 	srcaddr = l2_->get_src () ;	// get a new address
 
     switch (status_)
@@ -377,7 +377,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_WAITING_UNKNOWN :
-	    if (ret == L2_RECV_RECV_OK)
+	    if (ret == l2net::RECV_OK)
 	    {
 		retrans_.check_msg_received (in) ;
 
@@ -409,7 +409,7 @@ void Sos::loop ()
 	    break ;
 
 	case SL_WAITING_KNOWN :
-	    if (ret == L2_RECV_RECV_OK)
+	    if (ret == l2net::RECV_OK)
 	    {
 		retrans_.check_msg_received (in) ;
 
@@ -452,7 +452,7 @@ void Sos::loop ()
 
 	case SL_RUNNING :
 	case SL_RENEW :
-	    if (ret == L2_RECV_RECV_OK)
+	    if (ret == l2net::RECV_OK)
 	    {
 		retrans_.check_msg_received (in) ;
 
@@ -487,7 +487,7 @@ void Sos::loop ()
 		    out.send (*l2_, *master_) ;
 		}
 	    }
-	    else if (ret == L2_RECV_TRUNCATED)
+	    else if (ret == l2net::RECV_TRUNCATED)
 	    {
 		Serial.println (F ("\033[36mRequest too large\033[00m")) ;
 		out.set_type (COAP_TYPE_ACK) ;
@@ -734,18 +734,18 @@ void Sos::print_resources (void)
 	rl->res->print () ;
 }
 
-void Sos::print_coap_ret_type (l2_recv_t ret)
+void Sos::print_coap_ret_type (l2net::l2_recv_t ret)
 {
     switch (ret)
     {
-	case L2_RECV_WRONG_DEST :
-	    PRINT_DEBUG_STATIC ("L2_RECV_WRONG_DEST") ;
+	case l2net::RECV_WRONG_DEST :
+	    PRINT_DEBUG_STATIC ("RECV_WRONG_DEST") ;
 	    break ;
-	case L2_RECV_WRONG_ETHTYPE :
-	    PRINT_DEBUG_STATIC ("L2_RECV_WRONG_ETHTYPE") ;
+	case l2net::RECV_WRONG_TYPE :
+	    PRINT_DEBUG_STATIC ("RECV_WRONG_TYPE") ;
 	    break ;
-	case L2_RECV_RECV_OK :
-	    PRINT_DEBUG_STATIC ("L2_RECV_RECV_OK") ;
+	case l2net::RECV_OK :
+	    PRINT_DEBUG_STATIC ("RECV_OK") ;
 	    break ;
 	default :
 	    PRINT_DEBUG_STATIC ("ERROR RECV") ;

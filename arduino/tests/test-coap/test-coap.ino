@@ -31,9 +31,9 @@ void setup ()
 void test_recv (void)
 {
     Msg in ;
-    l2_recv_t r ;
+    l2net::l2_recv_t r ;
 
-    while ((r = in.recv (e)) == L2_RECV_RECV_OK)
+    while ((r = in.recv (e)) == l2net::RECV_OK)
 	in.print () ;
 }
 

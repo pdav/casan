@@ -163,15 +163,15 @@ bool l2net_154::send (l2addr &dest, const uint8_t *data, size_t len)
 /*
  * Receive packet
  *
- * returns L2_RECV_EMPTY if no packet has been received
- * returns L2_RECV_WRONG_DEST if destination address is wrong
+ * returns RECV_EMPTY if no packet has been received
+ * returns RECV_WRONG_DEST if destination address is wrong
  *      (i.e. not our MAC address nor the broadcast address)
- * returns L2_RECV_WRONG_ETHTYPE if Ethernet packet type is not the good one
- * returns L2_RECV_TRUNCATED if packet is too large (i.e. has been truncated)
- * returns L2_RECV_RECV_OK if ok
+ * returns RECV_WRONG_TYPE (never)
+ * returns RECV_TRUNCATED if packet is too large (i.e. has been truncated)
+ * returns RECV_OK if ok
  */
 
-l2_recv_t l2net_154::recv (void) 
+l2net::l2_recv_t l2net_154::recv (void) 
 {
     l2_recv_t r ;
 
@@ -187,11 +187,11 @@ l2_recv_t l2net_154::recv (void)
 	    )
     {
 	if (curframe_->dstaddr != myaddr_ && curframe_->dstaddr != addr2_broadcast)
-	    r = L2_RECV_WRONG_DEST ;
+	    r = RECV_WRONG_DEST ;
 	else
-	    r = L2_RECV_RECV_OK ;
+	    r = RECV_OK ;
     }
-    else r = L2_RECV_EMPTY ;
+    else r = RECV_EMPTY ;
 
     return r ;
 }
