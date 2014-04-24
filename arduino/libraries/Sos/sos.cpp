@@ -226,7 +226,7 @@ void Sos::request_resource (Msg &in, Msg &out)
 	{
 	    // request for all resources
 	    if (o->optlen () == (int) (sizeof SOS_RESOURCES_ALL - 1)
-		&& memcmp (o->val (), SOS_RESOURCES_ALL, 
+		&& memcmp (o->optval ((int *) 0), SOS_RESOURCES_ALL, 
 				    sizeof SOS_RESOURCES_ALL - 1) == 0)
 	    {
 		rfound = true ;
@@ -241,7 +241,7 @@ void Sos::request_resource (Msg &in, Msg &out)
 		Resource *res ;
 
 		// we benefit from the added '\0' at the end of an option
-		res = get_resource ((char *) o->val ()) ;
+		res = get_resource ((char *) o->optval ((int *) 0)) ;
 		if (res != NULL)
 		{
 		    rfound = true ;
@@ -307,7 +307,7 @@ Resource *Sos::get_resource (const char *name)
 void Sos::get_well_known (Msg &out) 
 {
     char *buf ;
-    int size ;
+    size_t size ;
     reslist *rl ;
     size_t avail ;
     bool reset ;
@@ -569,7 +569,7 @@ bool Sos::is_ctl_msg (Msg &m)
 		return false ;
 	    if (sos_namespace [i].len != o->optlen ())
 		return false ;
-	    if (memcmp (sos_namespace [i].path, o->val (), o->optlen ()))
+	    if (memcmp (sos_namespace [i].path, o->optval ((int *) 0), o->optlen ()))
 		return false ;
 	    i++ ;
 	}
@@ -599,7 +599,7 @@ bool Sos::is_hello (Msg &m, long int &hlid)
 	    if (o->optcode () == option::MO_Uri_Query)
 	    {
 		// we benefit from the added nul byte at the end of val
-		if (sscanf ((const char *) o->val (), SOS_HELLO, &hlid) == 1)
+		if (sscanf ((const char *) o->optval ((int *) 0), SOS_HELLO, &hlid) == 1)
 		    found = true ;
 	    }
 	}
@@ -627,7 +627,7 @@ bool Sos::is_assoc (Msg &m, time_t &sttl)
 		long int n ;		// sscanf "%ld" waits for a long int
 
 		// we benefit from the added nul byte at the end of val
-		if (sscanf ((const char *) o->val (), SOS_ASSOC, &n) == 1)
+		if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC, &n) == 1)
 		{
 		    Serial.print (F ("\033[31m TTL recv \033[00m ")) ;
 		    Serial.print (n) ;

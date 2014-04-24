@@ -292,8 +292,6 @@ bool option::operator>= (const option &o)
 
 /**
  * Get the option code
- *
- * @return option code
  */
 
 option::optcode_t option::optcode (void)
@@ -304,27 +302,16 @@ option::optcode_t option::optcode (void)
 /**
  * Get the option value and length
  *
- * @param len address of an integer which will contain the length in return
+ * @param len address of an integer which will contain the length
+ *	in return, or null address if length is not wanted
  * @return pointer to the option value (do not free this address)
  */
 
 void *option::optval (int *len)
 {
-    *len = optlen_ ;
+    if (len != (int *) 0)
+	*len = optlen_ ;
     return (optval_ == 0) ? staticval_ : optval_ ;
-}
-
-/**
- * Get the option value
- *
- * This method is used to get option value when its length is known
- *
- * @return pointer to the option value (do not free this address)
- */
-
-void *option::val (void)
-{
-    return (void *) (optval_ == 0) ? staticval_ : optval_ ;
 }
 
 /**
@@ -403,6 +390,8 @@ void option::optval (option::uint val)
 /**
  * Option length
  *
+ * The option length does not include the added null byte used internally.
+ *
  * @return length of option value
  */
 
@@ -412,6 +401,7 @@ int option::optlen (void)
 }
 
 /**
+ * Returns the last error encountered during an option assignment
  */
 
 uint8_t option::get_errno (void)

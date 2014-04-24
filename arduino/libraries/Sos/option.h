@@ -1,6 +1,6 @@
 /**
  * @file option.h
- * @brief Option class interface
+ * @brief option class interface
  */
 
 #ifndef SOS_OPTION_H
@@ -14,11 +14,11 @@
 #define OPT_ERR_RST		0
 
 /**
- * @class Option
+ * @class option
  *
- * @brief An object of class Option represents an individual option
+ * @brief An object of class option represents an individual option
  *
- * This class represents options associated with a message. Options are
+ * This class represents options associated with a message. options are
  * specified by the CoAP protocol.
  *
  * Before sending a message, application must associate options to this
@@ -35,9 +35,20 @@
  * length) will be checked according to a private table.
  * The format of an option may be:
  * * a string
- * * an integer
+ * * an unsigned integer
  * * an opaque value
  * * nothing
+ *
+ * An option opaque value is always internally represented as a byte
+ * string, with an added '\0' at the end. This null byte will not be
+ * sent on the network, of course, but allows for string manipulation
+ * (with functions such as `strlen` or `strcmp` for example) on values
+ * returned by option::optval method.
+ * Integer options, on another hand, are internally represented as the
+ * minimal byte string, according to the CoAP specification.
+ * Thus, the value 255 is represented as one byte, whereas 65537 is
+ * represented as 3 bytes. This should be completely transparent to
+ * applications.
  */
 
 class option
@@ -97,17 +108,16 @@ class option
 
 	// accessors
 	optcode_t optcode (void) ;
-	void *optval (int *len) ;
-	void *val (void);
-	uint optval (void) ;
-	int optlen (void) ;
+	void *optval (int *len) ;		// get value and length
+	uint optval (void) ;			// get integer value
+	int optlen (void) ;			// get length
 
 	static uint8_t get_errno(void);
 
 	// mutators
-	void optcode (optcode_t c) ;
-	void optval (void *v, int len) ;
-	void optval (uint v) ;
+	void optcode (optcode_t c) ;		// set optcode
+	void optval (void *v, int len) ;	// set opaque value
+	void optval (uint v) ;			// set integer value
 
 	static void reset_errno (void) ;
 
