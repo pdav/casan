@@ -1,3 +1,8 @@
+/**
+ * @file debug.cpp
+ * @brief Debug class implementation
+ */
+
 #include <Arduino.h>
 
 #include "debug.h"
@@ -6,12 +11,33 @@ Debug debug ;				// global variable
 
 int freeMemory () ;
 
+/**
+ * @brief Initializes the debug facility
+ *
+ * This method is designed to be called in the application `setup`
+ * function.
+ *
+ * @param interval interval (in seconds) between heartbeats
+ */
+
 void Debug::start (int interval)	// in seconds
 {
     Serial.println (F ("\033[36mstart\033[00m")) ;
     interv_ = interval * 1000 ;		// in milliseconds
     next_ = millis () ;			// perform action immediately
 }
+
+/**
+ * @brief Signals that the heartbeat interval has been reached
+ *
+ * This method is designed to be called in the application `loop`
+ * function. When the heartbeat interval has been reached, it
+ * displays a message including the amount of free memory
+ * in order to detect memory leaks, and returns `true` so that
+ * the application `loop` can perform additional (periodic) tasks.
+ *
+ * @return true if the heartbeat interval has been reached
+ */
 
 bool Debug::heartbeat (void)
 {
