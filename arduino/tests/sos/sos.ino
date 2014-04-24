@@ -38,6 +38,7 @@ int led = A2 ;
 int slaveid = 169 ;
 
 Sos *sos ;
+Debug debug ;
 
 uint8_t process_temp (Msg &in, Msg &out) 
 {

@@ -21,6 +21,8 @@ bool promisc = false ;
 int mtu = 200 ;
 // #endif
 
+Debug debug ;
+
 void setup ()
 {
     Serial.begin (38400) ;

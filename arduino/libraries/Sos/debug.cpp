@@ -7,8 +7,6 @@
 
 #include "debug.h"
 
-Debug debug ;				// global variable
-
 int freeMemory () ;
 
 /**

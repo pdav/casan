@@ -39,6 +39,7 @@
 #define	PATH_SOS	"sos"
 
 Sos *sos ;
+Debug debug ;
 
 int slaveid = 169 ;
 bool promisc = false ;

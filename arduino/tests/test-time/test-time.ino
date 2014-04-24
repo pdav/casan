@@ -6,6 +6,8 @@
 
 #define	DEBUGINTERVAL	10
 
+Debug debug ;
+
 void setup ()
 {
     Serial.begin (38400) ;

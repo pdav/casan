@@ -37,6 +37,4 @@ class Debug
 	unsigned long int next_ ;	// next action
 } ;
 
-extern Debug debug ;
-
 #endif
