@@ -26,9 +26,9 @@ uint8_t option::errno_ = 0 ;
 #define	CHK_OPTCODE(c,err) do {					\
 			    int i ;				\
 			    (err) = true ;			\
-			    for (i = 0 ; i < NTAB (taboptdesc) ; i++)	\
+			    for (i = 0 ; i < NTAB (optdesc_) ; i++)	\
 			    {					\
-				if (taboptdesc [i].code == c)	\
+				if (optdesc_ [i].code == c)	\
 				{				\
 				    (err) = false ;		\
 				    break ;			\
@@ -38,11 +38,11 @@ uint8_t option::errno_ = 0 ;
 #define	CHK_OPTLEN(c,l,err) do {				\
 			    int i ;				\
 			    (err) = true ;			\
-			    for (i = 0 ; i < NTAB (taboptdesc) ; i++)	\
+			    for (i = 0 ; i < NTAB (optdesc_) ; i++)	\
 			    {					\
-				if (taboptdesc [i].code == c	\
-					&& (l) >= taboptdesc [i].minlen	\
-					&& (l) <= taboptdesc [i].maxlen) \
+				if (optdesc_ [i].code == c	\
+					&& (l) >= optdesc_ [i].minlen	\
+					&& (l) <= optdesc_ [i].maxlen) \
 				{				\
 				    (err) = false ;		\
 				    break ;			\
@@ -51,7 +51,7 @@ uint8_t option::errno_ = 0 ;
 			} while (false)				// no " ;"
 
 
-struct optdesc taboptdesc [] =
+option::optdesc option::optdesc_ [] =
 {
     { option::MO_Content_Format,	option::OF_OPAQUE,	0, 8	},
     { option::MO_Etag,			option::OF_OPAQUE,	1, 8	},

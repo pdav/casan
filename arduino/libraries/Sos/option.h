@@ -6,7 +6,6 @@
 #ifndef SOS_OPTION_H
 #define SOS_OPTION_H
 
-#include <Arduino.h>
 #include "defs.h"
 
 #define OPT_ERR_OPTCODE		1
@@ -73,14 +72,6 @@ class option
 	    MO_If_Match		= 1,
 	    MO_Size1		= 60,
 	} optcode_t ;
-	typedef enum
-	{
-	    OF_NONE		 = 0,
-	    OF_OPAQUE,
-	    OF_STRING,
-	    OF_EMPTY,
-	    OF_UINT,
-	} optfmt_t ;
 	typedef unsigned long int uint ;
 
 	typedef enum {
@@ -132,16 +123,21 @@ class option
     private:
 	static uint8_t errno_ ;
 
+	typedef enum
+	{
+	    OF_NONE		 = 0,
+	    OF_OPAQUE,
+	    OF_STRING,
+	    OF_EMPTY,
+	    OF_UINT,
+	} optfmt_t ;
+	struct optdesc
+	{
+	    optcode_t code ;
+	    optfmt_t format ;
+	    int minlen ;
+	    int maxlen ;
+	} ;
+	static optdesc optdesc_ [] ;
 } ;
-
-struct optdesc
-{
-    option::optcode_t code ;
-    option::optfmt_t format ;
-    int minlen ;
-    int maxlen ;
-} ;
-
-extern struct optdesc taboptdesc [] ;
-
 #endif
