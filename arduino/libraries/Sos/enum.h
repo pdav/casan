@@ -16,10 +16,4 @@ typedef enum coap_type {
     COAP_TYPE_RST
 } coap_type_t;
 
-typedef enum pktype { 
-    PK_ME, 
-    PK_BCAST, 
-    PK_NONE 
-} pktype_t ;
-
 #endif
