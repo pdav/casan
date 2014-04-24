@@ -74,6 +74,8 @@ class option
 	} ;
 	static optdesc *optdesc_ ;
 
+	static byte *uint_to_byte (uint val, int &len) ;
+
 	void static_init (void) ;
 } ;
 

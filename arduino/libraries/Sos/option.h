@@ -139,5 +139,7 @@ class option
 	    int maxlen ;
 	} ;
 	static optdesc optdesc_ [] ;
+
+	static byte *uint_to_byte (option::uint val, int &len) ;
 } ;
 #endif

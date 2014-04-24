@@ -73,28 +73,22 @@ option::optdesc option::optdesc_ [] =
  * Utilities
  */
 
-struct stbin
+byte *option::uint_to_byte (uint val, int &len)
 {
-    byte bin [sizeof (option::uint)] ;
-    int len ;
-} ;
-
-stbin *uint_to_byte (option::uint val)
-{
-    static stbin stbin ;
+    static byte stbin [sizeof (uint)] ;
     int shft ;
 
     // translate in network byte order, without leading null bytes
-    stbin.len = 0 ;
+    len = 0 ;
     for (shft = sizeof val - 1 ; shft >= 0 ; shft--)
     {
 	byte b ;
 
 	b = (val >> (shft * 8)) & 0xff ;
-	if (stbin.len != 0 || b != 0)
-	    stbin.bin [stbin.len++] = b ;
+	if (len != 0 || b != 0)
+	    stbin [len++] = b ;
     }
-    return &stbin ;
+    return stbin ;
 }
 
 /******************************************************************************
@@ -186,17 +180,19 @@ option::option (optcode_t optcode, const void *optval, int optlen)
 
 option::option (optcode_t optcode, option::uint optval)
 {
-    stbin *stbin ;
+    bool err ;
+    byte *stbin ;
+    int len ;
 
-    stbin = uint_to_byte (optval) ;
-    bool err = false ;
+    stbin = uint_to_byte (optval, len) ;
+    err = false ;
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
 	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTCODE 3\033[00m") ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
-    CHK_OPTLEN (optcode, stbin->len, err) ;
+    CHK_OPTLEN (optcode, len, err) ;
     if (err)
     {
 	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTLEN 3\033[00m") ;
@@ -204,8 +200,8 @@ option::option (optcode_t optcode, option::uint optval)
     }
     RESET ;
     optcode_ = optcode ;
-    optlen_ = stbin->len ;
-    COPY_VAL (stbin->bin) ;
+    optlen_ = len ;
+    COPY_VAL (stbin) ;
 }
 
 /**
@@ -372,19 +368,21 @@ void option::optval (void *val, int len)
 
 void option::optval (option::uint val)
 {
-    stbin *stbin ;
+    bool err ;
+    byte *stbin ;
+    int len ;
 
-    stbin = uint_to_byte (val) ;
-    bool err = false ;
-    CHK_OPTLEN (optcode_, stbin->len, err) ;
+    stbin = uint_to_byte (val, len) ;
+    err = false ;
+    CHK_OPTLEN (optcode_, len, err) ;
     if (err)
     {
 	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTLEN\033[00m") ;
 	option::errno_ = OPT_ERR_OPTLEN ;
 	return ;
     }
-    optlen_ = stbin->len ;
-    COPY_VAL (stbin->bin) ;
+    optlen_ = len ;
+    COPY_VAL (stbin) ;
 }
 
 /**
