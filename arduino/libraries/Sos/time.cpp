@@ -1,3 +1,8 @@
+/**
+ * @file time.cpp
+ * @brief implementation of time related classes
+ */
+
 #include "time.h"
 
 /*
@@ -57,12 +62,18 @@ void print_time (time_t &t)
  *      states
  */
 
+/** @brief Initialize the timer with the current time
+ */
+
 void Twait::init (time_t &cur)
 {
     limit_ = cur + TIMER_WAIT_MAX ;
     inc_ = TIMER_WAIT_START ;
     next_ = cur + inc_ ;
 }
+
+/** @brief Is it the time to send a new Discover message?
+ */
 
 bool Twait::next (time_t &cur)
 {
@@ -79,13 +90,17 @@ bool Twait::next (time_t &cur)
     return itstime ;
 }
 
+/** @brief Is it the time for a transition from the waiting_known
+ *	to the waiting_unknown state?
+ */
+
 bool Twait::expired (time_t &cur)
 {
     return cur >= limit_ ;
 }
 
-/*
- * trenew: to send Discover messages in renew state
+/** @brief Initialize the timer with the current time and the Slave TTL
+ *	returned by the master in its Assoc message.
  */
 
 void Trenew::init (time_t &cur, time_t sttl)
@@ -95,10 +110,17 @@ void Trenew::init (time_t &cur, time_t sttl)
     limit_ = cur + sttl ;
 }
 
+/** @brief Is it the time to enter the renew state and begin to send
+ *	Discover messages?
+ */
+
 bool Trenew::renew (time_t &cur)
 {
     return next (cur) ;
 }
+
+/** @brief Is it the time to send a new Discover message?
+ */
 
 bool Trenew::next (time_t &cur)
 {
@@ -114,6 +136,9 @@ bool Trenew::next (time_t &cur)
     }
     return itstime ;
 }
+
+/** @brief Has association expired?
+ */
 
 bool Trenew::expired (time_t &cur)
 {

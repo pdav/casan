@@ -1,42 +1,72 @@
+/**
+ * @file time.h
+ * @brief time related types and classes
+ *
+ * This file include various SOS timers definitions in order
+ * hide implementation details.
+ */
+
 #ifndef __TIME_H__
 #define __TIME_H__
 
-/*
+#include <Arduino.h>
+#include "defs.h"
+
+/** @brief Type for current time value in milliseconds since last start
+ * 
  * Since time counter on Arduino (see millis() function) rolls
  * back to 0 after 50 days, we must provide a longer time scale
  * in order to handle case where we are near to the limit (such
  * as after > before, always...).
  *
- * This file include various SOS timers definitions in order
- * hide implementation details. Note on these timers: they just
- * keep timepoints such that, when called, they can tell if
- * a given timer has expired. They don't keep an active time
- * measure, nor they don't provide callbacks.
  */
 
-#include "Arduino.h"
-#include "defs.h"
+typedef uint64_t time_t ;
+
+/** @brief Type to represent time difference
+ */
 
 typedef uint64_t timediff_t ;
-typedef uint64_t time_t ;
+
+/** @brief Current time
+ *
+ * This variable is globally declared, such as every application
+ * can make use of it.
+ */
 
 extern time_t curtime ;
 
-/*
- * Current time
+/** @brief Synchronize current time
  *
- * To keep current time (for a longer scale than ~50 days), declare
- * a time_t variable:
- *	time_t curtime ;
- * and update it regularly (i.e. in the Arduino loop function) with:
- *	sync_time (curtime) ;
+ * This function synchronizes time in a variable with the help of
+ * the `millis()` function (standard Arduino library).
+ *
+ * It is meant to be used with the `curtime` global variable, but can
+ * be used with any variable of type `time_t` (provided that it is
+ * correctly initialized).
+ *
+ * Note that time synchronization cannot work if calls to this function
+ * are spaced with more than ~50 days. As such, this function should be
+ * called often (in the `loop` function for example).
  */
 
 extern void sync_time (time_t &cur) ;
+
+/** @brief Print current time as "<high>:<low>"
+ */
+
 extern void print_time (time_t &t) ;
 
-/*
- * Timer used in waiting_unknown and waiting_known states
+/** @class Twait
+ * @brief SOS timer used in waiting_unknown and waiting_known states
+ *
+ * This class abstracts parameters for the timer used to send
+ * SOS Discover messages while the SOS engine is in waiting_unknown
+ * or waiting_known state.
+ *
+ * Note: this timer only keeps timepoints such that, when called,
+ * it can tell if the event should occur. It does not keep an
+ * active time measure, nor it does not provide callbacks.
  */
 
 class Twait
@@ -51,8 +81,15 @@ class Twait
 	time_t limit_ ;
 } ;
 
-/*
- * Timer used in running and renew states
+/** @class Trenew
+ * @brief SOS timer used in running and renew states
+ *
+ * This class abstracts parameters for the timer used to keep
+ * association running.
+ *
+ * Note: this timer only keeps timepoints such that, when called,
+ * it can tell if the event should occur. It does not keep an
+ * active time measure, nor it does not provide callbacks.
  */
 
 class Trenew
