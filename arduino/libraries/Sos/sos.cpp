@@ -1,12 +1,9 @@
-#include "sos.h"
-
-/*
- * SOS main class
- *
- * Note: this class supports at most one master on the current L2
- *   network. If there are more than one master, behaviour is not
- *   guaranteed.
+/**
+ * @file sos.cpp
+ * @brief Sos class implementation
  */
+
+#include "sos.h"
 
 #define	SOS_NAMESPACE1		".well-known"
 #define	SOS_NAMESPACE2		"sos"
@@ -34,10 +31,14 @@ static struct
 Constructor and simili-destructor
 ******************************************************************************/
 
-/*
- * Constructor
- * - l2 network must have been initialized
- * - slaveid is given
+/**
+ * @brief Constructor
+ *
+ * The constructor method needs an already initialized L2 network
+ * object, and a slave-id.
+ *
+ * @param l2 pointer to an already initialized network object (l2net-*)
+ * @param slaveid unique slave-id
  */
 
 Sos::Sos (l2net *l2, long int slaveid)
@@ -60,10 +61,12 @@ Sos::Sos (l2net *l2, long int slaveid)
 }
 
 /*
- * Reset SOS engine
- * - XXX: not used at this time
- * - TODO : we need to restart all the application,
- * - delete all the history of the exchanges
+ * @brief Reset SOS engine
+ *
+ * This method is used to reset the SOS engine.
+ *
+ * @bug as this method is not used, implementation is very rudimentary.
+ *	One should restart all the engine, delete all exchange history, etc.
  */
 
 void Sos::reset (void)
@@ -89,10 +92,10 @@ void Sos::reset (void)
 Master handling
 ******************************************************************************/
 
-/*
+/**
  * Reset master coordinates to an unknown master:
- * - address is null
- * - hello-id is -1 (i.e. unknown hello-id)
+ * * address is null
+ * * hello-id is -1 (i.e. unknown hello-id)
  */
 
 void Sos::reset_master (void)
@@ -105,7 +108,7 @@ void Sos::reset_master (void)
     Serial.println (F ("Master reset to broadcast address")) ;
 }
 
-/*
+/**
  * Does master address match the given address (which cannot be a
  * NULL pointer)?
  */
@@ -115,7 +118,7 @@ bool Sos::same_master (l2addr *a)
     return master_ != NULL && *a == *master_ ;
 }
 
-/*
+/**
  * Change master to a known master.
  * - address is taken from the current incoming message
  * - hello-id is given, may be -1 if value is currently not known
@@ -158,8 +161,19 @@ void Sos::change_master (long int hlid)
 Resource handling
 ******************************************************************************/
 
-/*
- * Public method: add a resource to the SOS engine
+/**
+ * @brief Register a resource to the SOS engine
+ *
+ * This method is used to register a resource with the SOS engine.
+ * This resource will then be advertised with the `/.well-known/sos`
+ * resource during the next association or with a specific request
+ * from the master. Thus, registering a resource after an association
+ * (when the slave returns an association answer containing the
+ * `/.well-known/sos`) will not provoke a new association. One must
+ * wait the next association renewal for the resource to be published
+ * and thus known by the master.
+ *
+ * @param res Address of the resource to register
  */
 
 void Sos::register_resource (Resource *res)
@@ -173,15 +187,31 @@ void Sos::register_resource (Resource *res)
     reslist_ = newr ;
 }
 
-/*
- * Process an incoming message requesting for a resource:
- * - analyze uri_path option to find the resource
- * - either give answer if this is the /resources URI
- * - or call the handler for user-defined resources
- * - or return 4.04 code
- * - pack the answer in the outgoing message
+/**
+ * @brief Process an incoming message requesting for a resource
  *
- * Only one level of path is allowed (i.e. /a, and not /a/b nor /a/b/c)
+ * This methods:
+ * * analyze uri_path option to find the resource
+ * * either give answer if this is the /resources URI
+ * * or call the handler for user-defined resources
+ * * or return 4.04 code
+ * * pack the answer in the outgoing message
+ *
+ * The handler prototype is:
+ *	`uint8_t handler (Msg &in, Msg &out)`
+ * The message `out` is prepared with some items from the incoming
+ * message (ACK, id, token) before calling the handler.
+ * Rest of message must be provided
+ * by the handler function, except code which is filled with the
+ * return value of the handler. Note that the handler may provide
+ * the content-format option if text_plain is not the wanted default.
+ *
+ * This method is made public for testing purpose.
+ *
+ * @bug Only one level of path is allowed (i.e. /a, and not /a/b nor /a/b/c)
+ *
+ * @param in Incoming message
+ * @param out Message which will be sent in return
  */
 
 void Sos::request_resource (Msg &in, Msg &out) 
@@ -246,7 +276,7 @@ void Sos::request_resource (Msg &in, Msg &out)
     }
 }
 
-/*
+/**
  * Find a particular resource by its name
  */
 
@@ -260,7 +290,7 @@ Resource *Sos::get_resource (const char *name)
     return rl != NULL ? rl->res : NULL ;
 }
 
-/*
+/**
  * Prepare the payload for an assoc answer message (answer to the
  *	CON POST /.well-known/sos ? assoc=<sttl>
  * message).
@@ -319,8 +349,9 @@ void Sos::get_well_known (Msg &out)
 Main SOS loop
 ******************************************************************************/
 
-/*
- * Main SOS loop
+/**
+ * @brief Main SOS loop
+ *
  * This method must be called regularly (typically in the loop function
  * of the Arduino framework) in order to process SOS events.
  */
@@ -519,7 +550,7 @@ void Sos::loop ()
 Recognize control messages
 ******************************************************************************/
 
-/*
+/**
  * Is the incoming message an SOS control message?
  * Just verify if Uri_Path options match the sos_namespace [] array
  * in the right order
@@ -550,7 +581,7 @@ bool Sos::is_ctl_msg (Msg &m)
     return true ;
 }
 
-/*
+/**
  * Check if the control message is a Hello message from the master
  * and returns the contained hello-id
  */
@@ -577,7 +608,7 @@ bool Sos::is_hello (Msg &m, long int &hlid)
     return found ;
 }
 
-/*
+/**
  * Check if the control message is an Assoc message from the master
  * and returns the contained slave-ttl
  */
@@ -621,7 +652,7 @@ bool Sos::is_assoc (Msg &m, time_t &sttl)
 Send control messages
 ******************************************************************************/
 
-/*
+/**
  * Initialize an "empty" control message
  * Just add the Uri_Path options from the sos_namespace [] array
  */
@@ -638,7 +669,7 @@ void Sos::mk_ctl_msg (Msg &out)
     }
 }
 
-/*
+/**
  * Send a discover message
  */
 
@@ -668,7 +699,7 @@ void Sos::send_discover (Msg &out)
     out.send (*l2_, *dest) ;
 }
 
-/*
+/**
  * Send the answer to an association message
  * (the association task itself is handled in the SOS main loop)
  */
@@ -697,6 +728,10 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
 /******************************************************************************
 Debug methods
 ******************************************************************************/
+
+/**
+ * @brief Print the list of resources, used for debug purpose
+ */
 
 void Sos::print_resources (void)
 {

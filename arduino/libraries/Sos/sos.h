@@ -1,3 +1,8 @@
+/**
+ * @file sos.h
+ * @brief Sos class interface
+ */
+
 #ifndef __SOS_H__
 #define __SOS_H__
 
@@ -19,6 +24,47 @@
 #define	COAP_CODE_NOT_FOUND	COAP_RETURN_CODE (4, 4)
 #define	COAP_CODE_TOO_LARGE	COAP_RETURN_CODE (4,13)
 
+
+/**
+ * @class Sos
+ *
+ * @brief SOS engine
+ *
+ * This is the main SOS engine. It basically provides initialization
+ * methods (to be called in the `setup` application function) and a
+ * `loop` method (to be called in the `loop` application function).
+ *
+ * There must be one and only one instance of this class, which
+ * must be created in the application.
+ * As this class relies on a separate library (L2-*) to provide
+ * network access, a specific network object must be given to the
+ * Sos object during creation.
+ *
+ * To summarize initialization, the application `setup` function must:
+ * * create an object of appropriate class `l2net-xxx`
+ * * initialize it with ad-hoc * parameters (such as Ethernet type for
+ *	`l2net-eth` or channel id for `l2net-154` for example)
+ * * next, the Sos object may be created with a pointer to the just
+ *	created `l2net-xxx` object.
+ * * resources must then be created (with some attributes such as
+ *	a title, a name, etc.) and one or more handlers to answer
+ *	requests for GET, POST, etc.
+ * * at last, resources are registered to the Sos engine
+ *
+ * The application `loop` function must then just call the
+ * `Sos::loop` method. It is advised to use the `Debug` class
+ * in order to monitor available memory and detect memory leaks.
+ *
+ * @bug Current limitations:
+ * * partial support for retransmission
+ * * this class supports at most one master on the current L2
+ *	network. If there are more than one master, behaviour is not
+ *	guaranteed.
+ * * no support for master pairing
+ * * no support for DTLS cryptography
+ * * no support for block transfer
+ * * no support for resource observation
+ */
 
 class Sos {
     public:

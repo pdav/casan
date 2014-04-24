@@ -1,3 +1,8 @@
+/**
+ * @file option.h
+ * @brief Option class interface
+ */
+
 #ifndef SOS_OPTION_H
 #define SOS_OPTION_H
 
@@ -8,9 +13,33 @@
 #define OPT_ERR_OPTLEN		2
 #define OPT_ERR_RST		0
 
-/*
- * Option
+/**
+ * @class Option
+ *
+ * @brief An object of class Option represents an individual option
+ *
+ * This class represents options associated with a message. Options are
+ * specified by the CoAP protocol.
+ *
+ * Before sending a message, application must associate options to this
+ * message (with the Msg::push_option method).
+ * They will be encoded, according to CoAP specification, when
+ * the message is about to be sent.
+ *
+ * Upon message reception, the message will be decoded: options will
+ * be created and associated with the received message. Application may
+ * retrieve them (with the Msg::reset_next_option and Msg::next_option
+ * methods).
+ *
+ * When an option is created, some points (format, minimum and maximum
+ * length) will be checked according to a private table.
+ * The format of an option may be:
+ * * a string
+ * * an integer
+ * * an opaque value
+ * * nothing
  */
+
 class option
 {
     public:
