@@ -35,7 +35,7 @@ class l2addr
 /**
  * @class l2net
  *
- * @brief Abstracts any L2 network
+ * @brief Abstracts access to any L2 network
  *
  * This class is a pure abstract class. It cannot be instancied.
  * Instead, the SOS engine keeps track of the current network with
