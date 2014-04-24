@@ -1,3 +1,8 @@
+/**
+ * @file l2-154.h
+ * @brief l2addr and l2net specializations for IEEE 802.15.4
+ */
+
 #ifndef L2_154_H
 #define	L2_154_H
 
@@ -13,6 +18,17 @@
 
 #define	I154ADDRLEN	2		// Address length
 #define	I154MTU		127
+
+/**
+ * @class l2addr_154
+ *
+ * @brief Specialization of the l2addr abstract class for IEEE 802.15.4
+ *
+ * This class provides real methods (specified in l2addr virtual
+ * class) for IEEE 802.15.4 addresses.
+ *
+ * @bug Only 2-byte addresses are supported (not 8-byte addresses)
+ */
 
 class l2addr_154 : public l2addr
 {
@@ -34,10 +50,17 @@ class l2addr_154 : public l2addr
 
 extern l2addr_154 l2addr_154_broadcast ;
 
-/*
- * this class handles the lowest layer, it will talk directly with the 
- * arduino ethernet shield
+/**
+ * @class l2net_154
+ *
+ * @brief Specialization of the l2net abstract class for IEEE 802.15.4
+ *
+ * This class provides real methods (specified in l2net virtual
+ * class) for IEEE 802.15.4 networks. It handles the lowest layer,
+ * which is assumed to be the Zigduino r2 platform, based on the
+ * ATmel ATmega128RFA1 chip. It needs the ZigMsg library.
  */
+
 class l2net_154 : public l2net
 {
     public:

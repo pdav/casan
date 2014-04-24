@@ -1,3 +1,8 @@
+/**
+ * @file l2-154.cpp
+ * @brief L2addr_154 and l2net_154 class implementations
+ */
+
 #include "l2-154.h"
 
 /*
@@ -36,7 +41,14 @@ l2addr_154::l2addr_154 ()
 {
 }
 
-// constructor:
+/** Constructor with an address given as a string
+ *
+ * This constructor is used to initialize an address with a
+ * string such as "`ca:fe`". 64-bits addresses are not supported.
+ *
+ * @param a address to be parsed
+ */
+
 l2addr_154::l2addr_154 (const char *a)
 {
     int i = 0 ;
@@ -122,14 +134,17 @@ l2net_154::~l2net_154 ()
 {
 }
 
-/*
- * Start a 802.15.4 network socket
+/**
+ * @brief Start an IEEE 802.15.4 network socket
  *
- * a : our 802.15.4 address
- * promisc : true if we want to access this network in promisc mode
- * mtu : maximum size of a 802.15.4 frame (including MAC header and footer)
- * chan : channel number
- * panid : PAN-id
+ * Initialize the IEEE 802.15.4 network access with needed constants.
+ *
+ * @param a Our IEEE 802.15.4 address
+ * @param promisc True if we want to access this network in promisc mode
+ * @param mtu Maximum size of a 802.15.4 frame (including MAC header and
+ *	footer)
+ * @param chan channel number
+ * @param panid PAN-id
  */
 
 void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, panid_t panid)
@@ -149,10 +164,13 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
     ZigMsg.start () ;
 }
 
-/*
- * Send packet
+/**
+ * @brief Send a packet on the IEEE 802.15.4 network
  *
- * Returns true if data is sent.
+ * This method sends the packet to the ZigMsg library in order to
+ * send it.
+ *
+ * See the l2net::send method for parameters and return value.
  */
 
 bool l2net_154::send (l2addr &dest, const uint8_t *data, size_t len) 
@@ -160,15 +178,16 @@ bool l2net_154::send (l2addr &dest, const uint8_t *data, size_t len)
     return ZigMsg.sendto (((l2addr_154 *) &dest)->addr_, len, data) ;
 }
 
-/*
- * Receive packet
+/**
+ * @brief Receive a packet from the IEEE 802.15.4 network
  *
- * returns RECV_EMPTY if no packet has been received
- * returns RECV_WRONG_DEST if destination address is wrong
- *      (i.e. not our MAC address nor the broadcast address)
- * returns RECV_WRONG_TYPE (never)
- * returns RECV_TRUNCATED if packet is too large (i.e. has been truncated)
- * returns RECV_OK if ok
+ * This method queries the ZigMsg library in order. The received
+ * packet is kept by the ZigMsg library in a private buffer.
+ * Minimal decoding is done here in order to decide if it is
+ * a valid packet (i.e. uses only 16-bits address and an Intra-PAN
+ * bit).
+ *
+ * See the `l2net::l2_recv_t` enumeration for return values.
  */
 
 l2net::l2_recv_t l2net_154::recv (void) 
@@ -196,10 +215,28 @@ l2net::l2_recv_t l2net_154::recv (void)
     return r ;
 }
 
+/**
+ * @brief Returns the broadcast IEEE 802.15.4 address
+ *
+ * The broadcast IEEE 802.15.4 address is located in a global variable.
+ * This method returns its address.
+ *
+ * @return address of an existing l2addr_154 object (do not free it)
+ */
+
 l2addr *l2net_154::bcastaddr (void)
 {
     return &l2addr_154_broadcast ;
 }
+
+/**
+ * @brief Returns the source address of the received frame
+ *
+ * This methods creates a new l2addr_154 and initializes it with
+ * the source address from the currently received frame.
+ *
+ * @return address of a new l2addr_154 object (to delete after use)
+ */
 
 l2addr *l2net_154::get_src (void)
 {
@@ -208,6 +245,15 @@ l2addr *l2net_154::get_src (void)
     return a ;
 }
 
+/**
+ * @brief Returns the destination address of the received frame
+ *
+ * This methods creates a new l2addr_154 and initializes it with
+ * the destination address from the currently received frame.
+ *
+ * @return address of a new l2addr_154 object (to delete after use)
+ */
+
 l2addr *l2net_154::get_dst (void)
 {
     l2addr_154 *a = new l2addr_154 ;
@@ -215,15 +261,40 @@ l2addr *l2net_154::get_dst (void)
     return a ;
 }
 
+/**
+ * @brief Returns the address of the received payload
+ *
+ * This methods returns the address of the payload inside the
+ * received frame (payload is not copied).
+ *
+ * @return address inside an existing buffer (do not free it)
+ */
+
 uint8_t *l2net_154::get_payload (int offset) 
 {
     return curframe_->payload ;
 }
 
+/**
+ * @brief Returns the payload length
+ *
+ * This methods returns the original length of the received
+ * frame. Even if the frame has been truncated on reception,
+ * the payload returned is the true payload.
+ *
+ * @return original length
+ */
+
 size_t l2net_154::get_paylen (void) 
 {
     return curframe_->paylen ;
 }
+
+/**
+ * @brief Dump some parts of a frame
+ *
+ * This methods prints a part of the received frame.
+ */
 
 void l2net_154::dump_packet (size_t start, size_t maxlen)
 {

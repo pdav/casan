@@ -1,3 +1,8 @@
+/**
+ * @file l2-eth.h
+ * @brief l2addr and l2net specializations for Ethernet
+ */
+
 #ifndef L2_ETH_H
 #define	L2_ETH_H
 
@@ -12,6 +17,15 @@
 
 #define	ETHADDRLEN	6		// Ethernet address length
 #define	ETHMTU		1518
+
+/**
+ * @class l2addr_eth
+ *
+ * @brief Specialization of the l2addr abstract class for Ethernet
+ *
+ * This class provides real methods (specified in l2addr virtual
+ * class) for Ethernet addresses.
+ */
 
 class l2addr_eth : public l2addr
 {
@@ -34,10 +48,18 @@ class l2addr_eth : public l2addr
 
 extern l2addr_eth l2addr_eth_broadcast ;
 
-/*
- * this class handles the lowest layer, it will talk directly with the 
- * arduino ethernet shield
+/**
+ * @class l2net_eth
+ *
+ * @brief Specialization of the l2net abstract class for Ethernet
+ *
+ * This class provides real methods (specified in l2net virtual
+ * class) for Ethernet networks. It handles the lowest layer,
+ * which is assumed to be the Wiznet W5100 Ethernet chip found
+ * on the Arduino Ethernet shield. As such, it needs the SPI and
+ * Ethernet standard Arduino libraries.
  */
+
 class l2net_eth : public l2net
 {
     public:

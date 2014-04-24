@@ -1,3 +1,8 @@
+/**
+ * @file l2-eth.cpp
+ * @brief L2addr_eth and l2net_eth class implementations
+ */
+
 #include "l2-eth.h"
 
 /*
@@ -32,7 +37,14 @@ l2addr_eth::l2addr_eth ()
 {
 }
 
-// constructor
+/** Constructor with an address given as a string
+ *
+ * This constructor is used to initialize an address with a
+ * string such as "`01:02:03:04:05:06`".
+ *
+ * @param a address to be parsed
+ */
+
 l2addr_eth::l2addr_eth (const char *a)
 {
     int i = 0 ;
@@ -126,13 +138,16 @@ l2net_eth::~l2net_eth ()
 	free (rbuf_) ;
 }
 
-/*
- * Start an Ethernet network socket
+/**
+ * @brief Start an Ethernet network socket
  *
- * a : our Ethernet address
- * promisc : true if we want to access this network in promisc mode
- * mtu : maximum size of an Ethernet frame (including MAC header and footer)
- * ethtype: Ethernet type used for sending and receiving frames
+ * Initialize the Ethernet network access with needed constants.
+ *
+ * @param a Our Ethernet address
+ * @param promisc True if we want to access this network in promisc mode
+ * @param mtu Maximum size of an Ethernet frame (including MAC header and
+ *	footer)
+ * @param ethtype Ethernet type used for sending and receiving frames
  */
 
 void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
@@ -158,11 +173,28 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
     W5100.execCmdSn (SOCK0, Sock_OPEN) ;
 }
 
-/*
- * Send packet
+/**
+ * @brief Send a packet on the Ethernet network
  *
- * Returns true if data is sent (i.e. located in the send buffer of
- * the W5100 chip). If message should be truncated, it is not sent.
+ * This method encapsulates the SOS packet in an Ethernet frame, copy
+ * it in the W5100 shared buffer and order the W5100 to send the frame.
+ * Since the frame will be sent later, a return value of `true` just
+ * indicates that the frame has correctly been sent to the chip, not
+ * that the frame has been successfully transmitted on the wire.
+ * 
+ * This methods adds a two byte length in front of the SOS payload
+ * (just after the Ethernet header). This is done specifically for
+ * the Ethernet since SOS packets may be shorter than minimal size
+ * and some drivers cannot report the "true" frame length.
+ *
+ * See the l2net::send method for parameters and return value.
+ *
+ * @bug this method assumes that there is enough room in the shared
+ *	buffer, which may not be true
+ * @bug memory is temporarily allocated to build the frame, which
+ *	makes a pressure on the controller memory. This could perhaps
+ *	be avoided if the `W5100::send_data_processing` method did not
+ *	send an order.
  */
 
 bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len) 
@@ -237,15 +269,14 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
     return success ;
 }
 
-/*
- * Receive packet
+/**
+ * @brief Receive a packet from the Ethernet network
  *
- * returns RECV_EMPTY if no packet has been received
- * returns RECV_WRONG_DEST if destination address is wrong
- *      (i.e. not our MAC address nor the broadcast address)
- * returns RECV_WRONG_TYPE if Ethernet packet type is not the good one
- * returns RECV_TRUNCATED if packet is too large (i.e. has been truncated)
- * returns RECV_OK if ok
+ * This method queries the W5100 chip in order to get a received
+ * Ethernet frame. The frame is copied in a buffer (malloced in
+ * the `start` method).
+ *
+ * See the `l2net::l2_recv_t` enumeration for return values.
  */
 
 l2net::l2_recv_t l2net_eth::recv (void) 
@@ -323,10 +354,28 @@ l2net::l2_recv_t l2net_eth::recv (void)
     return r ;
 }
 
+/**
+ * @brief Returns the broadcast Ethernet address
+ *
+ * The broadcast Ethernet address is located in a global variable.
+ * This method returns its address.
+ *
+ * @return address of an existing l2addr_eth object (do not free it)
+ */
+
 l2addr *l2net_eth::bcastaddr (void)
 {
     return &l2addr_eth_broadcast ;
 }
+
+/**
+ * @brief Returns the source address of the received frame
+ *
+ * This methods creates a new l2addr_eth and initializes it with
+ * the source address from the currently received frame.
+ *
+ * @return address of a new l2addr_eth object (to delete after use)
+ */
 
 l2addr *l2net_eth::get_src (void)
 {
@@ -335,6 +384,15 @@ l2addr *l2net_eth::get_src (void)
     return a ;
 }
 
+/**
+ * @brief Returns the destination address of the received frame
+ *
+ * This methods creates a new l2addr_eth and initializes it with
+ * the destination address from the currently received frame.
+ *
+ * @return address of a new l2addr_eth object (to delete after use)
+ */
+
 l2addr *l2net_eth::get_dst (void)
 {
     l2addr_eth *a = new l2addr_eth ;
@@ -342,15 +400,42 @@ l2addr *l2net_eth::get_dst (void)
     return a ;
 }
 
+/**
+ * @brief Returns the address of the received payload
+ *
+ * This methods returns the address of the payload inside the
+ * received frame (payload is not copied). Note that payload
+ * returned does not include the payload added specifically for
+ * Ethernet frames (see l2net_eth::send).
+ *
+ * @return address inside an existing buffer (do not free it)
+ */
+
 uint8_t *l2net_eth::get_payload (int offset) 
 {
     return rbuf_ + ETH_OFFSET_PAYLOAD + offset ;
 }
 
+/**
+ * @brief Returns the payload length
+ *
+ * This methods returns the original length of the received
+ * frame. Even if the frame has been truncated on reception,
+ * the payload returned is the true payload.
+ *
+ * @return original length
+ */
+
 size_t l2net_eth::get_paylen (void)		// original length
 {
     return pktlen_ ;
 }
+
+/**
+ * @brief Dump some parts of a frame
+ *
+ * This methods prints a part of the received frame.
+ */
 
 void l2net_eth::dump_packet (size_t start, size_t maxlen)
 {
