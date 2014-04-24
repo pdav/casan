@@ -9,7 +9,6 @@
 #include "l2.h"
 #include "defs.h"
 #include "w5100.h"
-#include "enum.h"
 
 #define	ETHADDRLEN	6		// Ethernet address length
 #define	ETHMTU		1518

@@ -11,7 +11,6 @@
  */
 
 #include "defs.h"
-#include "enum.h"
 
 /**
  * @class l2addr

@@ -8,7 +8,6 @@
 
 #include "Arduino.h"
 #include "defs.h"
-#include "enum.h"
 #include "l2.h"
 #include "option.h"
 #include "msg.h"

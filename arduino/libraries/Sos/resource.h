@@ -6,7 +6,6 @@
 #ifndef __RESOURCE_H__
 #define __RESOURCE_H__
 
-#include "enum.h"
 #include <Arduino.h>
 #include "defs.h"
 #include "msg.h"

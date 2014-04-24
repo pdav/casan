@@ -10,7 +10,6 @@
 
 #include "l2.h"
 #include "defs.h"
-#include "enum.h"
 
 #define	I154ADDRLEN	2		// Address length
 #define	I154MTU		127

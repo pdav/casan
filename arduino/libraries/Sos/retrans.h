@@ -10,7 +10,6 @@
  */
 
 #include "defs.h"
-#include "enum.h"
 #include "msg.h"
 #include "l2.h"
 #include "time.h"
