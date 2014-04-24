@@ -22,12 +22,4 @@ typedef enum pktype {
     PK_NONE 
 } pktype_t ;
 
-enum sos_slave_status {
-    SL_COLDSTART = 1,
-    SL_WAITING_UNKNOWN,
-    SL_RUNNING,
-    SL_RENEW,
-    SL_WAITING_KNOWN,
-} ;
-
 #endif

@@ -81,6 +81,14 @@ class Sos {
 	void request_resource (Msg &in, Msg &out) ;
 
     private:
+	enum slave_status {
+	    SL_COLDSTART = 1,
+	    SL_WAITING_UNKNOWN,
+	    SL_RUNNING,
+	    SL_RENEW,
+	    SL_WAITING_KNOWN,
+	} ;
+
 	struct reslist
 	{
 	    Resource *res ;
@@ -94,7 +102,7 @@ class Sos {
 	l2addr *master_ ;		// NULL <=> broadcast
 	l2net *l2_ ;
 	long int slaveid_ ;		// slave id, manually config'd
-	uint8_t status_ ;
+	slave_status status_ ;
 	time_t sttl_ ;			// slave ttl, given in assoc msg
 	long int hlid_ ;		// hello ID
 	int curid_ ;			// current message id
