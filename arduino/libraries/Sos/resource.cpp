@@ -1,3 +1,8 @@
+/**
+ * @file resource.cpp
+ * @brief Resource class implementation
+ */
+
 #include "resource.h"
 
 #define	ALLOC_COPY(d,s)		do {				\
@@ -5,12 +10,17 @@
 				    strcpy ((d), (s)) ;		\
 				} while (false)			// no ";"
 
+/** @brief Copy constructor
+ */
 Resource::Resource (const char *name, const char *title, const char *rt)
 {
     ALLOC_COPY (name_, name) ;
     ALLOC_COPY (title_, title) ;
     ALLOC_COPY (rt_, rt) ;
 }
+
+/** @brief Destructor
+ */
 
 Resource::~Resource ()
 {
@@ -19,29 +29,41 @@ Resource::~Resource ()
     free (rt_) ;
 }
 
-bool Resource::check_name (const char *name) 
-{
-    return strcmp (name_, name) == 0 ;
-}
+/** @brief Set resource handler
+ *
+ * @param op CoAP operation (see coap_code_t type)
+ * @param h Function to handle request and provide a response
+ */
 
 void Resource::handler (coap_code_t op, handler_t h)
 {
     handler_ [op] = h ;
 }
 
-handler_t Resource::handler (coap_code_t op)
+/** @brief Get resource handler
+ *
+ * @param op CoAP operation (see coap_code_t type)
+ * @return Handler for this operation
+ */
+
+Resource::handler_t Resource::handler (coap_code_t op)
 {
     return handler_ [op] ;
 }
 
-/*
- * Get a "well-known"-type text
+/** @brief Get the textual representation of the resource for the
+ *	`/.well-known/sos` resource.
+ *
+ * The format of a "well-known"-type text is:
  *	<temp>;title="Temperature";rt="celcius"
- * Returns length of string (including final \0), or -1 if it not fits
- * in the given buffer (of length maxlen)
+ *
+ * @param buf buffer where the textual representation must be stored
+ * @param maxlen size of buffer
+ * @return length of string (including final \0), or -1 if it not fits
+ *	in the given buffer
  */
 
-int Resource::get_well_known (char *buf, size_t maxlen)
+int Resource::well_known (char *buf, size_t maxlen)
 {
     int len ;
     
@@ -54,6 +76,9 @@ int Resource::get_well_known (char *buf, size_t maxlen)
 
     return len ;
 }
+
+/** @brief For debugging purposes
+ */
 
 void Resource::print (void)
 {

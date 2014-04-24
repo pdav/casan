@@ -197,15 +197,6 @@ void Sos::register_resource (Resource *res)
  * * or return 4.04 code
  * * pack the answer in the outgoing message
  *
- * The handler prototype is:
- *	`uint8_t handler (Msg &in, Msg &out)`
- * The message `out` is prepared with some items from the incoming
- * message (ACK, id, token) before calling the handler.
- * Rest of message must be provided
- * by the handler function, except code which is filled with the
- * return value of the handler. Note that the handler may provide
- * the content-format option if text_plain is not the wanted default.
- *
  * This method is made public for testing purpose.
  *
  * @bug Only one level of path is allowed (i.e. /a, and not /a/b nor /a/b/c)
@@ -250,7 +241,9 @@ void Sos::request_resource (Msg &in, Msg &out)
 		    out.set_token (in.get_toklen (), in.get_token ()) ;
 
 		    // call handler
-		    handler_t h = res->handler ((coap_code_t) in.get_code ()) ;
+		    Resource::handler_t h ;
+		    
+		    h = res->handler ((coap_code_t) in.get_code ()) ;
 		    if (h == NULL)
 		    {
 			out.set_code (COAP_CODE_BAD_REQUEST) ;
@@ -285,7 +278,7 @@ Resource *Sos::get_resource (const char *name)
     reslist *rl ;
 
     for (rl = reslist_ ; rl != NULL ; rl = rl->next)
-	if (rl->res->check_name (name))
+	if (strcmp (name, rl->res->name ()) == 0)
 	    break ;
     return rl != NULL ? rl->res : NULL ;
 }
@@ -333,7 +326,7 @@ void Sos::get_well_known (Msg &out)
 	    else break ;		// too large
 	}
 
-	len = rl->res->get_well_known (buf + size, avail - size) ;
+	len = rl->res->well_known (buf + size, avail - size) ;
 	if (len == -1)
 	    break ;
 
