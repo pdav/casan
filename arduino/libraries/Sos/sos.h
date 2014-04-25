@@ -16,8 +16,6 @@
 #include "resource.h"
 #include "debug.h"
 
-#define	SOS_ETH_TYPE		0x88b5		// public use for prototype
-
 #define	COAP_CODE_OK		COAP_RETURN_CODE (2, 5)
 #define	COAP_CODE_BAD_REQUEST	COAP_RETURN_CODE (4, 0)
 #define	COAP_CODE_NOT_FOUND	COAP_RETURN_CODE (4, 4)

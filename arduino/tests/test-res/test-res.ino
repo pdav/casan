@@ -72,7 +72,7 @@ void setup ()
     debug.start (DEBUGINTERVAL) ;
 
 #ifdef L2_ETH
-    l2.start (myaddr, promisc, MTU, SOS_ETH_TYPE) ;
+    l2.start (myaddr, promisc, MTU, ETHTYPE) ;
 #endif
 #ifdef L2_154
     l2.start (myaddr, promisc, MTU, CHANNEL, PANID) ;

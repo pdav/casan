@@ -15,7 +15,13 @@
 #include "defs.h"
 #include "w5100.h"
 
-#define	ETHADDRLEN	6		// Ethernet address length
+/** Ethernet frame type used for SOS frames */
+#define	ETHTYPE		0x88b5
+
+/** Ethernet address length */
+#define	ETHADDRLEN	6
+
+/** Ethernet MTU (complete MAC frame length, including MAC header and footer) */
 #define	ETHMTU		1518
 
 /**

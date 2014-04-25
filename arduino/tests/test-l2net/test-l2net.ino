@@ -37,7 +37,7 @@ void setup ()
     Serial.begin (38400) ;
     debug.start (DEBUGINTERVAL) ;
 #ifdef L2_ETH
-    l2.start (myaddr, false, MTU, SOS_ETH_TYPE) ;
+    l2.start (myaddr, false, MTU, ETHTYPE) ;
 #endif
 #ifdef L2_154
     l2.start (myaddr, false, MTU, CHANNEL, PANID) ;

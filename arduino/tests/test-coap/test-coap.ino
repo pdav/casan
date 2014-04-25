@@ -26,7 +26,7 @@ Debug debug ;
 void setup ()
 {
     Serial.begin (38400) ;
-    e.start (myaddr, promisc, mtu, SOS_ETH_TYPE) ;
+    e.start (myaddr, promisc, mtu, ETHTYPE) ;
     debug.start (DEBUGINTERVAL) ;
 }
 
