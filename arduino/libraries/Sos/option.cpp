@@ -73,7 +73,7 @@ option::optdesc option::optdesc_ [] =
  * Utilities
  */
 
-byte *option::uint_to_byte (uint val, int &len)
+option::byte *option::uint_to_byte (uint val, int &len)
 {
     static byte stbin [sizeof (uint)] ;
     int shft ;
@@ -128,7 +128,7 @@ option::option (optcode_t optcode)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTCODE 1\033[00m") ;
+	Serial.println (F ("\033[31moption::optval err: CHK_OPTCODE 1\033[00m")) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     RESET ;
@@ -152,13 +152,13 @@ option::option (optcode_t optcode, const void *optval, int optlen)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTCODE 2\033[00m") ;
+	Serial.println (F ("\033[31moption::optval err: CHK_OPTCODE 2\033[00m")) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     CHK_OPTLEN (optcode, optlen, err) ;
     if (err)
     {
-	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTLEN 2\033[00m") ;
+	Serial.println (F ("\033[31moption::optval err: CHK_OPTLEN 2\033[00m")) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
     }
     RESET ;
@@ -189,13 +189,13 @@ option::option (optcode_t optcode, option::uint optval)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTCODE 3\033[00m") ;
+	Serial.println (F ("\033[31moption::optval err: CHK_OPTCODE 3\033[00m")) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     CHK_OPTLEN (optcode, len, err) ;
     if (err)
     {
-	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTLEN 3\033[00m") ;
+	Serial.println (F ("\033[31moption::optval err: CHK_OPTLEN 3\033[00m")) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
     }
     RESET ;
@@ -377,7 +377,7 @@ void option::optval (option::uint val)
     CHK_OPTLEN (optcode_, len, err) ;
     if (err)
     {
-	PRINT_DEBUG_STATIC ("\033[31moption::optval err: CHK_OPTLEN\033[00m") ;
+	Serial.println (F ("\033[31moption::optval err: CHK_OPTLEN\033[00m")) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
 	return ;
     }

@@ -52,8 +52,8 @@ l2addr_154::l2addr_154 ()
 l2addr_154::l2addr_154 (const char *a)
 {
     int i = 0 ;
-    byte b = 0 ;
-    byte buf [I154ADDRLEN] ;
+    uint8_t b = 0 ;
+    uint8_t buf [I154ADDRLEN] ;
 
     /*
      * General loop, when 8-byte addresses will be supported
@@ -68,7 +68,7 @@ l2addr_154::l2addr_154 (const char *a)
 	}
 	else if (isxdigit (*a))
 	{
-	    byte x ;
+	    uint8_t x ;
 	    char c ;
 
 	    c = tolower (*a) ;

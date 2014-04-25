@@ -36,26 +36,26 @@ void test_l2addr (void)
     {
 	x->print () ; Serial.println () ;
 	y->print () ; Serial.println () ;
-	PRINT_DEBUG_STATIC ("x == y (PROBLEM)") ;
+	Serial.println (F ("x == y (PROBLEM))")) ;
     }
     else
     {
 	x->print () ; Serial.println () ;
 	y->print () ; Serial.println () ;
-	PRINT_DEBUG_STATIC ("x != y (OK)") ;
+	Serial.println (F ("x != y (OK))")) ;
     }
     *x = *y ;
     if (*x == *y)
     {
 	x->print () ; Serial.println () ;
 	y->print () ; Serial.println () ;
-	PRINT_DEBUG_STATIC ("x == y (OK)") ;
+	Serial.println (F ("x == y (OK))")) ;
     }
     else
     {
 	x->print () ; Serial.println () ;
 	y->print () ; Serial.println () ;
-	PRINT_DEBUG_STATIC ("x != y (BAD)") ;
+	Serial.println (F ("x != y (BAD))")) ;
     }
 
     delete x ;

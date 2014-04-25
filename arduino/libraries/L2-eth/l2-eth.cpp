@@ -48,7 +48,7 @@ l2addr_eth::l2addr_eth ()
 l2addr_eth::l2addr_eth (const char *a)
 {
     int i = 0 ;
-    byte b = 0 ;
+    uint8_t b = 0 ;
 
     while (*a != '\0' && i < ETHADDRLEN)
     {
@@ -59,7 +59,7 @@ l2addr_eth::l2addr_eth (const char *a)
 	}
 	else if (isxdigit (*a))
 	{
-	    byte x ;
+	    uint8_t x ;
 	    char c ;
 
 	    c = tolower (*a) ;
@@ -162,7 +162,7 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 
     if (rbuf_ != NULL)
 	free (rbuf_) ;
-    rbuf_ = (byte *) malloc (mtu_ + ETH_SIZE_HEADER) ;
+    rbuf_ = (uint8_t *) malloc (mtu_ + ETH_SIZE_HEADER) ;
 
     W5100.init () ;
     W5100.setMACAddress (myaddr_.addr_) ;
@@ -204,13 +204,13 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
     if (len + ETH_SIZE_HEADER <= mtu_)
     {
 	l2addr_eth *m = (l2addr_eth *) &dest ;
-	byte *sbuf ;		// send buffer
+	uint8_t *sbuf ;		// send buffer
 	size_t sbuflen ;	// buffer size
 	size_t paylen ;		// restricted to mtu, if any
 
 	paylen = len ;		// keep original length
 	sbuflen = len + ETH_SIZE_HEADER ;	// add MAC header + SOS length
-	sbuf = (byte *) malloc (sbuflen) ;
+	sbuf = (uint8_t *) malloc (sbuflen) ;
 
 	// Standard Ethernet MAC header (14 bytes)
 	memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
@@ -241,7 +241,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	 */
 
 	l2addr_eth *m = (l2addr_eth *) &dest ;
-	byte hdr [ETH_SIZE_HEADER] ;
+	uint8_t hdr [ETH_SIZE_HEADER] ;
 
 	// Standard Ethernet MAC header (14 bytes)
 	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
@@ -338,7 +338,7 @@ l2net::l2_recv_t l2net_eth::recv (void)
 	pktlen_ = INT16 (rbuf_ [ETH_OFFSET_SIZE], rbuf_ [ETH_OFFSET_SIZE+1]) ;
 	pktlen_ -= 2 ;
 
-	// XXX HOW CAN THIS TEST (l2addr_eth*  != byte *) WORK?
+	// XXX HOW CAN THIS TEST (l2addr_eth*  != uint8_t *) WORK?
 	// Check destination address
 	if (myaddr_ != rbuf_ + ETH_OFFSET_DST_ADDR
 		&& l2addr_eth_broadcast != rbuf_ + ETH_OFFSET_DST_ADDR)

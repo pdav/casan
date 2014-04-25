@@ -8,9 +8,6 @@
 // number of elements in an array
 #define NTAB(t)		((int) (sizeof (t)/sizeof (t)[0]))
 
-// SOS is based on this CoAP version
-#define	SOS_VERSION	1
-
 // CoAP ACK timeout (milliseconds) for CONfirmable messages
 #define	ACK_TIMEOUT	2000
 // CoAP ACK random factor to compute initial timeout for CON messages
@@ -37,38 +34,7 @@
 
 #define ALEA(x) x
 
-// to print a dynamic value (everything but strings)
-#define PRINT_DEBUG_DYNAMIC(x) \
-	Serial.println(x);
-
-// to print a static value (string)
-#define PRINT_DEBUG_STATIC(x) \
-	Serial.println(F(x));
-
 #define	BYTE_HIGH(n)		(((n) & 0xff00) >> 8)
 #define	BYTE_LOW(n)		((n) & 0xff)
 #define	INT16(h,l)		(((uint16_t) (h)) << 8 | (uint16_t) (l))
-
-#define	OPTVAL(o)		((o)->optval_ ? (o)->optval_ : (o)->staticval_)
-
-
-#define	COAP_MAX_TOKLEN		8
-
-typedef unsigned char byte ;
-
-typedef enum coap_code {
-    COAP_CODE_EMPTY = 0,
-    COAP_CODE_GET,
-    COAP_CODE_POST,
-    COAP_CODE_PUT,
-    COAP_CODE_DELETE
-} coap_code_t;
-
-typedef enum coap_type {
-    COAP_TYPE_CON = 0,
-    COAP_TYPE_NON,
-    COAP_TYPE_ACK,
-    COAP_TYPE_RST
-} coap_type_t;
-
 #endif

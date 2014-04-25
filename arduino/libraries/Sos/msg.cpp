@@ -5,6 +5,9 @@
 
 #include "msg.h"
 
+// SOS is based on this CoAP version
+#define	SOS_VERSION	1
+
 #define	FORMAT_BYTE0(ver,type,toklen)				\
 			((((unsigned int) (ver) & 0x3) << 6) |	\
 			 (((unsigned int) (type) & 0x3) << 4) |	\
@@ -15,6 +18,8 @@
 #define	COAP_TOKLEN(b)	(((b) [0]     ) & 0xf)
 #define	COAP_CODE(b)	(((b) [1]))
 #define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
+
+#define	OPTVAL(o)	((o)->optval_ ? (o)->optval_ : (o)->staticval_)
 
 /******************************************************************************
 Constructor, destructor, operators

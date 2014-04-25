@@ -45,7 +45,7 @@ class l2addr_eth : public l2addr
 	void print (void) ;
 
     protected:
-	byte addr_ [ETHADDRLEN] ;
+	uint8_t addr_ [ETHADDRLEN] ;
 
 	friend class l2net_eth ;
 } ;
@@ -87,7 +87,7 @@ class l2net_eth : public l2net
     private:
 	l2addr_eth myaddr_ ;		// my MAC address
 	int ethtype_ ;
-	byte *rbuf_ ;			// receive buffer (of size mtu_ bytes)
+	uint8_t *rbuf_ ;		// receive buffer (of size mtu_ bytes)
 	size_t pktlen_ ;		// real length of received packet
 	size_t rbuflen_ ;		// length of data received (<= mtu_)
 } ;

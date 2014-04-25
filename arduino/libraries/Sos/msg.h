@@ -6,7 +6,7 @@
 #ifndef __MSG_H__
 #define __MSG_H__
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "defs.h"
 #include "l2.h"
 #include "option.h"
@@ -14,11 +14,30 @@
 #define COAP_RETURN_CODE(x,y) ((x << 5) | (y & 0x1f))
 
 // the offset to get pieces of information in the MAC payload
-#define		COAP_OFFSET_TYPE	0
-#define		COAP_OFFSET_TKL		0
-#define		COAP_OFFSET_CODE	1
-#define		COAP_OFFSET_ID		2
-#define		COAP_OFFSET_TOKEN	4
+#define	COAP_OFFSET_TYPE	0
+#define	COAP_OFFSET_TKL		0
+#define	COAP_OFFSET_CODE	1
+#define	COAP_OFFSET_ID		2
+#define	COAP_OFFSET_TOKEN	4
+
+#define	COAP_MAX_TOKLEN		8
+
+/** CoAP methods */
+typedef enum coap_code {
+    COAP_CODE_EMPTY = 0,
+    COAP_CODE_GET,
+    COAP_CODE_POST,
+    COAP_CODE_PUT,
+    COAP_CODE_DELETE
+} coap_code_t;
+
+/** CoAP message types */
+typedef enum coap_type {
+    COAP_TYPE_CON = 0,
+    COAP_TYPE_NON,
+    COAP_TYPE_ACK,
+    COAP_TYPE_RST
+} coap_type_t;
 
 /**
  * @brief An object of class Msg represents a message,

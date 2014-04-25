@@ -93,8 +93,8 @@ void loop ()
     if (debug.heartbeat ())
     {
 	unsigned long t = millis () ;
-	PRINT_DEBUG_STATIC ("MILLIS : ") ;
-	PRINT_DEBUG_DYNAMIC (t) ;
+	Serial.print (F ("MILLIS : ")) ;
+	Serial.println (t) ;
 	test_diff () ;
 	test_operators () ;
     }

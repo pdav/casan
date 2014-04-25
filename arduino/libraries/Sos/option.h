@@ -111,6 +111,9 @@ class option
 	static void reset_errno (void) ;
 
     protected:
+	/** Type needed to minimize diffs to equivalent code of master */
+	typedef uint8_t byte ;
+
 	optcode_t optcode_ ;
 	int optlen_ ;
 	byte *optval_ ;			// 0 if staticval is used

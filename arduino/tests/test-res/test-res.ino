@@ -81,11 +81,11 @@ void setup ()
     sos = new Sos (&l2, slaveid) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
-    r1->add_handler (COAP_CODE_GET, process_light) ;
+    r1->handler (COAP_CODE_GET, process_light) ;
     sos->register_resource (r1) ;
 
     Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
-    r2->add_handler (COAP_CODE_GET, process_temp) ;
+    r2->handler (COAP_CODE_GET, process_temp) ;
     sos->register_resource (r2) ;
 }
 

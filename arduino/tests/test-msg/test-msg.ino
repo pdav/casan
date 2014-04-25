@@ -26,13 +26,13 @@ void setup ()
 
 void test_msg (void)
 {
-    PRINT_DEBUG_STATIC ("STEP 1: create 2 empty messages") ;
+    Serial.println (F ("STEP 1: create 2 empty messages")) ;
     Msg m1 ;
     m1.print () ;
     Msg m2 ;
     m2.print () ;
 
-    PRINT_DEBUG_STATIC ("STEP 2: create options") ;
+    Serial.println (F ("STEP 2: create options")) ;
     option oup1 (option::MO_Uri_Path, (void *) PATH1, sizeof PATH1-1) ;
     option oup2 (option::MO_Uri_Path, (void *) PATH2, sizeof PATH2-1) ;
     option ouq1 (option::MO_Uri_Query, (void *) URIQUERY1, sizeof URIQUERY1-1) ;
@@ -44,23 +44,23 @@ void test_msg (void)
     m1.set_code (COAP_CODE_GET) ;
     m1.set_id (10) ;
 
-    PRINT_DEBUG_STATIC ("STEP 3a: M1 add uriquery2") ;
+    Serial.println (F ("STEP 3a: M1 add uriquery2")) ;
     m1.push_option (ouq2) ;
     m1.print () ;	Serial.println () ;
 
-    PRINT_DEBUG_STATIC ("STEP 3b: M1 add uripath1") ;
+    Serial.println (F ("STEP 3b: M1 add uripath1")) ;
     m1.push_option (oup1) ;
     m1.print () ;	Serial.println () ;
 
-    PRINT_DEBUG_STATIC ("STEP 3c: M1 add uripath2") ;
+    Serial.println (F ("STEP 3c: M1 add uripath2")) ;
     m1.push_option (oup2) ;
     m1.print () ;	Serial.println () ;
 
-    PRINT_DEBUG_STATIC ("STEP 3d: M1 add uriquery1") ;
+    Serial.println (F ("STEP 3d: M1 add uriquery1")) ;
     m1.push_option (ouq1) ;
     m1.print () ;	Serial.println () ;
 
-    PRINT_DEBUG_STATIC ("STEP 3e: M1 add uriquery3") ;
+    Serial.println (F ("STEP 3e: M1 add uriquery3")) ;
     m1.push_option (ouq3) ;
     m1.print () ;	Serial.println () ;
 
@@ -68,7 +68,7 @@ void test_msg (void)
     m2.set_code (COAP_CODE_POST) ;
     m2.set_id (11) ;
 
-    PRINT_DEBUG_STATIC ("STEP 3f: M2 add oriquery2") ;
+    Serial.println (F ("STEP 3f: M2 add oriquery2")) ;
     m2.push_option (ouq2) ;
     m2.print () ;	Serial.println () ;
 

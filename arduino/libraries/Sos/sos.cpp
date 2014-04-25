@@ -522,7 +522,7 @@ void Sos::loop ()
 
 	default :
 	    Serial.println (F ("Error : sos status not known")) ;
-	    PRINT_DEBUG_DYNAMIC (status_) ;
+	    Serial.println (status_) ;
 	    break ;
     }
 
@@ -739,16 +739,16 @@ void Sos::print_coap_ret_type (l2net::l2_recv_t ret)
     switch (ret)
     {
 	case l2net::RECV_WRONG_DEST :
-	    PRINT_DEBUG_STATIC ("RECV_WRONG_DEST") ;
+	    Serial.println (F ("RECV_WRONG_DEST")) ;
 	    break ;
 	case l2net::RECV_WRONG_TYPE :
-	    PRINT_DEBUG_STATIC ("RECV_WRONG_TYPE") ;
+	    Serial.println (F ("RECV_WRONG_TYPE")) ;
 	    break ;
 	case l2net::RECV_OK :
-	    PRINT_DEBUG_STATIC ("RECV_OK") ;
+	    Serial.println (F ("RECV_OK")) ;
 	    break ;
 	default :
-	    PRINT_DEBUG_STATIC ("ERROR RECV") ;
+	    Serial.println (F ("ERROR RECV")) ;
 	    break ;
     }
 }
