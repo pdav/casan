@@ -9,7 +9,6 @@
 #ifndef __TIME_H__
 #define __TIME_H__
 
-#include <Arduino.h>
 #include "defs.h"
 
 /** @brief Type for current time value in milliseconds since last start

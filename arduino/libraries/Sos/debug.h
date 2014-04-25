@@ -6,11 +6,6 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-/*
- * Some debug fancy features
- */
-
-#include "Arduino.h"
 #include "defs.h"
 
 /**

@@ -1,5 +1,3 @@
-#include "defs.h"
-#include "sos.h"
 #include "option.h"
 
 uint8_t option::errno_ = 0 ;

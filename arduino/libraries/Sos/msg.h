@@ -6,8 +6,6 @@
 #ifndef __MSG_H__
 #define __MSG_H__
 
-#include <Arduino.h>
-#include "defs.h"
 #include "l2.h"
 #include "option.h"
 

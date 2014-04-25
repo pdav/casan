@@ -3,8 +3,6 @@
  * @brief Debug class implementation
  */
 
-#include <Arduino.h>
-
 #include "debug.h"
 
 int freeMemory () ;

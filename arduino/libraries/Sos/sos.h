@@ -6,15 +6,9 @@
 #ifndef __SOS_H__
 #define __SOS_H__
 
-#include "Arduino.h"
-#include "defs.h"
-#include "l2.h"
-#include "option.h"
-#include "msg.h"
-#include "retrans.h"
-#include "time.h"
-#include "resource.h"
-#include "debug.h"
+#include "resource.h"		// => msg.h => l2.h + option.h
+#include "retrans.h"		// => time.h
+#include "debug.h"		// for user comfort
 
 #define	COAP_CODE_OK		COAP_RETURN_CODE (2, 5)
 #define	COAP_CODE_BAD_REQUEST	COAP_RETURN_CODE (4, 0)

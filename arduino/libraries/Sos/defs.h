@@ -5,6 +5,8 @@
  *
  */
 
+#include <Arduino.h>		// Really useful
+
 // number of elements in an array
 #define NTAB(t)		((int) (sizeof (t)/sizeof (t)[0]))
 

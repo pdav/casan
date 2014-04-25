@@ -9,9 +9,7 @@
  * retransmit and/or expire messages.
  */
 
-#include "defs.h"
 #include "msg.h"
-#include "l2.h"
 #include "time.h"
 
 #define DEFAULT_TIMER 4000

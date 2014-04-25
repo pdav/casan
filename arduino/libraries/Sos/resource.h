@@ -6,8 +6,6 @@
 #ifndef __RESOURCE_H__
 #define __RESOURCE_H__
 
-#include <Arduino.h>
-#include "defs.h"
 #include "msg.h"
 
 /**
