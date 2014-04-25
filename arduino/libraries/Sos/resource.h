@@ -11,8 +11,6 @@
 #include "msg.h"
 
 /**
- * @class Resource
- *
  * @brief An object of class Resource represents a resource which
  *	is provided by the application and managed by the SOS engine.
  *

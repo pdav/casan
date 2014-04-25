@@ -13,8 +13,6 @@
 #include "defs.h"
 
 /**
- * @class l2addr
- *
  * @brief Abstracts an address of any L2 network
  *
  * This class is a pure abstract class. It cannot be instancied.
@@ -33,8 +31,6 @@ class l2addr
 } ;
 
 /**
- * @class l2net
- *
  * @brief Abstracts access to any L2 network
  *
  * This class is a pure abstract class. It cannot be instancied.

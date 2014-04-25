@@ -20,8 +20,6 @@
 #define	I154MTU		127
 
 /**
- * @class l2addr_154
- *
  * @brief Specialization of the l2addr abstract class for IEEE 802.15.4
  *
  * This class provides real methods (specified in l2addr virtual
@@ -51,8 +49,6 @@ class l2addr_154 : public l2addr
 extern l2addr_154 l2addr_154_broadcast ;
 
 /**
- * @class l2net_154
- *
  * @brief Specialization of the l2net abstract class for IEEE 802.15.4
  *
  * This class provides real methods (specified in l2net virtual

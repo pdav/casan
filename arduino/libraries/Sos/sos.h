@@ -23,8 +23,6 @@
 
 
 /**
- * @class Sos
- *
  * @brief SOS engine
  *
  * This is the main SOS engine. It basically provides initialization

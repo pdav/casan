@@ -13,8 +13,6 @@
 #define OPT_ERR_RST		0
 
 /**
- * @class option
- *
  * @brief An object of class option represents an individual option
  *
  * This class represents options associated with a message. options are

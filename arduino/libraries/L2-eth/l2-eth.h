@@ -25,8 +25,6 @@
 #define	ETHMTU		1518
 
 /**
- * @class l2addr_eth
- *
  * @brief Specialization of the l2addr abstract class for Ethernet
  *
  * This class provides real methods (specified in l2addr virtual
@@ -55,8 +53,6 @@ class l2addr_eth : public l2addr
 extern l2addr_eth l2addr_eth_broadcast ;
 
 /**
- * @class l2net_eth
- *
  * @brief Specialization of the l2net abstract class for Ethernet
  *
  * This class provides real methods (specified in l2net virtual

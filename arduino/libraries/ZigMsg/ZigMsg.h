@@ -55,8 +55,6 @@ extern "C" {
 #define	Z_SET_SRC_ADDR_MODE(n)	((n)<<14)
 
 /**
- * @class ZigMsg
- *
  * @brief Low-level class to access IEEE 802.15.4 network through 
  *	ATmel AT128RFA1 microcontroller chip
  *

@@ -57,7 +57,7 @@ extern void sync_time (time_t &cur) ;
 
 extern void print_time (time_t &t) ;
 
-/** @class Twait
+/**
  * @brief SOS timer used in waiting_unknown and waiting_known states
  *
  * This class abstracts parameters for the timer used to send

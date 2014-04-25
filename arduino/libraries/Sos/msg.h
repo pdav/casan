@@ -21,8 +21,6 @@
 #define		COAP_OFFSET_TOKEN	4
 
 /**
- * @class Msg
- *
  * @brief An object of class Msg represents a message,
  * either received or to be sent
  *

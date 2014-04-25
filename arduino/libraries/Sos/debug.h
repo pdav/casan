@@ -14,8 +14,6 @@
 #include "defs.h"
 
 /**
- * @class Debug
- *
  * @brief Debug facility
  *
  * This class give some handy methods to ease debugging.
