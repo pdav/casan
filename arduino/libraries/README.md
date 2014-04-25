@@ -17,10 +17,23 @@ SOS applications on Arduino:
 * ZigMsg: low-level library to work with ATmega128RFA1 (needed
     for the L2-154 library)
 
+
 Examples
 --------
 
 Examples of use can be found in ../tests directory
+
+
+Makefile
+--------
+
+This directory contains a `Makefile` file. It is used only for
+documentation generation with Doxygen. Available targets are:
+* `all`: generates the HTML documentation in ./doc/html/index.html
+* `pdf`: generates the PDF documentation in ./doc/pdf/refman.pdf.
+	Packages needed: `pdflatex` and `graphviz`
+* `clean`: removes the ./doc directory
+
 
 Installation
 ------------
