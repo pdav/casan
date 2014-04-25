@@ -44,7 +44,7 @@ class l2addr_154 : public l2addr
 	void print (void) ;
 
     protected:
-	addr2_t addr_ ;
+	ZigMsg::addr2_t addr_ ;
 	friend class l2net_154 ;
 } ;
 
@@ -64,6 +64,8 @@ extern l2addr_154 l2addr_154_broadcast ;
 class l2net_154 : public l2net
 {
     public:
+	typedef ZigMsg::panid_t panid_t ;
+
 	l2net_154 (void) ;
 	~l2net_154 () ;
 	void start (l2addr *myaddr, bool promisc, size_t mtu, channel_t chan, panid_t panid) ;
@@ -84,7 +86,7 @@ class l2net_154 : public l2net
 	void dump_packet (size_t start, size_t maxlen) ;
 
     private:
-	addr2_t myaddr_ ;
+	ZigMsg::addr2_t myaddr_ ;
 	ZigMsg::ZigReceivedFrame *curframe_ ;
 } ;
 

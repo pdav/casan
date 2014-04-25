@@ -13,7 +13,7 @@
 
 l2addr_154 l2addr_154_broadcast ("ff:ff") ;
 
-addr2_t addr2_broadcast = CONST16 (0xff, 0xff) ;
+ZigMsg::addr2_t addr2_broadcast = CONST16 (0xff, 0xff) ;
 
 /*
  * We assume a fixed size MAC header which includes:

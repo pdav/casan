@@ -16,11 +16,6 @@ extern "C" {
 
 #define	DEFAULT_MSGBUF_SIZE	10
 
-/* warning: uint16_t are stored as little endian, thus "12:34" = 0x3412 */
-typedef uint16_t panid_t ;
-typedef uint16_t addr2_t ;
-typedef uint64_t addr8_t ;		// not supported at this time
-
 /** Macro to help write uint16_t (such as addr2 or panid) constants */
 #define	CONST16(lo,hi)	(((hi) << 8) | (lo))
 
@@ -97,6 +92,31 @@ typedef uint64_t addr8_t ;		// not supported at this time
 class ZigMsg
 {
     public:
+	/** @brief PAN id
+	 *
+	 * Warning: uint16_t are stored as little endian,
+	 * thus 0x1234 == "34:12". Use the CONST16 macro
+	 * to get the correct value:
+	 * ~~~
+	 * panid_t p = CONST16 (0xCA, 0xFE) ;    // p <- "ca:fe"
+	 * ~~~
+	 */
+
+	typedef uint16_t panid_t ;
+
+	/** @brief 16-bits address
+	 *
+	 * Warning: uint16_t are stored as little endian,
+	 * thus 0x1234 == "34:12". Use the CONST16 macro
+	 * to get the correct value:
+	 * ~~~
+	 * addr2_t p = CONST16 (0xBE, 0xEF) ;    // p <- "be:ef"
+	 * ~~~
+	 */
+
+	typedef uint16_t addr2_t ;
+	typedef uint64_t addr8_t ;	/** 64-bits address (not supported at this time */
+
 	/** @brief This structure describes a received frame
 	 *	with minimal decoding
 	 *
