@@ -69,7 +69,7 @@ int Resource::well_known (char *buf, size_t maxlen)
     
     len = sizeof "<>;title=..;rt=.." ;		// including '\0'
     len += strlen (name_) + strlen (title_) + strlen (rt_) ;
-    if (len > maxlen)
+    if (len > (int) maxlen)
 	len = -1 ;
     else
 	sprintf (buf, "<%s>;title=\"%s\";rt=\"%s\"", name_, title_, rt_) ;
