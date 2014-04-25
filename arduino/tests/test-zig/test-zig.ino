@@ -72,7 +72,7 @@ uint8_t *padr (int mode, uint8_t *p, int ispan)
     return p ;
 }
 
-void print_frame (ZigReceivedFrame *z)
+void print_frame (ZigMsg::ZigReceivedFrame *z)
 {
     uint8_t *p ;
     int intrapan ;
@@ -110,7 +110,7 @@ void print_frame (ZigReceivedFrame *z)
 
 void print_stat (void)
 {
-    ZigStat *zs = ZigMsg.getstat () ;
+    ZigMsg::ZigStat *zs = zigmsg.getstat () ;
     Serial.print ("RX overrun=") ;
     Serial.print (zs->rx_overrun) ;
     Serial.print (", crcfail=") ;
@@ -128,9 +128,9 @@ void print_stat (void)
 
 void init_snif (char line [])
 {
-    ZigMsg.channel (CHANNEL) ;
-    ZigMsg.promiscuous (true) ;
-    ZigMsg.start () ;
+    zigmsg.channel (CHANNEL) ;
+    zigmsg.promiscuous (true) ;
+    zigmsg.start () ;
     Serial.println ("Starting sniffer") ;
 }
 
@@ -142,7 +142,7 @@ void stop_snif (void)
 void do_snif (void)
 {
     static int n = 0 ;
-    ZigReceivedFrame *z ;
+    ZigMsg::ZigReceivedFrame *z ;
 
     if (++n % PERIODIC == 0)
     {
@@ -150,10 +150,10 @@ void do_snif (void)
 	n = 0 ;
     }
 
-    while ((z = ZigMsg.get_received ()) != NULL)
+    while ((z = zigmsg.get_received ()) != NULL)
     {
 	print_frame (z) ;
-	ZigMsg.skip_received () ;
+	zigmsg.skip_received () ;
     }
 }
 
@@ -163,11 +163,11 @@ Sender
 
 void init_send (char line [])
 {
-    ZigMsg.channel (CHANNEL) ;
-    ZigMsg.panid (PANID) ;
-    ZigMsg.addr2 (SENDADDR) ;
-    ZigMsg.promiscuous (false) ;
-    ZigMsg.start () ;
+    zigmsg.channel (CHANNEL) ;
+    zigmsg.panid (PANID) ;
+    zigmsg.addr2 (SENDADDR) ;
+    zigmsg.promiscuous (false) ;
+    zigmsg.start () ;
     Serial.println("Starting send") ;
 }
 
@@ -179,11 +179,11 @@ void stop_send (void)
 void do_send (void)
 {
     static int n = 0 ;
-    ZigStat *zs ;
+    ZigMsg::ZigStat *zs ;
 
     if (++n % PERIODIC == 0)
     {
-	zs = ZigMsg.getstat () ;
+	zs = zigmsg.getstat () ;
 	Serial.print ("RX overrun=") ;
 	Serial.print (zs->rx_overrun) ;
 	Serial.print (", crcfail=") ;
@@ -201,7 +201,7 @@ void do_send (void)
 
 	uint32_t time ;
 	time = millis () ;
-	if (ZigMsg.sendto (RECVADDR, 4, (uint8_t *) &time))
+	if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
 	    Serial.println ("Sent") ;
 	else
 	    Serial.println ("Sent error") ;
@@ -214,11 +214,11 @@ Receiver
 
 void init_recv (char line [])
 {
-    ZigMsg.channel (CHANNEL) ;
-    ZigMsg.panid (PANID) ;
-    ZigMsg.addr2 (RECVADDR) ;
-    ZigMsg.promiscuous (false) ;
-    ZigMsg.start () ;
+    zigmsg.channel (CHANNEL) ;
+    zigmsg.panid (PANID) ;
+    zigmsg.addr2 (RECVADDR) ;
+    zigmsg.promiscuous (false) ;
+    zigmsg.start () ;
     Serial.println("Starting receiver") ;
 }
 

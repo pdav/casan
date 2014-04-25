@@ -1,7 +1,21 @@
+/**
+ * @file ZigMsg.cpp
+ * @brief ZigMsg class implementation
+ */
+
 #include <Arduino.h>
 #include "ZigMsg.h"
 
-cZigMsg ZigMsg ;
+// uint16_t are stored with the least significant byte first
+#define	Z_SET_INT16(p,val) \
+			(((uint8_t *) p) [0] = ((val)>>0) & 0xff, \
+			 ((uint8_t *) p) [1] = ((val)>>8) & 0xff )
+#define	Z_GET_INT16(p)	( (((uint8_t *) p) [0] << 0) | \
+			  (((uint8_t *) p) [1] << 8) )
+
+/** @brief Global variable in order to use the ZigMsg library */
+ 
+ZigMsg zigmsg ;
 
 /*******************************************************************************
  * Functions called by radio_rfa.c and trx_rfa.c
@@ -26,10 +40,10 @@ void usr_radio_error (radio_error_t err)
 
 uint8_t *usr_radio_receive_frame (uint8_t len, uint8_t *frm, uint8_t lqi, int8_t ed, uint8_t crc_fail)
 {
-    return ZigMsg.it_receive_frame (len, frm, lqi, ed, crc_fail) ;
+    return zigmsg.it_receive_frame (len, frm, lqi, ed, crc_fail) ;
 }
 
-uint8_t *cZigMsg::it_receive_frame (uint8_t len, uint8_t *frm, uint8_t lqi, int8_t ed, uint8_t crc_fail)
+uint8_t *ZigMsg::it_receive_frame (uint8_t len, uint8_t *frm, uint8_t lqi, int8_t ed, uint8_t crc_fail)
 {
     if (crc_fail)
 	stat_.rx_crcfail++ ;
@@ -63,10 +77,10 @@ uint8_t *cZigMsg::it_receive_frame (uint8_t len, uint8_t *frm, uint8_t lqi, int8
 
 void usr_radio_tx_done (radio_tx_done_t status)
 {
-    ZigMsg.it_tx_done (status) ;
+    zigmsg.it_tx_done (status) ;
 }
 
-void cZigMsg::it_tx_done (radio_tx_done_t status)
+void ZigMsg::it_tx_done (radio_tx_done_t status)
 {
     switch (status)
     {
@@ -91,14 +105,33 @@ void cZigMsg::it_tx_done (radio_tx_done_t status)
  * Class methods
  */
 
-cZigMsg::cZigMsg ()
+/** @brief Default constructor
+ *
+ * This constructor initializes parameters to default values:
+ * Parameter | Default value
+ * --------- | -------------
+ * TX power  | 3
+ * Channel   | 12
+ *
+ * However, the radio chip is not yet initialized. One must call
+ * the ZigMsg::start, when all needed parameters are initialized.
+ */
+
+ZigMsg::ZigMsg ()
 {
+    memset (this, sizeof *this, 0) ;
     txpower_ = 3 ;			// default: +3 dBm
     chan_ = 12 ;			// default: channel 12
     writing_ = false ;
 }
 
-void cZigMsg::start(void)
+/** @brief Start 802.15.4 processing
+ *
+ * This method uses existing parameters (see the various mutator
+ * methods) to initialize the radio chip.
+ */
+
+void ZigMsg::start(void)
 {
     /*
      * Initializes Fifo for received messages
@@ -154,7 +187,30 @@ void cZigMsg::start(void)
  * Send a message
  */
 
-bool cZigMsg::sendto (addr2_t a, uint8_t len, const uint8_t payload [])
+/** @brief Send a 802.15.4 frame
+ *
+ * This method assumes that the radio chip is not already busy sending
+ * a 802.15.5 frame. It creates a header with a fixed structure:
+ * - intra PAN communication
+ * - 16 bits addresses
+ * - no AES encryption
+ * - frame version = 802.15.4 version 2003
+ * - ACK request
+ * - the sequence number is obtained from a class variable, automatically
+ *	incremented.
+ *
+ * Next, the built frame is copied ot the chip write buffer (assuming
+ * the chip is not already busy sending a frame).
+ *
+ * @param a destination address (16 bits)
+ * @param len payload length
+ * @param payload payload
+ * @return true if the frame has been sent
+ *
+ * @bug Replace busy-waiting by a clever method
+ */
+
+bool ZigMsg::sendto (addr2_t a, uint8_t len, const uint8_t payload [])
 {
     uint8_t frame [MAX_FRAME_SIZE] ;	// not counting PHR
     uint16_t fcf ;			// frame control field
@@ -213,7 +269,28 @@ bool cZigMsg::sendto (addr2_t a, uint8_t len, const uint8_t payload [])
  * Receive messages
  */
 
-ZigReceivedFrame *cZigMsg::get_received (void)
+/** @brief Get the current frame from the buffer
+ *
+ * This methods checks if a received frame is waiting in the class
+ * circular buffer. If this is the case, it minimally decodes the
+ * 802.15.4 header to extract source and destination addresses and
+ * PAN ids.
+ *
+ * Position in the circular buffer is not modified, such that a
+ * newly received message does not overwrite the frame and payload
+ * pointed by some fields of ZigMsg::ZigReceivedFrame. The
+ * ZigMsg::skip_received method must be explicitely called when
+ * processing of the current frame is finished.
+ *
+ * The returned value is either NULL (no valid frame received) or
+ * a pointer to a private class variable. This variable is unique,
+ * it cannot be freed and the next call to this method will return
+ * the same value (if there is a received frame).
+ *
+ * @return NULL or a valid pointer
+ */
+
+ZigMsg::ZigReceivedFrame *ZigMsg::get_received (void)
 {
     ZigReceivedFrame *r ;
     ZigBuf *b ;
@@ -293,7 +370,13 @@ ZigReceivedFrame *cZigMsg::get_received (void)
     return r ;
 }
 
-void cZigMsg::skip_received (void)
+/** @brief Release the current frame from the buffer
+ *
+ * This methods advances the position in the buffer, such that the
+ * space for the current frame be used for a newly incoming frame.
+ */
+
+void ZigMsg::skip_received (void)
 {
     noInterrupts () ;
     if (rbuffirst_ != rbuflast_)

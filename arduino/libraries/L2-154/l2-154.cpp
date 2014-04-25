@@ -150,10 +150,10 @@ l2net_154::~l2net_154 ()
 void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, panid_t panid)
 {
     myaddr_ = ((l2addr_154 *) a)->addr_ ;
-    ZigMsg.addr2 (myaddr_) ;
-    ZigMsg.channel (chan) ;
-    ZigMsg.panid (panid) ;
-    ZigMsg.promiscuous (false) ;
+    zigmsg.addr2 (myaddr_) ;
+    zigmsg.channel (chan) ;
+    zigmsg.panid (panid) ;
+    zigmsg.promiscuous (false) ;
 
     if (mtu == 0 || mtu > I154MTU)
 	mtu = I154MTU ;			// excluding MAC header
@@ -161,7 +161,7 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
 
     curframe_ = NULL ;			// no currently received frame
 
-    ZigMsg.start () ;
+    zigmsg.start () ;
 }
 
 /**
@@ -175,7 +175,7 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
 
 bool l2net_154::send (l2addr &dest, const uint8_t *data, size_t len) 
 {
-    return ZigMsg.sendto (((l2addr_154 *) &dest)->addr_, len, data) ;
+    return zigmsg.sendto (((l2addr_154 *) &dest)->addr_, len, data) ;
 }
 
 /**
@@ -195,9 +195,9 @@ l2net::l2_recv_t l2net_154::recv (void)
     l2_recv_t r ;
 
     if (curframe_ != NULL)
-	ZigMsg.skip_received () ;
+	zigmsg.skip_received () ;
 
-    curframe_ = ZigMsg.get_received () ;
+    curframe_ = zigmsg.get_received () ;
     if (curframe_ != NULL
 	    && curframe_->frametype == Z_FT_DATA
 	    && Z_GET_DST_ADDR_MODE (curframe_->fcf) == Z_ADDRMODE_ADDR2

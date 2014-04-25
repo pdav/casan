@@ -85,7 +85,7 @@ class l2net_154 : public l2net
 
     private:
 	addr2_t myaddr_ ;
-	ZigReceivedFrame *curframe_ ;
+	ZigMsg::ZigReceivedFrame *curframe_ ;
 } ;
 
 #endif
