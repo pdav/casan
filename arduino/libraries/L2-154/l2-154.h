@@ -10,11 +10,8 @@
  * These classes are used for IEEE 802.15.4 specialization
  */
 
-#include <Arduino.h>
 #include <ZigMsg.h>
-
 #include "l2.h"
-#include "defs.h"
 
 #define	I154ADDRLEN	2		// Address length
 #define	I154MTU		127

@@ -10,10 +10,9 @@
  * These classes are used for Ethernet specialization
  */
 
-#include "Arduino.h"
+#include <Arduino.h>
+#include <w5100.h>
 #include "l2.h"
-#include "defs.h"
-#include "w5100.h"
 
 /** Ethernet frame type used for SOS frames */
 #define	ETHTYPE		0x88b5
