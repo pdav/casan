@@ -45,7 +45,7 @@ extern master master ;
  * @brief Request handler creation
  *
  * This modified version is reduced from the original, but interface
- * (the `doc_root` parameter) did not change in order to keep the
+ * (the `doc_root` unused parameter) did not change in order to keep the
  * rest of the HTTP server unmodified.
  */
 
