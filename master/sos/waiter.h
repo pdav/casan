@@ -1,11 +1,20 @@
+/**
+ * @file waiter.h
+ * @brief Waiter class interface
+ */
+
 #ifndef SOS_WAITER_H
 #define SOS_WAITER_H
 
-/*
- * Wait class
- */
-
 namespace sos {
+
+/**
+ * @brief Waiter class
+ *
+ * This class is a synchronisation point. It allows a thread to
+ * perform an action and waits either for a time-out or for another
+ * thread to wake it up.
+ */
 
 class waiter
 {

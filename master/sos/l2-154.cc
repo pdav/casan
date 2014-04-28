@@ -1,3 +1,8 @@
+/**
+ * @file l2-154.cc
+ * @brief L2addr_154 and l2net_154 class implementations
+ */
+
 #include <iostream>
 #include <cstring>
 
@@ -30,21 +35,29 @@
 namespace sos {
 
 /******************************************************************************
- * l2addr_802154 methods
+ * l2addr_154 methods
  */
 
 // default constructor
-l2addr_802154::l2addr_802154 ()
+l2addr_154::l2addr_154 ()
 {
 }
 
-// constructor
-l2addr_802154::l2addr_802154 (const char *a)
+/**
+ * @brief Constructor with an address given as a string
+ *
+ * This constructor is used to initialize an address with a
+ * string such as "`ca:fe`". 64-bits addresses are not supported.
+ *
+ * @param a address to be parsed
+ */
+
+l2addr_154::l2addr_154 (const char *a)
 {
     int i = 0 ;
     byte b = 0 ;
 
-    while (*a != '\0' && i < L2802154ADDRLEN)
+    while (*a != '\0' && i < L2154ADDRLEN)
     {
 	if (*a == ':')
 	{
@@ -62,52 +75,58 @@ l2addr_802154::l2addr_802154 (const char *a)
 	}
 	else
 	{
-	    for (i = 0 ; i < L2802154ADDRLEN ; i++)
+	    for (i = 0 ; i < L2154ADDRLEN ; i++)
 		addr_ [i] = 0 ;
 	    break ;
 	}
 	a++ ;
     }
-    if (i < L2802154ADDRLEN)
+    if (i < L2154ADDRLEN)
 	addr_ [i++] = b ;
 
     /* Short addresses */
-    if (i < L2802154ADDRLEN)
+    if (i < L2154ADDRLEN)
     {
 	int j ;
 
 	/* report the i bytes of address to the end of the byte string */
 	for (j = 0 ; j < i ; j++)
-	    addr_ [L2802154ADDRLEN - 1 - j] = addr_ [i - 1 - j] ;
-	/* reset the L2802154ADDRLEN - i first bytes to 0 */
-	for (j = 0 ; j < L2802154ADDRLEN - i ; j++)
+	    addr_ [L2154ADDRLEN - 1 - j] = addr_ [i - 1 - j] ;
+	/* reset the L2154ADDRLEN - i first bytes to 0 */
+	for (j = 0 ; j < L2154ADDRLEN - i ; j++)
 	    addr_ [j] = 0 ;
     }
 }
 
 // copy constructor
-l2addr_802154::l2addr_802154 (const l2addr_802154 &l)
+l2addr_154::l2addr_154 (const l2addr_154 &l)
 {
     *this = l ;
 }
 
 // copy assignment constructor
-l2addr_802154 &l2addr_802154::operator= (const l2addr_802154 &l)
+l2addr_154 &l2addr_154::operator= (const l2addr_154 &l)
 {
     if (this != &l)
 	*this = l ;
     return *this ;
 }
 
-l2addr_802154 l2addr_802154_broadcast ("ff:ff:ff:ff:ff:ff:ff:ff") ;
-
-/******************************************************************************
- * Dump address
+/**
+ * @brief 802.15.4 broadcast address
  */
 
-void l2addr_802154::print (std::ostream &os) const
+l2addr_154 l2addr_154_broadcast ("ff:ff:ff:ff:ff:ff:ff:ff") ;
+
+/**
+ * @brief Print address
+ *
+ * This function is a hack needed for l2::operator<< overloading
+ */
+
+void l2addr_154::print (std::ostream &os) const
 {
-    for (int i = 0  ; i < L2802154ADDRLEN ; i++)
+    for (int i = 0  ; i < L2154ADDRLEN ; i++)
     {
 	if (i > 0)
 	    os << ":" ;
@@ -116,31 +135,44 @@ void l2addr_802154::print (std::ostream &os) const
     }
 }
 
-/******************************************************************************
- * l2net_802154 methods
- */
-
-bool l2addr_802154::operator== (const l2addr &other)
+bool l2addr_154::operator== (const l2addr &other)
 {
-    l2addr_802154 *oe = (l2addr_802154 *) &other ;
-    return std::memcmp (this->addr_, oe->addr_, L2802154ADDRLEN) == 0 ;
+    l2addr_154 *oe = (l2addr_154 *) &other ;
+    return std::memcmp (this->addr_, oe->addr_, L2154ADDRLEN) == 0 ;
 }
 
-bool l2addr_802154::operator!= (const l2addr &other)
+bool l2addr_154::operator!= (const l2addr &other)
 {
     return ! (*this == other) ;
 }
 
-int l2net_802154::init (const std::string iface, const char *type, const std::string myaddr, const std::string panid, const int channel)
+/******************************************************************************
+ * l2net_154 methods
+ */
+
+/**
+ * @brief Initialize an IEEE 802.15.4 network access
+ *
+ * Initialize the IEEE 802.15.4 network access with needed constants.
+ *
+ * @param iface entry in /dev (with or without /dev) for XBee USB stick
+ * @param type `xbee`
+ * @param myaddr Our IEEE 802.15.4 address
+ * @param panid PAN-id
+ * @param channel channel number
+ * @return -1 if initialization fails (`errno` is set)
+ */
+
+int l2net_154::init (const std::string iface, const char *type, const std::string myaddr, const std::string panid, const int channel)
 {
     std::string dev ;
     int n = -1 ;			// default: init fails
-    l2addr_802154 a (myaddr.c_str ()) ;
-    l2addr_802154 pan (panid.c_str ()) ;	// same format as addr
+    l2addr_154 a (myaddr.c_str ()) ;
+    l2addr_154 pan (panid.c_str ()) ;	// same format as addr
 
     /* Various initializations */
-    mtu_ = L2802154MTU ;
-    maxlatency_ = L2802154MAXLATENCY ;
+    mtu_ = L2154MTU ;
+    maxlatency_ = L2154MAXLATENCY ;
 
     /* Prepend /dev if needed */
     if (iface [0] == '/')
@@ -190,14 +222,14 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
 
 	    // my short address : lowest significant byte first
 	    std::sprintf (buf, "ATMY%02x%02x\r",
-			a.addr_ [L2802154ADDRLEN-1],
-			a.addr_ [L2802154ADDRLEN-2]) ;
+			a.addr_ [L2154ADDRLEN-1],
+			a.addr_ [L2154ADDRLEN-2]) ;
 	    write (fd_, buf, strlen (buf)) ;
 
 	    // pan id : lowest significant byte first
 	    std::sprintf (buf, "ATID%02x%02x\r",
-			pan.addr_ [L2802154ADDRLEN-1],
-			pan.addr_ [L2802154ADDRLEN-2]) ;
+			pan.addr_ [L2154ADDRLEN-1],
+			pan.addr_ [L2154ADDRLEN-2]) ;
 	    write (fd_, buf, strlen (buf)) ;
 
 	    // channel
@@ -218,23 +250,29 @@ int l2net_802154::init (const std::string iface, const char *type, const std::st
     return n ;
 }
 
-void l2net_802154::term (void)
+/**
+ * @brief Closes access to network
+ */
+
+void l2net_154::term (void)
 {
     close (fd_) ;
 }
 
-/******************************************************************************
- * Send data
+/**
+ * @brief Send a frame to the given destination address
+ *
+ * @return number of bytes sent
  */
 
-int l2net_802154::send (l2addr *daddr, void *data, int len)
+int l2net_154::send (l2addr *daddr, void *data, int len)
 {
-    l2addr_802154 *da = (l2addr_802154 *) daddr ;
+    l2addr_154 *da = (l2addr_154 *) daddr ;
     int n ;
     byte cmd [MAXBUF] ;
 
     n = -1 ;
-    if (len <= L2802154MTU)
+    if (len <= L2154MTU)
     {
 	int cmdlen ;
 
@@ -272,13 +310,19 @@ int l2net_802154::send (l2addr *daddr, void *data, int len)
     return n ;
 }
 
-int l2net_802154::bsend (void *data, int len)
+/**
+ * @brief Send a frame to the broadcast address
+ *
+ * @return number of bytes sent
+ */
+
+int l2net_154::bsend (void *data, int len)
 {
-    return send (&l2addr_802154_broadcast, data, len) ;
+    return send (&l2addr_154_broadcast, data, len) ;
 }
 
 // private method
-bool l2net_802154::encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr, byte *data, int len)
+bool l2net_154::encode_transmit (byte *cmd, int &cmdlen, l2addr_154 *daddr, byte *data, int len)
 {
     byte *b ;
     int fdlen ;
@@ -296,8 +340,8 @@ bool l2net_802154::encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr
     *b++ = XBEE_TX_SHORT ;
     // *b++ = 0 ;				// frame id
     *b++ = 0x41 ;				// frame id
-    *b++ = daddr->addr_ [L2802154ADDRLEN-1] ;	// lowest significant byte first
-    *b++ = daddr->addr_ [L2802154ADDRLEN-2] ;
+    *b++ = daddr->addr_ [L2154ADDRLEN-1] ;	// lowest significant byte first
+    *b++ = daddr->addr_ [L2154ADDRLEN-2] ;
     *b++ = 0 ;				// options
     std::memcpy (b, data, len) ;
     b += len ;
@@ -319,7 +363,7 @@ bool l2net_802154::encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr
 }
 
 // buf = encoded frame
-int l2net_802154::compute_checksum (const byte *buf)
+int l2net_154::compute_checksum (const byte *buf)
 {
     int c = 0 ;
     int paylen ;
@@ -332,16 +376,23 @@ int l2net_802154::compute_checksum (const byte *buf)
     return 0xff - c ;
 }
 
-l2addr *l2net_802154::bcastaddr (void)
-{
-    return &l2addr_802154_broadcast ;
-}
-
-/******************************************************************************
- * Receive data
+/**
+ * @brief Return the broadcast address for this network
  */
 
-pktype_t l2net_802154::recv (l2addr **saddr, void *data, int *len)
+l2addr *l2net_154::bcastaddr (void)
+{
+    return &l2addr_154_broadcast ;
+}
+
+/**
+ * @brief Receive frame
+ *
+ * @param saddr address of an existing l2addr_154 object
+ * @return See the pktype_t type
+ */
+
+pktype_t l2net_154::recv (l2addr **saddr, void *data, int *len)
 {
     pktype_t r ;
 
@@ -366,21 +417,21 @@ pktype_t l2net_802154::recv (l2addr **saddr, void *data, int *len)
 }
 
 // Explore frame list to find (and remove) a received packet
-pktype_t l2net_802154::extract_received_packet (l2addr **saddr, void *data, int *len)
+pktype_t l2net_154::extract_received_packet (l2addr **saddr, void *data, int *len)
 {
     pktype_t r = PK_NONE ;
-    std::list <sos::l2net_802154::frame>::iterator f ;
+    std::list <sos::l2net_154::frame>::iterator f ;
 
     f = framelist_.begin () ;
     while (r == PK_NONE && f != framelist_.end ())
     {
-	if (f->type == sos::l2net_802154::RX_SHORT)
+	if (f->type == sos::l2net_154::RX_SHORT)
 	{
-	    // get source address and convert it to a l2addr_802154 object
+	    // get source address and convert it to a l2addr_154 object
 	    char txtaddr [6] ;
 	    std::snprintf (txtaddr, sizeof txtaddr, "%2x:%2x", 
 		BYTE_LOW (f->rx_short_.saddr), BYTE_HIGH (f->rx_short_.saddr)) ;
-	    *saddr = new l2addr_802154 (txtaddr) ;
+	    *saddr = new l2addr_154 (txtaddr) ;
 
 	    // transfer data
 	    if (*len >= f->rx_short_.len)
@@ -388,12 +439,12 @@ pktype_t l2net_802154::extract_received_packet (l2addr **saddr, void *data, int 
 	    std::memcpy (data, f->rx_short_.data, *len) ;
 
 	    // packet addressed to us?
-	    if (f->rx_short_.options & sos::l2net_802154::RX_SHORT_OPT_BROADCAST)
+	    if (f->rx_short_.options & sos::l2net_154::RX_SHORT_OPT_BROADCAST)
 		r = PK_BCAST ;
 	    else r = PK_ME ;
 
 	    // remove frame from list
-	    // std::list <sos::l2net_802154::frame>::iterator tmp ;
+	    // std::list <sos::l2net_154::frame>::iterator tmp ;
 	    // tmp = f ;
 	    // tmp++ ;
 	    framelist_.erase (f) ;
@@ -405,7 +456,7 @@ pktype_t l2net_802154::extract_received_packet (l2addr **saddr, void *data, int 
 }
 
 // Buffer does not contain a complete valid frame. Read a complete frame
-int l2net_802154::read_complete_frame (void)
+int l2net_154::read_complete_frame (void)
 {
     int n = -1 ;
     bool found_at_least_one = false ;
@@ -422,10 +473,10 @@ int l2net_802154::read_complete_frame (void)
 
 	// we may have read more than one frame:
 	// extract them all from the buffer to the list
-	while (l2net_802154::is_frame_complete ())
+	while (l2net_154::is_frame_complete ())
 	{
 	    found_at_least_one = true ;
-	    l2net_802154::extract_frame_to_list () ;
+	    l2net_154::extract_frame_to_list () ;
 	}
     }
 
@@ -440,7 +491,7 @@ int l2net_802154::read_complete_frame (void)
  * - false: the buffer still needs some bytes
  */
 
-bool l2net_802154::is_frame_complete (void)
+bool l2net_154::is_frame_complete (void)
 {
     byte *start ;
     bool complete = false ;
@@ -514,7 +565,7 @@ bool l2net_802154::is_frame_complete (void)
     return complete ;
 }
 
-void l2net_802154::extract_frame_to_list (void)
+void l2net_154::extract_frame_to_list (void)
 {
     int framelen ;
     int pktlen ;
@@ -526,11 +577,11 @@ void l2net_802154::extract_frame_to_list (void)
     f.type = (enum frame_type) buffer_ [3] ;
     switch (buffer_ [3])
     {
-	case l2net_802154::TX_STATUS :
+	case l2net_154::TX_STATUS :
 	    f.tx_status_.frame_id = buffer_ [4] ;
 	    f.tx_status_.status = buffer_ [5] ;
 	    break ;
-	case l2net_802154::RX_SHORT :
+	case l2net_154::RX_SHORT :
 	    f.rx_short_.saddr = (buffer_ [4] << 8) | buffer_ [5] ;
 	    f.rx_short_.len = framelen - 5 ;
 	    std::memcpy (f.rx_short_.data, buffer_ + 8, f.rx_short_.len) ;

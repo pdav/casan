@@ -1,45 +1,67 @@
-#ifndef SOS_L2802154_H
-#define	SOS_L2802154_H
+/**
+ * @file l2-154.h
+ * @brief l2addr and l2net specializations for IEEE 802.15.4
+ */
+
+#ifndef SOS_L2154_H
+#define	SOS_L2154_H
 
 #include "l2.h"
 #include <list>
 
 // Ethernet address length
-#define	L2802154ADDRLEN	8
+#define	L2154ADDRLEN	8
 // Ethernet default MTU
-#define	L2802154MTU	127
+#define	L2154MTU	127
 // Ethernet maximum latency (ms). Even a very conservative value is far
 // more realistic than the default CoAP value (100 s)
 // #define	ETHMAXLATENCY	10
-#define	L2802154MAXLATENCY	50
+#define	L2154MAXLATENCY	50
 
 
 namespace sos {
 
-class l2addr_802154: public l2addr
+/**
+ * @brief Specialization of the l2addr abstract class for IEEE 802.15.4
+ *
+ * This class provides real methods (specified in l2addr virtual
+ * class) for IEEE 802.15.4 addresses.
+ *
+ * @bug 16-bits addresses are supported as 64-bits filled with 0s
+ */
+
+class l2addr_154: public l2addr
 {
     public:
-	l2addr_802154 () ;			// default constructor
-	l2addr_802154 (const char *) ;		// constructor
-	l2addr_802154 (const l2addr_802154 &l) ; // copy constructor
-	l2addr_802154 &operator= (const l2addr_802154 &l) ;	// copy assignment constructor
+	l2addr_154 () ;			// default constructor
+	l2addr_154 (const char *) ;		// constructor
+	l2addr_154 (const l2addr_154 &l) ; // copy constructor
+	l2addr_154 &operator= (const l2addr_154 &l) ;	// copy assignment constructor
 
 	bool operator== (const l2addr &) ;
 	bool operator!= (const l2addr &) ;
 
     protected:
 	void print (std::ostream &os) const ;
-	byte addr_ [L2802154ADDRLEN] ;
+	byte addr_ [L2154ADDRLEN] ;
 
-	friend class l2net_802154 ;
+	friend class l2net_154 ;
 } ;
 
-extern l2addr_802154 l2addr_802154_broadcast ;
+extern l2addr_154 l2addr_154_broadcast ;
 
-class l2net_802154: public l2net
+/**
+ * @brief Specialization of the l2net abstract class for IEEE 802.15.4
+ *
+ * This class provides real methods (specified in l2net virtual
+ * class) for IEEE 802.15.4 networks. It handles the lowest layer,
+ * which is assumed to be the XBee USB stick.
+ */
+
+class l2net_154: public l2net
 {
     public:
-	~l2net_802154 () {} ;
+	~l2net_154 () {} ;
 	// type = xbee
 	int init (const std::string iface, const char *type, const std::string myaddr, const std::string panid, const int channel) ;
 	void term (void) ;
@@ -79,7 +101,7 @@ class l2net_802154: public l2net
 	{
 	    int saddr ;			// source address
 	    int len ;			// data length
-	    byte data [L2802154MTU] ;	// data
+	    byte data [L2154MTU] ;	// data
 	    int rssi ;
 	    int options ;
 	} ;
@@ -94,7 +116,7 @@ class l2net_802154: public l2net
 	} ;
 	std::list <frame> framelist_ ;
 
-	bool encode_transmit (byte *cmd, int &cmdlen, l2addr_802154 *daddr, byte *data, int len) ;
+	bool encode_transmit (byte *cmd, int &cmdlen, l2addr_154 *daddr, byte *data, int len) ;
 	int compute_checksum (const byte *buf) ;
 	pktype_t extract_received_packet (l2addr **saddr, void *data, int *len) ;
 	int read_complete_frame (void) ;

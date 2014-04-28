@@ -1,3 +1,8 @@
+/**
+ * @file utils.h
+ * @brief Some random utilities
+ */
+
 #ifndef SOS_UTILS_H
 #define SOS_UTILS_H
 

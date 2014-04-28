@@ -1,3 +1,8 @@
+/**
+ * @file l2.cc
+ * @brief Generic l2net methods
+ */
+
 #include <iostream>
 
 #include "global.h"
@@ -5,20 +10,18 @@
 
 namespace sos {
 
+/**
+ * @brief Print L2 addresses
+ *
+ * This function is based on a hack in order to generically
+ * print L2 addresses, since `operator<<` cannot be overloaded
+ * with l2addr_xxx classes.
+ */
+
 std::ostream& operator<< (std::ostream &os, const l2addr &a)
 {
     a.print (os) ;
     return os ;
-}
-
-int l2net::mtu (void)
-{
-    return mtu_ ;
-}
-
-int l2net::maxlatency (void)
-{
-    return maxlatency_ ;
 }
 
 }					// end of namespace sos

@@ -1,3 +1,8 @@
+/**
+ * @file l2-eth.cc
+ * @brief L2addr_eth and l2net_eth class implementations
+ */
+
 #include <iostream>
 #include <cstring>
 
@@ -37,7 +42,14 @@ l2addr_eth::l2addr_eth ()
 {
 }
 
-// constructor
+/** Constructor with an address given as a string
+ *
+ * This constructor is used to initialize an address with a
+ * string such as "`01:02:03:04:05:06`".
+ *
+ * @param a address to be parsed
+ */
+
 l2addr_eth::l2addr_eth (const char *a)
 {
     int i = 0 ;
@@ -85,10 +97,16 @@ l2addr_eth &l2addr_eth::operator= (const l2addr_eth &l)
     return *this ;
 }
 
+/**
+ * @brief Ethernet broadcast address
+ */
+
 l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 
-/******************************************************************************
- * Dump address
+/**
+ * @brief Print address
+ *
+ * This function is a hack needed for l2::operator<< overloading
  */
 
 void l2addr_eth::print (std::ostream &os) const
@@ -102,10 +120,6 @@ void l2addr_eth::print (std::ostream &os) const
     }
 }
 
-/******************************************************************************
- * l2net_eth methods
- */
-
 bool l2addr_eth::operator== (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
@@ -116,6 +130,20 @@ bool l2addr_eth::operator!= (const l2addr &other)
 {
     return ! (*this == other) ;
 }
+
+/******************************************************************************
+ * l2net_eth methods
+ */
+
+/**
+ * @brief Initialize an Ethernet network access
+ *
+ * Initialize the Ethernet network access with needed constants.
+ *
+ * @param iface Ethernet interface name (eth0, etc.)
+ * @param ethertype Ethernet frame type
+ * @return -1 if initialization fails (`errno` is set)
+ */
 
 int l2net_eth::init (const std::string iface, int ethertype)
 {
@@ -184,6 +212,10 @@ int l2net_eth::init (const std::string iface, int ethertype)
 #endif
 }
 
+/**
+ * @brief Closes access to network
+ */
+
 void l2net_eth::term (void)
 {
 #ifdef USE_PF_PACKET
@@ -193,6 +225,12 @@ void l2net_eth::term (void)
     pcap_close (fd_) ;
 #endif
 }
+
+/**
+ * @brief Send a frame to the given destination address
+ *
+ * @return number of bytes sent
+ */
 
 int l2net_eth::send (l2addr *daddr, void *data, int len)
 {
@@ -231,10 +269,20 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
 #endif
 }
 
+/**
+ * @brief Send a frame to the broadcast address
+ *
+ * @return number of bytes sent
+ */
+
 int l2net_eth::bsend (void *data, int len)
 {
     return send (&l2addr_eth_broadcast, data, len) ;
 }
+
+/**
+ * @brief Return the broadcast address for this network
+ */
 
 l2addr *l2net_eth::bcastaddr (void)
 {

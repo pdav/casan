@@ -99,12 +99,12 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 			<< " ethertype 0x"
 				<< std::hex << n.net_eth.ethertype << std::dec ;
 		    break ;
-		case conf::NET_802154 :
+		case conf::NET_154 :
 		    os << "802.15.4" << n.net_eth.iface
-			<< " type " << (n.net_802154.type == conf::NET_802154_XBEE ? "xbee" : "(none)")
-			<< " addr " << n.net_802154.addr
-			<< " panid " << n.net_802154.panid
-			<< " channel " << n.net_802154.channel
+			<< " type " << (n.net_154.type == conf::NET_154_XBEE ? "xbee" : "(none)")
+			<< " addr " << n.net_154.addr
+			<< " panid " << n.net_154.panid
+			<< " channel " << n.net_154.channel
 			;
 		    break ;
 		default :
@@ -149,7 +149,7 @@ std::string conf::html_debug (void)
 #define	HELP_NETWORK	4
 #define	HELP_SLAVE	5
 #define	HELP_NETETH	(HELP_SLAVE+1)
-#define	HELP_NET802154	(HELP_NETETH+1)
+#define	HELP_NET154	(HELP_NETETH+1)
 
 static const char *syntax_help [] =
 {
@@ -438,16 +438,16 @@ bool conf::parse_line (std::string &line)
 		}
 		else if (tokens [i] == "802.15.4")
 		{
-		    c.type = NET_802154 ;
-		    c.net_802154.type = NET_802154_NONE ;
-		    c.net_802154.addr = "" ;
-		    c.net_802154.panid = "" ;
-		    c.net_802154.channel = 0 ;
+		    c.type = NET_154 ;
+		    c.net_154.type = NET_154_NONE ;
+		    c.net_154.addr = "" ;
+		    c.net_154.panid = "" ;
+		    c.net_154.channel = 0 ;
 		    i++ ;
 
 		    if (i < asize)
 		    {
-			c.net_802154.iface = tokens [i] ;
+			c.net_154.iface = tokens [i] ;
 			i++ ;
 
 			for ( ; i + 1 < asize ; i += 2)
@@ -456,7 +456,7 @@ bool conf::parse_line (std::string &line)
 			    {
 				if (c.mtu != 0)
 				{
-				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    parse_error_dup_token (tokens [i], HELP_NET154) ;
 				    r = false ;
 				    break ;
 				}
@@ -464,19 +464,19 @@ bool conf::parse_line (std::string &line)
 			    }
 			    else if (tokens [i] == "type")
 			    {
-				if (c.net_802154.type != NET_802154_NONE)
+				if (c.net_154.type != NET_154_NONE)
 				{
-				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    parse_error_dup_token (tokens [i], HELP_NET154) ;
 				    r = false ;
 				    break ;
 				}
 				else
 				{
 				    if (tokens [i+1] == "xbee")
-					c.net_802154.type = NET_802154_XBEE ;
+					c.net_154.type = NET_154_XBEE ;
 				    else
 				    {
-					parse_error_unk_token (tokens [i+1], HELP_NET802154) ;
+					parse_error_unk_token (tokens [i+1], HELP_NET154) ;
 					r = false ;
 					break ;
 				    }
@@ -484,37 +484,37 @@ bool conf::parse_line (std::string &line)
 			    }
 			    else if (tokens [i] == "addr")
 			    {
-				if (c.net_802154.addr != "")
+				if (c.net_154.addr != "")
 				{
-				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    parse_error_dup_token (tokens [i], HELP_NET154) ;
 				    r = false ;
 				    break ;
 				}
-				else c.net_802154.addr = tokens [i+1] ;
+				else c.net_154.addr = tokens [i+1] ;
 			    }
 			    else if (tokens [i] == "panid")
 			    {
-				if (c.net_802154.panid != "")
+				if (c.net_154.panid != "")
 				{
-				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    parse_error_dup_token (tokens [i], HELP_NET154) ;
 				    r = false ;
 				    break ;
 				}
-				else c.net_802154.panid = tokens [i+1] ;
+				else c.net_154.panid = tokens [i+1] ;
 			    }
 			    else if (tokens [i] == "channel")
 			    {
-				if (c.net_802154.channel != 0)
+				if (c.net_154.channel != 0)
 				{
-				    parse_error_dup_token (tokens [i], HELP_NET802154) ;
+				    parse_error_dup_token (tokens [i], HELP_NET154) ;
 				    r = false ;
 				    break ;
 				}
-				else c.net_802154.channel = std::stoi (tokens [i+1]) ;
+				else c.net_154.channel = std::stoi (tokens [i+1]) ;
 			    }
 			    else
 			    {
-				parse_error_unk_token (tokens [i], HELP_NET802154) ;
+				parse_error_unk_token (tokens [i], HELP_NET154) ;
 				r = false ;
 				break ;
 			    }
@@ -522,7 +522,7 @@ bool conf::parse_line (std::string &line)
 		    }
 		    else
 		    {
-			parse_error_num_token (asize, HELP_NET802154) ;
+			parse_error_num_token (asize, HELP_NET154) ;
 			r = false ;
 		    }
 
@@ -530,7 +530,7 @@ bool conf::parse_line (std::string &line)
 		    {
 			if (i != asize)		// odd number of parameters
 			{
-			    parse_error_num_token (asize, HELP_NET802154) ;
+			    parse_error_num_token (asize, HELP_NET154) ;
 			    r = false ;
 			}
 		    }
@@ -640,8 +640,8 @@ bool conf::parse_line (std::string &line)
     {
 	if (n.type == NET_ETH && n.net_eth.ethertype == 0)
 	    n.net_eth.ethertype = ETHTYPE_SOS ;
-	if (n.type == NET_802154 && n.net_802154.channel == 0)
-	    n.net_802154.channel = DEFAULT_802154_CHANNEL ;
+	if (n.type == NET_154 && n.net_154.channel == 0)
+	    n.net_154.channel = DEFAULT_154_CHANNEL ;
     }
 
     if (r)

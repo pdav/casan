@@ -85,7 +85,7 @@ int msg::global_message_id = 1 ;
 #define	OPTVAL(o)	((o).optval_ ? (o).optval_ : (o).staticval_)
 
 /**
- * Default constructor: initialize an empty message.
+ * @brief Default constructor: initialize an empty message.
  */
 
 msg::msg ()
@@ -94,7 +94,7 @@ msg::msg ()
 }
 
 /**
- * Copy-constructor: copy a message, including its payload and its
+ * @brief Copy-constructor: copy a message, including its payload and its
  * options.
  */
 
@@ -108,8 +108,8 @@ msg::msg (const msg &m)
 }
 
 /**
- * Copy-assignement constructor: copy a message, including its payload and its
- * options.
+ * @brief Copy-assignement constructor: copy a message, including its
+ * payload and its options.
  */
 
 msg &msg::operator= (const msg &m)
@@ -127,7 +127,7 @@ msg &msg::operator= (const msg &m)
 }
 
 /**
- * Destructor
+ * @brief Destructor
  */
 
 msg::~msg ()
@@ -178,10 +178,6 @@ int msg::operator == (msg &m)
 
 /******************************************************************************
  * Receive message
- *
- * Methods for:
- * - receive and decode a message
- * - access informations from the received message
  */
 
 /**
@@ -354,10 +350,6 @@ bool msg::coap_decode (void)
 
 /******************************************************************************
  * Send message
- *
- * Methods for:
- * - encode a message
- * - access informations from the received message
  */
 
 /**

@@ -39,7 +39,7 @@ void slave::reset (void)
 }
 
 /**
- * @brief Dumps slave status and resources to a string
+ * @brief Dumps slave status and resources to an output stream
  */
 
 std::ostream& operator<< (std::ostream &os, const slave &s)

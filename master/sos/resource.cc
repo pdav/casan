@@ -1,8 +1,6 @@
-/*
- * Resource representation
- *
- * Each slave has some resources, once it is discovered by the
- * master.
+/**
+ * @file resource.cpp
+ * @brief Resource class implementation
  */
 
 #include <iostream>
@@ -22,8 +20,11 @@
 
 namespace sos {
 
-/*
- * Constructor and destructor
+/**
+ * @brief Constructor needs a path
+ *
+ * The path is splitted into components and stored in the
+ * resource class.
  */
 
 resource::resource (const std::string path)
@@ -33,8 +34,8 @@ resource::resource (const std::string path)
 	pathopt_.push_back (option (option::MO_Uri_Path, p.c_str (), p.length ())) ;
 }
 
-/******************************************************************************
- * Debug
+/**
+ * @brief Dumps a resource to an output stream
  */
 
 std::ostream& operator<< (std::ostream &os, const resource &r)
@@ -113,8 +114,10 @@ bool resource::operator!= (const std::vector <option> &pathopt)
     return ! (*this == pathopt) ;
 }
 
-/******************************************************************************
- * Accessors
+/**
+ * @brief Get attribute values for a given name
+ *
+ * @return List of strings representing the values
  */
 
 std::list <std::string> *resource::attribute (const std::string name)
@@ -127,8 +130,11 @@ std::list <std::string> *resource::attribute (const std::string name)
     return nullptr ;
 }
 
-/******************************************************************************
- * Mutators
+/**
+ * @brief Add a value to an attribute
+ *
+ * @param name name of attribute
+ * @param value single value to add to the value list
  */
 
 void resource::add_attribute (const std::string name, const std::string value)
@@ -151,6 +157,14 @@ void resource::add_attribute (const std::string name, const std::string value)
 	attributes_.back ().values.push_back (value) ;
     }
 }
+
+/**
+ * @brief Add the resource path to a message
+ *
+ * Add the resource path to a message as some CoAP options
+ *
+ * @param m message to add the path to
+ */
 
 void resource::add_to_message (msg &m)
 {

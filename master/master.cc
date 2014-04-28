@@ -88,16 +88,16 @@ bool master::start (conf &cf)
 			std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
 		    }
 		    break ;
-		case conf::NET_802154 :
+		case conf::NET_154 :
 		    {
-			sos::l2net_802154 *l8 ;
+			sos::l2net_154 *l8 ;
 			const char *t ;
 
-			l8 = new sos::l2net_802154 ;
+			l8 = new sos::l2net_154 ;
 
-			switch (n.net_802154.type)
+			switch (n.net_154.type)
 			{
-			    case conf::NET_802154_XBEE :
+			    case conf::NET_154_XBEE :
 				t = "xbee" ;
 				break ;
 			    default :
@@ -105,7 +105,7 @@ bool master::start (conf &cf)
 				break ;
 			}
 
-			if (l8->init (n.net_802154.iface, t, n.net_802154.addr, n.net_802154.panid, n.net_802154.channel) == -1)
+			if (l8->init (n.net_154.iface, t, n.net_154.addr, n.net_154.panid, n.net_154.channel) == -1)
 			{
 			    perror ("init") ;
 			    delete l8 ;
@@ -113,7 +113,7 @@ bool master::start (conf &cf)
 			}
 			l = l8 ;
 			engine_.start_net (l) ;
-			std::cout << "Interface " << n.net_802154.iface << " initialized\n" ;
+			std::cout << "Interface " << n.net_154.iface << " initialized\n" ;
 		    }
 		    break ;
 		default :

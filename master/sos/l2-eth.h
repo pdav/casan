@@ -1,3 +1,8 @@
+/**
+ * @file l2-eth.h
+ * @brief l2addr and l2net specializations for Ethernet
+ */
+
 #ifndef SOS_L2ETH_H
 #define	SOS_L2ETH_H
 
@@ -26,6 +31,13 @@
 
 namespace sos {
 
+/**
+ * @brief Specialization of the l2addr abstract class for Ethernet
+ *
+ * This class provides real methods (specified in l2addr virtual
+ * class) for Ethernet addresses.
+ */
+
 class l2addr_eth: public l2addr
 {
     public:
@@ -47,6 +59,13 @@ class l2addr_eth: public l2addr
 } ;
 
 extern l2addr_eth l2addr_eth_broadcast ;
+
+/**
+ * @brief Specialization of the l2net abstract class for Ethernet
+ *
+ * This class provides real methods (specified in l2net virtual
+ * class) for Ethernet networks.
+ */
 
 class l2net_eth: public l2net
 {

@@ -64,17 +64,17 @@ class conf
 	std::list <cf_namespace> nslist_ ;
 
 	/// interface configuration
-	enum net_type { NET_NONE, NET_ETH, NET_802154 } ;
+	enum net_type { NET_NONE, NET_ETH, NET_154 } ;
 	struct cf_net_eth
 	{
 	    std::string iface ;
 	    int ethertype = 0 ;
 	} ;
-	enum net_802154_type { NET_802154_NONE, NET_802154_XBEE } ;
-	struct cf_net_802154
+	enum net_154_type { NET_154_NONE, NET_154_XBEE } ;
+	struct cf_net_154
 	{
 	    std::string iface ;
-	    net_802154_type type ;
+	    net_154_type type ;
 	    std::string addr ;		///< short or long addr: ab:cd[:ef:ab:cd:ef:ab:cd]
 	    std::string panid ;		///< in hex [ab:cd]
 	    int channel ;
@@ -84,8 +84,8 @@ class conf
 	    net_type type = NET_NONE ;
 	    int mtu = 0 ;
 	    // not using an union since C++ cannot know how to initialize it
-	    cf_net_eth    net_eth ;
-	    cf_net_802154 net_802154 ;
+	    cf_net_eth net_eth ;
+	    cf_net_154 net_154 ;
 	} ;
 	std::list <cf_network> netlist_ ;
 
@@ -117,7 +117,7 @@ class conf
 	const char *DEFAULT_HTTP_PORT		= "http" ;
 	const char *DEFAULT_HTTP_LISTEN		= "*" ;
 	const int DEFAULT_HTTP_THREADS		= 5 ;
-	const int DEFAULT_802154_CHANNEL 	= 12 ;
+	const int DEFAULT_154_CHANNEL	 	= 12 ;
 } ;
 
 #endif

@@ -4,7 +4,7 @@ SOS master control program
 This directory contains the source code of the master control program.
 
 It includes the following subdirectories:
-- SOS processing
+- SOS protocol handling
 - HTTP server
 
 

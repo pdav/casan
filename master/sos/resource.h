@@ -1,3 +1,8 @@
+/**
+ * @file resource.h
+ * @brief Resource class interface
+ */
+
 #ifndef SOS_RESOURCE_H
 #define	SOS_RESOURCE_H
 
@@ -5,6 +10,18 @@ namespace sos {
 
 class option ;
 class mesg ;
+
+/**
+ * @brief An object of class Resource represents a resource which
+ *	is provided by an SOS slave.
+ *
+ * This class represents a resource. A resource has:
+ * - an URL (vector of path components)
+ * - some attributes: name, title, etc. which are stored as a
+ *	list of (key, val) where the key is the name of the
+ *	attribute (e.g. `name`, `title`, `ct`) and val is a list
+ *	of associated values (`temp`, `Temperature`, `0`).
+ */
 
 class resource
 {

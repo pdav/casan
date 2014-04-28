@@ -30,8 +30,8 @@
 int main (int argc, char *argv [])
 {
     sos::l2net *l ;
-    sos::l2net_802154 *le ;
-    sos::l2addr_802154 *sa ;		// slave address
+    sos::l2net_154 *le ;
+    sos::l2addr_154 *sa ;		// slave address
     sos::slave s ;			// slave
     sos::slave sb ;			// pseudo-slave for broadcast
     sos::msg m1, m2 ;
@@ -41,7 +41,7 @@ int main (int argc, char *argv [])
     std::string panid = PANID ;
 
     // start new interface
-    le = new sos::l2net_802154 ;
+    le = new sos::l2net_154 ;
     if (le->init (iface, "xbee", myaddr, panid, CHANNEL) == -1)
     {
 	perror ("init") ;
@@ -54,12 +54,12 @@ int main (int argc, char *argv [])
     l = le ;
 
     // register new slave
-    sa = new sos::l2addr_802154 (DADDR) ;
+    sa = new sos::l2addr_154 (DADDR) ;
     s.addr (sa) ;
     s.l2 (l) ;
 
     // pseudo-slave for broadcast address
-    sb.addr (&sos::l2addr_802154_broadcast) ;
+    sb.addr (&sos::l2addr_154_broadcast) ;
     sb.l2 (l) ;
 
     // sleep (1) ;

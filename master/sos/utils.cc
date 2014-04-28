@@ -1,3 +1,8 @@
+/**
+ * @file utils.cc
+ * @brief Utility implementations
+ */
+
 #include <string>
 #include <vector>
 #include <chrono>
@@ -8,12 +13,11 @@
 
 namespace sos {
 
-/******************************************************************************
- * Some utility functions
- */
-
-/*
- * returns an integer peuso-random value in [0..n[
+/**
+ * @brief Returns an integer pseudo-random value in [0..n[
+ *
+ * @param n upper bound (excluded) of the interval
+ * @return a random value in [0..n[
  */
 
 int random_value (int n)
@@ -22,8 +26,8 @@ int random_value (int n)
 }
 
 
-/*
- * returns a random delay between [0...maxmilli] milliseconds
+/**
+ * @brief Returns a random delay between [0...maxmilli] milliseconds
  */
 
 duration_t random_timeout (int maxmilli)
@@ -34,8 +38,11 @@ duration_t random_timeout (int maxmilli)
     return duration_t (delay) ;
 }
 
-/*
- * Split a path into components, skipping multiple "/" characters
+/**
+ * @brief Split a path into components, skipping multiple "/" characters
+ *
+ * @param path a path with "/"
+ * @return a vector of strings
  */
 
 std::vector <std::string> split_path (const std::string &path)
@@ -65,8 +72,11 @@ std::vector <std::string> split_path (const std::string &path)
     return v;
 }
 
-/*
- * Join components to give a path
+/**
+ * @brief Join components to give a path
+ *
+ * @param vpath vector of strings
+ * @return a single string containing the resulting path
  */
 
 std::string join_path (const std::vector <std::string> &vpath)
