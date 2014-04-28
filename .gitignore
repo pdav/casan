@@ -9,6 +9,8 @@
 */*/build-zigduino_r2/
 */*/*/build-zigduino_r2/
 arduino/libraries/doc/
+master/doc/
+master/sosd
 send
 recv
 *.out

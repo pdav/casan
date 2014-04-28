@@ -1,3 +1,8 @@
+/**
+ * @file option.cpp
+ * @brief option class implementation
+ */
+
 #include "option.h"
 
 uint8_t option::errno_ = 0 ;

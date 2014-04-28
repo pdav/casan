@@ -1,7 +1,6 @@
-/*
- * Slave representation
- *
- * Each slave has a unique representation in the SOS system.
+/**
+ * @file slave.cc
+ * @brief SOS slave class implementation
  */
 
 #include <iostream>
@@ -23,8 +22,8 @@
 
 namespace sos {
 
-/*
- * Constructor and destructor
+/**
+ * @brief Reset a slave to a known state
  */
 
 void slave::reset (void)
@@ -39,8 +38,8 @@ void slave::reset (void)
     D ("Slave " << slaveid_ << " status set to INACTIVE") ;
 }
 
-/******************************************************************************
- * Debug
+/**
+ * @brief Dumps slave status and resources to a string
  */
 
 std::ostream& operator<< (std::ostream &os, const slave &s)
@@ -76,39 +75,15 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
     return os ;
 }
 
-/******************************************************************************
- * Accessors
+/**
+ * @brief Look-up the given resource
+ *
+ * Find a given resource /a/b/c on the slave. The resource is
+ * represented as a vector of string (vector [] = { a, b, c}).
+ *
+ * @param v vector containing the components of the resource URL
+ * @return pointer to resource, if found. NULL otherwise.
  */
-
-l2net *slave::l2 (void)
-{
-    return l2_ ;
-}
-
-l2addr *slave::addr (void)
-{
-    return addr_ ;
-}
-
-slaveid_t slave::slaveid (void)
-{
-    return slaveid_ ;
-}
-
-int slave::mtu (void)
-{
-    return mtu_ ;
-}
-
-enum slave::status_code slave::status (void)
-{
-    return status_ ;
-}
-
-int slave::init_ttl (void)
-{
-    return init_ttl_ ;
-}
 
 resource *slave::find_resource (const std::vector <std::string> &v)
 {
@@ -125,50 +100,31 @@ resource *slave::find_resource (const std::vector <std::string> &v)
     return r ;
 }
 
+/**
+ * @brief Fetches the resources advertised by the slave
+ *
+ * Fetches all the resources advertised by a slave in its
+ * Assoc Answer message (its /.well-known/sos).
+ *
+ * @return vector of resource objects
+ */
+
 const std::vector <resource> &slave::resource_list (void)
 {
     return reslist_ ;
 }
 
-/******************************************************************************
- * Mutators
- */
 
-void slave::l2 (l2net *l2)
-{
-    l2_ = l2 ;
-}
-
-void slave::addr (l2addr *a)
-{
-    addr_ = a ;
-}
-
-void slave::slaveid (slaveid_t sid)
-{
-    slaveid_ = sid ;
-}
-
-void slave::mtu (int m)
-{
-    mtu_ = m ;
-}
-
-void slave::init_ttl (int t)
-{
-    init_ttl_ = t ;
-}
-
-void slave::handler (reply_handler_t h)
-{
-    handler_ = h ;
-}
-
-/******************************************************************************
- * SOS protocol handling
+/**
+ * @brief SOS protocol handling
  *
- * e: current sos engine
- * m: received message
+ * This method is called by a receiver thread when the received
+ * message is a control message originated from this slave.
+ * The method implements the SOS control protocol for this
+ * slave, and maintains the state associated to this slave.
+ *
+ * @param e current sos engine
+ * @param m received message
  */
 
 void slave::process_sos (sos *e, msg *m)
@@ -360,25 +316,6 @@ bool slave::parse_resource_list (std::vector <resource> &rlist, const byte *b, i
     }
 
     return state != s_error ;
-}
-
-
-/*
- * Process an event: either a message or a timeout from the slave
- */
-
-void slave::process (void *data, int len)
-{
-    if (data)
-    {
-	// regular message
-	std::cout << "received a message of len " << len << " bytes\n" ;
-    }
-    else
-    {
-	// timeout
-	std::cout << "got a timeout\n" ;
-    }
 }
 
 }					// end of namespace sos

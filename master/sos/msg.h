@@ -1,3 +1,8 @@
+/**
+ * @file msg.h
+ * @brief msg class interface
+ */
+
 #ifndef SOS_MSG_H
 #define SOS_MSG_H
 
@@ -12,10 +17,31 @@ namespace sos {
 class slave ;
 class waiter ;
 
-/*
- * Message encoder/decoder
+/**
+ * @brief An object of class Msg represents a message,
+ * either received or to be sent
  *
- * This class hides protocol encoding details
+ * This class represents messages to be sent to the network, or
+ * received from the network.
+ *
+ * Message attributes are tied to CoAP specification: a message has
+ * a type (CON, NON, ACK, RST), a code (GET, POST, PUT, DELETE, or a numeric
+ * value for an answer in an ACK), an Id, a token, some options and
+ * a payload.
+ *
+ * In order to be sent to the network, a message is transparently
+ * encoded (by the `send` method) according to CoAP specification.
+ * Similarly, a message is transparently decoded (by the `recv`
+ * method) upon reception according to the CoAP specification.
+ *
+ * The binary (encoded) form is kept in the message private variable.
+ * However, each modification of an attribute will squeeze the
+ * binary form, which will be automatically re-created if needed.
+ *
+ * Each request sent has a "waiter" which represents a thread to
+ * awake when the answer will be received.
+ *
+ * @bug should wake the waiter if a request is abandonned due to a time-out
  */
 
 class msg

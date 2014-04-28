@@ -1,3 +1,8 @@
+/**
+ * @file sos.h
+ * @brief SOS engine interface
+ */
+
 #ifndef SOS_SOS_H
 #define	SOS_SOS_H
 
@@ -18,6 +23,28 @@ class l2net ;
 
 struct receiver ;
 
+/**
+ * @brief SOS engine class
+ *
+ * This class does all the hard work of SOS master. It manages and
+ * implements all SOS threads (see below), requests, timers and
+ * retransmissions.
+ *
+ * There is one sender thread in the SOS system: it processes send
+ * requests, eventually re-transmits requests with a timeout.
+ * Other threads send requests by:
+ * - adding a request in the queue, and
+ * - setting the sender condition variable and signalling this thread
+ *
+ * There is a receiver thread by L2 network. These receiver threads
+ * are used to receive events from slaves:
+ * - events which can be matched with a request are handled through
+ *   a wake up of the emitting thread
+ * - events which can not be paired with a request are handled through
+ *   the slave handler
+ * - events which are not issued by a recognized slave are ignored.
+ */
+
 class sos
 {
     public:
@@ -30,12 +57,12 @@ class sos
 	void init (void) ;
 
 	// accessors and mutators
-	sostimer_t timer_slave_ttl (void) ;
-	sostimer_t timer_first_hello (void) ;
-	sostimer_t timer_interval_hello (void) ;
-	void timer_slave_ttl (sostimer_t t) ;
-	void timer_first_hello (sostimer_t t) ;
-	void timer_interval_hello (sostimer_t t) ;
+	sostimer_t timer_slave_ttl (void)	{ return slave_ttl_ ; }
+	sostimer_t timer_first_hello (void)	{ return first_hello_ ; }
+	sostimer_t timer_interval_hello (void)	{ return interval_hello_ ; }
+	void timer_slave_ttl (sostimer_t t) 	{ slave_ttl_ = t ; }
+	void timer_first_hello (sostimer_t t) 	{ first_hello_ = t ; }
+	void timer_interval_hello (sostimer_t t) { interval_hello_ = t ; }
 
 	// start and stop receiver thread
 	void start_net (l2net *l2) ;

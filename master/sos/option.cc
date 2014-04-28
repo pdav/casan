@@ -1,3 +1,8 @@
+/**
+ * @file option.cc
+ * @brief option class implementation
+ */
+
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -87,12 +92,26 @@ void option::reset (void)
     RESET ;
 }
 
-// default constructor
+/**
+ * Default constructor
+ *
+ * The default constructor initializes option attributes
+ */
+
 option::option ()
 {
     OPTION_INIT ;
     RESET ;
 }
+
+/**
+ * Constructor for an empty option
+ *
+ * This constructor creates an option without any value, which can be
+ * initialized later with the Option::optval method.
+ *
+ * @param optcode the option code
+ */
 
 option::option (optcode_t optcode)
 {
@@ -101,6 +120,17 @@ option::option (optcode_t optcode)
     RESET ;
     optcode_ = optcode ;
 }
+
+/**
+ * Constructor for an option with an opaque value
+ *
+ * This constructor creates an option with an opaque format value.
+ * The value itself is copied in the option.
+ *
+ * @param optcode the option code
+ * @param optval pointer to value
+ * @param optlen length of value
+ */
 
 option::option (optcode_t optcode, const void *optval, int optlen)
 {
@@ -112,6 +142,17 @@ option::option (optcode_t optcode, const void *optval, int optlen)
     optlen_ = optlen ;
     COPY_VAL (optval) ;
 }
+
+/**
+ * Constructor for an option with an integer value
+ *
+ * This constructor creates an option with an integer value. This
+ * value will be converted (packed) in the minimal string of bytes
+ * according to the CoAP specification.
+ *
+ * @param optcode the option code
+ * @param optval integer value
+ */
 
 option::option (optcode_t optcode, option::uint optval)
 {
@@ -128,7 +169,12 @@ option::option (optcode_t optcode, option::uint optval)
     COPY_VAL (stbin) ;
 }
 
-// copy constructor
+/**
+ * Copy constructor
+ *
+ * This constructor copies an existing option
+ */
+
 option::option (const option &o)
 {
     OPTION_INIT ;
@@ -137,7 +183,12 @@ option::option (const option &o)
 	COPY_VAL (o.optval_) ;
 }
 
-// copy assignment constructor
+/**
+ * Copy assignment constructor
+ *
+ * This constructor copies an existing option
+ */
+
 option &option::operator= (const option &o)
 {
     OPTION_INIT ;
@@ -151,7 +202,10 @@ option &option::operator= (const option &o)
     return *this ;
 }
 
-// default destructor
+/**
+ * Default destructor
+ */
+
 option::~option ()
 {
     DELETE_VAL (optval_) ;
@@ -257,16 +311,36 @@ bool option::operator!= (const option &o)
  * Accessors
  */
 
+/**
+ * Get the option code
+ */
+
 option::optcode_t option::optcode (void)
 {
     return optcode_ ;
 }
+
+/**
+ * Get the option value and length
+ *
+ * @param len address of an integer which will contain the length
+ *	in return, or null address if length is not wanted
+ * @return pointer to the option value (do not free this address)
+ */
 
 void *option::optval (int *len)
 {
     *len = optlen_ ;
     return (optval_ == 0) ? staticval_ : optval_ ;
 }
+
+/**
+ * Get the option value as an integer
+ *
+ * The option value is unpacked as an integer.
+ *
+ * @return option value as a standard (unsigned) integer
+ */
 
 option::uint option::optval (void)
 {
@@ -285,10 +359,21 @@ option::uint option::optval (void)
  * Mutators
  */
 
+/**
+ * Assign the option code
+ */
+
 void option::optcode (optcode_t c)
 {
     optcode_ = c;
 }
+
+/**
+ * Assign an opaque value to the option
+ *
+ * @param val pointer to the value to be copied in the option
+ * @param len length of value
+ */
 
 void option::optval (void *val, int len)
 {
@@ -296,6 +381,15 @@ void option::optval (void *val, int len)
     optlen_ = len ;
     COPY_VAL (val) ;
 }
+
+/**
+ * Assign an integer value to the option
+ *
+ * The value will be converted (packed) in the minimal string of bytes
+ * according to the CoAP specification.
+ *
+ * @param val integer to copy in option
+ */
 
 void option::optval (option::uint val)
 {

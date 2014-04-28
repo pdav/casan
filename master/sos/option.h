@@ -1,11 +1,49 @@
+/**
+ * @file option.h
+ * @brief option class interface
+ */
+
 #ifndef SOS_OPTION_H
 #define SOS_OPTION_H
 
 namespace sos {
 
-/*
- * Option
+/**
+ * @brief An object of class option represents an individual option
+ *
+ * This class represents options associated with a message. options are
+ * specified by the CoAP protocol.
+ *
+ * Before sending a message, application must associate options to this
+ * message (with the Msg::push_option method).
+ * They will be encoded, according to CoAP specification, when
+ * the message is about to be sent.
+ *
+ * Upon message reception, the message will be decoded: options will
+ * be created and associated with the received message. Application may
+ * retrieve them (with the Msg::reset_next_option and Msg::next_option
+ * methods).
+ *
+ * When an option is created, some points (format, minimum and maximum
+ * length) will be checked according to a private table.
+ * The format of an option may be:
+ * * a string
+ * * an unsigned integer
+ * * an opaque value
+ * * nothing
+ *
+ * An option opaque value is always internally represented as a byte
+ * string, with an added '\0' at the end. This null byte will not be
+ * sent on the network, of course, but allows for string manipulation
+ * (with functions such as `strlen` or `strcmp` for example) on values
+ * returned by option::optval method.
+ * Integer options, on another hand, are internally represented as the
+ * minimal byte string, according to the CoAP specification.
+ * Thus, the value 255 is represented as one byte, whereas 65537 is
+ * represented as 3 bytes. This should be completely transparent to
+ * applications.
  */
+
 
 class option
 {

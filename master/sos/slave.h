@@ -1,3 +1,8 @@
+/**
+ * @file slave.h
+ * @brief SOS slave class definition
+ */
+
 #ifndef SOS_SLAVE_H
 #define	SOS_SLAVE_H
 
@@ -8,6 +13,12 @@ class msg ;
 class l2net ;
 class l2addr ;
 class resource ;
+
+/**
+ * @brief SOS slave class
+ *
+ * This class describes a slave in the SOS system.
+ */
 
 class slave
 {
@@ -22,34 +33,31 @@ class slave
 	void reset (void) ;		// reset state to inactive
 
 	// Mutators
-	void l2 (l2net *l2) ;		// set l2 network
-	void addr (l2addr *a) ;		// set address
-	void slaveid (slaveid_t sid) ;	// set slave id
-	void mtu (int m) ;		// set slave mtu
-	void init_ttl (int t) ;		// set initial slave ttl
+	void l2 (l2net *l2) 		{ l2_ = l2 ; }
+	void addr (l2addr *a) 		{ addr_ = a ; }
+	void slaveid (slaveid_t sid)	{ slaveid_ = sid ; }
+	void mtu (int m)		{ mtu_ = m ; }
+	void init_ttl (int t)		{ init_ttl_ = t ; }
+	/** Handler for incoming requests */
+	void handler (reply_handler_t h) { handler_ = h ; }
 
 	// Accessors
-	l2net *l2 (void) ;
-	l2addr *addr (void) ;
-	slaveid_t slaveid (void) ;
-	int mtu (void) ;
-	enum status_code status (void) ;
-	int init_ttl (void) ;
+	l2net *l2 (void) 		{ return l2_ ; }
+	l2addr *addr (void) 		{ return addr_ ; }
+	slaveid_t slaveid (void) 	{ return slaveid_ ; }
+	int mtu (void) 			{ return mtu_ ; }
+	enum status_code status (void) 	{ return status_ ; }
+	int init_ttl (void) 		{ return init_ttl_ ; }
+
 	resource *find_resource (const std::vector <std::string> &v) ;
 	const std::vector <resource> &resource_list (void) ;
 
 	// SOS protocol handling
 	void process_sos (sos *e, msg *m) ;
 
-	void handler (reply_handler_t h) ;// handler for incoming requests
-
 	friend std::ostream& operator<< (std::ostream &os, const slave &s) ;
 
     protected:
-	// process a message from this slave
-	// data is NULL if this is timeout
-	void process (void *data, int len) ;
-
 	reply_handler_t handler_ ;	// handler to process answers
 
 	friend class sos ;

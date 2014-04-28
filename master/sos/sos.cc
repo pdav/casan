@@ -1,21 +1,7 @@
-/*
- * Main engine of the SOS system
- *
- * This is the sender thread of the SOS system: it processes send
- * requests, eventually re-transmits requests with a timeout.
- * Other threads send requests by:
- * - adding a request in the queue, and
- * - setting the sender condition variable and signalling this thread
- *
- * There is a receiver thread by L2 network. These receiver threads
- * are used to receive events from slaves:
- * - events which can be matched with a request are handled through
- *   a wake up of the emitting thread
- * - events which can not be paired with a request are handled through
- *   the slave handler
- * - events which are not issued by a recognized slave are ignored.
+/**
+ * @file sos.cc
+ * @brief SOS engine implementation
  */
-
 
 #include <iostream>
 #include <sstream>
@@ -42,6 +28,10 @@
 
 namespace sos {
 
+/**
+ * @brief Private data for each receiver thread
+ */
+
 struct receiver
 {
     l2net *l2 ;
@@ -54,9 +44,11 @@ struct receiver
 } ;
 
 
-
-/******************************************************************************
- * Constructor and destructor
+/**
+ * @brief SOS engine constructor
+ *
+ * This constructor almost makes nothing: no thread is started until
+ * the sos::init method is called.
  */
 
 sos::sos ()
@@ -64,12 +56,29 @@ sos::sos ()
     tsender_ = NULL ;
 }
 
+/**
+ * @brief SOS engine destructor
+ *
+ * This destructor removes all internal lists used by the SOS engine.
+ *
+ * @bug Threads should be cleanly removed.
+ */
+
 sos::~sos ()
 {
     rlist_.clear () ;
     slist_.clear () ;
     mlist_.clear () ;
 }
+
+/**
+ * @brief Start the SOS engine
+ *
+ * This function starts the SOS engine, i.e. the sender thread
+ * with the sos::sender_thread function.
+ * Note that each receiver thread will be started with an appropriate
+ * call to sos::start_net.
+ */
 
 void sos::init (void)
 {
@@ -81,8 +90,13 @@ void sos::init (void)
     }
 }
 
-/******************************************************************************
- * Engine dumper
+/**
+ * @brief Dumps the SOS engine data on the given stream
+ *
+ * This method is used for debugging purpose.
+ *
+ * @param os output stream
+ * @param se SOS engine object
  */
 
 std::ostream& operator<< (std::ostream &os, const sos &se)
@@ -109,43 +123,14 @@ std::ostream& operator<< (std::ostream &os, const sos &se)
     return os ;
 }
 
-
-/******************************************************************************
- * Accessors & mutators
- */
-
-sostimer_t sos::timer_first_hello (void)
-{
-    return first_hello_ ;
-}
-
-sostimer_t sos::timer_interval_hello (void)
-{
-    return interval_hello_ ;
-}
-
-sostimer_t sos::timer_slave_ttl (void)
-{
-    return slave_ttl_ ;
-}
-
-void sos::timer_first_hello (sostimer_t t)
-{
-    first_hello_ = t ;
-}
-
-void sos::timer_interval_hello (sostimer_t t)
-{
-    interval_hello_ = t ;
-}
-
-void sos::timer_slave_ttl (sostimer_t t)
-{
-    slave_ttl_ = t ;
-}
-
-/******************************************************************************
- * Displays (in a string) dynamic data structures
+/**
+ * @brief Dumps SOS engine configuration
+ *
+ * Returns a string with the SOS engine configuration (global
+ * parameters as well as slave list) as a raw text (ready to
+ * be enclosed in an HTML pre tag).
+ *
+ * @return string containing the output
  */
 
 std::string sos::html_debug (void)
@@ -162,8 +147,13 @@ std::string sos::html_debug (void)
     return oss.str () ;
 }
 
-/******************************************************************************
- * Returns aggregated .well-known/sos for all running slaves
+/**
+ * @brief Returns aggregated /.well-known/sos for all running slaves
+ *
+ * Returns a string containing the aggregated list (for all slaves) of
+ * /.well-known/sos resource lists 
+ *
+ * @return string containing the global /.well-known/sos resource list
  */
 
 std::string sos::resource_list (void)
@@ -185,11 +175,21 @@ std::string sos::resource_list (void)
     return str ;
 }
 
-/******************************************************************************
- * Add a new L2 network:
- * - schedule the first HELLO packet
- * - add the network to the receiver queue
- * - notifiy the sender thread in order to create a new receiver thread
+/**
+ * @brief Add a new L2 network and start the receiver thread
+ *
+ * This methods adds a new L2 network to the list of networks
+ * managed by the SOS engine, and asks the sender thread to
+ * start a new receiver thread for this L2 network.
+ *
+ * In detail, this method:
+ * - create a new receiver structure for receiver private data
+ * - schedules the first HELLO packet
+ * - adds the network to the receiver queue
+ * - notify the sender thread in order to create a new receiver thread
+ *
+ * @param l2 pointer to an existing l2net object (which should be
+ *	in reality a l2net_xxx object)
  */
 
 void sos::start_net (l2net *l2)
@@ -225,16 +225,27 @@ void sos::start_net (l2net *l2)
     }
 }
 
+/**
+ * @brief Remove an L2 network
+ *
+ * @bug This method should remove the associated thread and close
+ *	the interface
+ */
+
 void sos::stop_net (l2net *l2)
 {
     std::cout << sizeof *l2 << "\n" ;	// calm down -Wall
 }
 
-/******************************************************************************
- * Add a new slave:
- * - initialize the status
+/**
+ * @brief Add a new slave
+ *
+ * This method adds a new slave to the SOS engine. In detail,
+ * this means:
+ * - initialize the slave status
  * - add it to the slave list
- * - (no need to notify the sender thread)
+ *
+ * There is no need to notify the sender thread.
  */
 
 void sos::add_slave (slave *s)
@@ -245,8 +256,14 @@ void sos::add_slave (slave *s)
     slist_.push_front (*s) ;
 }
 
-/******************************************************************************
- * Locate a slave by its slave id
+/**
+ * @brief Locate a slave by its slave id
+ *
+ * This method searches through the slave list to find a slave
+ * with its slave-id (as given by the slave in its Discover message).
+ *
+ * @param sid slave id
+ * @return pointer to the found slave, or NULL if not found
  */
 
 slave *sos::find_slave (slaveid_t sid)
@@ -265,8 +282,13 @@ slave *sos::find_slave (slaveid_t sid)
     return r ;
 }
 
-/******************************************************************************
- * Add a new message to send
+/**
+ * @brief Add a new message to send
+ *
+ * This method notifies the sender thread to send the given message
+ * (and to add it to the retransmission queue if needed)
+ *
+ * @param m pointer to the message to be sent
  */
 
 void sos::add_request (msg *m)
@@ -277,9 +299,11 @@ void sos::add_request (msg *m)
     condvar_.notify_one () ;
 }
 
-/******************************************************************************
- * Sender thread
- * Block on a condition variable, waiting for events:
+/**
+ * @brief Sender thread
+ *
+ * The sender thread spends its life blocking on a condition variable,
+ * waiting for events:
  * - timer event, signalling that a request timeout has expired
  * - change in L2 network handling (new L2, or removed L2)
  * - a new request is added (from an exterior thread)
@@ -447,172 +471,15 @@ void sos::sender_thread (void)
     }
 }
 
-/******************************************************************************
- * Receiver thread
- * Block on packet reception on the given interface
+/**
+ * @brief Receiver thread
+ *
+ * Each receiver thread spends its life waiting for a message to be
+ * received on the associated interface (in fact, the l2net::recv
+ * method).
+ *
+ * @param r receiver private data
  */
-
-bool sos::find_peer (msg *m, l2addr *a, receiver &r)
-{
-    bool found ;
-
-    found = false ;
-    if (a != nullptr)
-    {
-	bool free_a = true ;
-
-	/*
-	 * Is the peer already known?
-	 */
-
-	for (auto &s : slist_)
-	{
-	    if (s.addr () != 0 && *a == *(s.addr ()))
-	    {
-		m->peer (&s) ;
-		found = true ;
-		break ;
-	    }
-	}
-
-	/*
-	 * If the peer is not known, it may be a new slave coming up
-	 * In this case, we must send a ASSOCIATE message
-	 */
-
-	if (!found)
-	{
-	    slaveid_t sid ;
-	    int mtu ;
-
-	    if (m->is_sos_discover (sid, mtu))
-	    {
-		for (auto &s : slist_)
-		{
-		    if (sid == s.slaveid ())
-		    {
-			s.l2 (r.l2) ;
-			s.addr (a) ; free_a = false ;
-			s.mtu (mtu) ;
-			m->peer (&s) ;
-			found = true ;
-			break ;
-		    }
-		}
-	    }
-	}
-
-	if (free_a)
-	    delete a ;
-    }
-
-    return found ;
-}
-
-/*
- * Message correlation: see CoAP spec, section 4.4
- * Is the received message a reply to an already sent request?
- * For this, we need to perform a search in the message list
- * for a request message with this id.
- */
-
-msg *sos::correlate (msg *m)
-{
-    msg::msgtype mt ;
-    msg *orgmsg ;
-
-    orgmsg = 0 ;
-    mt = m->type () ;
-    if (mt == msg::MT_ACK || mt == msg::MT_RST)
-    {
-	std::unique_lock <std::mutex> lk (mtx_) ;
-	int id ;
-
-	id = m->id () ;
-	for (auto &mr : mlist_)
-	{
-	    if (mr->id () == id)
-	    {
-		/* Got it! Original request found */
-		D ("Found original request for id=" << id) ;
-		orgmsg = &*mr ;
-		break ;
-	    }
-	}
-    }
-
-    return orgmsg ;
-}
-
-void sos::clean_deduplist (receiver &r)
-{
-    timepoint_t now = std::chrono::system_clock::now () ;
-    auto di = r.deduplist.begin () ;
-    while (di != r.deduplist.end ())
-    {
-	msg *m = *di ;
-
-#if 0
-	D ("PARCOURS deduplist") ;
-	D ("m = " << m) ;
-	D ("*di = " << *di) ;
-	D ("*m = " << *m) ;
-#endif
-
-	if (now >= m->expire_)
-	{
-	    D ("ERASE FROM DEDUP id=" << m->id ()) ;
-	    delete m ;
-	    di = r.deduplist.erase (di) ;
-	}
-	else di++ ;
-    }
-}
-
-/*
- * Check if a message is a duplicate
- * Returns the original message if found.
- * If an answer has already been sent (the message is marked as such with
- * the reqrep method), send it back again
- */
-
-msg *sos::deduplicate (receiver &r, msg *m)
-{
-    msg::msgtype mt ;
-    msg *orgmsg ;
-
-    orgmsg = 0 ;			// no duplicate
-    mt = m->type () ;
-    if (mt == msg::MT_CON || mt == msg::MT_NON)
-    {
-	for (auto &d : r.deduplist)
-	{
-	    if (*m == *d)
-	    {
-		orgmsg = *(&d) ;
-		break ;
-	    }
-	}
-
-	if (orgmsg && orgmsg->reqrep ())
-	{
-	    /*
-	     * Found a duplicated message (and an answer). Just send
-	     * back the already sent answer.
-	     */
-	    D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
-	    (void) orgmsg->reqrep ()->send () ;
-	}
-	else
-	{
-	    // store the new message on deduplist with a timeout
-	    m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r.l2->maxlatency ())) ;
-	}
-    }
-    r.deduplist.push_back (m) ;
-
-    return orgmsg ;
-}
 
 void sos::receiver_thread (receiver *r)
 {
@@ -726,6 +593,187 @@ void sos::receiver_thread (receiver *r)
 	    D ("Orphaned message from " << *(m->peer ()->addr ()) << ", id=" << m->id ()) ;
 	}
     }
+}
+
+bool sos::find_peer (msg *m, l2addr *a, receiver &r)
+{
+    bool found ;
+
+    found = false ;
+    if (a != nullptr)
+    {
+	bool free_a = true ;
+
+	/*
+	 * Is the peer already known?
+	 */
+
+	for (auto &s : slist_)
+	{
+	    if (s.addr () != 0 && *a == *(s.addr ()))
+	    {
+		m->peer (&s) ;
+		found = true ;
+		break ;
+	    }
+	}
+
+	/*
+	 * If the peer is not known, it may be a new slave coming up
+	 * In this case, we must send a ASSOCIATE message
+	 */
+
+	if (!found)
+	{
+	    slaveid_t sid ;
+	    int mtu ;
+
+	    if (m->is_sos_discover (sid, mtu))
+	    {
+		for (auto &s : slist_)
+		{
+		    if (sid == s.slaveid ())
+		    {
+			s.l2 (r.l2) ;
+			s.addr (a) ; free_a = false ;
+			s.mtu (mtu) ;
+			m->peer (&s) ;
+			found = true ;
+			break ;
+		    }
+		}
+	    }
+	}
+
+	if (free_a)
+	    delete a ;
+    }
+
+    return found ;
+}
+
+/**
+ * @brief Message correlation
+ *
+ * Message correlation: see CoAP spec, section 4.4
+ * Is the received message a reply to an already sent request?
+ * For this, we need to perform a search in the message list
+ * for a request message with this id.
+ *
+ * @param m received message
+ * @return pointer to our original request if the message is
+ *	is a reply, or NULL if the received message is not a
+ *	a reply to a previous request
+ */
+
+msg *sos::correlate (msg *m)
+{
+    msg::msgtype mt ;
+    msg *orgmsg ;
+
+    orgmsg = 0 ;
+    mt = m->type () ;
+    if (mt == msg::MT_ACK || mt == msg::MT_RST)
+    {
+	std::unique_lock <std::mutex> lk (mtx_) ;
+	int id ;
+
+	id = m->id () ;
+	for (auto &mr : mlist_)
+	{
+	    if (mr->id () == id)
+	    {
+		/* Got it! Original request found */
+		D ("Found original request for id=" << id) ;
+		orgmsg = &*mr ;
+		break ;
+	    }
+	}
+    }
+
+    return orgmsg ;
+}
+
+/**
+ * @brief Remove obsolete items from deduplication list
+ *
+ * @param r receiver private data
+ */
+
+void sos::clean_deduplist (receiver &r)
+{
+    timepoint_t now = std::chrono::system_clock::now () ;
+    auto di = r.deduplist.begin () ;
+    while (di != r.deduplist.end ())
+    {
+	msg *m = *di ;
+
+#if 0
+	D ("PARCOURS deduplist") ;
+	D ("m = " << m) ;
+	D ("*di = " << *di) ;
+	D ("*m = " << *m) ;
+#endif
+
+	if (now >= m->expire_)
+	{
+	    D ("ERASE FROM DEDUP id=" << m->id ()) ;
+	    delete m ;
+	    di = r.deduplist.erase (di) ;
+	}
+	else di++ ;
+    }
+}
+
+/**
+ * @brief Check if a message is a duplicated one
+ *
+ * This method checks if a message has already been received.
+ * If this is the case, returns the original message.
+ * If an answer has already been sent (the message is marked as such with
+ * the reqrep method), send it back again
+ *
+ * @param r receiver private data
+ * @param m message to check
+ * @return original message if m is a duplicate, or NULL if not found
+ */
+
+msg *sos::deduplicate (receiver &r, msg *m)
+{
+    msg::msgtype mt ;
+    msg *orgmsg ;
+
+    orgmsg = 0 ;			// no duplicate
+    mt = m->type () ;
+    if (mt == msg::MT_CON || mt == msg::MT_NON)
+    {
+	for (auto &d : r.deduplist)
+	{
+	    if (*m == *d)
+	    {
+		orgmsg = *(&d) ;
+		break ;
+	    }
+	}
+
+	if (orgmsg && orgmsg->reqrep ())
+	{
+	    /*
+	     * Found a duplicated message (and an answer). Just send
+	     * back the already sent answer.
+	     */
+	    D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
+	    (void) orgmsg->reqrep ()->send () ;
+	}
+	else
+	{
+	    // store the new message on deduplist with a timeout
+	    m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r.l2->maxlatency ())) ;
+	}
+    }
+    r.deduplist.push_back (m) ;
+
+    return orgmsg ;
 }
 
 }					// end of namespace sos
