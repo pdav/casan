@@ -1,3 +1,12 @@
+/**
+ * @file request_handler.hpp
+ * @brief request_handler class interface
+ *
+ * Note: this file is a modified version of the equivalent
+ * file from the Boost "http server2".
+ * See source file for license and credits.
+ */
+
 //
 // request_handler.hpp
 // ~~~~~~~~~~~~~~~~~~~

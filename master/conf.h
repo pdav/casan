@@ -1,3 +1,8 @@
+/**
+ * @file conf.h
+ * @brief Configuration file handling
+ */
+
 #ifndef CONF_H
 #define CONF_H
 
@@ -6,8 +11,13 @@
 // #define	CONF_PATH	"/etc/sosd.conf"
 #define	CONF_PATH	"./sosd.conf"
 
-/*
- * Configuration file handling
+/**
+ * @brief Configuration file handling
+ *
+ * The conf class is used to read the configuration file and
+ * represent the configuration through an intermediate form,
+ * which is composed of instance variables that the master
+ * class can use.
  */
 
 class conf
@@ -18,42 +28,42 @@ class conf
 
 	friend std::ostream& operator<< (std::ostream &os, const conf &cf) ;
 
-	std::string html_debug (void) ;
-
 	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_SOS, NS_WELL_KNOWN } ;
 
     protected:
 	friend class master ;
 
-	bool done_ = false ;		// configuration file already read
+	std::string html_debug (void) ;
 
-	// timer values
+	bool done_ = false ;		///< configuration file already read
+
+	/// timer values
 	enum cf_timer_index {
-	    I_FIRST_HELLO = 0,		// default slave ttl
-	    I_INTERVAL_HELLO = 1,	// interval between hello
-	    I_SLAVE_TTL = 2,		// default slave ttl
-	    I_LAST = 3			// last value
+	    I_FIRST_HELLO = 0,		///< default slave ttl
+	    I_INTERVAL_HELLO = 1,	///< interval between hello
+	    I_SLAVE_TTL = 2,		///< default slave ttl
+	    I_LAST = 3			///< last value
 	} ;
 	sostimer_t timers [I_LAST] ;
 
-	// HTTP server configuration
+	/// HTTP server configuration
 	struct cf_http
 	{
-	    std::string listen ;	// listen address (v4 or v6)
-	    std::string port ;		// tcp port number or name
-	    int threads = 0 ;		// number of threads for this server
+	    std::string listen ;	///< listen address (v4 or v6)
+	    std::string port ;		///< tcp port number or name
+	    int threads = 0 ;		///< number of threads for this server
 	} ;
 	std::list <cf_http> httplist_ ;
 
-	// namespace configuration
+	/// namespace configuration
 	struct cf_namespace
 	{
-	    std::vector <std::string> prefix ;	// namespace prefix
+	    std::vector <std::string> prefix ;	///< namespace prefix
 	    cf_ns_type type = NS_NONE ;
 	} ;
 	std::list <cf_namespace> nslist_ ;
 
-	// interface configuration
+	/// interface configuration
 	enum net_type { NET_NONE, NET_ETH, NET_802154 } ;
 	struct cf_net_eth
 	{
@@ -65,8 +75,8 @@ class conf
 	{
 	    std::string iface ;
 	    net_802154_type type ;
-	    std::string addr ;	// short or long addr: ab:cd[:ef:ab:cd:ef:ab:cd]
-	    std::string panid ;		// in hex [ab:cd]
+	    std::string addr ;		///< short or long addr: ab:cd[:ef:ab:cd:ef:ab:cd]
+	    std::string panid ;		///< in hex [ab:cd]
 	    int channel ;
 	} ;
 	struct cf_network
@@ -79,7 +89,7 @@ class conf
 	} ;
 	std::list <cf_network> netlist_ ;
 
-	// slave configuration
+	/// slave configuration
 	struct cf_slave
 	{
 	    int id = 0 ;

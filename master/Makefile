@@ -18,9 +18,17 @@ libs:
 sosd:	$(OBJS) $(LIBS)
 	c++ $(CXXFLAGS) -o sosd $(OBJS) $(LDFLAGS)
 
+html:
+	doxygen
+
+pdf:
+	doxygen
+	cd doc/latex ; make
+
 *.o: $(HDRS)
 
 clean:
 	cd sos ; make clean
 	cd http ; make clean
 	rm -f *.o sosd
+	rm -rf doc

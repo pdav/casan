@@ -1,3 +1,6 @@
+HTTP server library
+===================
+
 Files in this directory are copied from the "HTTP Server 2" example from
 Boost ASIO library:
 http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/examples.html

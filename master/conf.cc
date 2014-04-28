@@ -1,3 +1,8 @@
+/**
+ * @file conf.cc
+ * @brief conf class implementation
+ */
+
 #include <iostream>
 #include <fstream>
 #include <istream>
@@ -15,11 +20,19 @@
 #include "conf.h"
 #include "sos.h"
 
+/**
+ * @brief Parses the default configuration file
+ */
+
 bool conf::parse (void)
 {
     file_ = CONF_PATH ;
     return conf::parse_file () ;
 }
+
+/**
+ * @brief Parses the given configuration file
+ */
 
 bool conf::parse (const std::string &file)
 {
@@ -27,8 +40,12 @@ bool conf::parse (const std::string &file)
     return conf::parse_file () ;
 }
 
-/******************************************************************************
- * Configuration file dumper
+/**
+ * @brief Configuration file dumper
+ *
+ * This operator dumps the intermediate representation of the
+ * configuration file to the output stream (as a simili configuration
+ * file).
  */
 
 std::ostream& operator<< (std::ostream &os, const conf &cf)
@@ -104,6 +121,14 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
     }
     return os ;
 }
+
+/**
+ * @brief Configuration file dumper
+ *
+ * This operator dumps the intermediate representation of the
+ * configuration file to the output stream (as a simili configuration
+ * file in HTML).
+ */
 
 std::string conf::html_debug (void)
 {

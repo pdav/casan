@@ -1,3 +1,8 @@
+/**
+ * @file global.h
+ * @brief This file contains some global definitions used though SOS
+ */
+
 #ifndef	GLOBAL_H
 #define	GLOBAL_H
 

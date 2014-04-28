@@ -1,3 +1,8 @@
+/**
+ * @file master.h
+ * @brief master class interface
+ */
+
 #ifndef	MASTER_H
 #define	MASTER_H
 
@@ -10,24 +15,22 @@ struct request;
 
 class resource ;
 
+/**
+ * @brief The master class is the main class of the SOS master.
+ *
+ * The master class contains two main methods: master::start
+ * and master::stop. All work is done in the various threads
+ * started by master::start. The master::handle_http method
+ * is called by an HTTP server thread when a request is
+ * received.
+ */
+
 class master
 {
     public:
 	bool start (conf &cf) ;
 	bool stop (void) ;
 
-	std::string html_debug (void) ;
-
-	struct parse_result
-	{
-	    conf::cf_ns_type type_ ;
-	    std::string base_ ;		// first part of path
-	    sos::slave *slave_ ;	// for NS_SOS
-	    sos::resource *res_ ;	// for NS_SOS
-	    std::string str_ ;		// for NS_ADMIN
-	} ;
-
-	bool parse_path (const std::string path, parse_result &res) ;
 	void handle_http (const std::string request_path, const http::server2::request& req, http::server2::reply& rep);
 
     private:
@@ -41,9 +44,21 @@ class master
 	} ;
 	std::list <httpserver> httplist_ ;
 
+	struct parse_result
+	{
+	    conf::cf_ns_type type_ ;
+	    std::string base_ ;		// first part of path
+	    sos::slave *slave_ ;	// for NS_SOS
+	    sos::resource *res_ ;	// for NS_SOS
+	    std::string str_ ;		// for NS_ADMIN
+	} ;
+
 	void http_admin (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
 	void http_sos (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
 	void http_well_known (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
+	bool parse_path (const std::string path, parse_result &res) ;
+
+	std::string html_debug (void) ;
 } ;
 
 #endif

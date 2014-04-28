@@ -1,3 +1,13 @@
+/**
+ * @file sosd.cpp
+ * @brief SOS main program
+ *
+ * This file contains the `main` function of the SOS master.
+ * It reads the configuration file, then calls the master to
+ * start the various threads (HTTP server, SOS listener, etc.)
+ * and waits for a signal to cleanly exit.
+ */
+
 #include <iostream>
 #include <string>
 #include <list>
@@ -46,8 +56,12 @@ void wait_for_signal (void)
 }
 
 /******************************************************************************
- * Main function
+ */
+
+/**
+ * @brief Main function
  *
+ * The `main` function:
  * - check arguments
  * - read/parse configuration file
  * - start master: start threads for SOS engine, HTTP servers, etc.

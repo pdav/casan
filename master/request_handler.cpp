@@ -1,3 +1,12 @@
+/**
+ * @file request_handler.cpp
+ * @brief request_handler class implementation
+ *
+ * Note: this file is a modified version of the equivalent
+ * file from the Boost "http server2".
+ * See source file for license and credits.
+ */
+
 //
 // request_handler.cpp
 // ~~~~~~~~~~~~~~~~~~~
@@ -32,10 +41,28 @@
 extern conf cf ;
 extern master master ;
 
+/**
+ * @brief Request handler creation
+ *
+ * This modified version is reduced from the original, but interface
+ * (the `doc_root` parameter) did not change in order to keep the
+ * rest of the HTTP server unmodified.
+ */
+
 request_handler::request_handler(const std::string& doc_root)
   : doc_root_(doc_root)
 {
 }
+
+/**
+ * @brief Handles an HTTP request
+ *
+ * This method directly handles badly formatted requests, and if
+ * not, gives control to the master::handle_http method.
+ *
+ * @param req the request HTTP message
+ * @param rep our reply
+ */
 
 void request_handler::handle_request(const http::server2::request& req, http::server2::reply& rep)
 {

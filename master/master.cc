@@ -1,3 +1,8 @@
+/**
+ * @file master.cc
+ * @brief master class implementation
+ */
+
 #include <iostream>
 #include <string>
 #include <list>
@@ -30,18 +35,21 @@
 #include "master.h"
 
 /******************************************************************************
- * Debug
  */
 
-std::string master::html_debug (void)
-{
-    return engine_.html_debug () ;
-}
-
-/******************************************************************************
- * Start the whole SOS machinery
- * - master SOS code
- * - http server
+/**
+ * @brief Start the whole SOS machinery
+ *
+ * This method:
+ * - creates a sos::l2net object for each network listed in the
+ *	configuration file (which implies a new thread each time)
+ * - creates each SOS slave listed in the configuration file
+ * - starts the threads for the HTTP servers
+ *
+ * Work is next done in the various threads (HTTP or SOS).
+ *
+ * @param cf result of the configuration file read (see the conf class)
+ * @result true if starting was successfull
  */
 
 bool master::start (conf &cf)
@@ -149,6 +157,14 @@ bool master::start (conf &cf)
     return r ;
 }
 
+/**
+ * @brief Stop the whole SOS machinery
+ *
+ * This method stops the various threads involved in the SOS program.
+ *
+ * @return true if stopping was successfull
+ */
+
 bool master::stop (void)
 {
     bool r = true ;
@@ -162,6 +178,15 @@ bool master::stop (void)
     // engine_.stop () ;
 
     return r ;
+}
+
+/******************************************************************************
+ * Debug
+ */
+
+std::string master::html_debug (void)
+{
+    return engine_.html_debug () ;
 }
 
 /******************************************************************************
@@ -279,7 +304,18 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 }
 
 /******************************************************************************
- * Handle a HTTP request
+ */
+
+/**
+ * @brief Handle a HTTP request
+ *
+ * This method is called by an HTTP server thread to handle a request,
+ * which may be forwarded to the SOS side or answered directly if it
+ * is a control request.
+ *
+ * @param request_path requested URL
+ * @param req the request HTTP message
+ * @param rep our reply
  */
 
 void master::handle_http (const std::string request_path, const http::server2::request & req, http::server2::reply & rep)
@@ -460,7 +496,7 @@ void master::http_well_known (const parse_result &res, const http::server2::requ
  * Handle a HTTP request for sos namespace
  */
 
-struct
+static struct
 {
     const char *text ;
     const sos::msg::msgcode code ;
