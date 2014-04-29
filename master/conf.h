@@ -63,22 +63,26 @@ class conf
 	} ;
 	std::list <cf_namespace> nslist_ ;
 
-	/// interface configuration
+	/// interface type
 	enum net_type { NET_NONE, NET_ETH, NET_154 } ;
+	/// Ethernet interface configuration
 	struct cf_net_eth
 	{
-	    std::string iface ;
-	    int ethertype = 0 ;
+	    std::string iface ;		///< interface name (see `netstat -i`)
+	    int ethertype = 0 ;		///< frame type
 	} ;
+	/// IEEE 802.15.4 type (i.e. type of interface)
 	enum net_154_type { NET_154_NONE, NET_154_XBEE } ;
+	/// IEEE 802.15.4 interface configuration
 	struct cf_net_154
 	{
-	    std::string iface ;
-	    net_154_type type ;
+	    std::string iface ;		///< entry in `/dev`
+	    net_154_type type ;		///< type of driver
 	    std::string addr ;		///< short or long addr: ab:cd[:ef:ab:cd:ef:ab:cd]
 	    std::string panid ;		///< in hex [ab:cd]
 	    int channel ;
 	} ;
+	/// network configuration
 	struct cf_network
 	{
 	    net_type type = NET_NONE ;

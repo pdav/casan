@@ -161,7 +161,7 @@ void resource::add_attribute (const std::string name, const std::string value)
 /**
  * @brief Add the resource path to a message
  *
- * Add the resource path to a message as some CoAP options
+ * Add the resource path to a message as one or more Uri_Path CoAP options.
  *
  * @param m message to add the path to
  */
