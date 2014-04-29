@@ -21,8 +21,6 @@ class msg ;
 class slave ;
 class l2net ;
 
-struct receiver ;
-
 /**
  * @brief SOS engine class
  *
@@ -82,6 +80,8 @@ class sos
 	std::string resource_list (void) ;	// aggregated .well-known/sos
 
     private:
+	struct receiver ;		// receiver private data
+
 	std::list <receiver *> rlist_ ;	// connected networks
 	std::list <slave> slist_ ;	// registered slaves
 	std::list <msg *> mlist_ ;	// messages sent by SOS

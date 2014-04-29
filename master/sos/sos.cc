@@ -32,7 +32,7 @@ namespace sos {
  * @brief Private data for each receiver thread
  */
 
-struct receiver
+struct sos::receiver
 {
     l2net *l2 ;
     long int hid ; 			// hello id, initialized at start time
