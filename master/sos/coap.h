@@ -27,7 +27,7 @@ namespace sos {
  */
 
 /** ACK timeout (milliseconds) for CONfirmable messages */
-#define	ACK_TIMEOUT	2000
+#define	ACK_TIMEOUT	1000
 /** ACK random factor to compute initial timeout for CON messages */
 #define	ACK_RANDOM_FACTOR	1.5
 /** maximum number of retransmissions */
