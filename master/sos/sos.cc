@@ -286,7 +286,7 @@ slave *sos::find_slave (slaveid_t sid)
  * @brief Add a new message to send
  *
  * This method notifies the sender thread to send the given message
- * (and to add it to the retransmission queue if needed)
+ * by pushing it in the retransmission list (list of outgoing messages).
  *
  * @param m pointer to the message to be sent
  */
@@ -299,6 +299,11 @@ void sos::add_request (msg *m)
     condvar_.notify_one () ;
 }
 
+/******************************************************************************
+ * Sender thread
+ *****************************************************************************/
+
+
 /**
  * @brief Sender thread
  *
@@ -307,6 +312,18 @@ void sos::add_request (msg *m)
  * - timer event, signalling that a request timeout has expired
  * - change in L2 network handling (new L2, or removed L2)
  * - a new request is added (from an exterior thread)
+ *
+ * The sender thread manages:
+ * - the list of l2 networks (the thread must start a new receiver
+ *     thread for each new l2 network)
+ * - the list of all slaves in order to expire the "active" status
+ *     if needed
+ * - the list of all outgoing messages in order to:
+ *    - send a new message
+ *    - retransmit a message if no answer has been received yet
+ *    - expire an old message without any received answer. In this
+ *     case, the message will only be deleted if there is no
+ *     thread waiting for this message.
  */
 
 void sos::sender_thread (void)
@@ -402,16 +419,8 @@ void sos::sender_thread (void)
 	    {
 		D ("ERASE FROM SENT id=" << m->id ()) ;
 
-#if 0
 		/*
-		 * Unlink messages
-		 */
-
-		m->link_reqrep (nullptr) ;
-#endif
-
-		/*
-		 * Process to removal
+		 * Remove the message from the list and delete it
 		 */
 
 		delete m ;
@@ -471,12 +480,20 @@ void sos::sender_thread (void)
     }
 }
 
+/******************************************************************************
+ * Receiver threads
+ *****************************************************************************/
+
 /**
  * @brief Receiver thread
  *
  * Each receiver thread spends its life waiting for a message to be
  * received on the associated interface (in fact, the l2net::recv
  * method).
+ *
+ * A receiver thread manages a de-duplication list (as specified
+ * in the CoAP specification) to eliminate received answers which
+ * are duplicated (i.e. already received).
  *
  * @param r receiver private data
  */
