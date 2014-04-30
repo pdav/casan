@@ -9,14 +9,14 @@
 #include "l2.h"
 #include <list>
 
-// Ethernet address length
+// IEEE 802.15.4 address length
 #define	L2154ADDRLEN	8
-// Ethernet default MTU
+// IEEE 802.15.4 default MTU
 #define	L2154MTU	127
-// Ethernet maximum latency (ms). Even a very conservative value is far
+// IEEE 802.15.4 maximum latency (ms). Even a very conservative value is far
 // more realistic than the default CoAP value (100 s)
-// #define	ETHMAXLATENCY	10
-#define	L2154MAXLATENCY	50
+// In our case, 128 Bytes takes ~4 ms with a 230 kb/s network
+#define	L2154MAXLATENCY	5
 
 
 namespace sos {

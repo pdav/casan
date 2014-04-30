@@ -548,7 +548,13 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 
     r = m->reqrep () ;
     if (r == nullptr)
+    {
+	/*
+	 * No reply to our request
+	 */
+
 	rep = http::server2::reply::stock_reply (http::server2::reply::service_unavailable) ;
+    }
     else
     {
 	int contentformat = 0 ;		// text/plain by default
