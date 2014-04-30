@@ -2,7 +2,7 @@ CXX = g++
 L2ETH = -DUSE_PF_PACKET=1
 #L2ETH = -DUSE_PCAP=1
 INCLUDES = -Isos -Ihttp -I.
-CXXFLAGS = -g -DDEBUG -std=c++11 $(L2ETH) -Wall -W -pedantic $(INCLUDES)
+CXXFLAGS = -g -DDEBUG -std=c++11 $(L2ETH) -Wall -Werror -W -pedantic $(INCLUDES)
 LDFLAGS = -Lsos -lsos -Lhttp -lhttp -lpthread
 
 LIBS = sos/libsos.a http/libhttp.a

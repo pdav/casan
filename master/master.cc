@@ -477,9 +477,12 @@ void master::http_admin (const parse_result & res, const http::server2::request 
 
 /******************************************************************************
  * Handle a HTTP request for the "well-known" namespace
+ *
+ * __attribute__((unused)): gcc-specific variable attribute (which
+ * means: "do not bark on me, I know this variable is not used")
  */
 
-void master::http_well_known (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
+void master::http_well_known (const parse_result & res __attribute__ ((unused)), const http::server2::request & req __attribute__ ((unused)), http::server2::reply & rep)
 {
     rep.status = http::server2::reply::ok ;
     rep.content = engine_.resource_list () ;
