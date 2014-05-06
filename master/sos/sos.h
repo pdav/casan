@@ -8,6 +8,7 @@
 
 #include <list>
 #include <string>
+#include <memory>
 
 #include <thread>
 #include <mutex>
@@ -70,7 +71,7 @@ class sos
 	void add_slave (slave *s) ;
 
 	// add a request
-	void add_request (msg *m) ;
+	void add_request (std::shared_ptr <msg> m) ;
 
 	// find a slave by it's slave id
 	slave *find_slave (slaveid_t sid) ;
@@ -84,7 +85,7 @@ class sos
 
 	std::list <receiver *> rlist_ ;	// connected networks
 	std::list <slave> slist_ ;	// registered slaves
-	std::list <msg *> mlist_ ;	// messages sent by SOS
+	std::list <std::shared_ptr <msg>> mlist_ ;	// messages sent by SOS
 
 	std::thread *tsender_ ;
 
@@ -98,9 +99,9 @@ class sos
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
 	void clean_deduplist (receiver &r) ;
-	msg *deduplicate (receiver &r, msg *m) ;
-	bool find_peer (msg *m, l2addr *a, receiver &r) ;
-	msg *correlate (msg *m) ;
+	std::shared_ptr <msg> deduplicate (receiver &r, std::shared_ptr <msg> m) ;
+	bool find_peer (std::shared_ptr <msg> m, l2addr *a, receiver &r) ;
+	std::shared_ptr <msg> correlate (std::shared_ptr <msg> m) ;
 } ;
 
 }					// end of namespace sos

@@ -8,6 +8,7 @@
 
 #include <list>
 #include <chrono>
+#include <memory>
 
 #include "coap.h"
 #include "option.h"
@@ -90,7 +91,7 @@ class msg
 	int code (void) ;
 	void *payload (int *paylen) ;
 	option popoption (void) ;
-	msg *reqrep (void) ;
+	std::shared_ptr <msg> reqrep (void) ;
 	waiter *wt (void) ;
 	int msglen (void) ;
 	int paylen (void) ;
@@ -98,7 +99,7 @@ class msg
 	void option_reset_iterator (void) ;
 	option *option_next (void) ;
 
-	void link_reqrep (msg *m) ;	// m == 0 <=> unlink
+	static void link_reqrep (std::shared_ptr <msg> m1, std::shared_ptr <msg> m2) ;	// m2 == 0 <=> unlink
 
 	// control messages
 	sostype_t sos_type (void) ;
@@ -138,7 +139,7 @@ class msg
 	std::list <option> optlist_ ;	// list of all options
 	std::list <option>::iterator optiter_ ;
 
-	msg *reqrep_ = nullptr ;	// "request of" or "response of"
+	std::shared_ptr <msg> reqrep_ = nullptr ;	// "request of" or "response of"
 	sostype_t sostype_ = SOS_UNKNOWN ;
 
 	static int global_message_id ;

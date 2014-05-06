@@ -662,23 +662,27 @@ void msg::wt (waiter *w)
 
 /**
  * @brief Mutually link a reply and a request messages
+ *
+ * This function is a class function rather than a object method, because
+ * the current object is not a `shared_ptr<msg>` (`this` is a `msg *` and
+ * not a `shared_ptr<msg>`).
  */
 
-void msg::link_reqrep (msg *m)
+void msg::link_reqrep (std::shared_ptr <msg> m1, std::shared_ptr <msg> m2)
 {
-    if (m == nullptr)
+    if (m2 == nullptr)
     {
 	// unlink peer message if it exists
-	if (reqrep_ != nullptr)
-	    reqrep_->reqrep_ = nullptr ;
+	if (m1->reqrep_ != nullptr)
+	    m2->reqrep_->reqrep_ = nullptr ;
 	// unlink current message
-	reqrep_ = nullptr ;
+	m1->reqrep_ = nullptr ;
     }
     else
     {
 	// link messages
-	reqrep_ = m ;
-	m->reqrep_ = this ;
+	m1->reqrep_ = m2 ;
+	m2->reqrep_ = m1 ;
     }
 }
 
@@ -739,7 +743,7 @@ void *msg::payload (int *paylen)
  * @return the other message or NULL if the message has no peer message
  */
 
-msg *msg::reqrep (void)
+std::shared_ptr <msg> msg::reqrep (void)
 {
     return reqrep_ ;
 }

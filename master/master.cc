@@ -513,8 +513,8 @@ static struct
 
 void master::http_sos (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
 {
-    sos::msg *m ;
-    sos::msg *r ;
+    std::shared_ptr <sos::msg> m (new sos::msg) ;
+    std::shared_ptr <sos::msg> r ;
     sos::msg::msgcode_t code ;
     sos::waiter w ;
     timepoint_t timeout ;
@@ -525,7 +525,6 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	if (tabmethod[i].text == req.method)
 	    code = tabmethod[i].code ;
 
-    m = new sos::msg ;
     m->peer (res.slave_) ;
     m->type (sos::msg::MT_CON) ;
     m->code (code) ;

@@ -127,20 +127,20 @@ const std::vector <resource> &slave::resource_list (void)
  * @param m received message
  */
 
-void slave::process_sos (sos *e, msg *m)
+void slave::process_sos (sos *e, std::shared_ptr <msg> m)
 {
-    msg *answer = 0 ;
-
     switch (m->sos_type ())
     {
 	case msg::SOS_DISCOVER :
-	    D ("Received DISCOVER, sending ASSOCIATE") ;
-	    answer = new msg ;
-	    answer->peer (m->peer ()) ;
-	    answer->type (msg::MT_CON) ;
-	    answer->code (msg::MC_POST) ;
-	    answer->mk_ctl_assoc (init_ttl_) ;
-	    e->add_request (answer) ;
+	    {
+		D ("Received DISCOVER, sending ASSOCIATE") ;
+		std::shared_ptr <msg> answer (new msg) ;
+		answer->peer (m->peer ()) ;
+		answer->type (msg::MT_CON) ;
+		answer->code (msg::MC_POST) ;
+		answer->mk_ctl_assoc (init_ttl_) ;
+		e->add_request (answer) ;
+	    }
 	    break ;
 	case msg::SOS_ASSOC_REQUEST :
 	    D ("Received ASSOC_REQUEST from another master") ;

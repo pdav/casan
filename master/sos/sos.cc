@@ -37,8 +37,8 @@ struct sos::receiver
     l2net *l2 ;
     long int hid ; 			// hello id, initialized at start time
     slave broadcast ;
-    std::list <msg *> deduplist ;	// received messages
-    msg *hellomsg ;
+    std::list <std::shared_ptr <msg> > deduplist ;	// received messages
+    std::shared_ptr <msg> hellomsg ;
     timepoint_t next_hello ;
     std::thread *thr ;
 } ;
@@ -212,7 +212,7 @@ void sos::start_net (l2net *l2)
 	now = std::chrono::system_clock::now () ;
 	r->hid = std::chrono::system_clock::to_time_t (now) % 1000 ;
 
-	r->hellomsg = new msg () ;
+	r->hellomsg = std::make_shared <msg> () ;
 	r->hellomsg->peer (& r->broadcast) ;
 	r->hellomsg->type (msg::MT_NON) ;
 	r->hellomsg->code (msg::MC_POST) ;
@@ -291,7 +291,7 @@ slave *sos::find_slave (slaveid_t sid)
  * @param m pointer to the message to be sent
  */
 
-void sos::add_request (msg *m)
+void sos::add_request (std::shared_ptr <msg> m)
 {
     std::unique_lock <std::mutex> lk (mtx_) ;
 
@@ -385,22 +385,8 @@ void sos::sender_thread (void)
 	 * messages to retransmit
 	 */
 
-	auto mi = mlist_.begin () ;
-
-	while (mi != mlist_.end ())
+	for (auto &m : mlist_)
 	{
-	    msg *m = *mi ;
-
-#if 0
-	    D ("PARCOURS mlist_") ;
-	    D ("m = " << m) ;
-	    D (*m) ;
-#endif
-
-	    /*
-	     * New message to transmit or old message to retransmit
-	     */
-
 	    if (m->ntrans_ == 0 ||
 		    (m->ntrans_ < MAX_RETRANSMIT && now >= m->next_timeout_)
 		    )
@@ -411,23 +397,18 @@ void sos::sender_thread (void)
 		}
 	    }
 
-	    /*
-	     * Message expired
-	     */
-
-	    if (now >= m->expire_)
-	    {
-		D ("ERASE FROM SENT id=" << m->id ()) ;
-
-		/*
-		 * Remove the message from the list and delete it
-		 */
-
-		delete m ;
-		mi = mlist_.erase (mi) ;
-	    }
-	    else mi++ ;
 	}
+
+	/*
+	 * Remove expired messages (using a C++ lambda)
+	 */
+
+	mlist_.remove_if (
+	    [now]
+	    (const std::shared_ptr <msg> &m)
+	    {
+		return now > m->expire_ ;
+	    }) ;
 
 	/*
 	 * Determine date of next action
@@ -502,10 +483,10 @@ void sos::receiver_thread (receiver *r)
 {
     for (;;)
     {
-	msg *m ;			// received message
+	std::shared_ptr <msg> m (new msg) ;	// received message
 	l2addr *a ;			// source address of received message
-	msg *orgreq ;			// message correlation result
-	msg *dupmsg ;			// original message in case of duplicate
+	std::shared_ptr <msg> orgreq ;	// message correlation result
+	std::shared_ptr <msg> dupmsg ;	// original message in case of duplicate
 
 	// D ("- RECEIVER THREAD -------------------\n" << *this) ;
 
@@ -513,7 +494,6 @@ void sos::receiver_thread (receiver *r)
 	 * Wait for a new message
 	 */
 
-	m = new msg ;
 	a = m->recv (r->l2) ;
 
 	/*
@@ -567,7 +547,7 @@ void sos::receiver_thread (receiver *r)
 	     * the original request we sent, and wake the emitter up.
 	     */
 
-	    orgreq->link_reqrep (m) ;
+	    msg::link_reqrep (orgreq, m) ;
 	    orgreq->stop_retransmit () ;
 
 	    if (orgreq->wt () != nullptr)
@@ -612,7 +592,7 @@ void sos::receiver_thread (receiver *r)
     }
 }
 
-bool sos::find_peer (msg *m, l2addr *a, receiver &r)
+bool sos::find_peer (std::shared_ptr <msg> m, l2addr *a, receiver &r)
 {
     bool found ;
 
@@ -683,10 +663,10 @@ bool sos::find_peer (msg *m, l2addr *a, receiver &r)
  *	a reply to a previous request
  */
 
-msg *sos::correlate (msg *m)
+std::shared_ptr <msg> sos::correlate (std::shared_ptr <msg> m)
 {
     msg::msgtype mt ;
-    msg *orgmsg ;
+    std::shared_ptr <msg> orgmsg ;
 
     orgmsg = 0 ;
     mt = m->type () ;
@@ -702,7 +682,7 @@ msg *sos::correlate (msg *m)
 	    {
 		/* Got it! Original request found */
 		D ("Found original request for id=" << id) ;
-		orgmsg = &*mr ;
+		orgmsg = mr ;
 		break ;
 	    }
 	}
@@ -720,26 +700,18 @@ msg *sos::correlate (msg *m)
 void sos::clean_deduplist (receiver &r)
 {
     timepoint_t now = std::chrono::system_clock::now () ;
-    auto di = r.deduplist.begin () ;
-    while (di != r.deduplist.end ())
-    {
-	msg *m = *di ;
 
-#if 0
-	D ("PARCOURS deduplist") ;
-	D ("m = " << m) ;
-	D ("*di = " << *di) ;
-	D ("*m = " << *m) ;
-#endif
+    /*
+     * Remove expired messages (using a C++ lambda)
+     */
 
-	if (now >= m->expire_)
+    r.deduplist.remove_if (
+	[now]
+	(const std::shared_ptr <msg> &m)
 	{
-	    D ("ERASE FROM DEDUP id=" << m->id ()) ;
-	    delete m ;
-	    di = r.deduplist.erase (di) ;
-	}
-	else di++ ;
-    }
+	    return now > m->expire_ ;
+	}) ;
+
 }
 
 /**
@@ -755,10 +727,10 @@ void sos::clean_deduplist (receiver &r)
  * @return original message if m is a duplicate, or NULL if not found
  */
 
-msg *sos::deduplicate (receiver &r, msg *m)
+std::shared_ptr <msg> sos::deduplicate (receiver &r, std::shared_ptr <msg> m)
 {
     msg::msgtype mt ;
-    msg *orgmsg ;
+    std::shared_ptr <msg> orgmsg ;
 
     orgmsg = 0 ;			// no duplicate
     mt = m->type () ;
