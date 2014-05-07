@@ -48,7 +48,7 @@ struct option::optdesc * option::optdesc_ = 0 ;
 			    b [optlen_] = 0 ;			\
 			} while (false)				// no ";"
 #define	CHK_OPTCODE(c)	do {					\
-			    if ((c) < 0 || (c) >= MAXOPT	\
+			    if ((c) < 0 || (int) (c) >= MAXOPT	\
 				|| optdesc_ [c].format == OF_NONE) \
 				throw 20 ;			\
 			} while (false)				// no ";"
@@ -280,7 +280,7 @@ void option::static_init (void)
  * Operator used for list sorting (cf msg.cc)
  */
 
-bool option::operator< (const option &o)
+bool option::operator< (const option &o) const
 {
     return this->optcode_ < o.optcode_ ;
 }

@@ -1,5 +1,6 @@
 CXX = g++
-CXXFLAGS = -g -DDEBUG -std=c++11 -Wall -W -pedantic -I..
+ASIOINC =
+CXXFLAGS = -g -DDEBUG -std=c++11 -Wall -W -pedantic -I.. $(ASIOINC)
 LDFLAGS = -L. -lhttp -lpthread
 
 HDRS = \

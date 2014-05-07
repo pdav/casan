@@ -72,7 +72,6 @@ class l2net_154: public l2net
 
     private:
 	int fd_ ;			// interface index
-	int panid_ ;			// PAN id
 
 	/*
 	 * Buffer to accumulate bytes received from the XBee chip

@@ -76,7 +76,7 @@ class option
 	option &operator= (const option &o) ;	// copy assignment constructor
 	~option () ;				// destructor
 
-	bool operator< (const option &o) ;	// for list sorting in msg.cc
+	bool operator< (const option &o) const ; // for list sorting in msg.cc
 
 	bool operator== (const option &o) ;
 	bool operator!= (const option &o) ;
