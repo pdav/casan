@@ -375,6 +375,7 @@ bool conf::parse_line (std::string &line)
 	    {
 		if (tokens [i] == "ethernet")
 		{
+#if defined (USE_PF_PACKET) || defined (USE_PCAP)
 		    c.type = NET_ETH ;
 		    i++ ;
 
@@ -435,6 +436,9 @@ bool conf::parse_line (std::string &line)
 			    r = false ;
 			}
 		    }
+#else
+		    parse_error ("No Ethernet support", -1) ;
+#endif
 		}
 		else if (tokens [i] == "802.15.4")
 		{

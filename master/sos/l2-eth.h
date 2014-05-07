@@ -1,19 +1,17 @@
 /**
  * @file l2-eth.h
  * @brief l2addr and l2net specializations for Ethernet
+ *
+ * This file should be compiled with the `-DUSE_PF_PACKET` (Linux) or
+ * the `-DUSE_PCAP` (FreeBSD, not available yet) flag.
+ * If neither of these 2 flags is provided, SOS does not support
+ * Ethernet access.
  */
 
 #ifndef SOS_L2ETH_H
 #define	SOS_L2ETH_H
 
 #include "l2.h"
-
-/* consistency check */
-#ifdef USE_PF_PACKET
-#elif USE_PCAP
-#else
-#error	"Must define either USE_PF_PACKET or USE_PCAP"
-#endif
 
 #ifdef USE_PCAP
 #include <pcap/pcap.h>

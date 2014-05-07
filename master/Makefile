@@ -1,6 +1,7 @@
 CXX = g++
-L2ETH = -DUSE_PF_PACKET=1
-#L2ETH = -DUSE_PCAP=1
+L2ETH = -DUSE_PF_PACKET=1	# Linux
+#L2ETH = -DUSE_PCAP=1		# BSD (not available)
+#L2ETH =			# no Ethernet Support
 INCLUDES = -Isos -Ihttp -I.
 CXXFLAGS = -g -DDEBUG -std=c++11 $(L2ETH) -Wall -Werror -W -pedantic $(INCLUDES)
 LDFLAGS = -Lsos -lsos -Lhttp -lhttp -lpthread
@@ -12,8 +13,8 @@ OBJS = sosd.o conf.o master.o request_handler.o
 all:	libs $(LIBS) sosd
 
 libs:
-	cd sos ; make libsos.a
-	cd http ; make libhttp.a
+	cd sos ; make CXX="$(CXX)" L2ETH="$(L2ETH)" libsos.a
+	cd http ; make CXX="$(CXX)" L2ETH="$(L2ETH)" libhttp.a
 
 sosd:	$(OBJS) $(LIBS)
 	c++ $(CXXFLAGS) -o sosd $(OBJS) $(LDFLAGS)

@@ -75,6 +75,7 @@ bool master::start (conf &cf)
 	    {
 		case conf::NET_ETH :
 		    {
+#if defined (USE_PF_PACKET) || defined (USE_PCAP)
 			sos::l2net_eth *le ;
 			le = new sos::l2net_eth ;
 			if (le->init (n.net_eth.iface.c_str (), n.net_eth.ethertype) == -1)
@@ -86,6 +87,7 @@ bool master::start (conf &cf)
 			l = le ;
 			engine_.start_net (l) ;
 			std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
+#endif
 		    }
 		    break ;
 		case conf::NET_154 :

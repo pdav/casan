@@ -147,7 +147,7 @@ bool l2addr_eth::operator!= (const l2addr &other)
 
 int l2net_eth::init (const std::string iface, int ethertype)
 {
-#ifdef USE_PF_PACKET
+#if defined (USE_PF_PACKET)
     struct sockaddr_ll sll ;
 
     mtu_ = ETHMTU ;
@@ -179,8 +179,7 @@ int l2net_eth::init (const std::string iface, int ethertype)
     }
 
     return 0 ;
-#endif
-#ifdef USE_PCAP
+#elif defined (USE_PCAP)
     struct bpf_program *bpfp ;
     char buf [MAXBUF] ;
 
@@ -209,6 +208,10 @@ int l2net_eth::init (const std::string iface, int ethertype)
     }
 
     return 0 ;
+#else
+    if (iface == "" && ethertype == 0)
+	return -1 ;
+    return 0 ;
 #endif
 }
 
@@ -218,10 +221,9 @@ int l2net_eth::init (const std::string iface, int ethertype)
 
 void l2net_eth::term (void)
 {
-#ifdef USE_PF_PACKET
+#if defined (USE_PF_PACKET)
     close (fd_) ;
-#endif
-#ifdef USE_PCAP
+#elif defined (USE_PCAP)
     pcap_close (fd_) ;
 #endif
 }
@@ -234,11 +236,12 @@ void l2net_eth::term (void)
 
 int l2net_eth::send (l2addr *daddr, void *data, int len)
 {
-#ifdef USE_PF_PACKET
+    int r ;
+
+#if defined (USE_PF_PACKET)
     struct sockaddr_ll sll ;
     l2addr_eth *a = (l2addr_eth *) daddr ;
     byte *buf ;
-    int r ;
 
     /*
      * Ethernet specific: add message length at the beginnin of the payload
@@ -262,11 +265,19 @@ int l2net_eth::send (l2addr *daddr, void *data, int len)
     std::memcpy (sll.sll_addr, a->addr_, ETHADDRLEN) ;
 
     r = sendto (fd_, buf, len, 0, (struct sockaddr *) &sll, sizeof sll) ;
+#elif defined (USE_PCAP)
+    r = 0 ;
+#else
+    /*
+     * Ethernet not supported: calm down gcc and use all arguments in
+     * a big non-sense
+     */
+
+    if (daddr == NULL && data == NULL && len == 0)
+	r = -1 ;
+    r = -1 ;
+#endif
     return r ;
-#endif
-#ifdef USE_PCAP
-    return 0 ;
-#endif
 }
 
 /**
@@ -291,7 +302,9 @@ l2addr *l2net_eth::bcastaddr (void)
 
 pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 {
-#ifdef USE_PF_PACKET
+    pktype_t pktype ;
+
+#if defined (USE_PF_PACKET)
     struct sockaddr_ll sll ;
     socklen_t ssll ;
     l2addr_eth **a = (l2addr_eth **) saddr ;
@@ -354,12 +367,9 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 	std::memcpy ((*a)->addr_, sll.sll_addr, ETHADDRLEN) ;
     }
 
-    return pktype ;
-#endif
-#ifdef USE_PCAP
+#elif defined (USE_PCAP)
     struct pcap_pkthdr pkthdr ;
     const u_char *d ;
-    pktype_t pktype ;
 
     d = pcap_next (fd_, &pkthdr) ;
     if (d == NULL)
@@ -374,8 +384,19 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
 
 	pktype = PK_ME ;
     }
-    return pktype ;
+
+#else
+    /*
+     * Ethernet not supported: calm down gcc and use all arguments in
+     * a big non-sense
+     */
+
+    if (saddr == NULL && data == NULL && len == NULL)
+	pktype = PK_NONE ;
+    pktype = PK_NONE ;
+
 #endif
+    return pktype ;
 }
 
 }					// end of namespace sos
