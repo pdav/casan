@@ -22,14 +22,6 @@
     #define	MTU		0
 #endif
 
-#define	R1_name		"temp"
-#define	R1_title	"temperature"
-#define	R1_rt		"celcius"
-
-#define	R2_name		"led"
-#define	R2_title	"led"
-#define	R2_rt		"light"
-
 #define	DEBUGINTERVAL	10
 
 int tmp_sensor = A0 ;
@@ -52,9 +44,8 @@ uint8_t process_temp (Msg &in, Msg &out)
     snprintf (message, 10, "%d", sensorValue) ;
 
     out.set_payload ((uint8_t *) message,  strlen (message)) ;
-    out.set_code (COAP_RETURN_CODE (2, 5)) ;
 
-    return 0 ;
+    return COAP_RETURN_CODE (2, 5) ;
 }
 
 uint8_t process_led (Msg &in, Msg &out) 
@@ -68,9 +59,7 @@ uint8_t process_led (Msg &in, Msg &out)
 	analogWrite (led, n) ;
     }
 
-    out.set_code (COAP_RETURN_CODE (2,5)) ;
-
-    return 0 ;
+    return COAP_RETURN_CODE (2,5) ;
 }
 
 void setup () 
@@ -89,11 +78,12 @@ void setup ()
 
     debug.start (DEBUGINTERVAL) ;
 
-    Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
+    /* definitions for a resource: name (in URL), title, rt for /.well-known */
+    Resource *r1 = new Resource ("temp", "Room temperature", "celsius") ;
     r1->handler (COAP_CODE_GET, process_temp) ;
     sos->register_resource (r1) ;
 
-    Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
+    Resource *r2 = new Resource ("led", "My beautiful LED", "light") ;
     r2->handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r2) ;
 
