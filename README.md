@@ -8,6 +8,24 @@ This directory is structured as follows:
 * master: code for the master processor
 * arduino: code for the slave processor running on Arduino
 
+Source code style guide
+-----------------------
+
+Here are some elements of style for reading the source code:
+- all source files are developped with a classical text editor (vi).
+- indentation is 4 space wide.
+- don't modify the tabulation size in your editor configuration: it
+    should remain the standard 8 column, as with your printer.
+    So, indentation is a combination of tabulations or spaces.
+- SOS master code is documented via Doxygen. To generate the complete
+    documentation, you need `doxygen`, `dot` (part of graphviz) and
+    `pdflatex`: just type `make pdf` in `./master` directory.
+- SOS slave code is documented via Doxygen. To generate the complete
+    documentation, you need `doxygen`, `dot` (part of graphviz) and
+    `pdflatex`: just type `make pdf` in `./arduino/libraries` directory.
+
+
+
 Notes for Linux
 ---------------
 
