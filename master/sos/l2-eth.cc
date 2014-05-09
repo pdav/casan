@@ -309,7 +309,6 @@ pktype_t l2net_eth::recv (l2addr **saddr, void *data, int *len)
     socklen_t ssll ;
     l2addr_eth **a = (l2addr_eth **) saddr ;
     int r ;
-    pktype_t pktype ;
     byte *buf ;
     int lenlen = *len + 2 ;
 
