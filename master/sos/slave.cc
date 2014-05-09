@@ -156,6 +156,8 @@ void slave::process_sos (sos *e, std::shared_ptr <msg> m)
 
 		 // Add ressource list from the answer
 		pload = (byte *) m->payload (&plen) ;
+		D ("payload length=" << plen) ;
+
 		if (parse_resource_list (rlist, pload, plen))
 		{
 		    D ("Slave " << slaveid_ << " status set to RUNNING") ;
@@ -163,6 +165,8 @@ void slave::process_sos (sos *e, std::shared_ptr <msg> m)
 		    reslist_ = rlist ;
 		    next_timeout_ = DATE_TIMEOUT_S (init_ttl_) ;
 		}
+		else
+		    D ("Slave " << slaveid_ << " cannot parse resource list") ;
 	    }
 	    break ;
 	case msg::SOS_HELLO :
