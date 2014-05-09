@@ -8,6 +8,9 @@ This directory is structured as follows:
 * master: code for the master processor
 * arduino: code for the slave processor running on Arduino
 
+Please read the specific README in each subdirectory.
+
+
 Source code style guide
 -----------------------
 
@@ -23,7 +26,6 @@ Here are some elements of style for reading the source code:
 - SOS slave code is documented via Doxygen. To generate the complete
     documentation, you need `doxygen`, `dot` (part of graphviz) and
     `pdflatex`: just type `make pdf` in `./arduino/libraries` directory.
-
 
 
 Notes for Linux
