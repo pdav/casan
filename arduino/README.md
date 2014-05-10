@@ -17,6 +17,15 @@ The SOS slave program needs:
 - the `screen` program (in order to access serial ports)
 
 
+On Linux, the needed packages are:
+- (to be completed)
+
+On FreeBSD, the needed ports are:
+- devel/arduino
+- sysutils/screen
+- comms/p5-Device-SerialPort
+- devel/gmake
+
 Zigduino installation
 ---------------------
 
@@ -32,6 +41,8 @@ To install it, do the following steps:
     # ln -s $ZDIR/variants/zigduino_r2 $ADIR/variants
     # mv $ADIR/boards.txt $ADIR/boards.txt.old
     # ln -s $ZDIR/boards.txt $ADIR
+
+On FreeBSD, ADIR must be set to `/usr/local/arduino/hardware/arduino`.
 
 
 Test sketches and examples
@@ -49,6 +60,10 @@ To run these tests:
 There is a Makefile in every test sketch, change the device you have to use 
 to upload your sketch on your platform (see ../README.md for a note on
 hardwiring serial devices on Linux).
+
+On FreeBSD, the command is:
+
+    $ make ARDUINO_DIR=/usr/local/arduino AVR_TOOLS_DIR=/usr/local MONITOR_PORT=/dev/cuaU1 test
 
 
 Documentation
