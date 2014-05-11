@@ -74,7 +74,7 @@ void Retrans::loop (l2net &l2, time_t &curtime)
 	    {
 		if (cur->timenext < curtime)
 		{
-		    cur->msg->send (l2, **master_addr_) ;
+		    cur->msg->send (**master_addr_) ;
 		    cur->ntrans++ ;
 		    cur->timenext = cur->timenext + (2* (cur->timenext - cur->timelast));
 		    sync_time (cur->timelast) ;

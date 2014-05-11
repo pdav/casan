@@ -92,7 +92,7 @@ void setup ()
 
 void test_values_temp (void)
 {
-    Msg in, out ;
+    Msg in (&l2), out (&l2) ;
     process_temp (in, out) ;
     out.print () ;
 }
@@ -111,8 +111,8 @@ void test_values_led (void)
     option opt_high (option::MO_Uri_Query, (unsigned char*) h, strlen (h)) ;
     option opt_low (option::MO_Uri_Query, (unsigned char*) l, strlen (l)) ;
 
-    Msg in, out ;
-    Msg in2 ;
+    Msg in (&l2), out (&l2) ;
+    Msg in2 (&l2) ;
 
     in.push_option (opt_high) ;
     process_led (in, out) ;

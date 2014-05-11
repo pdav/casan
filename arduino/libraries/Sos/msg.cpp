@@ -27,11 +27,16 @@ Constructor, destructor, operators
 
 /**
  * Default constructor: initialize an empty message.
+ *
+ * The current L2 network is associated to a message.
+ *
+ * @param l2 pointer to the l2 network associated to this message
  */
 
-Msg::Msg ()
+Msg::Msg (l2net *l2)
 {
     memset (this, 0, sizeof *this) ;
+    l2_ = l2 ;
 }
 
 /**
@@ -59,6 +64,9 @@ Msg::~Msg ()
 
 void Msg::reset (void)
 {
+    l2net *l2 ;
+
+    l2 = l2_ ;
     if (payload_ != NULL)
 	delete payload_ ;
     if (encoded_ != NULL)
@@ -66,6 +74,7 @@ void Msg::reset (void)
     while (optlist_ != NULL)
 	delete pop_option () ;
     memset (this, 0, sizeof *this) ;
+    l2_ = l2 ;
 }
 
 Msg &Msg::operator= (const Msg &m) 
@@ -101,16 +110,14 @@ bool Msg::operator== (const Msg &m)
  * methods (such as `l2net::RECV_WRONG_TYPE` in the case of
  * Ethernet).
  *
- * @param l2 L2 network access
  * @return receive status (see l2net class)
  */
 
-l2net::l2_recv_t Msg::recv (l2net &l2)
+l2net::l2_recv_t Msg::recv (void)
 {
     l2net::l2_recv_t r ;
 
     reset () ;
-    l2_ = &l2 ;
     r = l2_->recv () ;
     if (r == l2net::RECV_OK || r == l2net::RECV_TRUNCATED)
     {
@@ -272,18 +279,16 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
  * the message has been sent to the network hardware, and
  * does not mean that the message has been successfully sent.
  *
- * @param l2 L2 network access
  * @param dest L2 destination address
  * @return true if encoding was successfull
  */
 
-bool Msg::send (l2net &l2, l2addr &dest) 
+bool Msg::send (l2addr &dest) 
 {
     int success ;
 
     if (encoded_ == NULL)
     {
-	l2_ = &l2 ;
 	enclen_ = l2_->mtu () ;			// exploitable size
 	encoded_ = (uint8_t *) malloc (enclen_) ;
 	success = coap_encode (encoded_, enclen_) ;
@@ -408,7 +413,11 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
 	    memcpy (sbuf + i, payload_, paylen_) ;
 	}
     }
-    else success = false ;
+    else
+    {
+	Serial.print (F ("Message truncated on CoAP encoding")) ;
+	success = false ;
+    }
 
     return success ;
 }

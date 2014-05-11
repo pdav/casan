@@ -328,7 +328,12 @@ void Sos::get_well_known (Msg &out)
 
 	len = rl->res->well_known (buf + size, avail - size) ;
 	if (len == -1)
+	{
+	    Serial.print (F ("Resource do not fit in buffer of ")) ;
+	    Serial.print (avail) ;
+	    Serial.println (F (" bytes")) ;
 	    break ;
+	}
 
 	size += len - 1 ;		// exclude '\0'
     }
@@ -351,8 +356,8 @@ Main SOS loop
 
 void Sos::loop ()
 {
-    Msg in ;
-    Msg out ;
+    Msg in (l2_) ;
+    Msg out (l2_) ;
     l2net::l2_recv_t ret ;
     uint8_t oldstatus ;
     long int hlid ;
@@ -364,7 +369,7 @@ void Sos::loop ()
 
     srcaddr = NULL ;
 
-    ret = in.recv (*l2_) ;		// get received message
+    ret = in.recv () ;			// get received message
     if (ret == l2net::RECV_OK)
 	srcaddr = l2_->get_src () ;	// get a new address
 
@@ -484,7 +489,7 @@ void Sos::loop ()
 		{
 		    // deduplicate () ;
 		    request_resource (in, out) ;
-		    out.send (*l2_, *master_) ;
+		    out.send (*master_) ;
 		}
 	    }
 	    else if (ret == l2net::RECV_TRUNCATED)
@@ -496,7 +501,7 @@ void Sos::loop ()
 		option o (option::MO_Size1, l2_->mtu ()) ;
 		out.push_option (o) ;
 		out.set_code (COAP_CODE_TOO_LARGE) ;
-		out.send (*l2_, *master_) ;
+		out.send (*master_) ;
 	    }
 
 	    if (status_ == SL_RUNNING && trenew_.renew (curtime))
@@ -689,7 +694,7 @@ void Sos::send_discover (Msg &out)
 
     dest = (master_ != NULL) ? master_ : l2_->bcastaddr () ;
 
-    out.send (*l2_, *dest) ;
+    out.send (*dest) ;
 }
 
 /**
@@ -712,7 +717,7 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
     get_well_known (out) ;
 
     // send the packet
-    if (! out.send (*l2_, *dest))
+    if (! out.send (*dest))
 	Serial.println (F ("Error: cannot send the assoc answer message")) ;
 
     delete dest ;

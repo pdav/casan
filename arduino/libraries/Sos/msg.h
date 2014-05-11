@@ -62,7 +62,7 @@ typedef enum coap_type {
 
 class Msg {
     public:
-	Msg () ;
+	Msg (l2net *l2) ;
 	Msg (const Msg &c) ;
 	~Msg () ;
 
@@ -72,7 +72,7 @@ class Msg {
 	void reset (void) ;
 
 	// Receive message
-	l2net::l2_recv_t recv (l2net &l2) ;
+	l2net::l2_recv_t recv (void) ;
 
 	// accessors (for received messages)
 	uint8_t  get_type    (void)	{ return type_ ; }
@@ -85,7 +85,7 @@ class Msg {
 
 	// Send message
 
-	bool send (l2net &l2, l2addr &dest) ;
+	bool send (l2addr &dest) ;
 	// mutators (to send messages)
 	void set_type    (uint8_t t)	{ type_ = t ; }
 	void set_code    (uint8_t c)	{ code_ = c ; }
