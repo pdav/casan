@@ -714,6 +714,69 @@ void Msg::content_format (bool reset, option::content_format cf)
     }
 }
 
+/**
+ * @brief Returns Max-Age option
+ *
+ * This method returns the Max-Age option, if present,
+ * or 0 if not present.
+ *
+ * @return value associated with the Max-Age option
+ */
+
+time_t Msg::max_age (void)
+{
+    optlist *ol ;
+    time_t t ;
+    
+    t = 0 ;				// not found by default ;
+    for (ol = optlist_ ; ol != NULL ; ol = ol->next)
+    {
+	if (ol->o->optcode () == option::MO_Max_Age)
+	{
+	    t = ol->o->optval () ;
+	    break ;
+	}
+    }
+    return t ;
+}
+
+/**
+ * @brief Set Max-Age option
+ *
+ * If the Max-Age option is not already present in option list,
+ * this method adds the option.
+ * If the reset argument is true, the content_format option value
+ * is reset to the given value (otherwise, option is not modified).
+ *
+ * @param reset true if the existing option, if exists, must be reset
+ *	to the given value
+ * @param cf the new value
+ */
+
+void Msg::max_age (bool reset, time_t dur)
+{
+    optlist *ol ;
+
+    // look for the Max-Age option
+    for (ol = optlist_ ; ol != NULL ; ol = ol->next)
+	if (ol->o->optcode () == option::MO_Max_Age)
+	    break ;
+
+    if (ol != NULL)			// found
+    {
+	if (reset)			// reset it to the new value?
+	    ol->o->optval ((long int) dur) ;	// yes
+    }
+    else				// not found: add this option
+    {
+	option *ocf ;
+
+	ocf = new option (option::MO_Max_Age, (long int) dur) ;
+	push_option (*ocf) ;
+	delete ocf ;
+    }
+}
+
 /*
  * Useful for debugging purposes
  */

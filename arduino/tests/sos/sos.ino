@@ -32,18 +32,32 @@ int slaveid = 169 ;
 Sos *sos ;
 Debug debug ;
 
-uint8_t process_temp (Msg &in, Msg &out) 
+uint8_t process_temp1 (Msg &in, Msg &out) 
 {
+    char payload [10] ;
+
     Serial.println (F ("process_temp")) ;
 
-    char message[10] ;
-    for (int i (0) ; i < 10 ; i++)
-	message[i] = '\0' ;
+    int sensorValue = analogRead (tmp_sensor) ;
+    snprintf (payload, 10, "%d", sensorValue) ;
+
+    out.set_payload ((uint8_t *) payload,  strlen (payload)) ;
+
+    return COAP_RETURN_CODE (2, 5) ;
+}
+
+uint8_t process_temp2 (Msg &in, Msg &out) 
+{
+    char payload [10] ;
+
+    out.max_age (true, 60) ;		// answer is cacheable
+
+    Serial.println (F ("process_temp")) ;
 
     int sensorValue = analogRead (tmp_sensor) ;
-    snprintf (message, 10, "%d", sensorValue) ;
+    snprintf (payload, 10, "%d", sensorValue) ;
 
-    out.set_payload ((uint8_t *) message,  strlen (message)) ;
+    out.set_payload ((uint8_t *) payload,  strlen (payload)) ;
 
     return COAP_RETURN_CODE (2, 5) ;
 }
@@ -53,7 +67,7 @@ uint8_t process_led (Msg &in, Msg &out)
     Serial.println (F ("process_led")) ;
 
     int n ;
-    char * payload = (char*) in.get_payload () ;
+    char *payload = (char*) in.get_payload () ;
     if (payload != NULL && sscanf ((const char *) payload, "val=%d", &n) == 1)
     {
 	analogWrite (led, n) ;
@@ -79,60 +93,24 @@ void setup ()
     debug.start (DEBUGINTERVAL) ;
 
     /* definitions for a resource: name (in URL), title, rt for /.well-known */
-    Resource *r1 = new Resource ("temp", "Room temperature", "celsius") ;
-    r1->handler (COAP_CODE_GET, process_temp) ;
+
+    Resource *r1 = new Resource ("temp", "Desk temperature", "celsius") ;
+    r1->handler (COAP_CODE_GET, process_temp1) ;
     sos->register_resource (r1) ;
 
-    Resource *r2 = new Resource ("led", "My beautiful LED", "light") ;
-    r2->handler (COAP_CODE_GET, process_led) ;
+    Resource *r2 = new Resource ("temp", "Coffee room temperature", "celsius") ;
+    r2->handler (COAP_CODE_GET, process_temp2) ;
     sos->register_resource (r2) ;
 
+    Resource *r3 = new Resource ("led", "My beautiful LED", "light") ;
+    r3->handler (COAP_CODE_GET, process_led) ;
+    sos->register_resource (r3) ;
+
     sos->print_resources () ;
-}
-
-void test_values_temp (void)
-{
-    Msg in (&l2), out (&l2) ;
-    process_temp (in, out) ;
-    out.print () ;
-}
-
-void test_values_led (void)
-{
-    char h[10] ;
-    char l[10] ;
-
-    snprintf (h, 10, "%d", 1024) ;
-    snprintf (l, 10, "%d", 0) ;
-
-    Serial.println (h) ;
-    Serial.println (l) ;
-
-    option opt_high (option::MO_Uri_Query, (unsigned char*) h, strlen (h)) ;
-    option opt_low (option::MO_Uri_Query, (unsigned char*) l, strlen (l)) ;
-
-    Msg in (&l2), out (&l2) ;
-    Msg in2 (&l2) ;
-
-    in.push_option (opt_high) ;
-    process_led (in, out) ;
-
-    delay (500) ;
-    in2.push_option (opt_low) ;
-    process_led (in2, out) ;
-}
-
-void test_values (void)
-{
-    test_values_temp () ;
-    test_values_led () ;
-    delay (500) ;
 }
 
 void loop () 
 {
     debug.heartbeat () ;
-
-    //test_values () ;
     sos->loop () ;
 }

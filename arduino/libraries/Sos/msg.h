@@ -8,6 +8,7 @@
 
 #include "l2.h"
 #include "option.h"
+#include "time.h"
 
 #define COAP_RETURN_CODE(x,y) ((x << 5) | (y & 0x1f))
 
@@ -107,6 +108,9 @@ class Msg {
 	size_t avail_space (void) ;	// available space in msg
 	void content_format (bool reset, option::content_format cf) ;
 	option::content_format content_format (void) ;
+
+	void max_age (bool reset, time_t duration) ;
+	time_t max_age (void) ;
 
 	// debug method
 	void print (void) ;
