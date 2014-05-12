@@ -6,7 +6,7 @@
 #ifndef SOS_SLAVE_H
 #define	SOS_SLAVE_H
 
-#include <memory>
+#include "msg.h"
 
 namespace sos {
 
@@ -55,7 +55,7 @@ class slave
 	const std::vector <resource> &resource_list (void) ;
 
 	// SOS protocol handling
-	void process_sos (sos *e, std::shared_ptr <msg> m) ;
+	void process_sos (sos *e, msgptr_t m) ;
 
 	friend std::ostream& operator<< (std::ostream &os, const slave &s) ;
 

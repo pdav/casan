@@ -14,12 +14,11 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "msg.h"
 #include "slave.h"
 
 namespace sos {
 
-class msg ;
-class slave ;
 class l2net ;
 
 /**
@@ -71,7 +70,7 @@ class sos
 	void add_slave (slave *s) ;
 
 	// add a request
-	void add_request (std::shared_ptr <msg> m) ;
+	void add_request (msgptr_t m) ;
 
 	// find a slave by it's slave id
 	slave *find_slave (slaveid_t sid) ;
@@ -85,7 +84,7 @@ class sos
 
 	std::list <receiver *> rlist_ ;	// connected networks
 	std::list <slave> slist_ ;	// registered slaves
-	std::list <std::shared_ptr <msg>> mlist_ ;	// messages sent by SOS
+	std::list <msgptr_t> mlist_ ;	// messages sent by SOS
 
 	std::thread *tsender_ ;
 
@@ -99,9 +98,9 @@ class sos
 	void sender_thread (void) ;
 	void receiver_thread (receiver *r) ;
 	void clean_deduplist (receiver &r) ;
-	std::shared_ptr <msg> deduplicate (receiver &r, std::shared_ptr <msg> m) ;
-	bool find_peer (std::shared_ptr <msg> m, l2addr *a, receiver &r) ;
-	std::shared_ptr <msg> correlate (std::shared_ptr <msg> m) ;
+	msgptr_t deduplicate (receiver &r, msgptr_t m) ;
+	bool find_peer (msgptr_t m, l2addr *a, receiver &r) ;
+	msgptr_t correlate (msgptr_t m) ;
 } ;
 
 }					// end of namespace sos

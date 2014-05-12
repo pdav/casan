@@ -668,7 +668,7 @@ void msg::wt (waiter *w)
  * not a `shared_ptr<msg>`).
  */
 
-void msg::link_reqrep (std::shared_ptr <msg> m1, std::shared_ptr <msg> m2)
+void msg::link_reqrep (msgptr_t m1, msgptr_t m2)
 {
     if (m2 == nullptr)
     {
@@ -743,7 +743,7 @@ void *msg::payload (int *paylen)
  * @return the other message or NULL if the message has no peer message
  */
 
-std::shared_ptr <msg> msg::reqrep (void)
+msgptr_t msg::reqrep (void)
 {
     return reqrep_ ;
 }

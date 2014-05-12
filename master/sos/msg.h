@@ -11,12 +11,16 @@
 #include <memory>
 
 #include "coap.h"
+#include "l2.h"
 #include "option.h"
 
 namespace sos {
 
 class slave ;
 class waiter ;
+class msg ;
+
+typedef std::shared_ptr <msg> msgptr_t ;
 
 /**
  * @brief An object of class Msg represents a message,
@@ -91,7 +95,7 @@ class msg
 	int code (void) ;
 	void *payload (int *paylen) ;
 	option popoption (void) ;
-	std::shared_ptr <msg> reqrep (void) ;
+	msgptr_t reqrep (void) ;
 	waiter *wt (void) ;
 	int msglen (void) ;
 	int paylen (void) ;
@@ -99,7 +103,7 @@ class msg
 	void option_reset_iterator (void) ;
 	option *option_next (void) ;
 
-	static void link_reqrep (std::shared_ptr <msg> m1, std::shared_ptr <msg> m2) ;	// m2 == 0 <=> unlink
+	static void link_reqrep (msgptr_t m1, msgptr_t m2) ;	// m2 == 0 <=> unlink
 
 	// control messages
 	sostype_t sos_type (void) ;
@@ -139,7 +143,7 @@ class msg
 	std::list <option> optlist_ ;	// list of all options
 	std::list <option>::iterator optiter_ ;
 
-	std::shared_ptr <msg> reqrep_ = nullptr ;	// "request of" or "response of"
+	msgptr_t reqrep_ = nullptr ;	// "request of" or "response of"
 	sostype_t sostype_ = SOS_UNKNOWN ;
 
 	static int global_message_id ;

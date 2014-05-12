@@ -37,8 +37,8 @@ struct sos::receiver
     l2net *l2 ;
     long int hid ; 			// hello id, initialized at start time
     slave broadcast ;
-    std::list <std::shared_ptr <msg> > deduplist ;	// received messages
-    std::shared_ptr <msg> hellomsg ;
+    std::list <msgptr_t> deduplist ;	// received messages
+    msgptr_t hellomsg ;
     timepoint_t next_hello ;
     std::thread *thr ;
 } ;
@@ -291,7 +291,7 @@ slave *sos::find_slave (slaveid_t sid)
  * @param m pointer to the message to be sent
  */
 
-void sos::add_request (std::shared_ptr <msg> m)
+void sos::add_request (msgptr_t m)
 {
     std::unique_lock <std::mutex> lk (mtx_) ;
 
@@ -405,7 +405,7 @@ void sos::sender_thread (void)
 
 	mlist_.remove_if (
 	    [now]
-	    (const std::shared_ptr <msg> &m)
+	    (const msgptr_t &m)
 	    {
 		return now > m->expire_ ;
 	    }) ;
@@ -483,10 +483,10 @@ void sos::receiver_thread (receiver *r)
 {
     for (;;)
     {
-	std::shared_ptr <msg> m (new msg) ;	// received message
+	msgptr_t m (new msg) ;	// received message
 	l2addr *a ;			// source address of received message
-	std::shared_ptr <msg> orgreq ;	// message correlation result
-	std::shared_ptr <msg> dupmsg ;	// original message in case of duplicate
+	msgptr_t orgreq ;	// message correlation result
+	msgptr_t dupmsg ;	// original message in case of duplicate
 
 	// D ("- RECEIVER THREAD -------------------\n" << *this) ;
 
@@ -592,7 +592,7 @@ void sos::receiver_thread (receiver *r)
     }
 }
 
-bool sos::find_peer (std::shared_ptr <msg> m, l2addr *a, receiver &r)
+bool sos::find_peer (msgptr_t m, l2addr *a, receiver &r)
 {
     bool found ;
 
@@ -663,10 +663,10 @@ bool sos::find_peer (std::shared_ptr <msg> m, l2addr *a, receiver &r)
  *	a reply to a previous request
  */
 
-std::shared_ptr <msg> sos::correlate (std::shared_ptr <msg> m)
+msgptr_t sos::correlate (msgptr_t m)
 {
     msg::msgtype mt ;
-    std::shared_ptr <msg> orgmsg ;
+    msgptr_t orgmsg ;
 
     orgmsg = 0 ;
     mt = m->type () ;
@@ -707,7 +707,7 @@ void sos::clean_deduplist (receiver &r)
 
     r.deduplist.remove_if (
 	[now]
-	(const std::shared_ptr <msg> &m)
+	(const msgptr_t &m)
 	{
 	    return now > m->expire_ ;
 	}) ;
@@ -727,10 +727,10 @@ void sos::clean_deduplist (receiver &r)
  * @return original message if m is a duplicate, or NULL if not found
  */
 
-std::shared_ptr <msg> sos::deduplicate (receiver &r, std::shared_ptr <msg> m)
+msgptr_t sos::deduplicate (receiver &r, msgptr_t m)
 {
     msg::msgtype mt ;
-    std::shared_ptr <msg> orgmsg ;
+    msgptr_t orgmsg ;
 
     orgmsg = 0 ;			// no duplicate
     mt = m->type () ;
