@@ -157,7 +157,7 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
 
     if (mtu == 0 || mtu > I154MTU)
 	mtu = I154MTU ;			// excluding MAC header
-    mtu_ = mtu - (I154_SIZE_HEADER - I154_SIZE_FCS) ;
+    mtu_ = mtu - (I154_SIZE_HEADER + I154_SIZE_FCS) ;
 
     curframe_ = NULL ;			// no currently received frame
 
