@@ -292,12 +292,16 @@ bool Msg::send (l2addr &dest)
 	enclen_ = l2_->mtu () ;			// exploitable size
 	encoded_ = (uint8_t *) malloc (enclen_) ;
 	success = coap_encode (encoded_, enclen_) ;
+	if (! success)
+	    Serial.println (F (RED ("Cannot encode the message"))) ;
     }
     else success = true ;			// if msg is already encoded
 
     if (success)
     {
 	success = l2_->send (dest, encoded_, enclen_) ;
+	if (! success)
+	    Serial.println (F (RED ("Cannot L2-send the message"))) ;
     }
     else
     {

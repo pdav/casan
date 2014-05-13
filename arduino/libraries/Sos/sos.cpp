@@ -174,17 +174,43 @@ Resource handling
  * and thus known by the master.
  *
  * @param res Address of the resource to register
+ * @return true if resource have been added successfully
  */
 
-void Sos::register_resource (Resource *res)
+bool Sos::register_resource (Resource *res)
 {
-    reslist *newr ;
+    reslist *newr, *prev, *cur ;
+    bool ok ;
+
+    /*
+     * Register resource in last position of the list to respect
+     * order provided by the application
+     */
 
     newr = new reslist ;
-    newr->next = reslist_ ;
     newr->res = res ;
 
-    reslist_ = newr ;
+    prev = NULL ;
+    for (cur = reslist_ ; cur != NULL ; cur = cur->next)
+	prev = cur ;
+    if (prev != NULL)
+	prev->next = newr ;
+    else
+	reslist_ = newr ;
+    newr->next = NULL ;
+
+    /*
+     * Simulate creation of a new message in order to see if it fits
+     */
+
+    if (l2_ != NULL)
+    {
+	Msg fake (l2_) ;
+	ok = get_well_known (fake) ;	// error message if does not fit
+    }
+    else ok = true ;
+
+    return ok ;
 }
 
 /**
@@ -225,7 +251,7 @@ void Sos::request_resource (Msg &in, Msg &out)
 		out.set_id (in.get_id ()) ;
 		out.set_token (in.get_toklen (), in.get_token ()) ;
 		out.set_code (COAP_CODE_OK) ;
-		get_well_known (out) ;
+		(void) get_well_known (out) ;
 	    }
 	    else
 	    {
@@ -295,9 +321,11 @@ Resource *Sos::get_resource (const char *name)
  *		title="Luminosity";
  *		rt="light-lux"
  * (with the newlines removed)
+ *
+ * @return true if message is succesfully built (enough space)
  */
 
-void Sos::get_well_known (Msg &out) 
+bool Sos::get_well_known (Msg &out) 
 {
     char *buf ;
     size_t size ;
@@ -328,19 +356,30 @@ void Sos::get_well_known (Msg &out)
 
 	len = rl->res->well_known (buf + size, avail - size) ;
 	if (len == -1)
-	{
-	    Serial.print (F ("Resource do not fit in buffer of ")) ;
-	    Serial.print (avail) ;
-	    Serial.println (F (" bytes")) ;
 	    break ;
-	}
 
 	size += len - 1 ;		// exclude '\0'
     }
 
     out.set_payload ((uint8_t *) buf, size) ;
-
     free (buf) ;
+
+
+    /*
+     * Did all resources fitted in the message, or do we left the loop
+     * before its term?
+     */
+
+    if (rl != NULL)
+    {
+	Serial.print (F (B_RED "Resource '")) ;
+	Serial.print (rl->res->name ()) ;
+	Serial.print (F ("' do not fit in buffer of ")) ;
+	Serial.print (avail) ;
+	Serial.println (F (" bytes" C_RESET)) ;
+    }
+
+    return rl == NULL ;			// true if all res are in the message
 }
 
 /******************************************************************************
@@ -533,11 +572,11 @@ void Sos::loop ()
 
     if (oldstatus != status_)
     {
-	Serial.print (F ("Status: ")) ;
+	Serial.print (F (C_GREEN "Status: ")) ;
 	print_status (oldstatus) ;
 	Serial.print (F (" -> ")) ;
 	print_status (status_) ;
-	Serial.println () ;
+	Serial.println (F (C_RESET)) ;
     }
 
     if (srcaddr != NULL)
@@ -714,11 +753,11 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
     out.set_id (in.get_id ()) ;
 
     // will get the resources and set them in the payload in the right format
-    get_well_known (out) ;
+    (void) get_well_known (out) ;
 
     // send the packet
     if (! out.send (*dest))
-	Serial.println (F ("Error: cannot send the assoc answer message")) ;
+	Serial.println (F (RED ("Cannot send the assoc answer message"))) ;
 
     delete dest ;
 }
