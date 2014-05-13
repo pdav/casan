@@ -6,6 +6,8 @@
 #define	SENDADDR	CONST16 (0x12, 0x34)
 #define	RECVADDR	CONST16 (0x45, 0x67)
 
+#define	MSGBUF_SIZE	100
+
 
 #define	PERIODIC	100000
 
@@ -208,7 +210,6 @@ void coap_decode (uint8_t msg [], int msglen)
 	}
 	else
 	{
-	    paylen-- ;
 	    Serial.print ("    Payload (len=") ;
 	    Serial.print (paylen) ;
 	    Serial.println (")") ;
@@ -596,6 +597,7 @@ void setup ()
 {
     Serial.begin (38400);	// don't introduce spaces here
     Serial.println ("Starting...") ; // signal the start with a new line
+    zigmsg.msgbufsize (MSGBUF_SIZE) ;	// space for 100 received messages
     help () ;
 }
 
