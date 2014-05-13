@@ -1,7 +1,6 @@
 #include <ZigMsg.h>
 
-#define	CHANNEL	25
-// #define	CHANNEL	12
+#define	CHANNEL	25		// use "c" to change it while running
 
 #define	PANID		CONST16 (0xbe, 0xef)
 #define	SENDADDR	CONST16 (0x12, 0x34)
@@ -10,20 +9,42 @@
 
 #define	PERIODIC	100000
 
-/******************************************************************************
-Sniffer
-*******************************************************************************/
+int channel = CHANNEL ;
 
-const char *desc_frametype [] =
-{
-    "Beacon", "Data", "Ack", "MAC-cmd",
-    "Reserved", "Reserved", "Reserved", "Reserved", 
-} ;
+/******************************************************************************
+Utilities
+*******************************************************************************/
 
 void phex (uint8_t c)
 {
     Serial.print ((c >> 4) & 0xf, 16) ;
     Serial.print ((c     ) & 0xf, 16) ;
+}
+
+void pdec (int c, int ndigits, char fill)
+{
+    int c2 ;
+    int n ;
+
+    /*
+     * compute number of digits of c
+     */
+
+    c2 = c ;
+    n = 1 ;
+    while (c2 > 0)
+    {
+	n++ ;
+	c2 /= 10 ;
+    }
+
+    /*
+     * Complete with fill characters
+     */
+
+    for ( ; n < ndigits ; n++)
+	Serial.print (fill) ;
+    Serial.print (c) ;
 }
 
 void phexn (uint8_t *c, int len, char sep)
@@ -38,66 +59,242 @@ void phexn (uint8_t *c, int len, char sep)
     }
 }
 
-uint8_t *padrpan (uint8_t *p, int len, int ispan)
+/* flen = field length = nominal number of chars in a "normal" row */
+void phexascii (uint8_t buf [], int len, int flen)
+{
+    int i ;
+
+    phexn (buf, len, ' ') ;
+    for (i = 0 ; i < (flen - len) * 3 + 4 ; i++)
+	Serial.print (' ') ;
+    for (i = 0 ; i < len ; i++)
+	Serial.print ((char) (buf [i] >= ' ' && buf [i] < 127 ? buf [i] : '.')) ;
+}
+
+/******************************************************************************
+CoAP decoding
+*******************************************************************************/
+
+#define	COAP_VERSION(b)	(((b) [0] >> 6) & 0x3)
+#define	COAP_TYPE(b)	(((b) [0] >> 4) & 0x3)
+#define	COAP_TOKLEN(b)	(((b) [0]     ) & 0xf)
+#define	COAP_CODE(b)	(((b) [1]))
+#define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
+
+#define	NTAB(t)		((int) (sizeof (t) / sizeof (t)[0]))
+
+const char *type_string [] = { "CON", "NON", "ACK", "RST" } ;
+const char *code_string [] = { "Empty msg", "GET", "POST", "PUT", "DELETE" } ;
+
+void coap_decode (uint8_t msg [], int msglen)
+{
+    int version, type, toklen, code, id ;
+    int c, dd ;
+    int i ;
+    int success, opt_nb ;
+    int paylen ;
+
+    version = COAP_VERSION (msg) ;
+    type =    COAP_TYPE (msg) ;
+    toklen =  COAP_TOKLEN (msg) ;
+    code =    COAP_CODE (msg) ;
+    id =      COAP_ID (msg) ;
+
+    Serial.print ("  SOS Vers=") ;
+    Serial.print (version) ;
+
+    Serial.print (", Type=") ;
+    Serial.print (type_string [type]) ;
+
+    Serial.print (", Code=") ;
+    c = (code >> 5) & 0x7 ;
+    dd = code & 0x1f ;
+    Serial.print (c) ;
+    Serial.print ('.') ;
+    if (dd < 10)
+	Serial.print ('0') ;
+    Serial.print (dd) ;
+    if (c == 0 && dd < (int) NTAB (code_string))
+    {
+	Serial.print ('(') ;
+	Serial.print (code_string [dd]) ;
+	Serial.print (')') ;
+    }
+
+    Serial.print (", Id=") ;
+    Serial.print (id) ;
+    Serial.println () ;
+
+    i = 4 ;
+
+    if (toklen > 0)
+    {
+	Serial.print ("    Token=") ;
+	phexascii (msg + i, toklen, 8) ;
+	Serial.println () ;
+	i += toklen ;
+    }
+
+    /*
+     * Options analysis
+     */
+
+    opt_nb = 0 ;
+    success = 1 ;
+
+    while (success && i < msglen && msg [i] != 0xff)
+    {
+	int opt_delta, opt_len ;
+
+	opt_delta = (msg [i] >> 4) & 0x0f ;
+	opt_len   = (msg [i]     ) & 0x0f ;
+	i++ ;
+	switch (opt_delta)
+	{
+	    case 13 :
+		opt_delta = msg [i] + 13 ;
+		i += 1 ;
+		break ;
+	    case 14 :
+		opt_delta = (msg [i] << 8) + msg [i+1] + 269 ;
+		i += 2 ;
+		break ;
+	    case 15 :
+		success = 0 ;			// recv failed
+		break ;
+	}
+	opt_nb += opt_delta ;
+
+	switch (opt_len)
+	{
+	    case 13 :
+		opt_len = msg [i] + 13 ;
+		i += 1 ;
+		break ;
+	    case 14 :
+		opt_len = (msg [i] << 8) + msg [i+1] + 269 ;
+		i += 2 ;
+		break ;
+	    case 15 :
+		success = 0 ;			// recv failed
+		break ;
+	}
+
+	/* option found */
+	if (success)
+	{
+	    Serial.print ("    opt ") ;
+	    pdec (opt_nb, 3, ' ') ;
+	    Serial.print (" (len=") ;
+	    pdec (opt_len, 2, ' ') ;
+	    Serial.print (")  ") ;
+	    phexascii (msg + i, opt_len, 14) ;
+	    Serial.println () ;
+	    i += opt_len ;
+	}
+	else printf ("    option unrecognized\n") ;
+    }
+
+    paylen = msglen - i - 1 ;
+    Serial.print ("    Payload (len=") ;
+    Serial.print (paylen) ;
+    Serial.println (")") ;
+    if (success && paylen > 0)
+    {
+	if (msg [i] != 0xff)
+	{
+	    Serial.println ("  no FF marker") ;
+	    success = 0 ;
+	}
+	else
+	{
+	    i++ ;
+	    while (i < msglen)
+	    {
+		Serial.print ("      ") ;
+		phexascii (msg + i, paylen > 16 ? 16 : paylen, 16) ;
+		Serial.println () ;
+		paylen -= 16 ;
+		i += 16 ;
+	    }
+	}
+    }
+}
+
+/******************************************************************************
+Raw Sniffer
+*******************************************************************************/
+
+const char *desc_frametype [] =
+{
+    "Beacon", "Data", "Ack", "MAC-cmd",
+    "Reserved", "Reserved", "Reserved", "Reserved", 
+} ;
+
+uint8_t *padrpan (uint8_t *p, int len, int ispan, int disp)
 {
     uint8_t *adr = p ;
 
     if (ispan)
 	adr += 2 ;
-    phexn (adr, len, ':') ;
+    if (disp)
+	phexn (adr, len, ':') ;
     adr += len ;
-    Serial.print ('/') ;
-    if (ispan)
+    if (disp && ispan)
+    {
+	Serial.print ('/') ;
 	phexn (p, 2, ':') ;
+    }
     return adr ;
 }
 
-uint8_t *padr (int mode, uint8_t *p, int ispan)
+uint8_t *padr (int mode, uint8_t *p, int ispan, int disp)
 {
     switch (mode)
     {
 	case Z_ADDRMODE_NOADDR :
-	    Serial.print ("()") ;
+	    if (disp)
+		Serial.print ("()") ;
 	    break ;
 	case Z_ADDRMODE_RESERVED :
-	    Serial.print ("?reserved") ;
+	    if (disp)
+		Serial.print ("?reserved") ;
 	    break ;
 	case Z_ADDRMODE_ADDR2 :
-	    p = padrpan (p, 2, ispan) ;
+	    p = padrpan (p, 2, ispan, disp) ;
 	    break ;
 	case Z_ADDRMODE_ADDR8 :
-	    p = padrpan (p, 6, ispan) ;
+	    p = padrpan (p, 6, ispan, disp) ;
 	    break ;
     }
     return p ;
 }
 
-void print_frame (ZigMsg::ZigReceivedFrame *z)
+void print_frame (ZigMsg::ZigReceivedFrame *z, bool sos_decode)
 {
-    uint8_t *p ;
+    uint8_t *p, *dstp ;
     int intrapan ;
     int dstmode, srcmode ;
 
-    Serial.print (desc_frametype [Z_GET_FRAMETYPE (z->fcf)]) ;
-    Serial.print (" Sec=") ;	Serial.print (Z_GET_SEC_ENABLED (z->fcf)) ;
-    Serial.print (" Pendg=") ; Serial.print (Z_GET_FRAME_PENDING (z->fcf)) ;
-    Serial.print (" AckRq=") ;	Serial.print (Z_GET_ACK_REQUEST (z->fcf)) ;
-    Serial.print (" V=") ;	Serial.print (Z_GET_FRAME_VERSION (z->fcf)) ;
-
-    intrapan = Z_GET_INTRA_PAN (z->fcf) ;
-    Serial.print (" Intra=") ;	Serial.print (intrapan) ;
     dstmode = Z_GET_DST_ADDR_MODE (z->fcf) ;
     srcmode = Z_GET_SRC_ADDR_MODE (z->fcf) ;
+    intrapan = Z_GET_INTRA_PAN (z->fcf) ;
 
-    p = z->rawframe + 2 ;
-    Serial.print (" Seq=") ;
-    phex (*p) ;
-    p++ ;
+    dstp = z->rawframe + 3 ;
+    p = padr (dstmode, dstp, 1, 0) ;		// do not print dst addr
+    p = padr (srcmode, p, ! intrapan, 1) ;	// p points past addresses
+    Serial.print ("->") ;
+	(void) padr (dstmode, dstp, 1, 1) ;
 
     Serial.print (" ") ;
-    p = padr (dstmode, p, 1) ;
-    Serial.print ("<-") ;
-    p = padr (srcmode, p, ! intrapan) ;
+    Serial.print (desc_frametype [Z_GET_FRAMETYPE (z->fcf)]) ;
+    Serial.print (" Sec=") ;   Serial.print (Z_GET_SEC_ENABLED (z->fcf)) ;
+    Serial.print (" Pendg=") ; Serial.print (Z_GET_FRAME_PENDING (z->fcf)) ;
+    Serial.print (" AckRq=") ; Serial.print (Z_GET_ACK_REQUEST (z->fcf)) ;
+    Serial.print (" V=") ;     Serial.print (Z_GET_FRAME_VERSION (z->fcf)) ;
+
+    Serial.print (" Seq=") ;
+    phex (z->rawframe [2]) ;
 
     Serial.print (" Len=") ;
     Serial.print (z->paylen) ;
@@ -106,6 +303,9 @@ void print_frame (ZigMsg::ZigReceivedFrame *z)
     phexn (p, z->paylen, ',') ;
     Serial.print ("] LQI=") ;	Serial.print (z->lqi) ;
     Serial.println () ;
+
+    if (sos_decode && Z_GET_FRAMETYPE (z->fcf) == Z_FT_DATA)
+	coap_decode (p, z->paylen) ;
 }
 
 void print_stat (void)
@@ -126,20 +326,7 @@ void print_stat (void)
     Serial.println () ;
 }
 
-void init_snif (char line [])
-{
-    zigmsg.channel (CHANNEL) ;
-    zigmsg.promiscuous (true) ;
-    zigmsg.start () ;
-    Serial.println ("Starting sniffer") ;
-}
-
-void stop_snif (void)
-{
-    Serial.println ("Stopping sniffer") ;
-}
-
-void do_snif (void)
+void snif (bool sos_decode)
 {
     static int n = 0 ;
     ZigMsg::ZigReceivedFrame *z ;
@@ -152,9 +339,54 @@ void do_snif (void)
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
-	print_frame (z) ;
+	print_frame (z, sos_decode) ;
 	zigmsg.skip_received () ;
     }
+}
+
+
+/******************************************************************************
+CoAP and raw sniffer
+*******************************************************************************/
+
+void init_snif (char line [])
+{
+    zigmsg.channel (channel) ;
+    zigmsg.promiscuous (true) ;
+    zigmsg.start () ;
+    Serial.println ("Starting sniffer") ;
+}
+
+void stop_snif (void)
+{
+    Serial.println ("Stopping sniffer") ;
+}
+
+void do_snif (void)
+{
+    snif (false) ;
+}
+
+/******************************************************************************
+CoAP sniffer
+*******************************************************************************/
+
+void init_sos (char line [])
+{
+    zigmsg.channel (channel) ;
+    zigmsg.promiscuous (true) ;
+    zigmsg.start () ;
+    Serial.println ("Starting SOS sniffer") ;
+}
+
+void stop_sos (void)
+{
+    Serial.println ("Stopping SOS sniffer") ;
+}
+
+void do_sos (void)
+{
+    snif (true) ;
 }
 
 /******************************************************************************
@@ -163,7 +395,7 @@ Sender
 
 void init_send (char line [])
 {
-    zigmsg.channel (CHANNEL) ;
+    zigmsg.channel (channel) ;
     zigmsg.panid (PANID) ;
     zigmsg.addr2 (SENDADDR) ;
     zigmsg.promiscuous (false) ;
@@ -214,7 +446,7 @@ Receiver
 
 void init_recv (char line [])
 {
-    zigmsg.channel (CHANNEL) ;
+    zigmsg.channel (channel) ;
     zigmsg.panid (PANID) ;
     zigmsg.addr2 (RECVADDR) ;
     zigmsg.promiscuous (false) ;
@@ -230,6 +462,45 @@ void stop_recv (void)
 void do_recv (void)
 {
     do_snif () ;
+}
+
+/******************************************************************************
+Channel
+*******************************************************************************/
+
+void init_chan (char line [])
+{
+    char *p ;
+    int ch = 0 ;
+
+    p = line ;
+    while (*p == ' ' || *p == '\t')
+	p++ ;
+
+    while (*p >= '0' && *p <= '9')
+    {
+	ch = ch * 10 + (*p - '0') ;
+	p++ ;
+    }
+
+    if (ch < 11 || ch > 26)
+	Serial.println ("Invalid channel") ;
+    else
+    {
+	channel = ch ;
+	Serial.print ("Channel set to ") ;
+	Serial.println (channel) ;
+    }
+
+    Serial.println ("Entering idle mode") ;
+}
+
+void stop_chan (void)
+{
+}
+
+void do_chan (void)
+{
 }
 
 /******************************************************************************
@@ -259,13 +530,13 @@ struct gui
 
 struct gui gui [] = {
     { 'i', "idle", init_idle, stop_idle, do_idle },
-    { 'n', "sniffer", init_snif, stop_snif, do_snif },
+    { 'n', "raw sniffer", init_snif, stop_snif, do_snif },
+    { 'o', "sos sniffer", init_sos, stop_sos, do_sos },
     { 's', "sender", init_send, stop_send, do_send },
     { 'r', "receiver", init_recv, stop_recv, do_recv },
+    { 'c', "channel (n)", init_chan, stop_chan, do_chan },
 } ;
 #define	IDLE_MODE (& gui [0])
-
-#define	NTAB(t)	((int) (sizeof (t) / sizeof (t) [0]))
 
 struct gui *parse_and_init_or_stop (char line [], struct gui *oldmode)
 {
@@ -313,7 +584,7 @@ Classic Arduino functions
 
 void setup ()
 {
-    Serial.begin(38400);	// don't introduce spaces here
+    Serial.begin (38400);	// don't introduce spaces here
     Serial.println ("Starting...") ; // signal the start with a new line
     help () ;
 }
