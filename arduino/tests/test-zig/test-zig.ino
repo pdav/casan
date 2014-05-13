@@ -15,10 +15,13 @@ int channel = CHANNEL ;
 Utilities
 *******************************************************************************/
 
+#define	HEXCHAR(c)	((c) < 10 ? (c) + '0' : (c) - 10 + 'a')
+
 void phex (uint8_t c)
 {
-    Serial.print ((c >> 4) & 0xf, 16) ;
-    Serial.print ((c     ) & 0xf, 16) ;
+    char x ;
+    x = (c >> 4) & 0xf ; x = HEXCHAR (x) ; Serial.print (x) ;
+    x = (c     ) & 0xf ; x = HEXCHAR (x) ; Serial.print (x) ;
 }
 
 void pdec (int c, int ndigits, char fill)
@@ -42,7 +45,7 @@ void pdec (int c, int ndigits, char fill)
      * Complete with fill characters
      */
 
-    for ( ; n < ndigits ; n++)
+    for ( ; n <= ndigits ; n++)
 	Serial.print (fill) ;
     Serial.print (c) ;
 }
