@@ -94,17 +94,17 @@ void setup ()
 
     /* definitions for a resource: name (in URL), title, rt for /.well-known */
 
-    Resource *r1 = new Resource ("temp", "Desk temperature", "celsius") ;
+    Resource *r1 = new Resource ("t1", "Desk temp", "celsius") ;
     r1->handler (COAP_CODE_GET, process_temp1) ;
-    sos->register_resource (r1) ;
+    (void) sos->register_resource (r1) ;
 
-    Resource *r2 = new Resource ("temp", "Coffee room temperature", "celsius") ;
+    Resource *r2 = new Resource ("t2", "B201 temp", "celsius") ;
     r2->handler (COAP_CODE_GET, process_temp2) ;
-    sos->register_resource (r2) ;
+    (void) sos->register_resource (r2) ;
 
-    Resource *r3 = new Resource ("led", "My beautiful LED", "light") ;
+    Resource *r3 = new Resource ("led", "Nice LED", "light") ;
     r3->handler (COAP_CODE_GET, process_led) ;
-    sos->register_resource (r3) ;
+    (void) sos->register_resource (r3) ;
 
     sos->print_resources () ;
 }
