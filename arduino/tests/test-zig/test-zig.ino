@@ -199,9 +199,6 @@ void coap_decode (uint8_t msg [], int msglen)
     }
 
     paylen = msglen - i - 1 ;
-    Serial.print ("    Payload (len=") ;
-    Serial.print (paylen) ;
-    Serial.println (")") ;
     if (success && paylen > 0)
     {
 	if (msg [i] != 0xff)
@@ -211,6 +208,11 @@ void coap_decode (uint8_t msg [], int msglen)
 	}
 	else
 	{
+	    paylen-- ;
+	    Serial.print ("    Payload (len=") ;
+	    Serial.print (paylen) ;
+	    Serial.println (")") ;
+
 	    i++ ;
 	    while (i < msglen)
 	    {
@@ -273,11 +275,14 @@ uint8_t *padr (int mode, uint8_t *p, int ispan, int disp)
     return p ;
 }
 
+int lastseq = -1 ;
+
 void print_frame (ZigMsg::ZigReceivedFrame *z, bool sos_decode)
 {
     uint8_t *p, *dstp ;
     int intrapan ;
     int dstmode, srcmode ;
+    int seq ;
 
     dstmode = Z_GET_DST_ADDR_MODE (z->fcf) ;
     srcmode = Z_GET_SRC_ADDR_MODE (z->fcf) ;
@@ -297,7 +302,8 @@ void print_frame (ZigMsg::ZigReceivedFrame *z, bool sos_decode)
     Serial.print (" V=") ;     Serial.print (Z_GET_FRAME_VERSION (z->fcf)) ;
 
     Serial.print (" Seq=") ;
-    phex (z->rawframe [2]) ;
+    seq = z->rawframe [2] ;
+    phex (seq) ;
 
     Serial.print (" Len=") ;
     Serial.print (z->paylen) ;
@@ -307,8 +313,9 @@ void print_frame (ZigMsg::ZigReceivedFrame *z, bool sos_decode)
     Serial.print ("] LQI=") ;	Serial.print (z->lqi) ;
     Serial.println () ;
 
-    if (sos_decode && Z_GET_FRAMETYPE (z->fcf) == Z_FT_DATA)
+    if (sos_decode && Z_GET_FRAMETYPE (z->fcf) == Z_FT_DATA && lastseq != seq)
 	coap_decode (p, z->paylen) ;
+    lastseq = seq ;
 }
 
 void print_stat (void)
