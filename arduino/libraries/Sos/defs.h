@@ -10,6 +10,37 @@
 // number of elements in an array
 #define NTAB(t)		((int) (sizeof (t)/sizeof (t)[0]))
 
+
+/*
+ * ANSI escape sequences
+ * See http://en.wikipedia.org/wiki/ANSI_escape_code
+ */
+
+#define C_CSI		"\033["
+#define	C_RESET		C_CSI "m"
+
+// normal colors
+#define	C_BLACK		C_CSI "30m"
+#define	C_RED		C_CSI "31m"
+#define	C_GREEN		C_CSI "32m"
+#define	C_YELLOW	C_CSI "33m"
+#define	C_BLUE		C_CSI "34m"
+#define	C_MAGENTA	C_CSI "35m"
+#define	C_CYAN		C_CSI "36m"
+#define	C_WHITE		C_CSI "37m"
+
+// bright colors
+#define	B_BLACK		C_CSI "30;1m"
+#define	B_RED		C_CSI "31;1m"
+#define	B_GREEN		C_CSI "32;1m"
+#define	B_YELLOW	C_CSI "33;1m"
+#define	B_BLUE		C_CSI "34;1m"
+#define	B_MAGENTA	C_CSI "35;1m"
+#define	B_CYAN		C_CSI "36;1m"
+#define	B_WHITE		C_CSI "37;1m"
+
+#define	RED(m)			B_RED m C_RESET
+
 // CoAP ACK timeout (milliseconds) for CONfirmable messages
 #define	ACK_TIMEOUT	2000
 // CoAP ACK random factor to compute initial timeout for CON messages
