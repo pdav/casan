@@ -174,10 +174,9 @@ Resource handling
  * and thus known by the master.
  *
  * @param res Address of the resource to register
- * @return true if resource have been added successfully
  */
 
-bool Sos::register_resource (Resource *res)
+void Sos::register_resource (Resource *res)
 {
     reslist *newr, *prev, *cur ;
     bool ok ;
@@ -198,19 +197,6 @@ bool Sos::register_resource (Resource *res)
     else
 	reslist_ = newr ;
     newr->next = NULL ;
-
-    /*
-     * Simulate creation of a new message in order to see if it fits
-     */
-
-    if (l2_ != NULL)
-    {
-	Msg fake (l2_) ;
-	ok = get_well_known (fake) ;	// error message if does not fit
-    }
-    else ok = true ;
-
-    return ok ;
 }
 
 /**

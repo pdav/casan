@@ -96,15 +96,16 @@ void setup ()
 
     Resource *r1 = new Resource ("t1", "Desk temp", "celsius") ;
     r1->handler (COAP_CODE_GET, process_temp1) ;
-    (void) sos->register_resource (r1) ;
+    sos->register_resource (r1) ;
 
     Resource *r2 = new Resource ("t2", "B201 temp", "celsius") ;
     r2->handler (COAP_CODE_GET, process_temp2) ;
-    (void) sos->register_resource (r2) ;
+    sos->register_resource (r2) ;
 
-    Resource *r3 = new Resource ("led", "Nice LED", "light") ;
+    // Resource *r3 = new Resource ("led", "Nice LED", "light") ;
+    Resource *r3 = new Resource ("led", "A beautiful LED", "light") ;
     r3->handler (COAP_CODE_GET, process_led) ;
-    (void) sos->register_resource (r3) ;
+    sos->register_resource (r3) ;
 
     sos->print_resources () ;
 }

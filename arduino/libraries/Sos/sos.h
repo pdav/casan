@@ -63,7 +63,7 @@ class Sos {
 	void reset (void) ;
 	void loop () ;
 
-	bool register_resource (Resource *res) ;
+	void register_resource (Resource *res) ;
 	void print_resources (void) ;
 
 	// private methods which are made public for test programs
