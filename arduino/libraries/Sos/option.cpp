@@ -131,7 +131,7 @@ option::option (optcode_t optcode)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	Serial.println (F ("\033[31moption::optval err: CHK_OPTCODE 1\033[00m")) ;
+	Serial.println (F (RED ("option::optval err: CHK_OPTCODE 1"))) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     RESET ;
@@ -155,13 +155,13 @@ option::option (optcode_t optcode, const void *optval, int optlen)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	Serial.println (F ("\033[31moption::optval err: CHK_OPTCODE 2\033[00m")) ;
+	Serial.println (F (RED ("option::optval err: CHK_OPTCODE 2"))) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     CHK_OPTLEN (optcode, optlen, err) ;
     if (err)
     {
-	Serial.println (F ("\033[31moption::optval err: CHK_OPTLEN 2\033[00m")) ;
+	Serial.println (F (RED ("option::optval err: CHK_OPTLEN 2"))) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
     }
     RESET ;
@@ -192,13 +192,13 @@ option::option (optcode_t optcode, option::uint optval)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	Serial.println (F ("\033[31moption::optval err: CHK_OPTCODE 3\033[00m")) ;
+	Serial.println (F (RED ("option::optval err: CHK_OPTCODE 3"))) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     CHK_OPTLEN (optcode, len, err) ;
     if (err)
     {
-	Serial.println (F ("\033[31moption::optval err: CHK_OPTLEN 3\033[00m")) ;
+	Serial.println (F (RED ("option::optval err: CHK_OPTLEN 3"))) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
     }
     RESET ;
@@ -380,7 +380,7 @@ void option::optval (option::uint val)
     CHK_OPTLEN (optcode_, len, err) ;
     if (err)
     {
-	Serial.println (F ("\033[31moption::optval err: CHK_OPTLEN\033[00m")) ;
+	Serial.println (F (RED ("option::optval err: CHK_OPTLEN"))) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
 	return ;
     }
@@ -412,7 +412,7 @@ uint8_t option::get_errno (void)
 
 void option::print (void)
 {
-    Serial.print (F ("\033[33mOPTION\033[00m : \033[36m optcode\033[00m=")) ;
+    Serial.print (F (YELLOW ("OPTION") " : " RED ("optcode") "=")) ;
     switch ((unsigned char) optcode_)
     {
 	case MO_None		: Serial.print (F("MO_None")) ; break ;
@@ -431,18 +431,18 @@ void option::print (void)
 	case MO_If_None_Match	: Serial.print (F("MO_If_None_Match")) ; break ;
 	case MO_If_Match	: Serial.print (F("MO_If_Match")) ; break ;
 	default :
-	    Serial.print (F ("\033[31mERROR\033[00m")) ;
-	    Serial.print ((unsigned char)optcode_) ;
+	    Serial.print (F (RED ("ERROR"))) ;
+	    Serial.print ((unsigned char) optcode_) ;
 	    break ;
     }
     Serial.print (F ("/")) ;
     Serial.print (optcode_) ;
-    Serial.print (F ("\033[36m optlen\033[00m=")) ;
+    Serial.print (F (BLUE (" optlen") "=")) ;
     Serial.print (optlen_) ;
 
     if (optval_)
     {
-	Serial.print (F ("  \033[36moptval\033[00m=")) ;
+	Serial.print (F (BLUE (" optval") "=")) ;
 	char *buf = (char *) malloc (sizeof (char) * optlen_ + 1) ;
 	memcpy (buf, optval_, optlen_) ;
 	buf[optlen_] = '\0' ;
@@ -451,7 +451,7 @@ void option::print (void)
     }
     else if (optlen_ > 0 )
     {
-	Serial.print (F ("  \033[36mstaticval_\033[00m=")) ;
+	Serial.print (F (BLUE (" staticval") "=")) ;
 	char *buf = (char *) malloc (sizeof (char) * optlen_ + 1) ;
 	memcpy (buf, staticval_, optlen_) ;
 	buf[optlen_] = '\0' ;

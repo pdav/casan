@@ -47,9 +47,9 @@ void sync_time (time_t &cur)
 
 void print_time (time_t &t)
 {
-    Serial.print (F ("\033[33mtime = \033[00m")) ;
+    Serial.print (F ("time = ")) ;
     Serial.print (TIME_HIGH (t)) ;
-    Serial.print (F ("\033[33m:\033[00m")) ;
+    Serial.print (F (":")) ;
     Serial.print (TIME_LOW (t)) ;
 }
 

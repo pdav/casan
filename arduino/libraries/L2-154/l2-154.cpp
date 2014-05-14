@@ -114,12 +114,11 @@ bool l2addr_154::operator!= (const l2addr &other)
     return this->addr_ != oe->addr_ ;
 }
 
-void l2addr_154::print (void) {
-    Serial.print (F ("\033[32m")) ;
+void l2addr_154::print (void)
+{
     Serial.print (BYTE_LOW (addr_), HEX) ;	// first byte: low bits
     Serial.print (':') ;
     Serial.print (BYTE_HIGH (addr_), HEX) ;	// second byte: high bits
-    Serial.print (F ("\033[00m")) ;
 }
 
 /******************************************************************************

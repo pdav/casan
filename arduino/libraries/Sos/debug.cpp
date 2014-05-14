@@ -18,7 +18,7 @@ int freeMemory () ;
 
 void Debug::start (int interval)	// in seconds
 {
-    Serial.println (F ("\033[36mstart\033[00m")) ;
+    Serial.println (F (B_BLUE "start" C_RESET)) ;
     interv_ = interval * 1000 ;		// in milliseconds
     next_ = millis () ;			// perform action immediately
 }
@@ -42,10 +42,9 @@ bool Debug::heartbeat (void)
     if (millis () > next_)
     {
 	Serial.println (F ("-------------------------------------------------------------------")) ;
-	Serial.print (F ("\033[36mloop \033[00m ")) ;
-	Serial.print (F ("\tfree mem = \033[36m")) ;
+	Serial.print (F (B_BLUE "loop " C_RESET "free mem=" B_BLUE)) ;
 	Serial.print (freeMemory ()) ;
-	Serial.println (F ("\033[00m")) ;
+	Serial.println (F (C_RESET)) ;
 
 	next_ += interv_ ;
 	action = true ;

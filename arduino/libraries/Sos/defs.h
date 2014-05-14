@@ -40,6 +40,8 @@
 #define	B_WHITE		C_CSI "37;1m"
 
 #define	RED(m)			B_RED m C_RESET
+#define	BLUE(m)			C_BLUE m C_RESET
+#define	YELLOW(m)		C_YELLOW m C_RESET
 
 // CoAP ACK timeout (milliseconds) for CONfirmable messages
 #define	ACK_TIMEOUT	2000

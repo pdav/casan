@@ -111,17 +111,16 @@ bool l2addr_eth::operator!= (const unsigned char *other)
     return memcmp (this->addr_, other, ETHADDRLEN) != 0 ;
 }
 
-void l2addr_eth::print (void) {
+void l2addr_eth::print (void)
+{
     int i ;
 
-    Serial.print (F ("\033[32m")) ;
     for (i = 0 ; i < ETHADDRLEN ; i++)
     {
 	if (i > 0)
 	    Serial.print (':') ;
 	Serial.print (addr_ [i], HEX) ;
     }
-    Serial.print (F ("\033[00m")) ;
 }
 
 /******************************************************************************

@@ -225,7 +225,7 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
 	    else
 	    {
 		success = false ;
-		Serial.print (F ("\033[31mOPTION unrecognized\033[00m")) ;
+		Serial.print (F (RED ("Option unrecognized"))) ;
 		Serial.print (F (" opt_delta=")) ;
 		Serial.print (opt_delta) ;
 		Serial.print (F (", opt_len=")) ;
@@ -790,7 +790,7 @@ void Msg::print (void)
     char *p ;
     int len ;
 
-    Serial.print (F ("\033[36mmsg\033[00m\tid=")) ;
+    Serial.print (F (BLUE ("msg") " id=")) ;
     Serial.print (get_id ()) ;
     Serial.print (F (", type=")) ;
     switch (get_type ()) {
@@ -798,7 +798,7 @@ void Msg::print (void)
 	case COAP_TYPE_NON : Serial.print (F ("NON")) ; break ;
 	case COAP_TYPE_ACK : Serial.print (F ("ACK")) ; break ;
 	case COAP_TYPE_RST : Serial.print (F ("RST")) ; break ;
-	default : Serial.print (F ("\033[31mERROR\033[00m")) ;
+	default : Serial.print (F (RED ("ERROR"))) ;
     }
     Serial.print (F (", code=")) ;
     Serial.print (get_code () >> 5, HEX) ;

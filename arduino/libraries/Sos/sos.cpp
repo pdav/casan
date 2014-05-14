@@ -443,7 +443,7 @@ void Sos::loop ()
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
 		    }
-		    else Serial.println (F ("\033[31mUnkwnon CTL\033[00m")) ;
+		    else Serial.println (F (RED ("Unkwnon CTL"))) ;
 		}
 	    }
 
@@ -473,7 +473,7 @@ void Sos::loop ()
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
 		    }
-		    else Serial.println (F ("\033[31Unknown CTL\033[00m")) ;
+		    else Serial.println (F (RED ("Unkwnon CTL"))) ;
 		}
 	    }
 
@@ -522,7 +522,7 @@ void Sos::loop ()
 			    status_ = SL_RUNNING ;
 			}
 		    }
-		    else Serial.println (F ("\033[31Unknown CTL\033[00m")) ;
+		    else Serial.println (F (RED ("Unkwnon CTL"))) ;
 		}
 		else		// request for a normal resource
 		{
@@ -533,7 +533,7 @@ void Sos::loop ()
 	    }
 	    else if (ret == l2net::RECV_TRUNCATED)
 	    {
-		Serial.println (F ("\033[36mRequest too large\033[00m")) ;
+		Serial.println (F (RED ("Request too large"))) ;
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
 		out.set_token (in.get_toklen (), in.get_token ()) ;
@@ -666,7 +666,7 @@ bool Sos::is_assoc (Msg &m, time_t &sttl)
 		// we benefit from the added nul byte at the end of val
 		if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC, &n) == 1)
 		{
-		    Serial.print (F ("\033[31m TTL recv \033[00m ")) ;
+		    Serial.print (BLUE ("TTL recv: ")) ;
 		    Serial.print (n) ;
 		    Serial.println () ;
 		    sttl = ((time_t) n) * 1000 ;
