@@ -37,11 +37,12 @@ void setup ()
     Serial.begin (38400) ;
     debug.start (DEBUGINTERVAL) ;
 #ifdef L2_ETH
-    l2.start (myaddr, false, MTU, ETHTYPE) ;
+    l2.start (myaddr, false, ETH_TYPE) ;
 #endif
 #ifdef L2_154
-    l2.start (myaddr, false, MTU, CHANNEL, PANID) ;
+    l2.start (myaddr, false, CHANNEL, PANID) ;
 #endif
+    l2.mtu (MTU) ;
 }
 
 void print_paylen_src_dst (void)

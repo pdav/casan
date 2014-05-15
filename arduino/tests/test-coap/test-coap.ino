@@ -18,7 +18,7 @@ l2addr *dest = & l2addr_eth_broadcast ;
 l2net_eth e ;
 
 bool promisc = false ;
-int mtu = 200 ;
+#define	MTU	200
 // #endif
 
 Debug debug ;
@@ -26,7 +26,8 @@ Debug debug ;
 void setup ()
 {
     Serial.begin (38400) ;
-    e.start (myaddr, promisc, mtu, ETHTYPE) ;
+    e.start (myaddr, promisc, ETH_TYPE) ;
+    e.mtu (MTU) ;
     debug.start (DEBUGINTERVAL) ;
 }
 

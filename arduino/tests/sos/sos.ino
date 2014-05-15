@@ -23,11 +23,10 @@
 #endif
 
 #define	DEBUGINTERVAL	10
+#define	SLAVEID		169
 
 int tmp_sensor = A0 ;
 int led = A2 ;
-
-int slaveid = 169 ;
 
 Sos *sos ;
 Debug debug ;
@@ -83,12 +82,12 @@ void setup ()
 
     Serial.begin (38400) ;
 #ifdef L2_ETH
-    l2.start (myaddr, false, MTU, ETHTYPE) ;
+    l2.start (myaddr, false, ETH_TYPE) ;
 #endif
 #ifdef L2_154
-    l2.start (myaddr, false, MTU, CHANNEL, PANID) ;
+    l2.start (myaddr, false, CHANNEL, PANID) ;
 #endif
-    sos = new Sos (&l2, slaveid) ;
+    sos = new Sos (&l2, MTU, SLAVEID) ;
 
     debug.start (DEBUGINTERVAL) ;
 
@@ -102,8 +101,8 @@ void setup ()
     r2->handler (COAP_CODE_GET, process_temp2) ;
     sos->register_resource (r2) ;
 
-    // Resource *r3 = new Resource ("led", "Nice LED", "light") ;
-    Resource *r3 = new Resource ("led", "A beautiful LED", "light") ;
+    Resource *r3 = new Resource ("led", "Nice LED", "light") ;
+    // Resource *r3 = new Resource ("led", "A beautiful LED", "light") ;
     r3->handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r3) ;
 

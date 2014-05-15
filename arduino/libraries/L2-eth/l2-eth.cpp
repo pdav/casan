@@ -21,7 +21,7 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 // Various fields in Ethernet frame
 #define	ETH_OFFSET_DST_ADDR	0
 #define	ETH_OFFSET_SRC_ADDR	6
-#define	ETH_OFFSET_ETHTYPE	12
+#define	ETH_OFFSET_TYPE		12
 #define	ETH_OFFSET_SIZE		14		// specific to SOS
 #define	ETH_OFFSET_PAYLOAD	16
 
@@ -50,7 +50,7 @@ l2addr_eth::l2addr_eth (const char *a)
     int i = 0 ;
     uint8_t b = 0 ;
 
-    while (*a != '\0' && i < ETHADDRLEN)
+    while (*a != '\0' && i < ETH_ADDRLEN)
     {
 	if (*a == ':')
 	{
@@ -68,20 +68,20 @@ l2addr_eth::l2addr_eth (const char *a)
 	}
 	else
 	{
-	    for (i = 0 ; i < ETHADDRLEN ; i++)
+	    for (i = 0 ; i < ETH_ADDRLEN ; i++)
 		addr_ [i] = 0 ;
 	    break ;
 	}
 	a++ ;
     }
-    if (i < ETHADDRLEN)
+    if (i < ETH_ADDRLEN)
 	addr_ [i] = b ;
 }
 
 // copy constructor
 l2addr_eth::l2addr_eth (const l2addr_eth &x)
 {
-    memcpy (addr_, x.addr_, ETHADDRLEN) ;
+    memcpy (addr_, x.addr_, ETH_ADDRLEN) ;
 }
 
 // assignment operator
@@ -89,33 +89,33 @@ l2addr_eth & l2addr_eth::operator= (const l2addr_eth &x)
 {
     if (addr_ == x.addr_)
 	return *this ;
-    memcpy (addr_, x.addr_, ETHADDRLEN) ;
+    memcpy (addr_, x.addr_, ETH_ADDRLEN) ;
     return *this ;
 }
 
 bool l2addr_eth::operator== (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr_, oe->addr_, ETHADDRLEN) == 0 ;
+    return memcmp (this->addr_, oe->addr_, ETH_ADDRLEN) == 0 ;
 }
 
 bool l2addr_eth::operator!= (const l2addr &other)
 {
     l2addr_eth *oe = (l2addr_eth *) &other ;
-    return memcmp (this->addr_, oe->addr_, ETHADDRLEN) != 0 ;
+    return memcmp (this->addr_, oe->addr_, ETH_ADDRLEN) != 0 ;
 }
 
 // Raw MAC address (array of 6 bytes)
 bool l2addr_eth::operator!= (const unsigned char *other)
 {
-    return memcmp (this->addr_, other, ETHADDRLEN) != 0 ;
+    return memcmp (this->addr_, other, ETH_ADDRLEN) != 0 ;
 }
 
 void l2addr_eth::print (void)
 {
     int i ;
 
-    for (i = 0 ; i < ETHADDRLEN ; i++)
+    for (i = 0 ; i < ETH_ADDRLEN ; i++)
     {
 	if (i > 0)
 	    Serial.print (':') ;
@@ -144,24 +144,23 @@ l2net_eth::~l2net_eth ()
  *
  * @param a Our Ethernet address
  * @param promisc True if we want to access this network in promisc mode
- * @param mtu Maximum size of an Ethernet frame (including MAC header and
- *	footer)
  * @param ethtype Ethernet type used for sending and receiving frames
  */
 
-void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
+void l2net_eth::start (l2addr *a, bool promisc, int ethtype)
 {
     int cmd ;
 
     myaddr_ = * (l2addr_eth *) a ;
     ethtype_ = ethtype ;
-    if (mtu == 0 || mtu > ETHMTU)
-	mtu = ETHMTU ;
-    mtu_ = mtu - (ETH_SIZE_HEADER + ETH_SIZE_FCS) ; // excl. MAC hdr + SOS len
+    mtu_ = ETH_MTU ;
 
     if (rbuf_ != NULL)
+    {
 	free (rbuf_) ;
-    rbuf_ = (uint8_t *) malloc (mtu_ + ETH_SIZE_HEADER) ;
+	rbuf_ = NULL ;
+    }
+    rbufsize_ = 0 ;
 
     W5100.init () ;
     W5100.setMACAddress (myaddr_.addr_) ;
@@ -170,6 +169,18 @@ void l2net_eth::start (l2addr *a, bool promisc, size_t mtu, int ethtype)
 	cmd |= S0_MR_MF ;		// MAC filter for socket 0
     W5100.writeSnMR (SOCK0, cmd) ;
     W5100.execCmdSn (SOCK0, Sock_OPEN) ;
+}
+
+/**
+ * @brief Get MAC payload length
+ *
+ * This method returns the current MAC payload length, i.e. MTU without
+ * MAC header and trailer.
+ */
+
+size_t l2net_eth::maxpayload (void)
+{
+    return mtu_ - (ETH_SIZE_HEADER + ETH_SIZE_FCS) ; // excl. MAC hdr + SOS len
 }
 
 /**
@@ -200,7 +211,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 {
     bool success = false ;
 
-    if (len + ETH_SIZE_HEADER <= mtu_)
+    if (len + ETH_SIZE_HEADER <= mtu_ - ETH_SIZE_FCS)
     {
 	l2addr_eth *m = (l2addr_eth *) &dest ;
 	uint8_t *sbuf ;		// send buffer
@@ -212,10 +223,10 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	sbuf = (uint8_t *) malloc (sbuflen) ;
 
 	// Standard Ethernet MAC header (14 bytes)
-	memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
-	memcpy (sbuf + ETH_OFFSET_SRC_ADDR, myaddr_.addr_, ETHADDRLEN) ;
-	sbuf [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
-	sbuf [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
+	memcpy (sbuf + ETH_OFFSET_DST_ADDR, m->addr_, ETH_ADDRLEN) ;
+	memcpy (sbuf + ETH_OFFSET_SRC_ADDR, myaddr_.addr_, ETH_ADDRLEN) ;
+	sbuf [ETH_OFFSET_TYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
+	sbuf [ETH_OFFSET_TYPE +1] = (char) ((ethtype_     ) & 0xff) ;
 
 	// SOS message size (2 bytes)
 	sbuf [ETH_OFFSET_SIZE    ] = BYTE_HIGH (paylen + 2) ;
@@ -243,10 +254,10 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	uint8_t hdr [ETH_SIZE_HEADER] ;
 
 	// Standard Ethernet MAC header (14 bytes)
-	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->addr_, ETHADDRLEN) ;
-	memcpy (hdr + ETH_OFFSET_SRC_ADDR, myaddr_.addr_, ETHADDRLEN) ;
-	hdr [ETH_OFFSET_ETHTYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
-	hdr [ETH_OFFSET_ETHTYPE +1] = (char) ((ethtype_     ) & 0xff) ;
+	memcpy (hdr + ETH_OFFSET_DST_ADDR, m->addr_, ETH_ADDRLEN) ;
+	memcpy (hdr + ETH_OFFSET_SRC_ADDR, myaddr_.addr_, ETH_ADDRLEN) ;
+	hdr [ETH_OFFSET_TYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
+	hdr [ETH_OFFSET_TYPE +1] = (char) ((ethtype_     ) & 0xff) ;
 
 	// SOS message size (2 bytes)
 	hdr [ETH_OFFSET_SIZE    ] = BYTE_HIGH (len + 2) ;
@@ -272,8 +283,8 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
  * @brief Receive a packet from the Ethernet network
  *
  * This method queries the W5100 chip in order to get a received
- * Ethernet frame. The frame is copied in a buffer (malloced in
- * the `start` method).
+ * Ethernet frame. The frame is copied in a buffer dynamically
+ * allocated.
  *
  * See the `l2net::l2_recv_t` enumeration for return values.
  */
@@ -282,6 +293,14 @@ l2net::l2_recv_t l2net_eth::recv (void)
 {
     l2_recv_t r ;
     size_t wizlen ;
+
+    if (rbufsize_ != mtu_ - ETH_SIZE_FCS) // MTU change, or initial allocation
+    {
+	if (rbuf_ != NULL)
+	    free (rbuf_) ;
+	rbufsize_ = mtu_ - ETH_SIZE_FCS ;
+	rbuf_ = (uint8_t *) malloc (rbufsize_) ;
+    }
 
     wizlen = W5100.getRXReceivedSize (SOCK0) ;	// size of data in RX mem
     if (wizlen == 0)
@@ -299,14 +318,14 @@ l2net::l2_recv_t l2net_eth::recv (void)
 	pktlen_ = INT16 (pl [0], pl [1]) ;
 	pktlen_ -= 2 ;			// w5100 header includes size itself
 
-	if (pktlen_ <= mtu_ + ETH_SIZE_HEADER) 
+	if (pktlen_ <= rbufsize_) 
 	{
 	    rbuflen_ = pktlen_ ;
 	    remaining = 0 ;
 	}
 	else
 	{
-	    rbuflen_ = mtu_ + ETH_SIZE_HEADER ;
+	    rbuflen_ = rbufsize_ ;
 	    remaining = pktlen_ - rbuflen_ ;
 	    r = RECV_TRUNCATED ;
 	}
@@ -345,8 +364,8 @@ l2net::l2_recv_t l2net_eth::recv (void)
 
 	// Check Ethernet type
 	if (r == RECV_OK
-		&& (rbuf_ [ETH_OFFSET_ETHTYPE] != BYTE_HIGH (ethtype_)
-		 || rbuf_ [ETH_OFFSET_ETHTYPE + 1] != BYTE_LOW (ethtype_) ))
+		&& (rbuf_ [ETH_OFFSET_TYPE] != BYTE_HIGH (ethtype_)
+		 || rbuf_ [ETH_OFFSET_TYPE + 1] != BYTE_LOW (ethtype_) ))
 	    r = RECV_WRONG_TYPE ;
     }
 
@@ -379,7 +398,7 @@ l2addr *l2net_eth::bcastaddr (void)
 l2addr *l2net_eth::get_src (void)
 {
     l2addr_eth *a = new l2addr_eth ;
-    memcpy (a->addr_, rbuf_ + ETH_OFFSET_SRC_ADDR, ETHADDRLEN) ;
+    memcpy (a->addr_, rbuf_ + ETH_OFFSET_SRC_ADDR, ETH_ADDRLEN) ;
     return a ;
 }
 
@@ -395,7 +414,7 @@ l2addr *l2net_eth::get_src (void)
 l2addr *l2net_eth::get_dst (void)
 {
     l2addr_eth *a = new l2addr_eth ;
-    memcpy (a->addr_, rbuf_ + ETH_OFFSET_DST_ADDR, ETHADDRLEN) ;
+    memcpy (a->addr_, rbuf_ + ETH_OFFSET_DST_ADDR, ETH_ADDRLEN) ;
     return a ;
 }
 

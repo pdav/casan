@@ -289,7 +289,7 @@ bool Msg::send (l2addr &dest)
 
     if (encoded_ == NULL)
     {
-	enclen_ = l2_->mtu () ;			// exploitable size
+	enclen_ = l2_->maxpayload () ;		// exploitable size
 	encoded_ = (uint8_t *) malloc (enclen_) ;
 	success = coap_encode (encoded_, enclen_) ;
 	if (! success)
@@ -488,12 +488,12 @@ size_t Msg::coap_size (bool emulpayload)
 
 size_t Msg::avail_space (void)
 {
-    size_t size, mtu, avail ;
+    size_t size, maxpayload, avail ;
 
     size = coap_size (true) ;
-    mtu = l2_->mtu () ;
+    maxpayload = l2_->maxpayload () ;
 
-    avail = (size <= mtu) ? mtu - size : 0 ;
+    avail = (size <= maxpayload) ? maxpayload - size : 0 ;
     return avail ;
 }
 

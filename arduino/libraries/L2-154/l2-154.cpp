@@ -53,13 +53,13 @@ l2addr_154::l2addr_154 (const char *a)
 {
     int i = 0 ;
     uint8_t b = 0 ;
-    uint8_t buf [I154ADDRLEN] ;
+    uint8_t buf [I154_ADDRLEN] ;
 
     /*
      * General loop, when 8-byte addresses will be supported
      */
 
-    while (*a != '\0' && i < I154ADDRLEN)
+    while (*a != '\0' && i < I154_ADDRLEN)
     {
 	if (*a == ':')
 	{
@@ -77,13 +77,13 @@ l2addr_154::l2addr_154 (const char *a)
 	}
 	else
 	{
-	    for (i = 0 ; i < I154ADDRLEN ; i++)
+	    for (i = 0 ; i < I154_ADDRLEN ; i++)
 		buf [i] = 0 ;
 	    break ;
 	}
 	a++ ;
     }
-    if (i < I154ADDRLEN)
+    if (i < I154_ADDRLEN)
 	buf [i] = b ;
 
     addr_ = CONST16 (buf [0], buf [1]) ;
@@ -140,13 +140,11 @@ l2net_154::~l2net_154 ()
  *
  * @param a Our IEEE 802.15.4 address
  * @param promisc True if we want to access this network in promisc mode
- * @param mtu Maximum size of a 802.15.4 frame (including MAC header and
- *	footer)
  * @param chan channel number
  * @param panid PAN-id
  */
 
-void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, panid_t panid)
+void l2net_154::start (l2addr *a, bool promisc, channel_t chan, panid_t panid)
 {
     myaddr_ = ((l2addr_154 *) a)->addr_ ;
     zigmsg.addr2 (myaddr_) ;
@@ -154,13 +152,23 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
     zigmsg.panid (panid) ;
     zigmsg.promiscuous (false) ;
 
-    if (mtu == 0 || mtu > I154MTU)
-	mtu = I154MTU ;			// excluding MAC header
-    mtu_ = mtu - (I154_SIZE_HEADER + I154_SIZE_FCS) ;
+    mtu_ = I154_MTU ;
 
     curframe_ = NULL ;			// no currently received frame
 
     zigmsg.start () ;
+}
+
+/*
+ * @brief Get MAC payload length
+ *
+ * This method returns the current MAC payload length, i.e. MTU without
+ * MAC header and trailer.
+ */
+
+size_t l2net_154::maxpayload (void)
+{
+    return mtu_ - (I154_SIZE_HEADER + I154_SIZE_FCS) ; // excl. MAC header
 }
 
 /**
@@ -174,7 +182,12 @@ void l2net_154::start (l2addr *a, bool promisc, size_t mtu, channel_t chan, pani
 
 bool l2net_154::send (l2addr &dest, const uint8_t *data, size_t len) 
 {
-    return zigmsg.sendto (((l2addr_154 *) &dest)->addr_, len, data) ;
+    bool success = false ;
+
+    if (len <= mtu_ - (I154_SIZE_HEADER + I154_SIZE_FCS))
+	success = zigmsg.sendto (((l2addr_154 *) &dest)->addr_, len, data) ;
+
+    return success ;
 }
 
 /**

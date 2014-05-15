@@ -44,7 +44,8 @@ class l2addr
  * id for IEEE 802.15.4 for example), and a specific `start` method.
  */
 
-class l2net {
+class l2net
+{
     public:
 	/** Return type for the `recv` methods in various classes
 	 *
@@ -98,12 +99,24 @@ class l2net {
 	/** Get the payload length of the received message */
 	virtual size_t get_paylen (void) = 0 ;
 
-	/** Get the MTU (maximum payload length, excluding headers) */
+	/** Get the current MTU (including MAC header and trailer) */
 	size_t mtu (void) { return mtu_ ; }
 
+	/** Set the current MTU (including MAC header and trailer) */
+	void mtu (size_t mtu) { mtu_ = mtu ; }
+
+	/** Get the maximum payload length (excluding MAC header and trailer) */
+	virtual size_t maxpayload (void) = 0 ;
+
     protected:
-	// Note on MTU: this value does not include MAC header
-	// thus, it is the maximum size of a SOS-level datagram
+	/** Current MTU value
+	 *
+	 * Derived classes must initialize this value to the network
+	 * default MTU after object creation. It can be modified
+	 * afterwards by the calling program, for example to reflect
+	 * the result of an MTU negociation.
+	 * Maximum payload length is derived from this value.
+	 */
 	size_t mtu_ ;		// must be initialized in derived classes
 } ;
 

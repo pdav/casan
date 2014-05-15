@@ -15,13 +15,13 @@
 #include "l2.h"
 
 /** Ethernet frame type used for SOS frames */
-#define	ETHTYPE		0x88b5
+#define	ETH_TYPE	0x88b5
 
 /** Ethernet address length */
-#define	ETHADDRLEN	6
+#define	ETH_ADDRLEN	6
 
 /** Ethernet MTU (complete MAC frame length, including MAC header and footer) */
-#define	ETHMTU		1518
+#define	ETH_MTU		1518
 
 /**
  * @brief Specialization of the l2addr abstract class for Ethernet
@@ -44,7 +44,7 @@ class l2addr_eth : public l2addr
 	void print (void) ;
 
     protected:
-	uint8_t addr_ [ETHADDRLEN] ;
+	uint8_t addr_ [ETH_ADDRLEN] ;
 
 	friend class l2net_eth ;
 } ;
@@ -66,8 +66,10 @@ class l2net_eth : public l2net
     public:
 	l2net_eth (void) ;
 	~l2net_eth () ;
-	void start (l2addr *myaddr, bool promisc, size_t mtu, int ethtype) ;
+	void start (l2addr *myaddr, bool promisc, int ethtype) ;
+	size_t maxpayload (void) ;
 	bool send (l2addr &dest, const uint8_t *data, size_t len) ;
+
 	// the "recv" method copy the received packet in
 	// the instance private variable (see rbuf_/rbuflen_ below)
 	l2_recv_t recv (void) ;
@@ -86,6 +88,7 @@ class l2net_eth : public l2net
     private:
 	l2addr_eth myaddr_ ;		// my MAC address
 	int ethtype_ ;
+	size_t rbufsize_ ;		// length of malloced rbuf_
 	uint8_t *rbuf_ ;		// receive buffer (of size mtu_ bytes)
 	size_t pktlen_ ;		// real length of received packet
 	size_t rbuflen_ ;		// length of data received (<= mtu_)

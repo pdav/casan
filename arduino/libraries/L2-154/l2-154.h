@@ -13,8 +13,8 @@
 #include "l2.h"
 #include <ZigMsg.h>
 
-#define	I154ADDRLEN	2		// Address length
-#define	I154MTU		127
+#define	I154_ADDRLEN	2		// Address length
+#define	I154_MTU	127
 
 /**
  * @brief Specialization of the l2addr abstract class for IEEE 802.15.4
@@ -61,7 +61,8 @@ class l2net_154 : public l2net
 
 	l2net_154 (void) ;
 	~l2net_154 () ;
-	void start (l2addr *myaddr, bool promisc, size_t mtu, channel_t chan, panid_t panid) ;
+	void start (l2addr *myaddr, bool promisc, channel_t chan, panid_t panid) ;
+	size_t maxpayload (void) ;
 	bool send (l2addr &dest, const uint8_t *data, size_t len) ;
 	// the "recv" method copy the received packet in
 	// the instance private variable (see rbuf_/rbuflen_ below)

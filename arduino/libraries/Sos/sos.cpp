@@ -9,8 +9,9 @@
 #define	SOS_NAMESPACE2		"sos"
 #define	SOS_HELLO		"hello=%ld"
 #define	SOS_DISCOVER_SLAVEID	"slave=%ld"
-#define	SOS_DISCOVER_MTU	"mtu=%d"
-#define	SOS_ASSOC		"assoc=%ld"
+#define	SOS_DISCOVER_MTU	"mtu=%ld"
+#define	SOS_ASSOC_TTL		"ttl=%ld"
+#define	SOS_ASSOC_MTU		SOS_DISCOVER_MTU
 
 #define	SOS_BUF_LEN		50	// > sizeof hello=.../slave=..../etc
 
@@ -38,10 +39,11 @@ Constructor and simili-destructor
  * object, and a slave-id.
  *
  * @param l2 pointer to an already initialized network object (l2net-*)
+ * @param mtu slave MTU (including MAC header and trailer) or 0 for default
  * @param slaveid unique slave-id
  */
 
-Sos::Sos (l2net *l2, long int slaveid)
+Sos::Sos (l2net *l2, int mtu, long int slaveid)
 {
     memset (this, 0, sizeof *this) ;
 
@@ -51,7 +53,10 @@ Sos::Sos (l2net *l2, long int slaveid)
     curtime = 0 ;			// global variable
     sync_time (curtime) ;
 
-    reset_master () ;			// master_ is reset to broadcast
+    defmtu_ = l2->mtu () ;		// get default L2 MTU
+    if (mtu > 0 && mtu < defmtu_)
+	defmtu_ = mtu ;			// set a different default MTU
+    reset_master () ;			// master_ is reset (broadcast addr, mtu)
 
     hlid_ = -1 ;
     curid_ = 1 ;
@@ -89,6 +94,41 @@ void Sos::reset (void)
 }
 
 /******************************************************************************
+MTU handling
+******************************************************************************/
+
+/**
+ * @brief Reset MTU value to user specified MTU
+ *
+ * This method resets the current MTU to the value specified by the
+ * user (which is the default network MTU if supplied as 0).
+ */
+
+void Sos::reset_mtu (void)
+{
+    negociate_mtu (0) ;
+}
+
+/**
+ * @brief Change MTU value for a negociated value
+ *
+ * This method sets the current MTU to a value negociated between
+ * the slave and the master. Parameter is the MTU value announced
+ * by the master in its Assoc message, or 0 to reset the MTU to the
+ * default value (which is the value specified by the user or the
+ * default network specific MTU).
+ */
+
+void Sos::negociate_mtu (int mtu)
+{
+    if (mtu > 0 && mtu <= defmtu_)
+	curmtu_ = mtu ;
+    else
+	curmtu_ = defmtu_ ;		// reset MTU to default value
+    l2_->mtu (curmtu_) ;		// notify L2 network
+}
+
+/******************************************************************************
 Master handling
 ******************************************************************************/
 
@@ -96,6 +136,7 @@ Master handling
  * Reset master coordinates to an unknown master:
  * * address is null
  * * hello-id is -1 (i.e. unknown hello-id)
+ * * current MTU is reset to default (user initialized) MTU
  */
 
 void Sos::reset_master (void)
@@ -104,8 +145,8 @@ void Sos::reset_master (void)
 	delete master_ ;
     master_ = NULL ;
     hlid_ = -1 ;
-
-    Serial.println (F ("Master reset to broadcast address")) ;
+    reset_mtu () ;			// reset MTU to default
+    Serial.println (F ("Master reset to broadcast address and default MTU")) ;
 }
 
 /**
@@ -122,9 +163,10 @@ bool Sos::same_master (l2addr *a)
  * Change master to a known master.
  * - address is taken from the current incoming message
  * - hello-id is given, may be -1 if value is currently not known
+ * - mtu is given, may be -1 if current value must not be changed
  */
 
-void Sos::change_master (long int hlid)
+void Sos::change_master (long int hlid, int mtu)
 {
     l2addr *newmaster ;
 
@@ -150,10 +192,15 @@ void Sos::change_master (long int hlid)
 	hlid_ = hlid ;
     }
 
+    if (mtu != -1)
+	negociate_mtu (mtu) ;
+
     Serial.print (F ("Master set to ")) ;
     master_->print () ;
     Serial.print (F (", helloid=")) ;
     Serial.print (hlid_) ;
+    Serial.print (F (", mtu=")) ;
+    Serial.print (curmtu_) ;
     Serial.println () ;
 }
 
@@ -179,7 +226,6 @@ Resource handling
 void Sos::register_resource (Resource *res)
 {
     reslist *newr, *prev, *cur ;
-    bool ok ;
 
     /*
      * Register resource in last position of the list to respect
@@ -387,6 +433,7 @@ void Sos::loop ()
     uint8_t oldstatus ;
     long int hlid ;
     l2addr *srcaddr ;
+    int mtu ;				// mtu announced by master in assoc msg
 
     oldstatus = status_ ;		// keep old value for debug display
     sync_time (curtime) ;		// get current time
@@ -416,15 +463,14 @@ void Sos::loop ()
 		    if (is_hello (in, hlid))
 		    {
 			Serial.println (F ("Received a CTL HELLO msg")) ;
-			change_master (hlid) ;
+			change_master (hlid, -1) ;	// don't change mtu
 			twait_.init (curtime) ;
 			status_ = SL_WAITING_KNOWN ;
 		    }
-		    else if (is_assoc (in, sttl_))
+		    else if (is_assoc (in, sttl_, mtu))
 		    {
 			Serial.println (F ("Received a CTL ASSOC msg")) ;
-			hlid = -1 ;	// "unknown" hlid
-			change_master (hlid) ;
+			change_master (-1, mtu) ;	// "unknown" hlid
 			send_assoc_answer (in, out) ;
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
@@ -448,13 +494,12 @@ void Sos::loop ()
 		    if (is_hello (in, hlid))
 		    {
 			Serial.println (F ("Received a CTL HELLO msg")) ;
-			change_master (hlid) ;
+			change_master (hlid, -1) ;	// don't change mtu
 		    }
-		    else if (is_assoc (in, sttl_))
+		    else if (is_assoc (in, sttl_, mtu))
 		    {
 			Serial.println (F ("Received a CTL ASSOC msg")) ;
-			hlid = -1 ;		// unknown hlid
-			change_master (hlid) ;
+			change_master (-1, mtu) ;	// unknown hlid
 			send_assoc_answer (in, out) ;
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
@@ -493,16 +538,17 @@ void Sos::loop ()
 			Serial.println (F ("Received a CTL HELLO msg")) ;
 			if (! same_master (srcaddr) || hlid != hlid_)
 			{
-			    change_master (hlid) ;
+			    change_master (hlid, 0) ;	// reset mtu
 			    twait_.init (curtime) ;
 			    status_ = SL_WAITING_KNOWN ;
 			}
 		    }
-		    else if (is_assoc (in, sttl_))
+		    else if (is_assoc (in, sttl_, mtu))
 		    {
 			Serial.println (F ("Received a CTL ASSOC msg")) ;
 			if (same_master (srcaddr))
 			{
+			    negociate_mtu (mtu) ;
 			    send_assoc_answer (in, out) ;
 			    trenew_.init (curtime, sttl_) ;
 			    status_ = SL_RUNNING ;
@@ -636,9 +682,10 @@ bool Sos::is_hello (Msg &m, long int &hlid)
  * and returns the contained slave-ttl
  */
 
-bool Sos::is_assoc (Msg &m, time_t &sttl)
+bool Sos::is_assoc (Msg &m, time_t &sttl, int &mtu)
 {
-    bool found = false ;
+    bool found_ttl = false ;
+    bool found_mtu = false ;
 
     if (m.get_type () == COAP_TYPE_CON && m.get_code () == COAP_CODE_POST)
     {
@@ -650,25 +697,30 @@ bool Sos::is_assoc (Msg &m, time_t &sttl)
 		long int n ;		// sscanf "%ld" waits for a long int
 
 		// we benefit from the added nul byte at the end of val
-		if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC, &n) == 1)
+		if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC_TTL, &n) == 1)
 		{
 		    Serial.print (BLUE ("TTL recv: ")) ;
 		    Serial.print (n) ;
 		    Serial.println () ;
 		    sttl = ((time_t) n) * 1000 ;
-		    found = true ;
+		    found_ttl = true ;
 		    // continue, just in case there are other query strings
 		}
-		else
+		else if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC_MTU, &n) == 1)
 		{
-		    found = false ;
-		    break ;
+		    Serial.print (BLUE ("MTU recv: ")) ;
+		    Serial.print (n) ;
+		    Serial.println () ;
+		    mtu = n ;
+		    found_mtu = true ;
+		    // continue, just in case there are other query strings
 		}
+		else break ;
 	    }
 	}
     }
 
-    return found ;
+    return found_ttl && found_mtu ;
 }
 
 /******************************************************************************
@@ -713,7 +765,7 @@ void Sos::send_discover (Msg &out)
     option o1 (option::MO_Uri_Query, tmpstr, strlen (tmpstr)) ;
     out.push_option (o1) ;
 
-    snprintf (tmpstr, sizeof tmpstr, SOS_DISCOVER_MTU, l2_->mtu ()) ;
+    snprintf (tmpstr, sizeof tmpstr, SOS_DISCOVER_MTU, (long int) defmtu_) ;
     option o2 (option::MO_Uri_Query, tmpstr, strlen (tmpstr)) ;
     out.push_option (o2) ;
 

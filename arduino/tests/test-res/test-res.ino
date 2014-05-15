@@ -72,13 +72,13 @@ void setup ()
     debug.start (DEBUGINTERVAL) ;
 
 #ifdef L2_ETH
-    l2.start (myaddr, promisc, MTU, ETHTYPE) ;
+    l2.start (myaddr, promisc, ETH_TYPE) ;
 #endif
 #ifdef L2_154
-    l2.start (myaddr, promisc, MTU, CHANNEL, PANID) ;
+    l2.start (myaddr, promisc, CHANNEL, PANID) ;
 #endif
 
-    sos = new Sos (&l2, slaveid) ;
+    sos = new Sos (&l2, mtu, slaveid) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
     r1->handler (COAP_CODE_GET, process_light) ;

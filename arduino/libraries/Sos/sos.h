@@ -57,7 +57,7 @@
 
 class Sos {
     public:
-	Sos (l2net *l2, long int slaveid) ;
+	Sos (l2net *l2, int mtu, long int slaveid) ;
 	~Sos () ;
 
 	void reset (void) ;
@@ -90,6 +90,8 @@ class Sos {
 	Retrans retrans_ ;
 	l2addr *master_ ;		// NULL <=> broadcast
 	l2net *l2_ ;
+	int defmtu_ ;			// default (user specified) MTU
+	int curmtu_ ;			// current (negociated) MTU
 	long int slaveid_ ;		// slave id, manually config'd
 	slave_status status_ ;
 	time_t sttl_ ;			// slave ttl, given in assoc msg
@@ -105,12 +107,15 @@ class Sos {
 	 */
 
 	void reset_master (void) ;
-	void change_master (long int hlid) ;
+	void change_master (long int hlid, int mtu) ;
 	bool same_master (l2addr *a) ;	
+
+	void reset_mtu (void) ;
+	void negociate_mtu (int mtu) ;
 
 	bool is_ctl_msg (Msg &m) ;
 	bool is_hello (Msg &m, long int &hlid) ;
-	bool is_assoc (Msg &m, time_t &sttl) ;
+	bool is_assoc (Msg &m, time_t &sttl, int &mtu) ;
 
 	void mk_ctl_msg (Msg &m) ;
 	void send_discover (Msg &m) ;
