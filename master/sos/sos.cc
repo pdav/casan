@@ -631,10 +631,23 @@ bool sos::find_peer (msgptr_t m, l2addr *a, receiver &r)
 		{
 		    if (sid == s.slaveid ())
 		    {
+			int l2mtu, defmtu ;
+
 			s.l2 (r.l2) ;
 			s.addr (a) ; free_a = false ;
-			s.mtu (mtu) ;
 			m->peer (&s) ;
+
+			// MTU negociation
+			l2mtu = r.l2->mtu () ;	// MTU of network
+			defmtu = s.defmtu () ;	// user configured network MTU
+D ("l2mtu=" << l2mtu << ", defmtu=" << defmtu) ;
+			if (defmtu <= 0 || defmtu > l2mtu)
+			    defmtu = l2mtu ;
+			if (mtu <= 0 || mtu > defmtu)
+			    mtu = defmtu ;
+D ("mtu=" << mtu) ;
+			s.curmtu (mtu) ;
+
 			found = true ;
 			break ;
 		    }

@@ -33,6 +33,7 @@ void slave::reset (void)
     l2_ = 0 ;
     addr_ = 0 ;
     reslist_.clear () ;
+    curmtu_ = 0 ;
     status_ = SL_INACTIVE ;
     next_timeout_ = std::chrono::system_clock::time_point::max () ;
     D ("Slave " << slaveid_ << " status set to INACTIVE") ;
@@ -57,7 +58,7 @@ std::ostream& operator<< (std::ostream &os, const slave &s)
 	case slave::SL_RUNNING:
 	    nt = std::chrono::system_clock::to_time_t (s.next_timeout_) ;
 	    strftime (buf, sizeof buf, "%F %T", std::localtime (&nt)) ;
-	    os << "RUNNING (mtu=" << s.mtu_ << ", ttl=" << buf << ")" ;
+	    os << "RUNNING (curmtu=" << s.curmtu_ << ", ttl=" << buf << ")" ;
 	    break ;
 	default:
 	    os << "(unknown state)" ;
@@ -129,7 +130,10 @@ const std::vector <resource> &slave::resource_list (void)
 
 void slave::process_sos (sos *e, msgptr_t m)
 {
-    switch (m->sos_type ())
+    msg::sostype_t tp ;
+
+    tp = m->sos_type () ;
+    switch (tp)
     {
 	case msg::SOS_DISCOVER :
 	    {
@@ -138,7 +142,8 @@ void slave::process_sos (sos *e, msgptr_t m)
 		answer->peer (m->peer ()) ;
 		answer->type (msg::MT_CON) ;
 		answer->code (msg::MC_POST) ;
-		answer->mk_ctl_assoc (init_ttl_) ;
+		answer->mk_ctl_assoc (init_ttl_, curmtu_) ;
+
 		e->add_request (answer) ;
 	    }
 	    break ;

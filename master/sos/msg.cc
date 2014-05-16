@@ -814,7 +814,7 @@ waiter *msg::wt (void)
 #define	SOS_HELLO		"hello=%ld"
 #define	SOS_SLAVE		"slave=%ld"
 #define	SOS_MTU			"mtu=%ld"
-#define	SOS_ASSOC		"assoc=%ld"
+#define	SOS_TTL			"ttl=%ld"
 
 static struct
 {
@@ -887,7 +887,7 @@ bool msg::is_sos_discover (slaveid_t &sid, int &mtu)
 	    }
 	}
     }
-    if (sid > 0 && mtu > 0)
+    if (sid > 0 && mtu >= 0)
 	sostype_ = SOS_DISCOVER ;
     return sostype_ == SOS_DISCOVER ;
 }
@@ -907,7 +907,12 @@ bool msg::is_sos_associate (void)
 		    long int n ;
 
 		    // we benefit from the added nul byte at the end of optval
-		    if (std::sscanf ((char *) OPTVAL (o), SOS_ASSOC, &n) == 1)
+		    if (std::sscanf ((char *) OPTVAL (o), SOS_TTL, &n) == 1)
+		    {
+			found = true ;
+			// continue, just in case there are other query strings
+		    }
+		    else if (std::sscanf ((char *) OPTVAL (o), SOS_MTU, &n) == 1)
 		    {
 			found = true ;
 			// continue, just in case there are other query strings
@@ -928,6 +933,11 @@ bool msg::is_sos_associate (void)
 
 msg::sostype_t msg::sos_type (void)
 {
+    return sos_type (true) ;
+}
+
+msg::sostype_t msg::sos_type (bool checkreqrep)
+{
     if (sostype_ == SOS_UNKNOWN)
     {
 	slaveid_t sid ;
@@ -935,9 +945,9 @@ msg::sostype_t msg::sos_type (void)
 
 	if (! is_sos_discover (sid, mtu) && ! is_sos_associate ())
 	{
-	    if (reqrep_ != nullptr)
+	    if (checkreqrep && reqrep_ != nullptr)
 	    {
-		sostype_t st = reqrep_->sos_type () ;
+		sostype_t st = reqrep_->sos_type (false) ;
 		if (st == SOS_ASSOC_REQUEST)
 		    sostype_ = SOS_ASSOC_ANSWER ;
 	    }
@@ -975,14 +985,17 @@ void msg::mk_ctl_hello (long int hid)
     pushoption (o) ;
 }
 
-void msg::mk_ctl_assoc (sostimer_t ttl)
+void msg::mk_ctl_assoc (sostimer_t ttl, int mtu)
 {
     char buf [MAXBUF] ;
 
     add_path_ctl () ;
-    snprintf (buf, sizeof buf, SOS_ASSOC, ttl) ;
-    option o (option::MO_Uri_Query, buf, strlen (buf)) ;
-    pushoption (o) ;
+    snprintf (buf, sizeof buf, SOS_TTL, ttl) ;
+    option o1 (option::MO_Uri_Query, buf, strlen (buf)) ;
+    pushoption (o1) ;
+    snprintf (buf, sizeof buf, SOS_MTU, (long int) mtu) ;
+    option o2 (option::MO_Uri_Query, buf, strlen (buf)) ;
+    pushoption (o2) ;
 }
 
 }					// end of namespace sos

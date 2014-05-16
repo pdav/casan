@@ -28,6 +28,7 @@
 
 #define	XBEE_START		0x7e
 #define	XBEE_TX_SHORT		0x01
+#define	XBEE_MTU		100
 
 #define	XBEE_MIN_FRAME_SIZE	5		// start:1+len:2+api:1+cksum:1
 #define	XBEE_MAX_FRAME_SIZE	115		// RX 64bit addr, 100 bytes
@@ -157,13 +158,14 @@ bool l2addr_154::operator!= (const l2addr &other)
  *
  * @param iface entry in /dev (with or without /dev) for XBee USB stick
  * @param type `xbee`
+ * @param mtu user configured MTU or 0 for default network MTU
  * @param myaddr Our IEEE 802.15.4 address
  * @param panid PAN-id
  * @param channel channel number
  * @return -1 if initialization fails (`errno` is set)
  */
 
-int l2net_154::init (const std::string iface, const char *type, const std::string myaddr, const std::string panid, const int channel)
+int l2net_154::init (const std::string iface, const char *type, const int mtu, const std::string myaddr, const std::string panid, const int channel)
 {
     std::string dev ;
     int n = -1 ;			// default: init fails
@@ -171,7 +173,6 @@ int l2net_154::init (const std::string iface, const char *type, const std::strin
     l2addr_154 pan (panid.c_str ()) ;	// same format as addr
 
     /* Various initializations */
-    mtu_ = L2154MTU ;
     maxlatency_ = L2154MAXLATENCY ;
 
     /* Prepend /dev if needed */
@@ -184,6 +185,7 @@ int l2net_154::init (const std::string iface, const char *type, const std::strin
     {
 	struct termios tm ;
 
+	mtu_ = (mtu > 0 && mtu <= XBEE_MTU) ? mtu : XBEE_MTU ;
 	if (channel < 11 || channel > 26)
 	    return -1 ;
 
@@ -245,6 +247,10 @@ int l2net_154::init (const std::string iface, const char *type, const std::strin
 	n = 0 ;
 
 	pbuffer_ = buffer_ ;
+    }
+    else
+    {
+	mtu_ = (mtu > 0 && mtu <= L2154MTU) ? mtu : L2154MTU ;
     }
 
     return n ;

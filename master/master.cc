@@ -78,7 +78,7 @@ bool master::start (conf &cf)
 #if defined (USE_PF_PACKET) || defined (USE_PCAP)
 			sos::l2net_eth *le ;
 			le = new sos::l2net_eth ;
-			if (le->init (n.net_eth.iface.c_str (), n.net_eth.ethertype) == -1)
+			if (le->init (n.net_eth.iface.c_str (), n.mtu, n.net_eth.ethertype) == -1)
 			{
 			    perror ("init") ;
 			    delete le ;
@@ -107,7 +107,7 @@ bool master::start (conf &cf)
 				break ;
 			}
 
-			if (l8->init (n.net_154.iface, t, n.net_154.addr, n.net_154.panid, n.net_154.channel) == -1)
+			if (l8->init (n.net_154.iface, t, n.mtu, n.net_154.addr, n.net_154.panid, n.net_154.channel) == -1)
 			{
 			    perror ("init") ;
 			    delete l8 ;
@@ -136,6 +136,7 @@ bool master::start (conf &cf)
 		ttl = engine_.timer_slave_ttl () ;
 	    else
 		ttl = s.ttl ;
+	    v->defmtu (s.mtu) ;		// default mtu (not related to L2 spec)
 	    v->init_ttl (ttl) ;
 	    engine_.add_slave (v) ;
 	    std::cout << "Slave " << s.id << " added\n" ;
@@ -536,7 +537,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 
     //return bad_request if request is too large for slave mtu
     //TODO: find request length!
-    if (m->paylen () > res.slave_->mtu ()) {
+    if (m->paylen () > res.slave_->curmtu ()) {
 	rep = http::server2::reply::stock_reply (http::server2::reply::bad_request) ;
 	return ;
     }
@@ -584,7 +585,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	{
 	    if (o->optcode () == sos::option::MO_Size1)
 	    {
-		res.slave_->mtu (o->optval ()) ;
+		res.slave_->curmtu (o->optval ()) ;
 		break ;
 	    }
 	}

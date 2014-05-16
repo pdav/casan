@@ -141,16 +141,17 @@ bool l2addr_eth::operator!= (const l2addr &other)
  * Initialize the Ethernet network access with needed constants.
  *
  * @param iface Ethernet interface name (eth0, etc.)
+ * @param mtu user configured MTU or 0 for default network MTU
  * @param ethertype Ethernet frame type
  * @return -1 if initialization fails (`errno` is set)
  */
 
-int l2net_eth::init (const std::string iface, int ethertype)
+int l2net_eth::init (const std::string iface, const int mtu, int ethertype)
 {
 #if defined (USE_PF_PACKET)
     struct sockaddr_ll sll ;
 
-    mtu_ = ETHMTU ;
+    mtu_ = (mtu > 0 && mtu <= ETHMTU) ? mtu : ETHMTU ;
     maxlatency_ = ETHMAXLATENCY ;
     ethertype_ = ethertype ;
 

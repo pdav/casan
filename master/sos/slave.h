@@ -38,7 +38,8 @@ class slave
 	void l2 (l2net *l2) 		{ l2_ = l2 ; }
 	void addr (l2addr *a) 		{ addr_ = a ; }
 	void slaveid (slaveid_t sid)	{ slaveid_ = sid ; }
-	void mtu (int m)		{ mtu_ = m ; }
+	void defmtu (int m)		{ defmtu_ = m ; }
+	void curmtu (int m)		{ curmtu_ = m ; }
 	void init_ttl (int t)		{ init_ttl_ = t ; }
 	/** Handler for incoming requests */
 	void handler (reply_handler_t h) { handler_ = h ; }
@@ -47,7 +48,8 @@ class slave
 	l2net *l2 (void) 		{ return l2_ ; }
 	l2addr *addr (void) 		{ return addr_ ; }
 	slaveid_t slaveid (void) 	{ return slaveid_ ; }
-	int mtu (void) 			{ return mtu_ ; }
+	int defmtu (void) 		{ return defmtu_ ; }
+	int curmtu (void) 		{ return curmtu_ ; }
 	enum status_code status (void) 	{ return status_ ; }
 	int init_ttl (void) 		{ return init_ttl_ ; }
 
@@ -69,7 +71,8 @@ class slave
 
     private:
 	slaveid_t slaveid_ = 0 ;	// slave id
-	int mtu_ = 0 ;			// slave MTU
+	int defmtu_ = 0 ;		// default (configured) slave MTU
+	int curmtu_ = 0 ;		// current slave MTU
 	l2net *l2_ = nullptr ;		// l2 network this slave is on
 	l2addr *addr_ = nullptr ;	// slave address
 	int init_ttl_ = 0 ;		// initial ttl (in sec)

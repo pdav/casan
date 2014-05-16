@@ -108,10 +108,10 @@ class msg
 	// control messages
 	sostype_t sos_type (void) ;
 	bool is_sos_discover (slaveid_t &sid, int &mtu) ;// SOS control message
-	bool is_sos_associate (void) ;		// SOS control message
+	bool is_sos_associate (void) ;			// SOS control message
 	void add_path_ctl (void) ;
-	void mk_ctl_hello (long int hid) ;	// options for ctl mssage
-	void mk_ctl_assoc (sostimer_t ttl) ;	// options for ctl mssage
+	void mk_ctl_hello (long int hid) ;		// options for ctl mssage
+	void mk_ctl_assoc (sostimer_t ttl, int mtu) ;	// options for ctl mssage
 
     protected:
 	timepoint_t expire_ ;		// all msg
@@ -152,6 +152,7 @@ class msg
 	bool coap_decode (void) ;
 
 	bool is_sos_ctl_msg (void) ;
+	sostype_t sos_type (bool checkreqrep) ;
 } ;
 
 }					// end of namespace sos
