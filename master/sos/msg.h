@@ -103,8 +103,11 @@ class msg
 	void option_reset_iterator (void) ;
 	option *option_next (void) ;
 
-	static void link_reqrep (msgptr_t m1, msgptr_t m2) ;	// m2 == 0 <=> unlink
+	long int max_age (void) ;
 
+	bool cache_match (msgptr_t m) ;		// do reqs match for caching?
+
+	static void link_reqrep (msgptr_t m1, msgptr_t m2) ;	// m2 == 0 <=> unlink
 	// control messages
 	sostype_t sos_type (void) ;
 	bool is_sos_discover (slaveid_t &sid, int &mtu) ;// SOS control message

@@ -6,6 +6,10 @@
 #ifndef	MASTER_H
 #define	MASTER_H
 
+#include "conf.h"
+#include "cache.h"
+#include "sos.h"
+
 namespace http {
 namespace server2 {
 struct reply;
@@ -36,6 +40,7 @@ class master
     private:
 	sos::sos engine_ ;
 	conf *conf_ ;
+	sos::cache cache_ ;
 
 	struct httpserver
 	{

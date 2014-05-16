@@ -30,6 +30,7 @@
 #include "option.h"
 #include "resource.h"
 #include "sos.h"			// master engine
+#include "cache.h"
 #include "server.hpp"			// http server
 
 #include "master.h"
@@ -517,7 +518,8 @@ static struct
 void master::http_sos (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
 {
     std::shared_ptr <sos::msg> m (new sos::msg) ;
-    std::shared_ptr <sos::msg> r ;
+    std::shared_ptr <sos::msg> mc ;	// message found in cache,if any
+    std::shared_ptr <sos::msg> r ;	// reply (received or cached)
     sos::msg::msgcode_t code ;
     sos::waiter w ;
     timepoint_t timeout ;
@@ -532,8 +534,6 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
     m->type (sos::msg::MT_CON) ;
     m->code (code) ;
     res.res_->add_to_message (*m) ;	// add resource path as msg options
-    m->wt (&w) ;
-
 
     //return bad_request if request is too large for slave mtu
     //TODO: find request length!
@@ -542,14 +542,39 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	return ;
     }
 
-    max = EXCHANGE_LIFETIME (res.slave_->l2 ()->maxlatency()) ;
-    timeout = DATE_TIMEOUT_MS (max) ;
-    D ("HTTP request, timeout = " << max << " ms") ;
+    /*
+     * Is the request already present in cache?
+     */
 
-    auto a = std::bind (&sos::sos::add_request, &this->engine_, m) ;
-    w.do_and_wait (a, timeout) ;
+    mc = cache_.get (m) ;
+    if (mc != nullptr)
+    {
+	/*
+	 * Request is found in cache. Don't forward it again.
+	 */
 
-    m->wt (nullptr) ;
+	m = mc ;
+	D ("Found request " << *m << " in cache ") ;
+	D ("reply = " << *(m->reqrep ())) ;
+    }
+    else
+    {
+	/*
+	 * Request not found in cache. We must send it
+	 * and wait for a reply
+	 */
+
+	m->wt (&w) ;
+
+	max = EXCHANGE_LIFETIME (res.slave_->l2 ()->maxlatency()) ;
+	timeout = DATE_TIMEOUT_MS (max) ;
+	D ("HTTP request, timeout = " << max << " ms") ;
+
+	auto a = std::bind (&sos::sos::add_request, &this->engine_, m) ;
+	w.do_and_wait (a, timeout) ;
+
+	m->wt (nullptr) ;
+    }
 
     r = m->reqrep () ;
     if (r == nullptr)
@@ -567,6 +592,10 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	int paylen ;
 	char *payld ;
 	payld = (char *) r->payload (&paylen) ;
+
+	// add the request (and reply) in the cache
+	if (mc == nullptr)		// request was not already in cache
+	    cache_.add (m) ;
 
 	// get content format
 	r->option_reset_iterator () ;
@@ -589,7 +618,6 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 		break ;
 	    }
 	}
-
 
 	rep.status = http::server2::reply::ok ;
 

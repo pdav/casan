@@ -277,7 +277,19 @@ void option::static_init (void)
 }
 
 /******************************************************************************
- * Operator used for list sorting (cf msg.cc)
+ * Operators
+ */
+
+/** @brief Mainly used for debugging purpose
+ */
+
+std::ostream& operator<< (std::ostream &os, const option &o)
+{
+    os << "option <code=" << o.optcode_ << ", len=" << o.optlen_ << ">" ;
+    return os ;
+}
+
+/** @brief Operator used for list sorting (cf msg.cc)
  */
 
 bool option::operator< (const option &o) const
@@ -351,7 +363,7 @@ option::uint option::optval (void)
     v = 0 ;
     b = (optval_ == 0) ? staticval_ : optval_ ;
     for (i = 0 ; i < optlen_ ; i++)
-	v = (v << 8) & b [i] ;
+	v = (v << 8) | b [i] ;
     return v ;
 }
 

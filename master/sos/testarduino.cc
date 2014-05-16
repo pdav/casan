@@ -21,7 +21,7 @@
 #define	PATH_2		"sos"
 
 #define	HELLO_100	"hello=100"
-#define ASSOCIATE	"assoc=30000"		// assoc=ttl
+#define ASSOCIATE	"ttl=30000"
 #define ASK_RESOURCES "resources"
 
 void connexion(void)
@@ -194,9 +194,9 @@ void request_assoc(char *val)
 
 	char associate_msg[50];
 	if(val)
-		snprintf(associate_msg, 50, "assoc=%s", val);
+		snprintf(associate_msg, 50, "ttl=%s", val);
 	else
-		snprintf(associate_msg, 50, "assoc=30000");
+		snprintf(associate_msg, 50, "ttl=30000");
 
 
 	// ASSOCIATE message

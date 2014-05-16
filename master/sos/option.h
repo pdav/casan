@@ -44,7 +44,6 @@ namespace sos {
  * applications.
  */
 
-
 class option
 {
     public:
@@ -76,6 +75,8 @@ class option
 	option &operator= (const option &o) ;	// copy assignment constructor
 	~option () ;				// destructor
 
+	friend std::ostream& operator<< (std::ostream &os, const option &o) ;
+
 	bool operator< (const option &o) const ; // for list sorting in msg.cc
 
 	bool operator== (const option &o) ;
@@ -87,6 +88,11 @@ class option
 	optcode_t optcode (void) ;
 	void *optval (int *len) ;
 	uint optval (void) ;
+
+	// see Coap spec (5.4.6)
+	bool critical (void)   { return (int) optcode_ & 1 ; }
+	bool unsafe (void)     { return (int) optcode_ & 2 ; }
+	bool nocachekey (void) { return ((int) optcode_ & 0x1e) == 0x1c ; }
 
 	// mutators
 	void optcode (optcode_t c) ;

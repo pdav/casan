@@ -17,8 +17,6 @@
 
 #include "server.hpp"
 
-#include "conf.h"
-#include "sos.h"
 #include "master.h"
 
 conf cf ;

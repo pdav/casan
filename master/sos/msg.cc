@@ -150,13 +150,13 @@ std::ostream& operator<< (std::ostream &os, const msg &m)
     nt = std::chrono::system_clock::to_time_t (m.next_timeout_) ;
     strftime (buf2, sizeof buf2, "%T", std::localtime (&nt)) ;
 
-    os << "msg id=" << m.id_
+    os << "msg <id=" << m.id_
 	<< ", toklen=" << m.toklen_
 	<< ", paylen=" << m.paylen_
 	<< ", ntrans=" << m.ntrans_
 	<< ", expire=" << buf1
 	<< ", next_timeout=" << buf2
-	<< "\n" ;
+	<< ">" ;
 
     return os ;
 }
@@ -661,6 +661,103 @@ void msg::wt (waiter *w)
 }
 
 /**
+ * @brief Returns the Max-Age option (in seconds) or -1
+ */
+
+long int msg::max_age (void)
+{
+    long int ma = -1 ;
+
+    for (auto &o : optlist_)
+    {
+	if (o.optcode_ == option::MO_Max_Age)
+	{
+	    ma = o.optval () ;
+	    break ;
+	}
+    }
+    return ma ;
+}
+
+/**
+ * @brief Check if two request messages match for caching
+ *
+ * This method checks if a request message matches the current message
+ * for caching (see CoAP spec, 5.6):
+ * - request method match
+ * - all options match, except those marked NoCacheKey (5.4) or recognized by
+ *	the cache
+ */
+
+bool msg::cache_match (msgptr_t m)
+{
+    bool r ;
+
+    if (type_ != m->type_)
+	r = false ;
+    else
+    {
+	bool theend ;
+
+	r = true ;
+
+	/*
+	 * Don't assume that each option list is already sorted
+	 */
+
+	optlist_.sort () ;
+	m->optlist_.sort () ;
+
+	/*
+	 * Traverse the option list
+	 */
+
+	auto ol1 = optlist_.begin () ;
+	auto ol2 = m->optlist_.begin () ;
+
+	do
+	{
+	    theend = false ;
+
+	    /* Skip the NoCacheKey options */
+
+	    while (ol1 != optlist_.end () && ol1->nocachekey ())
+		ol1++ ;
+	    while (ol2 != m->optlist_.end () && ol2->nocachekey ())
+		ol2++ ;
+
+	    /* Stop if one iterator is at the end  */
+
+	    if (ol1 == optlist_.end () && ol2 == m->optlist_.end ())
+	    {
+		theend = true ;
+		r = true ;		// both at the end: success!
+	    }
+	    else if (ol1 == optlist_.end () || ol2 == m->optlist_.end ())
+	    {
+		theend = true ;
+		r = false ;		// only one at the end: fail
+	    }
+	    else
+	    {
+		if (*ol1 == *ol2)	// we continue
+		{
+		    ol1++ ;
+		    ol2++ ;
+		}
+		else
+		{
+		    theend = true ;
+		    r = false ;		// no match: fail
+		}
+	    }
+	} while (! theend) ;
+    }
+    return r ;
+}
+
+
+/**
  * @brief Mutually link a reply and a request messages
  *
  * This function is a class function rather than a object method, because
@@ -851,7 +948,7 @@ bool msg::is_sos_ctl_msg (void)
 	r = true ;
     else
 	r = false ;
-    D ((r ? "It's a control message" : "It's not a control message")) ;
+    D ("It's " << (r ? "" : "not") << "a control message") ;
     return r ;
 }
 
