@@ -229,9 +229,9 @@ l2addr *msg::recv (l2net *l2)
 	if (pktype_ == PK_ME) p = "me" ;
 	if (pktype_ == PK_BCAST) p = "bcast" ;
 
-	D ("VALID RECV -> " << p << ", id=" << id_ << ", len=" << msglen_) ;
+	D (D_MESSAGE, "VALID RECV -> " << p << ", id=" << id_ << ", len=" << msglen_) ;
     }
-    else D ("INVALID RECV pkt=" << pktype_ << ", len=" << len) ;
+    else D (D_MESSAGE, "INVALID RECV pkt=" << pktype_ << ", len=" << len) ;
 #endif
 
     return a ;
@@ -318,7 +318,7 @@ bool msg::coap_decode (void)
 	    /* register option */
 	    if (success)
 	    {
-		D ("OPTION opt=" << opt_nb << ", len=" << opt_len) ;
+		D (D_OPTION, "OPTION opt=" << opt_nb << ", len=" << opt_len) ;
 		o.optcode (option::optcode_t (opt_nb)) ;
 		o.optval ((void *)(msg_ + i), opt_len) ;
 		pushoption (o) ;
@@ -326,7 +326,7 @@ bool msg::coap_decode (void)
 		i += opt_len ;
 	    }
 	    else
-		D ("OPTION unrecognized") ;
+		D (D_OPTION, "OPTION unrecognized") ;
 	}
 
 	paylen_ = msglen_ - i - 1 ;
@@ -380,7 +380,7 @@ int msg::send (void)
     if (msg_ == nullptr)
 	coap_encode () ;
 
-    D ("TRANSMIT id=" << id_ << " ntrans_=" << ntrans_) ;
+    D (D_MESSAGE, "TRANSMIT id=" << id_ << " ntrans_=" << ntrans_) ;
     r = peer_->l2 ()->send (peer_->addr (), msg_, msglen_) ;
     if (r == -1)
     {
@@ -948,7 +948,7 @@ bool msg::is_sos_ctl_msg (void)
 	r = true ;
     else
 	r = false ;
-    D ("It's " << (r ? "" : "not") << "a control message") ;
+    D (D_MESSAGE, "It's " << (r ? "" : "not") << "a control message") ;
     return r ;
 }
 
@@ -1052,7 +1052,7 @@ msg::sostype_t msg::sos_type (bool checkreqrep)
 	if (sostype_ == SOS_UNKNOWN)
 	    sostype_ = SOS_NONE ;
 	if (sostype_ != SOS_NONE)
-	    D ("CTL MSG " << sostype_) ;
+	    D (D_MESSAGE, "CTL MSG " << sostype_) ;
     }
     return sostype_ ;
 }

@@ -21,6 +21,7 @@
 
 conf cf ;
 master master ;
+int debug_levels ;
 
 /******************************************************************************
  * Signal blocking/unblocking
@@ -54,6 +55,35 @@ void wait_for_signal (void)
 }
 
 /******************************************************************************
+ * Debug facilities
+ */
+
+struct
+{
+    int level ;
+    const char *title ;
+} debug_names [] = 
+{
+    {D_MESSAGE,	"message"}, 
+    {D_OPTION,	"option"}, 
+    {D_STATE,	"state"}, 
+    {D_CACHE,	"cache"}, 
+    {D_HTTP,	"http"}, 
+} ;
+
+const char *debug_title (int level)
+{
+    const char *r ;
+    int i ;
+
+    r = "(unknown level)" ;
+    for (i = 0 ; i < NTAB (debug_names) ; i++)
+	if (debug_names [i].level == level)
+	    r = debug_names [i].title ;
+    return r ;
+}
+
+/******************************************************************************
  */
 
 /**
@@ -70,6 +100,8 @@ int main (int argc, char *argv [])
 {
     char *conffile ;
     sigset_t mask ;
+
+    debug_levels = (1<<30) - 1 ;		// All...
 
     try
     {

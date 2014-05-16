@@ -52,7 +52,7 @@ void waiter::do_and_wait (action_t a, timepoint_t max)
 	timepoint_t now = std::chrono::system_clock::now () ;
 	auto delay = max - now ;	// needed precision for delay
 
-	D ("WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
+	D (D_MESSAGE, "WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
 	condvar_.wait_for (lk, delay) ;
     }
 }

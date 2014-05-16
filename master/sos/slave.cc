@@ -36,7 +36,7 @@ void slave::reset (void)
     curmtu_ = 0 ;
     status_ = SL_INACTIVE ;
     next_timeout_ = std::chrono::system_clock::time_point::max () ;
-    D ("Slave " << slaveid_ << " status set to INACTIVE") ;
+    D (D_STATE, "Slave " << slaveid_ << " status set to INACTIVE") ;
 }
 
 /**
@@ -137,7 +137,7 @@ void slave::process_sos (sos *e, msgptr_t m)
     {
 	case msg::SOS_DISCOVER :
 	    {
-		D ("Received DISCOVER, sending ASSOCIATE") ;
+		D (D_STATE, "Received DISCOVER, sending ASSOCIATE") ;
 		msgptr_t answer (new msg) ;
 		answer->peer (m->peer ()) ;
 		answer->type (msg::MT_CON) ;
@@ -148,7 +148,7 @@ void slave::process_sos (sos *e, msgptr_t m)
 	    }
 	    break ;
 	case msg::SOS_ASSOC_REQUEST :
-	    D ("Received ASSOC_REQUEST from another master") ;
+	    D (D_STATE, "Received ASSOC_REQUEST from another master") ;
 	    break ;
 	case msg::SOS_ASSOC_ANSWER :
 	    // has answer been correlated to a request?
@@ -157,28 +157,28 @@ void slave::process_sos (sos *e, msgptr_t m)
 		byte *pload ; int plen ;
 		std::vector <resource> rlist ;
 
-		D ("Received ASSOC ANSWER for slave" << slaveid_) ;
+		D (D_STATE, "Received ASSOC ANSWER for slave" << slaveid_) ;
 
 		 // Add ressource list from the answer
 		pload = (byte *) m->payload (&plen) ;
-		D ("payload length=" << plen) ;
+		D (D_STATE, "payload length=" << plen) ;
 
 		if (parse_resource_list (rlist, pload, plen))
 		{
-		    D ("Slave " << slaveid_ << " status set to RUNNING") ;
+		    D (D_STATE, "Slave " << slaveid_ << " status set to RUNNING") ;
 		    status_ = SL_RUNNING ;
 		    reslist_ = rlist ;
 		    next_timeout_ = DATE_TIMEOUT_S (init_ttl_) ;
 		}
 		else
-		    D ("Slave " << slaveid_ << " cannot parse resource list") ;
+		    D (D_STATE, "Slave " << slaveid_ << " cannot parse resource list") ;
 	    }
 	    break ;
 	case msg::SOS_HELLO :
-	    D ("Received HELLO from another master") ;
+	    D (D_STATE, "Received HELLO from another master") ;
 	    break ;
 	default :
-	    D ("Received an unrecognized message") ;
+	    D (D_STATE, "Received an unrecognized message") ;
 	    break ;
     }
 }

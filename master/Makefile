@@ -9,7 +9,7 @@ ASIOINC =				# Linux
 # ASIOINC = -I/usr/local/include	# FreeBSD
 
 INCLUDES = -Isos -Ihttp -I. $(ASIOINC)
-CXXFLAGS = -g -DDEBUG -std=c++11 $(L2ETH) -Wall -Werror -W -pedantic $(INCLUDES)
+CXXFLAGS = -g -std=c++11 $(L2ETH) -Wall -Werror -W -pedantic $(INCLUDES)
 LDFLAGS = -Lsos -lsos -Lhttp -lhttp -lpthread
 
 LIBS = sos/libsos.a http/libhttp.a

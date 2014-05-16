@@ -236,7 +236,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 				res.str_ += "/" + vp [i] ;
 			}
 
-			D ("HTTP request for admin namespace: " << res.base_ << ", remainder=" << res.str_) ;
+			D (D_HTTP, "HTTP request for admin namespace: " << res.base_ << ", remainder=" << res.str_) ;
 			break ;
 		    }
 		    case conf::NS_SOS :
@@ -276,7 +276,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 			if (res.res_ == nullptr)
 			    throw int (42) ;
 
-			D ("HTTP request for sos namespace: " << res.base_ << ", slave id=" << res.slave_->slaveid ()) ;
+			D (D_HTTP, "HTTP request for sos namespace: " << res.base_ << ", slave id=" << res.slave_->slaveid ()) ;
 
 			break ;
 		    }
@@ -554,8 +554,8 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	 */
 
 	m = mc ;
-	D ("Found request " << *m << " in cache ") ;
-	D ("reply = " << *(m->reqrep ())) ;
+	D (D_CACHE, "Found request " << *m << " in cache") ;
+	D (D_CACHE, "reply = " << *(m->reqrep ())) ;
     }
     else
     {
@@ -568,7 +568,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 
 	max = EXCHANGE_LIFETIME (res.slave_->l2 ()->maxlatency()) ;
 	timeout = DATE_TIMEOUT_MS (max) ;
-	D ("HTTP request, timeout = " << max << " ms") ;
+	D (D_HTTP, "HTTP request, timeout = " << max << " ms") ;
 
 	auto a = std::bind (&sos::sos::add_request, &this->engine_, m) ;
 	w.do_and_wait (a, timeout) ;

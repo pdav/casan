@@ -443,7 +443,7 @@ pktype_t l2net_154::recv (l2addr **saddr, void *data, int *len)
 	}
     }
 
-    D ("Received packet (" << *len << " bytes)") ;
+    D (D_MESSAGE, "Received packet (" << *len << " bytes)") ;
 
     return r ;
 }

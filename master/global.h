@@ -38,10 +38,23 @@ namespace sos {
 typedef void (*reply_handler_t) (sos::msg *request, sos::msg *reply) ;
 typedef void (*msghandler_t) (sos::msg &m) ;
 
-#ifdef DEBUG
-#define	D(s)	do { std::cout << s << "\n" ; } while (false)	// no ";"
-#else
-#define	D(s)	do { } while (false)				// no ";"
-#endif
+/*
+ * Debug facilities
+ */
+
+extern int debug_levels ;
+const char *debug_title (int level) ;
+
+#define	D_MESSAGE	(1<<0)
+#define	D_OPTION	(1<<1)
+#define	D_STATE		(1<<2)
+#define	D_CACHE		(1<<5)
+#define	D_HTTP		(1<<8)
+
+#define	D(c,s)	do {						\
+		    if (debug_levels & (c))			\
+			std::cout << debug_title (c)		\
+				<< ": " << s << "\n" ;		\
+		} while (false)					// no ";"
 
 #endif

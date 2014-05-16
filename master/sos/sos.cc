@@ -357,7 +357,7 @@ void sos::sender_thread (void)
 	    // should the receiver thread be started?
 	    if (r->thr == NULL)
 	    {
-		D ("Found a receiver to start") ;
+		D (D_MESSAGE, "Found a receiver to start") ;
 		r->thr = new std::thread (&sos::receiver_thread, this, r) ;
 	    }
 
@@ -445,7 +445,7 @@ void sos::sender_thread (void)
 
 	if (next_timeout == std::chrono::system_clock::time_point::max ())
 	{
-	    D ("WAIT") ;
+	    D (D_MESSAGE, "WAIT") ;
 	    condvar_.wait (lk) ;
 	}
 	else
@@ -455,7 +455,7 @@ void sos::sender_thread (void)
 
 	    assert (std::chrono::duration_cast<duration_t> (delay).count() >= 0) ;
 
-	    D ("WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
+	    D (D_MESSAGE, "WAIT " << std::chrono::duration_cast<duration_t> (delay).count() << "ms") ;
 	    condvar_.wait_for (lk, delay) ;
 	}
     }
@@ -488,8 +488,6 @@ void sos::receiver_thread (receiver *r)
 	msgptr_t orgreq ;	// message correlation result
 	msgptr_t dupmsg ;	// original message in case of duplicate
 
-	// D ("- RECEIVER THREAD -------------------\n" << *this) ;
-
 	/*
 	 * Wait for a new message
 	 */
@@ -503,7 +501,7 @@ void sos::receiver_thread (receiver *r)
 	if (a == nullptr)
 	    continue ;
 
-	D ("Received a message from " << *a) ;
+	D (D_MESSAGE, "Received a message from " << *a) ;
 	m->expire_ = DATE_TIMEOUT_MS (EXCHANGE_LIFETIME (r->l2->maxlatency ())) ;
 
 	/*
@@ -523,7 +521,7 @@ void sos::receiver_thread (receiver *r)
 
 	if (! find_peer (m, a, *r))
 	{
-	    D("Sender not found in authorized peers") ;
+	    D (D_MESSAGE, "Sender not found in authorized peers") ;
 	    continue ;
 	}
 
@@ -587,7 +585,7 @@ void sos::receiver_thread (receiver *r)
 
 	if (m->peer ()->status () == slave::SL_RUNNING)
 	{
-	    D ("Orphaned message from " << *(m->peer ()->addr ()) << ", id=" << m->id ()) ;
+	    D (D_MESSAGE, "Orphaned message from " << *(m->peer ()->addr ()) << ", id=" << m->id ()) ;
 	}
     }
 }
@@ -640,12 +638,10 @@ bool sos::find_peer (msgptr_t m, l2addr *a, receiver &r)
 			// MTU negociation
 			l2mtu = r.l2->mtu () ;	// MTU of network
 			defmtu = s.defmtu () ;	// user configured network MTU
-D ("l2mtu=" << l2mtu << ", defmtu=" << defmtu) ;
 			if (defmtu <= 0 || defmtu > l2mtu)
 			    defmtu = l2mtu ;
 			if (mtu <= 0 || mtu > defmtu)
 			    mtu = defmtu ;
-D ("mtu=" << mtu) ;
 			s.curmtu (mtu) ;
 
 			found = true ;
@@ -694,7 +690,7 @@ msgptr_t sos::correlate (msgptr_t m)
 	    if (mr->id () == id)
 	    {
 		/* Got it! Original request found */
-		D ("Found original request for id=" << id) ;
+		D (D_MESSAGE, "Found original request for id=" << id) ;
 		orgmsg = mr ;
 		break ;
 	    }
@@ -764,7 +760,7 @@ msgptr_t sos::deduplicate (receiver &r, msgptr_t m)
 	     * Found a duplicated message (and an answer). Just send
 	     * back the already sent answer.
 	     */
-	    D ("DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
+	    D (D_MESSAGE, "DUPLICATE MESSAGE id=" << orgmsg->id ()) ;
 	    (void) orgmsg->reqrep ()->send () ;
 	}
 	else
