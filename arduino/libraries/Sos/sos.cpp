@@ -538,9 +538,14 @@ void Sos::loop ()
 			Serial.println (F ("Received a CTL HELLO msg")) ;
 			if (! same_master (srcaddr) || hlid != hlid_)
 			{
+			    int oldhlid = hlid_ ;
+
 			    change_master (hlid, 0) ;	// reset mtu
-			    twait_.init (curtime) ;
-			    status_ = SL_WAITING_KNOWN ;
+			    if (oldhlid != -1)
+			    {
+				twait_.init (curtime) ;
+				status_ = SL_WAITING_KNOWN ;
+			    }
 			}
 		    }
 		    else if (is_assoc (in, sttl_, mtu))
@@ -604,9 +609,9 @@ void Sos::loop ()
 
     if (oldstatus != status_)
     {
-	Serial.print (F (C_GREEN "Status: ")) ;
+	Serial.print (F ("Status: " C_GREEN)) ;
 	print_status (oldstatus) ;
-	Serial.print (F (" -> ")) ;
+	Serial.print (F (C_RESET " -> " C_GREEN)) ;
 	print_status (status_) ;
 	Serial.println (F (C_RESET)) ;
     }
