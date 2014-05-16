@@ -93,18 +93,22 @@ void setup ()
 
     /* definitions for a resource: name (in URL), title, rt for /.well-known */
 
+#if 0
     Resource *r1 = new Resource ("t1", "Desk temp", "celsius") ;
     r1->handler (COAP_CODE_GET, process_temp1) ;
     sos->register_resource (r1) ;
+#endif
 
     Resource *r2 = new Resource ("t2", "B201 temp", "celsius") ;
     r2->handler (COAP_CODE_GET, process_temp2) ;
     sos->register_resource (r2) ;
 
+#if 0
     Resource *r3 = new Resource ("led", "Nice LED", "light") ;
     // Resource *r3 = new Resource ("led", "A beautiful LED", "light") ;
     r3->handler (COAP_CODE_GET, process_led) ;
     sos->register_resource (r3) ;
+#endif
 
     sos->print_resources () ;
 }
