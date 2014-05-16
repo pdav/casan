@@ -26,10 +26,36 @@
 #include "l2-154.h"
 #include "byte.h"
 
-#define	XBEE_START		0x7e
-#define	XBEE_TX_SHORT		0x01
-#define	XBEE_MTU		100
+#define	XBEE_START		0x7e		// XBee API start delimiter
+#define	XBEE_TX_SHORT		0x01		// XBee API command id
 
+/*
+ * MTU is expressed as the maximum MAC frame size, i.e. L2154_MTU bytes
+ * (127 bytes). However, XBee limits payload data received and sent to
+ * 100 bytes. So, the real MTU supported by XBee is:
+ *	XBEE_MTU = 100 + (2+1+2+2+2)+2
+ * since the controller adds the following informations:
+ * - header:
+ *	2 bytes : FCF (with the intra-PAN bit set)
+ *	1 byte  : Sequence number
+ *	2 bytes : destination address
+ *	2 bytes : destination PANID
+ *	2 bytes : source address (without PANID since the intra-PAN bit is set)
+ * - trailer:
+ *	2 bytes : FCS
+ * We assume the use of 16-bits addresses, intra-PAN communication and
+ * no encryption.
+ *
+ * Note: these numbers must match with slave encoding of frames (see
+ * numbers in corresponding slave source file).
+ */
+
+#define	L2154_SIZE_HEADER	(2+1+2+2+2)
+#define	L2154_SIZE_FCS		2
+
+#define	XBEE_MTU		(100 + L2154_SIZE_HEADER + L2154_SIZE_FCS)
+
+/* XBee API frame sizes */
 #define	XBEE_MIN_FRAME_SIZE	5		// start:1+len:2+api:1+cksum:1
 #define	XBEE_MAX_FRAME_SIZE	115		// RX 64bit addr, 100 bytes
 
