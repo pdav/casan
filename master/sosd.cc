@@ -19,6 +19,8 @@
 
 #include "master.h"
 
+#define	CONFFILE	"./sosd.conf"
+
 conf cf ;
 master master ;
 int debug_levels ;
@@ -68,19 +70,118 @@ struct
     {D_OPTION,	"option"}, 
     {D_STATE,	"state"}, 
     {D_CACHE,	"cache"}, 
+    {D_CONF,	"conf"}, 
     {D_HTTP,	"http"}, 
+    {(1<<30)-1, "all"},
 } ;
 
 const char *debug_title (int level)
 {
-    const char *r ;
-    int i ;
+    const char *r = "(unknown level)" ;
 
-    r = "(unknown level)" ;
-    for (i = 0 ; i < NTAB (debug_names) ; i++)
+    for (int i = 0 ; i < NTAB (debug_names) ; i++)
+    {
 	if (debug_names [i].level == level)
+	{
 	    r = debug_names [i].title ;
+	    break ;
+	}
+    }
     return r ;
+}
+
+int debug_index (const char *name)
+{
+    int r = -1 ;
+
+    for (int i = 0 ; i < NTAB (debug_names) ; i++)
+    {
+	if (strcmp (name, debug_names [i].title) == 0)
+	{
+	    r = i ;
+	    break ;
+	}
+    }
+    return r ;
+}
+
+bool set_debug_levels (int &debuglevel, int sign, const char *name)
+{
+    int idx = debug_index (name) ;
+    if (idx != -1)
+    {
+	if (sign > 0)
+	    debuglevel |= debug_names [idx].level ;
+	else
+	    debuglevel &= ~debug_names [idx].level ;
+    }
+    return idx != -1 ;
+}
+
+bool update_debug_levels (int &debuglevel, char *optarg)
+{
+    int sign = 1 ;
+    char *q = NULL ;
+    bool r ;
+
+    r = true ;
+    for (auto p = optarg ; *p != '\0' ; p++)
+    {
+	if (*p == '+' || *p == ' ' || *p == '-')
+	{
+	    int newsign = (*p == '-') ? -1 : 1 ;
+	    if (q != NULL)
+	    {
+		*p = '\0' ;
+		if (! set_debug_levels (debuglevel, sign, q))
+		{
+		    r = false ;
+		    break ;
+		}
+		q = NULL ;
+		sign = newsign ;
+	    }
+	    else
+	    {
+		sign *= newsign ;
+	    }
+	}
+	else if (isalpha (*p))
+	{
+	    if (q == NULL)
+		q = p ;
+	}
+	else
+	{
+	    r = false ;
+	    break ;
+	}
+    }
+    if (r && q != NULL)
+	if (! set_debug_levels (debuglevel, sign, q))
+	    r = false ;
+    return r ;
+}
+
+void usage (const char *prog)
+{
+    for (auto p = prog ; *p != '\0' ; p++)
+    {
+	if (*p == '/')
+	    prog = p + 1 ;
+    }
+
+    std::cerr << "usage: " << prog << " [-h][-d debug-spec][-c conf-file]\n" ;
+    std::cerr << "\tdebug-spec::= [+|-]spec[+|-]spec... \n" ;
+    std::cerr << "\tspec: " ;
+    for (int i = 0 ; i < NTAB (debug_names) ; i++)
+    {
+	if (i > 0)
+	    std::cerr << ", " ;
+	std::cerr << debug_names [i].title ;
+    }
+    std::cerr << "\n" ;
+    std::cerr << "Example: " << prog << " -d all-option -c ./sosd.conf\n" ;
 }
 
 /******************************************************************************
@@ -98,19 +199,44 @@ const char *debug_title (int level)
 
 int main (int argc, char *argv [])
 {
-    char *conffile ;
+    const char *conffile ;
     sigset_t mask ;
 
-    debug_levels = (1<<30) - 1 ;		// All...
+    debug_levels = 0 ;			// Default: no debug message
+    conffile = CONFFILE ;
 
     try
     {
-	if (argc != 2)
+	int opt ;
+
+	while ((opt = getopt (argc, argv, "hd:c:")) != -1)
 	{
-	    std::cerr << "usage: " << argv [0] << " conf-file\n" ;
+	    switch (opt)
+	    {
+		case 'h' :
+		    usage (argv [0]) ;
+		    exit (0) ;
+		    break ;
+		case 'd' :
+		    if (! update_debug_levels (debug_levels, optarg))
+		    {
+			usage (argv [0]) ;
+			exit (1) ;
+		    }
+		    break ;
+		case 'c' :
+		    conffile = optarg ;
+		    break ;
+		default :
+		    usage (argv [0]) ;
+		    exit (1) ;
+	    }
+	}
+	if (argc > optind)
+	{
+	    usage (argv [0]) ;
 	    exit (1) ;
 	}
-	conffile = argv [1] ;
 
 	if (! cf.parse (conffile))
 	{
@@ -119,7 +245,7 @@ int main (int argc, char *argv [])
 	    exit (1) ;
 	}
 
-	std::cout << cf ;
+	D (D_CONF, "read configuration:\n" << cf) ;
 
 	block_all_signals (&mask) ;
 

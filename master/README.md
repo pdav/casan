@@ -42,7 +42,14 @@ Running the master program
 To run the master program, adapt the `sosd.conf` configuration file to
 your needs, and run :
 
-    # ./sosd sosd.conf
+    # ./sosd -d all -c ./sosd.conf
+
+You can selectively enable or disable debug options with the "+/-" syntax.
+For example :
+- `-d +all-message-conf`: enable `all` debug messages but `message` and `conf` ones
+- `-d +message+option+cache`: enable `message`, `option` and `cache` debug messages
+- `-d all -d -conf -d conf`: enable `all` debug messages, disable `conf` debug messages and re-enable `conf` debug messages
+To know all debug options, run `./sosd -h`
 
 You need root privileges since the master program:
 - access the Ethernet layer directly (without TCP or UDP)

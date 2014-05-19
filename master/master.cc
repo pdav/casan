@@ -87,7 +87,7 @@ bool master::start (conf &cf)
 			}
 			l = le ;
 			engine_.start_net (l) ;
-			std::cout << "Interface " << n.net_eth.iface << " initialized\n" ;
+			D (D_CONF, "Interface " << n.net_eth.iface << " initialized") ;
 #endif
 		    }
 		    break ;
@@ -116,7 +116,7 @@ bool master::start (conf &cf)
 			}
 			l = l8 ;
 			engine_.start_net (l) ;
-			std::cout << "Interface " << n.net_154.iface << " initialized\n" ;
+			D (D_CONF, "Interface " << n.net_154.iface << " initialized") ;
 		    }
 		    break ;
 		default :
@@ -140,7 +140,7 @@ bool master::start (conf &cf)
 	    v->defmtu (s.mtu) ;		// default mtu (not related to L2 spec)
 	    v->init_ttl (ttl) ;
 	    engine_.add_slave (v) ;
-	    std::cout << "Slave " << s.id << " added\n" ;
+	    D (D_CONF, "Slave " << s.id << " added") ;
 	}
 
 	// Start HTTP servers

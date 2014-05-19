@@ -49,6 +49,7 @@ const char *debug_title (int level) ;
 #define	D_OPTION	(1<<1)
 #define	D_STATE		(1<<2)
 #define	D_CACHE		(1<<5)
+#define	D_CONF		(1<<6)
 #define	D_HTTP		(1<<8)
 
 #define	D(c,s)	do {						\
