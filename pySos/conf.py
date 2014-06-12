@@ -1,6 +1,5 @@
-# Enums are new in 3.4, but we provide an alternative
-# from enum import Enum
-from collections import namedtuple
+# Enums are new in 3.4 and I'm using 3.3, but I provide an alternative
+from enum import Enum
 
 class Conf:
     '''
@@ -28,29 +27,22 @@ class Conf:
                    'NET154': 'network 802.15.4 <iface> type <xbee> addr <addr> panid <id> [channel <chan>] [mtu <bytes>]'}
 
     # Define the enums defined in conf.h
-    cf_ns_type = type('cf_ns_type', (object,), {
-                                                'NS_NONE' : 0,
-                                                'NS_ADMIN' : 1,
-                                                'NS_SOS' : 2,
-                                                'NS_WELL_KNOWN' : 3
-                                               })
+    cf_ns_type = Enum('cf_ns_type', {'NS_NONE' : 0,
+                                     'NS_ADMIN' : 1,
+                                     'NS_SOS' : 2,
+                                     'NS_WELL_KNOWN' : 3 })
 
-    cf_timer_index = type('cf_timer_index', (object,), {
-                                                        'I_FIRST_HELLO' : 0,
-                                                        'I_INTERVAL_HELLO' : 1,
-                                                        'I_SLAVE_TTL' : 2,
-                                                        'I_LAST' : 3
-                                                       })
-    net_type = type('net_type', (object,), {
-                                            'NET_NONE' : 0,
-                                            'NET_ETH' : 1,
-                                            'NET_154' : 2
-                                           })
+    cf_timer_index = Enum('cf_timer_index', {'I_FIRST_HELLO' : 0,
+                                             'I_INTERVAL_HELLO' : 1,
+                                             'I_SLAVE_TTL' : 2,
+                                             'I_LAST' : 3 })
 
-    net_154_type = type('net_154_type', (object,), {
-                                                    'NET_154_NONE' : 0,
-                                                    'NET_154_XBEE' : 1
-                                                   })
+    net_type = Enum('net_type', {'NET_NONE' : 0,
+                                 'NET_ETH' : 1,
+                                 'NET_154' : 2})
+
+    net_154_type = Enum('net_154_type', {'NET_154_NONE' : 0,
+                                         'NET_154_XBEE' : 1 })
 
     # Define the structs defined in conf.h
     class cf_http:
@@ -183,8 +175,8 @@ class Conf:
                 else:
                     try:
                         idx = self.cf_timer_index.__dict__[{'firsthello':'I_FIRST_HELLO',
-                                              'hello':'I_INTERVAL_HELLO',
-                                              'slavettl':'I_SLAVE_TTL'}[tokens[1]]]
+                                                            'hello':'I_INTERVAL_HELLO',
+                                                            'slavettl':'I_SLAVE_TTL'}[tokens[1]]]
                         self.timers[idx] = int(tokens[2])
                     except KeyError:
                         self.parse_error_unk_token(tokens[1], 'TIMER')
