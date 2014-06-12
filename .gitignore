@@ -16,3 +16,4 @@ recv
 *.out
 */*.out
 */*/*.out
+pySos/__pycache__
