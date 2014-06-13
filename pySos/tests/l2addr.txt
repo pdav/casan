@@ -1,0 +1,13 @@
+>>> import l2
+
+>>> print(l2.l2addr_154('ca:fe'))
+ca:fe
+
+>>> print(l2.l2addr_154('01:45:0E:B4')) # Testing single digits
+01:45:0e:b4
+
+>>> l2.l2addr_154('ca:fe') == l2.l2addr_154('ca:fe') 
+True
+
+>>> l2.l2addr_154('ca:fe') != l2.l2addr_154('ca:fe') 
+False
