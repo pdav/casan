@@ -7,12 +7,12 @@ dbg_levels = Enum('dbg_levels', {'MESSAGE':0x1,
                                  'HTTP':0x20,
                                  'ALL' : 0xFFFF})
 
-debugLevel = 0
+debugLevel = dbg_levels.ALL
 
 def debug_title(level):
     global debugLevel
     for name in dbg_levels.__dict__.keys():
-        if debugLevel == dbg_levels.val(name)
+        if debugLevel == dbg_levels.val(name):
             return name
     return '(unknown level)'
 
@@ -42,4 +42,7 @@ def update_debug_level(levelStr):
         i += 1
     return set_debug_level(sign, levelStr[start:])
 
-
+def print_debug(level, msg):
+    global dbg_levels
+    if debugLevel ^ level:
+        print(debug_title(level) + ' : ' + msg)
