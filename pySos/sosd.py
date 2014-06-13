@@ -1,5 +1,8 @@
 import signal
 import argparse
+import conf
+from sys import stderr
+import debug
 
 def run():
     # Read arguments
@@ -11,15 +14,20 @@ def run():
                         metavar = 'file')
 
     args = parser.parse_args()
-    print('d : {}\nc : {}'.format(args.d, args.c))
+
+    cf = conf.Conf() 
+    if not cf.parse(args.c):
+        stderr.write('Cannot parse configuration file ' + args.c + 
+                     '\nAborting.\n')
+    debug.print_debug(debug.dbg_levels.CONF, 'Read configuration :\n' + cf.to_string())
 
 # Signal related functions
 def block_all_signals():
-    nonlocal sigmask
-    sigmask = signal.pthread_sigmask(signal.SIG_BLOCK, range(1, signal.NSIG))
+    global sigmask
+    sigmask = signal.pthread_sigmask(signal.SIG_SETMASK, {sig for sig in range(1, signal.NSIG)})
 
 def undo_block_all_signals():
-    nonlocal sigmask
+    global sigmask
     signal.pthread_sigmask(signal.SIG_UNBLOCK, sigmask)
 
 def wait_for_signal():
