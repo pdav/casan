@@ -5,5 +5,41 @@ dbg_levels = Enum('dbg_levels', {'MESSAGE':0x1,
                                  'CACHE':0x8,
                                  'CONF':0x10,
                                  'HTTP':0x20,
-                                 'ALL' : 0x8000})
+                                 'ALL' : 0xFFFF})
+
+debugLevel = 0
+
+def debug_title(level):
+    global debugLevel
+    for name in dbg_levels.__dict__.keys():
+        if debugLevel == dbg_levels.val(name)
+            return name
+    return '(unknown level)'
+
+def set_debug_level(sign, name):
+    global debugLevel
+    try:
+        debugLevel = debugLevel | dbg_levels.__dict__[name]
+    except KeyError:
+        return False
+
+def update_debug_level(levelStr):
+    start, i, sign = 0, 0, 1
+    for c in levelStr:
+        sign = 1
+        if c in {'+- '}:
+            if c == '-':
+                newSign = -1
+            if set_:
+                if not set_debug_level(sign, levelStr[start:i]):
+                    return False
+                start = i
+            sign = newSign
+        elif c.isalpha():
+            set_ = True
+        else:
+            return False
+        i += 1
+    return set_debug_level(sign, levelStr[start:])
+
 
