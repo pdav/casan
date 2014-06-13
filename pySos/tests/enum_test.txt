@@ -1,0 +1,12 @@
+>>> import enum
+
+>>> e = enum.Enum('enum1', {'a':1, 'b':2, 'foo':42})
+>>> e.a
+1
+
+>>> e.val('b')
+2
+
+>>> e.reverse[42]
+'foo'
+
