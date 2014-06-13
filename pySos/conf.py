@@ -47,36 +47,30 @@ class Conf:
 
     # Define the structs defined in conf.h
     class cf_http:
-        __slots__ = ['listen', 'port', 'threads']
         def __init__(self):
             self.listen = ''
             self.port = ''
             self.threads = 0
 
     class cf_namespace:
-        __slots__ = ['prefix', 'type_']
         def __init__(self):
             self.type_ = Conf.cf_ns_type.NS_NONE
 
     class cf_net_eth:
-        __slots__ = ['iface', 'ethertype']
         def __init__(self):
             self.ethertype = 0
 
     class cf_net_154:
-        __slots__ = ['iface', 'type_', 'addr', 'panid', 'channel']
         def __init__(self):
             self.type_ = Conf.net_154_type.NET_154_NONE
             self.addr, self.panid = '', ''
             self.channel = 0
 
     class cf_network:
-        __slots__ = ['type_', 'mtu', 'net_eth', 'net_154']
         def __init__(self):
             self.type_, self.mtu = Conf.net_type.NET_NONE, 0
 
     class cf_slave:
-        __slots__ = ['id_', 'ttl', 'mtu']
         def __init__(self):
             self.id_, self.ttl, self.mtu = 0, 0, 0
 
