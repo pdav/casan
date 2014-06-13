@@ -1,5 +1,6 @@
 # Enums are new in 3.4 and I'm using 3.3, but I provide an alternative
 from enum import Enum
+from io import StringIO
 
 class Conf:
     '''
@@ -86,10 +87,6 @@ class Conf:
         self.httplist, self.nslist, self.netlist, self.slavelist = [], [], [], []
         self.timers = [0] * 3
         self.lineno = 0
-
-    # Probably not needed
-    '''def parse(self):
-        pass'''
 
     def parse(self, file_ = "./sosd.conf"):
         return self.parse_file(file_)
@@ -390,6 +387,11 @@ class Conf:
                 stream.write('slave id ' + str(s.id_) +
                              ' ttl ' + str(s.ttl) +
                              ' mtu ' + str(s.mtu) + '\n')
+
+    def to_string(self):
+        ss = StringIO()
+        self.write_to_stream(ss)
+        return ss.getvalue()
 
     # Error handlers
     def parse_error(self, msg, help_ = None):
