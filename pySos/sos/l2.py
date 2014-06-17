@@ -1,5 +1,5 @@
-from collections import abc
-from enum import Enum
+import abc
+from util.enum import Enum
 
 '''
 This module defines the various classes used for L2 network addressing.
