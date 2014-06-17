@@ -7,7 +7,7 @@ don't mess with it by hand, but why would you ?)
 '''
 class Enum:
     def __new__(cls, enumName, d):
-        if type(d).__name__ == 'dict':
+        if type(d) == dict:
             reverse = dict(zip(d.values(), d.keys()))
             d['reverse'] = reverse
             e = type(enumName, (object,), d)
