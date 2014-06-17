@@ -1,4 +1,4 @@
-from enum import Enum
+from .enum import Enum
 dbg_levels = Enum('dbg_levels', {'MESSAGE':0x1,
                                  'OPTION':0x2,
                                  'STATE':0x4,

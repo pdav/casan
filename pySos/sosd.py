@@ -1,8 +1,10 @@
 import signal
 import argparse
-import conf
 from sys import stderr
-import debug
+from util import debug
+import conf
+
+#import debug
 
 def run():
     # Read arguments

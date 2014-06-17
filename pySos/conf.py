@@ -1,5 +1,5 @@
 # Enums are new in 3.4 and I'm using 3.3, but I provide an alternative
-from enum import Enum
+from util.enum import Enum
 from io import StringIO
 
 class Conf:
