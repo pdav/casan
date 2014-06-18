@@ -4,7 +4,15 @@ from util.debug import *
 from datetime import datetime, time
 from .receiver import Receiver
 
+SOS_VERSION = 1
+
 class SOS:
+    '''
+    This is the SOS engine class
+    '''
+    # Constants
+    
+    # Methods
     def __init__(self):
         self.tsender = None
 
