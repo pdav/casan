@@ -82,9 +82,17 @@ class Option:
             # I'm not quite sure of this one, c++ code is kinda funky
             self.optlen = len(self.optval) 
         else: # Opaque value
-            self.optlen_check(optval, optlen)
+            self.optlen_check(code, optlen)
             self.optval = bytearray(optval)
             self.optlen = optlen
+
+    def __lt__(self, other):
+        '''
+        Comparison operator '<'. Implemented for the sole purpose of 
+        sorting an option list.
+        Options are sorted by option code.
+        '''
+        return self.optcode < other.optcode
 
     @staticmethod
     def optcode_check(code):
