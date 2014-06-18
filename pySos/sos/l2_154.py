@@ -2,9 +2,9 @@ import l2
 import sys
 import os
 import termios
-import debug
 from time import sleep
-from enum import Enum
+from util.debug import *
+from util.enum import Enum
 
 class l2addr_154(l2.l2addr):
     '''
@@ -185,13 +185,18 @@ class l2net_154(l2.l2net):
         return self.send(self.bcastaddr(), data)
 
     def recv(self):
+        '''
+        Receive a frame.
+        Returns a tuple such as :
+        (PACKET TYPE, (SOURCE ADDRESS, DATA, LENGTH))
+        '''
         r = (l2.pktype.PK_NONE,)
         while r[0] == l2.pktype.PK_NONE:
             r = self.extract_received_packet()
             if r[0] == l2.pktype.PK_NONE:
                 if self.read_complete_frame() == -1:
                     return 
-        debug.print_debug('Received packet (' + str(r[0][2]) + ' bytes)')
+        print_debug(dbg_levels.STATE, 'Received packet (' + str(r[0][2]) + ' bytes)')
         return r
 
     def extract_received_packet(self):
@@ -213,7 +218,7 @@ class l2net_154(l2.l2net):
         found = False
         try:
             while not found:
-                buf = os.read(self.fd, )
+                buf = os.read(self.fd, 1024) # Test value, but should do it
                 self.buffer_ = self.buffer_ + buf
                 while self.is_frame_complete():
                     found = True
@@ -221,7 +226,7 @@ class l2net_154(l2.l2net):
             return 0 if found else -1
         except Exception as e:
             # TODO
-            sys.write('Exception caught in read_complete_frame, go fix your code!\n')
+            sys.stderr.write('Exception caught in read_complete_frame, go fix your code!\n')
             raise
 
     def is_frame_complete(self):
