@@ -1,6 +1,6 @@
 from ..util import enum.Enum
 
-class option:
+class Option:
     optcodes = Enum('optcode's, {'MO_NONE' : 0, 'MO_CONTENT_FORMAT' : 12,
                                  'MO_ETAG' : 4, 'MO_LOCATION_PATH' : 8,
                                  'MO_LOCATION_QUERY' : 20, 'MO_MAX_AGE' : 14,
