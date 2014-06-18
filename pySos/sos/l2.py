@@ -66,7 +66,7 @@ class l2net(metaclass = abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def recv(self, saddr, data):
+    def recv(self):
         '''
         '''
         pass
