@@ -1,7 +1,7 @@
 import signal
 import argparse
 from sys import stderr
-from util import debug
+from util.debug import *
 import conf
 from master import Master
 
@@ -23,7 +23,7 @@ def run():
     if not cf.parse(args.c):
         stderr.write('Cannot parse configuration file ' + args.c + 
                      '\nAborting.\n')
-    debug.print_debug(debug.dbg_levels.CONF, 'Read configuration :\n' + cf.to_string())
+    print_debug(dbg_levels.CONF, 'Read configuration :\n' + cf.to_string())
 
     #block_all_signals()
     # Start the master

@@ -1,5 +1,6 @@
 from . import l2
-from util import debug, threads
+from util import threads
+from util.debug import *
 from datetime import datetime
 
 class Receiver(threads.ThreadBase):
@@ -9,7 +10,7 @@ class Receiver(threads.ThreadBase):
         self.next_hello = datetime.now()
 
     def run(self):
-        print('Receiver thread n°{} lives!'.format(self.id_))
+        print_debug(dbg_levels.MESSAGE, 'Receiver thread n°{} lives!'.format(self.id_))
         while self.keepRunning:
             pass
-        print('Receiver thread n°{} dies!'.format(self.id_))
+        print_debug(dbg_levels.MESSAGE, 'Receiver thread n°{} dies!'.format(self.id_))

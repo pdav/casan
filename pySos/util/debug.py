@@ -1,3 +1,8 @@
+'''
+This module provides debugging facilities.
+To avoid long unnecessary typing, it is advised to import the module this way :
+    from debug import *
+'''
 from .enum import Enum
 dbg_levels = Enum('dbg_levels', {'MESSAGE':0x1,
                                  'OPTION':0x2,
@@ -44,5 +49,5 @@ def update_debug_level(levelStr):
 
 def print_debug(level, msg):
     global dbg_levels
-    if debugLevel ^ level:
+    if debugLevel & level:
         print(debug_title(level) + ' : ' + msg)
