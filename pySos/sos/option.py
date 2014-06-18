@@ -1,7 +1,13 @@
-from ..util import enum.Enum
+'''
+This module contains the Option class
+'''
+from util.enum import Enum
 
 class Option:
-    optcodes = Enum('optcode's, {'MO_NONE' : 0, 'MO_CONTENT_FORMAT' : 12,
+    '''
+    Represents an option in a CoAP message, and it's value, if any.
+    '''
+    optcodes = Enum('optcodes', {'MO_NONE' : 0, 'MO_CONTENT_FORMAT' : 12,
                                  'MO_ETAG' : 4, 'MO_LOCATION_PATH' : 8,
                                  'MO_LOCATION_QUERY' : 20, 'MO_MAX_AGE' : 14,
                                  'MO_PROXY_URI' : 35, 'MO_PROXY_SCHEME' : 39,
@@ -18,12 +24,21 @@ class Option:
     optdesc_ = {}
 
     def is_critical(self):
+        '''
+        Returns True if the option is critical (see CoAP draft 5.4.1)
+        '''
         return self.optcode & 1
 
     def is_unsafe(self):
+        '''
+        Returns True if the option is unsafe to forward (see CoAP draft 5.4.2)
+        '''
         return self.optcode & 2
 
     def is_nocachekey(self):
+        '''
+        Returns True if the option is nocachekey (see CoAP draft 5.4.2)
+        '''
         return (self.optcode & 0x1E) == 0x1C
 
     def __init__(self, code = None, optval = None, optlen = None):
@@ -63,10 +78,11 @@ class Option:
             self.optlen = 0
             self.optval = None
         elif optlen == None: # Integer value
-            self.optval = uint_to_byte(optval)
-            self.optlen = len(self.optval) # I'm not quite sure here, c++ code is kinda funky
+            self.optval = self.int_to_bytes(optval)
+            # I'm not quite sure of this one, c++ code is kinda funky
+            self.optlen = len(self.optval) 
         else: # Opaque value
-            self.optlen_check(optlen)
+            self.optlen_check(optval, optlen)
             self.optval = bytearray(optval)
             self.optlen = optlen
 
@@ -76,7 +92,7 @@ class Option:
         Checks the validity of an optcode.
         Will raise a ValueError exception if it is invalid.
         '''
-        if code not in option.optdesc_ or code == option.optdesc_.MO_NONE:
+        if code not in Option.optdesc or code == Option.optdesc.MO_NONE:
             raise ValueError()
 
     @staticmethod
@@ -87,7 +103,7 @@ class Option:
         exception if the option is invalid, or if the option is valid
         but its length is not.
         '''
-        if not option.optdesc_[code][1] <= length <= option.optdesc_[code][2]:
+        if not Option.optdesc[code][1] <= len_ <= Option.optdesc[code][2]:
             raise ValueError()
 
     @staticmethod
@@ -96,33 +112,31 @@ class Option:
         Converts an integer into a sequence of bytes in network byte order,
         without leading null bytes.
         '''
-        bar = bytearray()
+        bytes_ = bytearray()
         while n != 0:
             b = n & 0xFF
             n = n >> 8
-            bar.append(b)
-        ba = bytearray()
-        for i in reverse(range(len(bar))):
-            ba.append(bar[i])
-        while ba[0] == 0:
-            ba = ba[1:]
-        return ba
+            bytes_.append(b)
+        bytes_.reverse()
+        while bytes_[0] == 0:
+            del bytes_[0]
+        return bytes_
 
 
 # Static initialization goes here
-option.optdesc_[option.optcodes.MO_NONE] = (OF_NONE, 0, 0)
-option.optdesc_[option.optcodes.MO_CONTENT_FORMAT] = (OF_OPAQUE, 0, 8)
-option.optdesc_[option.optcodes.MO_ETAG] = (OF_OPAQUE, 1, 8)
-option.optdesc_[option.optcodes.MO_LOCATION_PATH] = (OF_STRING, 0, 255)
-option.optdesc_[option.optcodes.MO_LOCATION_QUERY] = (OF_STRING, 0, 255)
-option.optdesc_[option.optcodes.MO_MAX_AGE] = (OF_UINT, 0, 4)
-option.optdesc_[option.optcodes.MO_PROXY_URI] = (OF_STRING, 1, 1034)
-option.optdesc_[option.optcodes.MO_PROXY_SCHEME] = (OF_STRING, 1, 255)
-option.optdesc_[option.optcodes.MO_URI_HOST] = (OF_STRING, 1, 255)
-option.optdesc_[option.optcodes.MO_URI_PATH] = (OF_STRING, 1, 255)
-option.optdesc_[option.optcodes.MO_URI_PORT] = (OF_UINT, 0, 2)
-option.optdesc_[option.optcodes.MO_URI_QUERY] = (OF_STRING, 0, 255)
-option.optdesc_[option.optcodes.MO_ACCEPT] = (OF_UINT, 0, 2)
-option.optdesc_[option.optcodes.MO_IF_NONE_MATCH] = (OF_EMPTY, 0, 0)
-option.optdesc_[option.optcodes.MO_IF_MATCH] = (OF_OPAQUE, 0, 8)
-option.optdesc_[option.optcodes.MO_SIZE1] = (OF_UINT, 0, 4)
+Option.optdesc_[Option.optcodes.MO_NONE] = (OF_NONE, 0, 0)
+Option.optdesc_[Option.optcodes.MO_CONTENT_FORMAT] = (OF_OPAQUE, 0, 8)
+Option.optdesc_[Option.optcodes.MO_ETAG] = (OF_OPAQUE, 1, 8)
+Option.optdesc_[Option.optcodes.MO_LOCATION_PATH] = (OF_STRING, 0, 255)
+Option.optdesc_[Option.optcodes.MO_LOCATION_QUERY] = (OF_STRING, 0, 255)
+Option.optdesc_[Option.optcodes.MO_MAX_AGE] = (OF_UINT, 0, 4)
+Option.optdesc_[Option.optcodes.MO_PROXY_URI] = (OF_STRING, 1, 1034)
+Option.optdesc_[Option.optcodes.MO_PROXY_SCHEME] = (OF_STRING, 1, 255)
+Option.optdesc_[Option.optcodes.MO_URI_HOST] = (OF_STRING, 1, 255)
+Option.optdesc_[Option.optcodes.MO_URI_PATH] = (OF_STRING, 1, 255)
+Option.optdesc_[Option.optcodes.MO_URI_PORT] = (OF_UINT, 0, 2)
+Option.optdesc_[Option.optcodes.MO_URI_QUERY] = (OF_STRING, 0, 255)
+Option.optdesc_[Option.optcodes.MO_ACCEPT] = (OF_UINT, 0, 2)
+Option.optdesc_[Option.optcodes.MO_IF_NONE_MATCH] = (OF_EMPTY, 0, 0)
+Option.optdesc_[Option.optcodes.MO_IF_MATCH] = (OF_OPAQUE, 0, 8)
+Option.optdesc_[Option.optcodes.MO_SIZE1] = (OF_UINT, 0, 4)
