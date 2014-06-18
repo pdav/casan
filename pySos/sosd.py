@@ -1,14 +1,19 @@
+'''
+This is the 'main' module of the program, containing the entry point.
+'''
 import signal
 import argparse
+import time
 from sys import stderr
 from util.debug import *
 import conf
 from master import Master
 
-import time
-#import debug
 
 def run():
+    '''
+    Starts the program
+    '''
     # Read arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', type=str, help='Set the level of debugging '
@@ -41,15 +46,25 @@ def run():
 
 # Signal related functions
 def block_all_signals():
+    '''
+    Blocks all blockable signals
+    '''
     global sigmask
-    sigmask = signal.pthread_sigmask(signal.SIG_SETMASK, {sig for sig in range(1, signal.NSIG)})
+    sigmask = signal.pthread_sigmask(signal.SIG_SETMASK,
+                                    {sig for sig in range(1, signal.NSIG)})
 
 def undo_block_all_signals():
+    '''
+    Restore the signal mask from before the call to block_all_signals
+    '''
     global sigmask
     signal.pthread_sigmask(signal.SIG_UNBLOCK, sigmask)
 
 def wait_for_signal():
-    sigset = {signal.SIGINT,signal.SIGQUIT, signal.SIGTERM}
+    '''
+    Blocks until a signal is received.
+    '''
+    sigset = {signal.SIGINT, signal.SIGQUIT, signal.SIGTERM}
     signal.pthread_sigmask(signal.SIG_BLOCK, sigset)
     signal.sigwait(sigset)
 
