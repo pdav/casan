@@ -94,6 +94,22 @@ class Option:
         '''
         return self.optcode < other.optcode
 
+    def __eq__(self, other):
+        '''
+        Equality test operator.
+
+        '''
+        return (self.optcode == other.optcode and self.optlen == other.optlen
+                and self.optval == other.optval)
+
+    def __ne__(self, other):
+        '''
+        Difference test operator.
+
+        '''
+        return (self.optcode != other.optcode or self.optlen != other.optlen
+                or self.optval != other.optval)
+
     @staticmethod
     def optcode_check(code):
         '''
