@@ -1,3 +1,6 @@
+'''
+This module contains the subclasses of l2 and l2net for 802.15.4 networking.
+'''
 import l2
 import sys
 import os
@@ -18,18 +21,30 @@ class l2addr_154(l2.l2addr):
         self.addr = bytes([int(ss, 16) for ss in sl])
 
     def __eq__(self, other):
+        '''
+        Tests for equality between 2 l2addr_154 objects.
+        '''
         return self.addr == other.addr
 
     def __ne__(self, other):
+        '''
+        Tests for difference between 2 l2addr_154 objects.
+        '''
         return self.addr != other.addr
 
     def __repr__(self):
+        '''
+        Returns a printable representation of a l2addr_154 object.
+        '''
         rep = ''
         for b in self.addr:
             rep = rep + hex(b)[2:]
         return rep
         
     def __str__(self):
+        '''
+        Returns a human readable string representation of a l2addr_154.
+        '''
         rep = []
         for b in self.addr:
             atom = hex(b)[2:]
@@ -59,17 +74,20 @@ class l2net_154(l2.l2net):
                                      'RX_LONG' : 0x80,
                                      'RX_SHORT' : 0x81 })
 
-    # Nested types
-    class frame:
-        pass
-
     def __init__(self):
+        '''
+        Constructs a l2net_154 object with some default values.
+        '''
         self.maxlatency = 5
         self.fd = -1
         self.framelist = []
         self.buffer_ = bytearray()
 
     def init(self, iface, type_, mtu, addr, panid, channel):
+        '''
+        Initializes a l2net_154 object, opens and sets up the network 
+        interface.
+        '''
         self.a = l2addr_154(addr)
         self.pan = l2addr_154(panid)
         n = -1
@@ -127,17 +145,17 @@ class l2net_154(l2.l2net):
         return n
 
 
-    '''
-    Closes the connection
-    '''
     def term(self):
+        '''
+        Closes the connection.
+        '''
         os.close(self.fd)
         self.fd = -1
 
-    '''
-    Creates a 802.15.4 frame
-    '''
     def encode_transmit(self, destAddr, data):
+        '''
+        Creates a 802.15.4 frame
+        '''
         fdlen = 5 + len(data)
         cmdlen = 4 + fdlen
         b = bytearray()
@@ -155,7 +173,14 @@ class l2net_154(l2.l2net):
         return b
 
     def compute_checksum(self, buf):
+        '''
+        Computes the checksum of a 802.15.4 frame.
+        '''
         def i16_from_2i8(i1, i2):
+            '''
+            Returns a 16bits integer made from 2 8bits integers.
+            The first integer will be the most significant byte of the result
+            '''
             return (i1 << 8) | i2
         paylen = i16_from_2i8(buf[1], buf[2]) + 4
         c = 0
@@ -164,6 +189,9 @@ class l2net_154(l2.l2net):
         return 0xFF - c
 
     def send(self, destAddr, data):
+        '''
+        Sends a frame over the network.
+        '''
         if len(data) <= self.L2_154_MTU:
             cmd = encode_transmit(destAddr, data)
             cmdLen = len(cmd)
@@ -178,11 +206,11 @@ class l2net_154(l2.l2net):
                     n = n + r
             return n
 
-    def bcastaddr(self):
-        return broadcast
-
     def bsend(self, data):
-        return self.send(self.bcastaddr(), data)
+        '''
+        Broadcasts a frame over the network.
+        '''
+        return self.send(self.broadcast, data)
 
     def recv(self):
         '''
@@ -200,6 +228,15 @@ class l2net_154(l2.l2net):
         return r
 
     def extract_received_packet(self):
+        '''
+        Extracts a packet from the frame list.
+        Returns a tuple containing :
+            - The packet type
+            - A tuple containing:
+                - The source address
+                - The received data
+                - The length of the data
+        '''
         r = l2.pktype.PK_NONE
         for frame in self.framelist:
             if frame.type_ == self.frame_type.RX_SHORT:
@@ -215,6 +252,9 @@ class l2net_154(l2.l2net):
         return (r, (a, data, len_))
 
     def read_complete_frame(self):
+        '''
+        Reads a full frame from the input buffer and adds it to the frame list.
+        '''
         found = False
         try:
             while not found:
@@ -230,6 +270,10 @@ class l2net_154(l2.l2net):
             raise
 
     def is_frame_complete(self):
+        '''
+        Checks if there is a complete frame available for extraction in
+        the input buffer.
+        '''
         complete, invalid = False, True
         while invalid:
             if self.XBEE_START not in self.buffer_:
@@ -263,6 +307,10 @@ class l2net_154(l2.l2net):
 
 
     def extract_frame_to_list(self):
+        '''
+        Extracts a complete frame from the input buffer and adds it to the
+        received frames list.
+        '''
         framelen = (self.buffer_[1] << 8) | self.buffer_[2]
         pktlen = framelen + 4
         f = self.frame()
