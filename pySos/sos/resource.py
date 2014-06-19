@@ -22,12 +22,17 @@ class Resource:
         '''
         Class representing attributes
         '''
-        def __init__(self, name = None, values = []):
+        def __init__(self, name = None, values = None):
             '''
             Default constructor for attribute type
             '''
+            # This construct is not important in this case, but it can be
+            # See explanation here :
+            # http://stackoverflow.com/questions/101268/hidden-features-of-python#113198
+            if values is None:
+                values = []
             self.name = name
-            self.values = []
+            self.values = values
 
     def __init__(self, path):
         '''
@@ -47,9 +52,11 @@ class Resource:
         '''
         Returns the string representation of a resource.
         '''
-        s1 = '/'.join(self.vpath)
+        s = '/'.join(self.vpath)
         for attr in self.attributes:
-            pass
+            for val in attr.values:
+                s = s + ';' + attr.name + '="' + val + '"'
+        return s
 
     def __eq__(self, something):
         '''
@@ -72,14 +79,16 @@ class Resource:
                 something.remove('')
         if something.type() == list:
             if len(something) == 0:
-                raise RuntimeError('Cannot perform comparison with an empty 
-                                    list.')
+                raise RuntimeError('''Cannot perform comparison with an empty 
+                                    list.''')
             if type(something[0]) == str:
                 return something == self.vpath
             elif type(something[0]) == Option:
                 return something == self.pathopt
             else:
                 raise TypeError
+        elif something is None:
+            return False
         else:
             raise TypeError
             
