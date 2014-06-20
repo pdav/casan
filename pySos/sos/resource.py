@@ -2,8 +2,8 @@
 This module contains the Resource class.
 '''
 
-from option import Option
-from msg import Msg
+from .option import Option
+from .msg import Msg
 
 class Resource:
     '''
