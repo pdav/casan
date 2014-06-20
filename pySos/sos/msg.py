@@ -1,14 +1,23 @@
 '''
 This module contains the Msg class and a few helper functions that it needs.
 '''
-import l2
+from datetime import datetime, timedelta
+import sos.l2
 from util.enum import Enum
 from util.debug import *
-from datetime import datetime, timedelta
-from sos import SOS_VERSION
-from option import Option
+from .sos import SOS_VERSION
+from .option import Option
 
 glob_msg_id = 1
+
+# CoAP Related constants
+COAP_MAX_TOKLEN = 8
+MAX_RETRANSMIT = 4
+
+# SOS related constants
+SOS_NAMESPACE1 = '.well-known'
+SOS_NAMESPACE2 = 'sos'
+sos_namespace = (SOS_NAMESPACE1, SOS_NAMESPACE2)
 
 # Some helper functions that don't really belong to the msg clas
 def coap_ver(mess):
@@ -204,7 +213,7 @@ class Msg:
             self.coap_encode()
         print_debug(debug_levels.MESSAGE, 'TRANSMIT id=' + self.id_ +
                     ', ntrans=' + self.ntrans)
-        # Needs slave class
+        
 
     def coap_encode(self):
         '''
@@ -267,8 +276,79 @@ class Msg:
             elif opt_len >= 269:
                 self.msg.append((opt_len - 269).to_bytes(2, 'big'))
             self.msg.append(opt.optval)
-        if self.paylen > 0
+        if self.paylen > 0:
             msg.append(b'\xFF')
             msg.append(self.payload)
         self.ntrans = 0
 
+    def stop_retransmit(self):
+        '''
+        Prevents the message from being retransmitted.
+        '''
+        self.ntrans = MAX_RETRANSMIT
+
+    def max_age(self):
+        '''
+        Looks for the option Max-Age in the option list and returns it's value
+        if any, else, returns None.
+        '''
+        for opt in self.optlist:
+            if opt.optcode == Option.optcodes.MO_MAX_AGE:
+                return opt.optval
+        return None
+
+    def cache_match(self, other):
+        '''
+        Checks whether two messages match for caching.
+        See CoAP spec (5.6)
+        '''
+        if self.type_ != other.type_
+            return False
+        else:
+            # Sort both option lists
+            self.optlist.sort()
+            other.optlist.sort()
+            i, j, imax, jmax = 0, 0, len(self.optlist)-1, len(other.optlist)-1
+            while self.optlist[i].is_nocachekey() and i <= imax:
+                i = i + 1
+            while other.optlist[j].is_nocachekey() and j <= jmax:
+                j = j + 1
+            while True:
+                if j == jmax and i == imax: # Both at the end : success!
+                    return True
+                elif j == jmax or i == imax: # One at the end : failure
+                    return False
+                elif self.optlist[i] == other.optlist[j]:
+                    i, j = i + 1, j + 1
+                else: # No match : failure
+                    return False
+
+    @staticmethod
+    def link_reqrep(m1, m2):
+        '''
+        Mutually link a request message and it's reply.
+        '''
+        if m2 is None:
+            if m1.reqrep is not None:
+                # TODO : figure what the hell the C++ code does
+                pass
+            m1.reqrep = None
+        else:
+            m1.reqrep = m2
+            m2.reqrep = m1
+
+    def is_sos_ctl_msg(self):
+        i, r = 0, True
+        for opt in self.optlist:
+            if opt.optcode = Option.optcodes.MO_URI_PATH:
+                r = False
+                if i >= len(sos_namespace): break
+                if len(sos_namespace[i]) != opt.optlen: break
+                if sos_namespace[i] != opt.optval: break
+                r = True
+                i = i + 1
+        if r and (i != len(sos_namespace)):
+            r = False
+        print_debug(debug_levels.MESSAGE, 'It\'s ' + '' if r else 'not ' +
+                                          'a control message.')
+        return r
