@@ -3,7 +3,7 @@ This module contains the Slave class
 '''
 
 from datetime import datetime, timedelta
-from util.enum import Enum
+from enum import Enum
 from util.debug import *
 from sos.sos import engine
 from sos.msg import Msg
@@ -13,12 +13,14 @@ class Slave:
     '''
     This class describes a slave in the SOS system.
     '''
-    status_code = Enum('status_code', {'SL_INACTIVE' : 0,
-                                       'SL_ASSOCIATING' : 0,
-                                       'SL_RUNNING' : 1})
-    res_status = Enum('res_status', ['S_START', 'S_RESOURCE', 'S_ENDRES',
-                       'S_ATTRNAME', 'S_ATTRVAL_START', 'S_ATTRVAL_NQUOTED',
-                       'S_ATTRVAL_QUOTED', 'S_ERROR'])
+    class status_code(Enum):
+        SL_INACTIVE = 0
+        SL_ASSOCIATING = 0
+        SL_RUNNING = 1
+
+    res_status = Enum('res_status', 'S_START S_RESOURCE S_ENDRES S_ATTRNAME
+                                     S_ATTRVAL_START S_ATTRVAL_NQUOTED 
+                                     S_ATTRVAL_QUOTED S_ERROR')
 
     def __init__(self):
         '''

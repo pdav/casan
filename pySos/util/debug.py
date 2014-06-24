@@ -3,9 +3,9 @@ This module provides debugging facilities.
 To avoid long unnecessary typing, it is advised to import the module this way :
     from debug import *
 '''
-from enum import Enum
+from enum import IntEnum
 
-class dbg_levels(Enum):
+class dbg_levels(IntEnum):
     MESSAGE = 0x1
     OPTION = 0x2
     STATE = 0x4
@@ -16,10 +16,10 @@ class dbg_levels(Enum):
 
 debugLevel = dbg_levels.ALL
 
-def debug_title(level):
+def debug_title():
     global debugLevel
-    for name in dbg_levels.__dict__.keys():
-        if debugLevel == dbg_levels.val(name):
+    for name in dbg_levels.__members__.keys():
+        if debugLevel == dbg_levels[name]:
             return name
     return '(unknown level)'
 
@@ -52,4 +52,4 @@ def update_debug_level(levelStr):
 def print_debug(level, msg):
     global dbg_levels
     if debugLevel & level:
-        print(debug_title(level) + ' : ' + msg)
+        print(debug_title() + ' : ' + msg)

@@ -1,5 +1,4 @@
-# Enums are new in 3.4 and I'm using 3.3, but I provide an alternative
-from util.enum import Enum
+from enum import Enum, IntEnum
 from io import StringIO
 
 class Conf:
@@ -28,22 +27,17 @@ class Conf:
                    'NET154': 'network 802.15.4 <iface> type <xbee> addr <addr> panid <id> [channel <chan>] [mtu <bytes>]'}
 
     # Define the enums defined in conf.h
-    cf_ns_type = Enum('cf_ns_type', {'NS_NONE' : 0,
-                                     'NS_ADMIN' : 1,
-                                     'NS_SOS' : 2,
-                                     'NS_WELL_KNOWN' : 3 })
+    cf_ns_type = Enum('cf_ns_type', 'NS_NONE NS_ADMIN NS_SOS NS_WELL_KNOWN')
 
-    cf_timer_index = Enum('cf_timer_index', {'I_FIRST_HELLO' : 0,
-                                             'I_INTERVAL_HELLO' : 1,
-                                             'I_SLAVE_TTL' : 2,
-                                             'I_LAST' : 3 })
+    class cf_timer_index(IntEnum):
+        I_FIRST_HELLO = 0
+        I_INTERVAL_HELLO = 1
+        I_SLAVE_TTL = 2
+        I_LAST = 3
 
-    net_type = Enum('net_type', {'NET_NONE' : 0,
-                                 'NET_ETH' : 1,
-                                 'NET_154' : 2})
+    net_type = Enum('net_type', 'NET_NONE NET_ETH NET_154')
 
-    net_154_type = Enum('net_154_type', {'NET_154_NONE' : 0,
-                                         'NET_154_XBEE' : 1 })
+    net_154_type = Enum('net_154_type', 'NET_154_NONE NET_154_XBEE')
 
     # Define the structs defined in conf.h
     class cf_http:
@@ -54,7 +48,7 @@ class Conf:
 
     class cf_namespace:
         def __init__(self):
-            self.type_ = Conf.cf_ns_type.NS_NONE
+            self.type = Conf.cf_ns_type.NS_NONE
 
     class cf_net_eth:
         def __init__(self):
@@ -62,17 +56,17 @@ class Conf:
 
     class cf_net_154:
         def __init__(self):
-            self.type_ = Conf.net_154_type.NET_154_NONE
+            self.type = Conf.net_154_type.NET_154_NONE
             self.addr, self.panid = '', ''
             self.channel = 0
 
     class cf_network:
         def __init__(self):
-            self.type_, self.mtu = Conf.net_type.NET_NONE, 0
+            self.type, self.mtu = Conf.net_type.NET_NONE, 0
 
     class cf_slave:
         def __init__(self):
-            self.id_, self.ttl, self.mtu = 0, 0, 0
+            self.id, self.ttl, self.mtu = 0, 0, 0
 
     # And finally the actual configuration functions
 
@@ -87,8 +81,8 @@ class Conf:
 
     def parse_file(self, file_):
         try:
-            self.file_ = file_
-            f = open(self.file_, 'r')
+            self.file = file_
+            f = open(self.file, 'r')
             self.lineno = 0
             for line in f:
                 self.lineno += 1
@@ -151,7 +145,7 @@ class Conf:
                 else:
                     c.prefix = tokens[2].split('/')[1:] # Remove leading empty string
                     try:
-                        c.type_ = {'admin':self.cf_ns_type.NS_ADMIN,
+                        c.type = {'admin':self.cf_ns_type.NS_ADMIN,
                                    'sos':self.cf_ns_type.NS_SOS,
                                    'well-known':self.cf_ns_type.NS_WELL_KNOWN}[tokens[1]]
                     except KeyError:
@@ -165,9 +159,9 @@ class Conf:
                     r = False
                 else:
                     try:
-                        idx = self.cf_timer_index.__dict__[{'firsthello':'I_FIRST_HELLO',
-                                                            'hello':'I_INTERVAL_HELLO',
-                                                            'slavettl':'I_SLAVE_TTL'}[tokens[1]]]
+                        idx = self.cf_timer_index[{'firsthello':'I_FIRST_HELLO',
+                                                   'hello':'I_INTERVAL_HELLO',
+                                                   'slavettl':'I_SLAVE_TTL'}[tokens[1]]]
                         self.timers[idx] = int(tokens[2])
                     except KeyError:
                         self.parse_error_unk_token(tokens[1], 'TIMER')
@@ -180,7 +174,7 @@ class Conf:
                     if tokens[1] == 'ethernet':
                         # I think ethernet support is on in python, so
                         # I removed the test, for now.
-                        c.type_ = self.net_type.NET_ETH
+                        c.type = self.net_type.NET_ETH
                         i = 2
                         if i >= a:
                             self.parse_error_num_token(a, 'NETETH')
@@ -211,7 +205,7 @@ class Conf:
                                 self.parse_error_num_token(a, 'NETETH')
                                 # self.parse_error('No ethernet support')
                     elif tokens[1] == '802.15.4':
-                        c.type_ = self.net_type.NET_154
+                        c.type = self.net_type.NET_154
                         c.net_154 = self.cf_net_154()
                         i = 3
                         if i >= a:
@@ -227,13 +221,13 @@ class Conf:
                                     else:
                                         c.mtu = int(tokens[i])
                                 elif tokens[i] == 'type':
-                                    if c.net_154.type_ != self.net_154_type.NET_154_NONE:
+                                    if c.net_154.type != self.net_154_type.NET_154_NONE:
                                         self.parse_error_dup_token(tokens[i], 'NET154')
                                         r = False
                                         break
                                     else:
                                         if tokens[i+1] == 'xbee':
-                                            c.net_154.type_ = self.net_154_type.NET_154_XBEE
+                                            c.net_154.type = self.net_154_type.NET_154_XBEE
                                         else:
                                             self.parse_error_unk_token(tokens[i+1], 'NET154')
                                             r = False
@@ -275,12 +269,12 @@ class Conf:
                 c = self.cf_slave()
                 for i in range(1, a-1, 2):
                     if tokens[i] == 'id':
-                        if c.id_ != 0:
+                        if c.id != 0:
                             self.parse_error_dup_token(tokens[i], 'SLAVE')
                             r = False
                             break
                         else:
-                            c.id_ = int(tokens[i+1])
+                            c.id = int(tokens[i+1])
                     elif tokens[i] == 'ttl':
                         if c.ttl != 0:
                             self.parse_error_dup_token(tokens[i], 'SLAVE')
@@ -329,9 +323,9 @@ class Conf:
                 slave.ttl = timers[cf_timer_index.I_SLAVE_TTL]
 
         for n in self.netlist:
-            if n.type_ == self.net_type.NET_ETH and n.net_eth.ethertype == 0:
+            if n.type == self.net_type.NET_ETH and n.net_eth.ethertype == 0:
                 n.net_eth.ethertype = 0
-            if n.type_ == self.net_type.NET_154 and n.net_154.channel == 0:
+            if n.type == self.net_type.NET_154 and n.net_154.channel == 0:
                 n.net_154.channel = self.DEFAULT_154_CHANNEL
 
         if r:
@@ -349,7 +343,7 @@ class Conf:
                 try:
                     s = { self.cf_ns_type.NS_ADMIN : 'admin',
                           self.cf_ns_type.NS_SOS : 'sos',
-                          self.cf_ns_type.NS_WELL_KNOWN : 'well-known' }[n.type_]
+                          self.cf_ns_type.NS_WELL_KNOWN : 'well-known' }[n.type]
                 except KeyError:
                     s = '(unknown)'
                 stream.write('namespace ' + s + ' ')
@@ -365,12 +359,12 @@ class Conf:
                       self.cf_timer_index.I_SLAVE_TTL : 'slavettl' }[i]
                 stream.write(p + ' ' + str(self.timers[i]) + '\n')
             for n in self.netlist:
-                if n.type_ == self.net_type.NET_ETH:
+                if n.type == self.net_type.NET_ETH:
                     stream.write('network ' + 'ethernet ' + n.net_eth.iface + 
                                  'ethertype ' + n.net_eth.ethertype)
-                elif n.type_ == self.net_type.NET_154:
+                elif n.type == self.net_type.NET_154:
                     stream.write('network ' + '802.15.4 ' + n.net_154.iface +
-                                 ' type ' + ('xbee' if n.net_154.type_ == self.net_154_type.NET_154_XBEE else '(none)') +
+                                 ' type ' + ('xbee' if n.net_154.type == self.net_154_type.NET_154_XBEE else '(none)') +
                                  ' addr ' + n.net_154.addr +
                                  ' panid ' + n.net_154.panid +
                                  ' channel ' + str(n.net_154.channel))
@@ -378,7 +372,7 @@ class Conf:
                     stream.write('(unrecognised network)\n')
                 stream.write(' mtu ' + str(n.mtu) + '\n')
             for s in self.slavelist:
-                stream.write('slave id ' + str(s.id_) +
+                stream.write('slave id ' + str(s.id) +
                              ' ttl ' + str(s.ttl) +
                              ' mtu ' + str(s.mtu) + '\n')
 

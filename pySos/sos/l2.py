@@ -1,11 +1,11 @@
 import abc
-from util.enum import Enum
+from enum import Enum
 
 '''
 This module defines the various classes used for L2 network addressing.
 '''
 
-pktype = Enum('pktype', ['PK_ME', 'PK_BCAST', 'PK_NONE'])
+pktype = Enum('pktype', 'PK_ME PK_BCAST PK_NONE')
 
 class l2addr(metaclass = abc.ABCMeta):
     '''

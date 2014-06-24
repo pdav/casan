@@ -7,7 +7,7 @@ import os
 import termios
 from time import sleep
 from util.debug import *
-from util.enum import Enum
+from enum import Enum
 from conf import Conf
 import serial
 
@@ -74,9 +74,10 @@ class l2net_154(l2.l2net):
     broadcast = l2addr_154('ff:ff:ff:ff:ff:ff:ff:ff')
 
     # Enums
-    frame_type = Enum('frame_type', {'TX_STATUS' : 0x89,
-                                     'RX_LONG' : 0x80,
-                                     'RX_SHORT' : 0x81 })
+    class frame_type(Enum):
+        TX_STATUS = 0x89
+        RX_LONG = 0x80
+        RX_SHORT = 0x81
 
     def __str__(self):
         '''

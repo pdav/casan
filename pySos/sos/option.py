@@ -1,23 +1,31 @@
 '''
 This module contains the Option class
 '''
-from util.enum import Enum
+from enum import Enum
 
 class Option:
     '''
     Represents an option in a CoAP message, and it's value, if any.
     '''
-    optcodes = Enum('optcodes', {'MO_NONE' : 0, 'MO_CONTENT_FORMAT' : 12,
-                                 'MO_ETAG' : 4, 'MO_LOCATION_PATH' : 8,
-                                 'MO_LOCATION_QUERY' : 20, 'MO_MAX_AGE' : 14,
-                                 'MO_PROXY_URI' : 35, 'MO_PROXY_SCHEME' : 39,
-                                 'MO_URI_HOST' : 3, 'MO_URI_PATH' : 11,
-                                 'MO_URI_PORT' : 7, 'MO_URI_QUERY' : 15,
-                                 'MO_ACCEPT' : 16, 'MO_IF_NONE_MATCH' : 5,
-                                 'MO_IF_MATCH' : 1, 'MO_SIZE1' : 60 })
+    class optcodes(Enum):
+        MO_NONE = 0
+        MO_CONTENT_FORMAT = 12
+        MO_ETAG = 4
+        MO_LOCATION_PATH = 8
+        MO_LOCATION_QUERY = 20
+        MO_MAX_AGE = 14
+        MO_PROXY_URI = 35
+        MO_PROXY_SCHEME = 39
+        MO_URI_HOST = 3
+        MO_URI_PATH = 11
+        MO_URI_PORT = 7
+        MO_URI_QUERY = 15
+        MO_ACCEPT = 16
+        MO_IF_NONE_MATCH = 5
+        MO_IF_MATCH = 1
+        MO_SIZE1 = 60 })
 
-    optdesc = Enum('optdesc', ['OF_NONE', 'OF_OPAQUE', 'OF_STRING',
-                               'OF_EMPTY', 'OF_UINT'])
+    optdesc = Enum('optdesc', 'OF_NONE OF_OPAQUE OF_STRING OF_EMPTY OF_UINT')
 
     # Dictionary of 3-tuples
     # optdesc_[OPTCODE] = (OPT_FORMAT, OPT_MINLEN, OPT_MAXLEN)

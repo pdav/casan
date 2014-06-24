@@ -3,7 +3,7 @@ This module contains the Msg class and a few helper functions that it needs.
 '''
 from datetime import datetime, timedelta
 import sos.l2
-from util.enum import Enum
+from enum import Enum
 from util.debug import *
 from .sos import SOS_VERSION
 from .option import Option
@@ -71,11 +71,10 @@ class Msg:
 
     @bug should wake the waiter if a request is abandonned due to a time-out
     '''
-    msgtype = Enum('msgtype', ['MT_CON', 'MT_NON', 'MT_ACK', 'MT_RST'])
-    msgcode = Enum('msgcode', ['MT_EMPTY', 'MT_GET', 'MT_POST', 'MT_PUT',
-                               'MC_DELETE'])
-    sostype = Enum('sostype', ['SOS_NONE', 'SOS_DISCOVER', 'SOS_ASSOC_REQUEST',
-                               'SOS_ASSOC_ANSWER', 'SOS_HELLO', 'SOS_UNKNOWN'])
+    msgtype = Enum('msgtype', 'MT_CON MT_NON MT_ACK MT_RST')
+    msgcode = Enum('msgcode', 'MT_EMPTY MT_GET MT_POST MT_PUT MC_DELETE')
+    sostype = Enum('sostype', 'SOS_NONE SOS_DISCOVER SOS_ASSOC_REQUEST
+                               SOS_ASSOC_ANSWER SOS_HELLO SOS_UNKNOWN')
     
     def __eq__(self, other):
         '''
