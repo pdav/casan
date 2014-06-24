@@ -3,14 +3,16 @@ This module provides debugging facilities.
 To avoid long unnecessary typing, it is advised to import the module this way :
     from debug import *
 '''
-from .enum import Enum
-dbg_levels = Enum('dbg_levels', {'MESSAGE':0x1,
-                                 'OPTION':0x2,
-                                 'STATE':0x4,
-                                 'CACHE':0x8,
-                                 'CONF':0x10,
-                                 'HTTP':0x20,
-                                 'ALL' : 0xFFFF})
+from enum import Enum
+
+class dbg_levels(Enum):
+    MESSAGE = 0x1
+    OPTION = 0x2
+    STATE = 0x4
+    CACHE = 0x8
+    CONF = 0x10
+    HTTP = 0x20
+    ALL = 0xFFFF
 
 debugLevel = dbg_levels.ALL
 
