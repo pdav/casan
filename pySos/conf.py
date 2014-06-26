@@ -57,7 +57,7 @@ class Conf:
     class cf_net_154:
         def __init__(self):
             self.type = Conf.net_154_type.NET_154_NONE
-            self.addr, self.panid = '', ''
+            self.addr, self.panid, self.iface = '', '', ''
             self.channel = 0
 
     class cf_network:

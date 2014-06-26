@@ -22,8 +22,8 @@ class SOS:
             self.tsender = Sender()
             self.tsender.start()
 
-    def start_net(self, addr):
-        r = Receiver()
+    def start_net(self, net):
+        r = Receiver(net)
         self.rlist.append(r)
 
     def stop(self):
@@ -35,27 +35,27 @@ class SOS:
         self.tsender.stop()
 
 class Sender(threads.ThreadBase):
-'''
- Sender thread
+    '''
+     Sender thread
 
-The sender thread spends its life blocking on a condition variable,
-waiting for events:
-- timer event, signalling that a request timeout has expired
-- change in L2 network handling (new L2, or removed L2)
-- a new request is added (from an exterior thread)
+    The sender thread spends its life blocking on a condition variable,
+    waiting for events:
+    - timer event, signalling that a request timeout has expired
+    - change in L2 network handling (new L2, or removed L2)
+    - a new request is added (from an exterior thread)
 
-The sender thread manages:
-- the list of l2 networks (the thread must start a new receiver
-    thread for each new l2 network)
-- the list of all slaves in order to expire the "active" status
-    if needed
-- the list of all outgoing messages in order to:
-   - send a new message
-   - retransmit a message if no answer has been received yet
-   - expire an old message without any received answer. In this
-    case, the message will only be deleted if there is no
-    thread waiting for this message.
-'''
+    The sender thread manages:
+    - the list of l2 networks (the thread must start a new receiver
+        thread for each new l2 network)
+    - the list of all slaves in order to expire the "active" status
+        if needed
+    - the list of all outgoing messages in order to:
+       - send a new message
+       - retransmit a message if no answer has been received yet
+       - expire an old message without any received answer. In this
+        case, the message will only be deleted if there is no
+        thread waiting for this message.
+    '''
     def run(self):
         print_debug(dbg_levels.MESSAGE, 'Sender thread lives!')
         while self.keepRunning:

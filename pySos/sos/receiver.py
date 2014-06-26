@@ -4,13 +4,19 @@ from util.debug import *
 from datetime import datetime
 
 class Receiver(threads.ThreadBase):
-    def __init__(self, id_ = None):
+    def __init__(self, net):
         super().__init__()
-        self.id_ = id_
+        self.l2net = net
         self.next_hello = datetime.now()
 
     def run(self):
-        print_debug(dbg_levels.MESSAGE, 'Receiver thread n°{} lives!'.format(self.id_))
+        print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
+                    'lives!'.format(self.l2net.port.name))
         while self.keepRunning:
             pass
-        print_debug(dbg_levels.MESSAGE, 'Receiver thread n°{} dies!'.format(self.id_))
+        print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
+                                        'dies!'.format(self.l2net.port.name))
+
+    def start(self):
+        assert(not self.is_alive())
+        super().start()

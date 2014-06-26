@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 '''
 This is the 'main' module of the program, containing the entry point.
 '''
@@ -30,19 +32,20 @@ def run():
                      '\nAborting.\n')
     print_debug(dbg_levels.CONF, 'Read configuration :\n' + cf.to_string())
 
-    #block_all_signals()
+    block_all_signals()
     # Start the master
     master = Master()
     master.start(cf)
 
-    print('Waiting 3 seconds')
-    time.sleep(3)
-    print('Done waiting! Killing all.')
+    #print('Waiting 3 seconds')
+    #time.sleep(3)
+    #print('Done waiting! Killing all.')
+
+    undo_block_all_signals()
+    wait_for_signal()
 
     master.stop()
 
-    #undo_block_all_signals()
-    #wait_for_signal()
 
 # Signal related functions
 def block_all_signals():
