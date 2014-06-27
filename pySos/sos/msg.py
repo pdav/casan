@@ -145,14 +145,16 @@ class Msg:
         self.msg = bytearray(l2n.mtu)
         self.pk_t, packet = l2n.recv()
         self.msglen = packet[2]
-        if not ((self.pk_t in [l2.pktype.PK_ME,
-                 l2.pktype.PK_BCAST]) and self.coap_decode()):
+        self.peer = packet[0]
+        self.msg = packet[1]
+        if ((self.pk_t in [l2.pktype.PK_ME, l2.pktype.PK_BCAST]) 
+        and self.coap_decode()):
             print_debug(dbg_levels.MESSAGE, 'Valid recv -> ' + 
                         self.pk_t.name + ', id=' + str(self.id) +
                         ', len=' + str(self.msglen))
         else:
-            print_debug(dbg_levels.MESSAGE, 'Invalid recv -> ' + self.pk_t +
-                        ', id=' + self.id + ', len=' + self.msglen)
+            print_debug(dbg_levels.MESSAGE, 'Invalid recv -> ' + self.pk_t.name +
+                        ', id=' + str(self.id) + ', len=' + str(self.msglen))
 
 
     def coap_decode(self):
@@ -192,12 +194,21 @@ class Msg:
             elif opt_len == 15:
                 success = False
             if success:
-                print_debug(debug_levels.OPTION, 'OPTION opt=' + str(opt_nb) +
-                            ', len=' + str(opt_len))
-                o = Option(opt_nb, self.msg[i:], opt_len)
-                self.optlist.append(o)
+                print_debug(dbg_levels.OPTION, 'OPTION opt=' + str(opt_nb) +
+                                               ', len=' + str(opt_len))
+                try:
+                    o = Option(opt_nb, self.msg[i:], opt_len)
+                    self.optlist.append(o)
+                except ValueError as e:
+                    print_debug(dbg_levels.OPTION, 'Error while decoding '
+                                'message : invalid value for option.' )
+                    success = False
+                except Exception as e:
+                    print_debug(dbg_levels.OPTION, 'Error while decoding '
+                                'message : ' + str(e))
+                    success = False
                 i = i + opt_len
-            else: print_debug(debug_levels.OPTION, 'Unknown option')
+            else: print_debug(dbg_levels.OPTION, 'Unknown option')
 
         self.paylen = self.msglen - i - 1 # Mind the 0xFF marker
         if success and self.paylen > 0:
@@ -214,7 +225,7 @@ class Msg:
         '''
         if self.msg == None:
             self.coap_encode()
-        print_debug(debug_levels.MESSAGE, 'TRANSMIT id=' + self.id +
+        print_debug(dbg_levels.MESSAGE, 'TRANSMIT id=' + self.id +
                     ', ntrans=' + self.ntrans)
         
 
@@ -352,6 +363,6 @@ class Msg:
                 i = i + 1
         if r and (i != len(sos_namespace)):
             r = False
-        print_debug(debug_levels.MESSAGE, 'It\'s ' + '' if r else 'not ' +
+        print_debug(dbg_levels.MESSAGE, 'It\'s ' + '' if r else 'not ' +
                                           'a control message.')
         return r

@@ -296,7 +296,6 @@ class l2net_154(l2.l2net):
             while not found:
                 buf = self.port.read(1 if self.port.inWaiting() == 0
                                        else self.port.inWaiting())
-                pdb.set_trace()
                 self.buffer = self.buffer + buf
                 while self.is_frame_complete():
                     found = True
@@ -309,7 +308,7 @@ class l2net_154(l2.l2net):
 
     def is_frame_complete(self):
         '''
-        Checks if there is a complete frame available for extraction in
+        Checks if there is a complete frame available for extraction from
         the input buffer.
         '''
         complete, invalid = False, True
@@ -363,7 +362,7 @@ class l2net_154(l2.l2net):
             f.rx_short = Frame()
             f.rx_short.saddr = (self.buffer[4] << 8) | self.buffer[5]
             f.rx_short.len = framelen - 5
-            f.rx_short.data = bytes(self.buffer[8 : f.rx_short.len + 9])
+            f.rx_short.data = bytes(self.buffer[8 : f.rx_short.len + 8])
             f.rx_short.rssi = self.buffer[6]
             f.rx_short.options = self.buffer[7]
         else:

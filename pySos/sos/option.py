@@ -1,13 +1,13 @@
 '''
 This module contains the Option class
 '''
-from enum import Enum
+from enum import Enum, IntEnum
 
 class Option:
     '''
     Represents an option in a CoAP message, and it's value, if any.
     '''
-    class optcodes(Enum):
+    class optcodes(IntEnum):
         MO_NONE = 0
         MO_CONTENT_FORMAT = 12
         MO_ETAG = 4
@@ -25,11 +25,11 @@ class Option:
         MO_IF_MATCH = 1
         MO_SIZE1 = 60
 
-    optdesc = Enum('optdesc', 'OF_NONE OF_OPAQUE OF_STRING OF_EMPTY OF_UINT')
+    optdesc_ = Enum('optdesc', 'OF_NONE OF_OPAQUE OF_STRING OF_EMPTY OF_UINT')
 
     # Dictionary of 3-tuples
     # optdesc_[OPTCODE] = (OPT_FORMAT, OPT_MINLEN, OPT_MAXLEN)
-    optdesc_ = {}
+    optdesc = {}
 
     def is_critical(self):
         '''
@@ -75,7 +75,7 @@ class Option:
                 raise TypeError('optval is of type ' + type(optval).__name__ + 
                                 ' (expected int)')
             elif optval < 0:
-                raise ValueError('optval must be positive')
+                raise ValueError()
 
         if code == None or code is self.optcodes.MO_NONE:
             self.optcode = self.optcodes.MO_NONE
@@ -91,7 +91,7 @@ class Option:
             self.optlen = len(self.optval) 
         else: # Opaque value
             self.optlen_check(code, optlen)
-            self.optval = bytearray(optval)
+            self.optval = bytearray(optval[:optlen])
             self.optlen = optlen
 
     def __lt__(self, other):
@@ -124,7 +124,8 @@ class Option:
         Checks the validity of an optcode.
         Will raise a ValueError exception if it is invalid.
         '''
-        if code not in Option.optdesc or code is Option.optdesc.MO_NONE:
+        if (code not in Option.optcodes.__members__.values() 
+        or code is Option.optcodes.MO_NONE):
             raise ValueError()
 
     @staticmethod
@@ -156,19 +157,19 @@ class Option:
 
 
 # Static initialization goes here
-Option.optdesc_[Option.optcodes.MO_NONE] = (Option.optdesc.OF_NONE, 0, 0)
-Option.optdesc_[Option.optcodes.MO_CONTENT_FORMAT] = (Option.optdesc.OF_OPAQUE, 0, 8)
-Option.optdesc_[Option.optcodes.MO_ETAG] = (Option.optdesc.OF_OPAQUE, 1, 8)
-Option.optdesc_[Option.optcodes.MO_LOCATION_PATH] = (Option.optdesc.OF_STRING, 0, 255)
-Option.optdesc_[Option.optcodes.MO_LOCATION_QUERY] = (Option.optdesc.OF_STRING, 0, 255)
-Option.optdesc_[Option.optcodes.MO_MAX_AGE] = (Option.optdesc.OF_UINT, 0, 4)
-Option.optdesc_[Option.optcodes.MO_PROXY_URI] = (Option.optdesc.OF_STRING, 1, 1034)
-Option.optdesc_[Option.optcodes.MO_PROXY_SCHEME] = (Option.optdesc.OF_STRING, 1, 255)
-Option.optdesc_[Option.optcodes.MO_URI_HOST] = (Option.optdesc.OF_STRING, 1, 255)
-Option.optdesc_[Option.optcodes.MO_URI_PATH] = (Option.optdesc.OF_STRING, 1, 255)
-Option.optdesc_[Option.optcodes.MO_URI_PORT] = (Option.optdesc.OF_UINT, 0, 2)
-Option.optdesc_[Option.optcodes.MO_URI_QUERY] = (Option.optdesc.OF_STRING, 0, 255)
-Option.optdesc_[Option.optcodes.MO_ACCEPT] = (Option.optdesc.OF_UINT, 0, 2)
-Option.optdesc_[Option.optcodes.MO_IF_NONE_MATCH] = (Option.optdesc.OF_EMPTY, 0, 0)
-Option.optdesc_[Option.optcodes.MO_IF_MATCH] = (Option.optdesc.OF_OPAQUE, 0, 8)
-Option.optdesc_[Option.optcodes.MO_SIZE1] = (Option.optdesc.OF_UINT, 0, 4)
+Option.optdesc[Option.optcodes.MO_NONE] = (Option.optdesc_.OF_NONE, 0, 0)
+Option.optdesc[Option.optcodes.MO_CONTENT_FORMAT] = (Option.optdesc_.OF_OPAQUE, 0, 8)
+Option.optdesc[Option.optcodes.MO_ETAG] = (Option.optdesc_.OF_OPAQUE, 1, 8)
+Option.optdesc[Option.optcodes.MO_LOCATION_PATH] = (Option.optdesc_.OF_STRING, 0, 255)
+Option.optdesc[Option.optcodes.MO_LOCATION_QUERY] = (Option.optdesc_.OF_STRING, 0, 255)
+Option.optdesc[Option.optcodes.MO_MAX_AGE] = (Option.optdesc_.OF_UINT, 0, 4)
+Option.optdesc[Option.optcodes.MO_PROXY_URI] = (Option.optdesc_.OF_STRING, 1, 1034)
+Option.optdesc[Option.optcodes.MO_PROXY_SCHEME] = (Option.optdesc_.OF_STRING, 1, 255)
+Option.optdesc[Option.optcodes.MO_URI_HOST] = (Option.optdesc_.OF_STRING, 1, 255)
+Option.optdesc[Option.optcodes.MO_URI_PATH] = (Option.optdesc_.OF_STRING, 1, 255)
+Option.optdesc[Option.optcodes.MO_URI_PORT] = (Option.optdesc_.OF_UINT, 0, 2)
+Option.optdesc[Option.optcodes.MO_URI_QUERY] = (Option.optdesc_.OF_STRING, 0, 255)
+Option.optdesc[Option.optcodes.MO_ACCEPT] = (Option.optdesc_.OF_UINT, 0, 2)
+Option.optdesc[Option.optcodes.MO_IF_NONE_MATCH] = (Option.optdesc_.OF_EMPTY, 0, 0)
+Option.optdesc[Option.optcodes.MO_IF_MATCH] = (Option.optdesc_.OF_OPAQUE, 0, 8)
+Option.optdesc[Option.optcodes.MO_SIZE1] = (Option.optdesc_.OF_UINT, 0, 4)

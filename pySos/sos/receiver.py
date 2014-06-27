@@ -4,6 +4,8 @@ from util.debug import *
 from datetime import datetime
 from .msg import Msg
 
+import pdb
+
 class Receiver(threads.ThreadBase):
     def __init__(self, net):
         super().__init__()
@@ -21,6 +23,5 @@ class Receiver(threads.ThreadBase):
         print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
                                         'dies!'.format(self.l2net.port.name))
 
-    def start(self):
-        assert(not self.is_alive())
-        super().start()
+    def find_peer(self, addr):
+        pass

@@ -59,7 +59,7 @@ class Slave:
         self.curmtu = 0
         self.status = status_codes.SL_INACTIVE
         self.next_timeout = datetime.now()
-        print_debug(debug_levels.STATE, 'Slave' + str(self.slaveid) + 
+        print_debug(dbg_levels.STATE, 'Slave' + str(self.slaveid) + 
                     ' status set to INACTIVE.')
 
     def find_resource(self, res):
@@ -89,7 +89,7 @@ class Slave:
         '''
         tp = msg.sos_type()
         if tp is Msg.sostype.SOS_DISCOVER:
-            print_debug(debug_levels.STATE, '''Received DISCOVER, sending 
+            print_debug(dbg_levels.STATE, '''Received DISCOVER, sending 
                                                ASSOCIATE''')
             answer = Msg()
             answer.peer = msg.peer
@@ -99,29 +99,29 @@ class Slave:
 
             engine.add_request(answer)
         elif tp is Msg.sostype.SOS_ASSOC_REQUEST:
-            print_debug(debug_levels.STATE, '''Received ASSOC_REQUEST from
+            print_debug(dbg_levels.STATE, '''Received ASSOC_REQUEST from
                                                another master''')
         elif tp is Msg.sostype.SOS_ASSOC_ANSWER:
             if msg.reqrep is not None:
-                print_debug(debug_levels.STATE, '''Received ASSOC ANSWER for
+                print_debug(dbg_levels.STATE, '''Received ASSOC ANSWER for
                                                    slave.''')
-                print_debug(debug_levels.STATE, 'payload length=' + 
+                print_debug(dbg_levels.STATE, 'payload length=' + 
                                                 str(len(msg.payload)))
                 reslist = []
                 if parse_resource_list(reslist, msg.payload):
-                    print_debug(debug_levels.STATE, 'Slave ' + str(self.slaveid) + 
+                    print_debug(dbg_levels.STATE, 'Slave ' + str(self.slaveid) + 
                                                     ' status set to RUNNING')
                     self.status = self.status_codes.SL_RUNNING
                     self.reslist = reslist
                     self.next_timeout = datetime.now() + timedelta(seconds = self.init_ttl)
                 else:
-                    print_debug(debug_levels.STATE, 'Slave ' + str(self.slaveid) + 
+                    print_debug(dbg_levels.STATE, 'Slave ' + str(self.slaveid) + 
                                                     'cannot parse resource list.')
         elif tp is Msg.sostype.SOS_HELLO:
-            print_debug(debug_levels.STATE, '''Received HELLO from another 
+            print_debug(dbg_levels.STATE, '''Received HELLO from another 
                                                master''')
         else:
-            print_debug(debug_levels.STATE, '''Received an unrecognized 
+            print_debug(dbg_levels.STATE, '''Received an unrecognized 
                                                message''')
 
     def parse_resource_list(self, rlist, payload):
