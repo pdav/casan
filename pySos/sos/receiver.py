@@ -2,6 +2,7 @@ from . import l2
 from util import threads
 from util.debug import *
 from datetime import datetime
+from .msg import Msg
 
 class Receiver(threads.ThreadBase):
     def __init__(self, net):
@@ -11,9 +12,12 @@ class Receiver(threads.ThreadBase):
 
     def run(self):
         print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
-                    'lives!'.format(self.l2net.port.name))
+                                        'lives!'.format(self.l2net.port.name))
         while self.keepRunning:
-            pass
+            m = Msg()
+            m.recv(self.l2net)
+            print_debug(dbg_levels.MESSAGE, 'Received something!')
+
         print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
                                         'dies!'.format(self.l2net.port.name))
 

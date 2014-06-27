@@ -23,7 +23,7 @@ class Option:
         MO_ACCEPT = 16
         MO_IF_NONE_MATCH = 5
         MO_IF_MATCH = 1
-        MO_SIZE1 = 60 })
+        MO_SIZE1 = 60
 
     optdesc = Enum('optdesc', 'OF_NONE OF_OPAQUE OF_STRING OF_EMPTY OF_UINT')
 
@@ -77,7 +77,7 @@ class Option:
             elif optval < 0:
                 raise ValueError('optval must be positive')
 
-        if code == None or code == self.optcodes.MO_NONE:
+        if code == None or code is self.optcodes.MO_NONE:
             self.optcode = self.optcodes.MO_NONE
 
         self.optcode_check(code)
@@ -124,7 +124,7 @@ class Option:
         Checks the validity of an optcode.
         Will raise a ValueError exception if it is invalid.
         '''
-        if code not in Option.optdesc or code == Option.optdesc.MO_NONE:
+        if code not in Option.optdesc or code is Option.optdesc.MO_NONE:
             raise ValueError()
 
     @staticmethod

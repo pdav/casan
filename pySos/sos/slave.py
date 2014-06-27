@@ -41,10 +41,10 @@ class Slave:
         Returns a string describing the slave status and resources.
         '''
         s1 = 'slave ' + str(self.slaveid) + ' '
-        s2 = ('INACTIVE' if self.status == self.status_code.SL_INACTIVE else
+        s2 = ('INACTIVE' if self.status is self.status_code.SL_INACTIVE else
               'RUNNING (curmtu=' + str(self.curmtu) + ', ttl= ' +
                 self.next_timeout.isoformat() + ')' 
-                if self.status == self.statuc_code.SL_RUNNING else
+                if self.status is self.statuc_code.SL_RUNNING else
               '(unknown state)')
         s3 = ' mac=' + str(self.addr) + '\n'
         return s1 + s2 + s3
@@ -88,7 +88,7 @@ class Slave:
         and maintains the state associated to this slave.
         '''
         tp = msg.sos_type()
-        if tp == Msg.sostype.SOS_DISCOVER:
+        if tp is Msg.sostype.SOS_DISCOVER:
             print_debug(debug_levels.STATE, '''Received DISCOVER, sending 
                                                ASSOCIATE''')
             answer = Msg()
@@ -98,10 +98,10 @@ class Slave:
             answer.mk_cntl_assoc(self.init_ttl, self.curmtu)
 
             engine.add_request(answer)
-        elif tp == Msg.sostype.SOS_ASSOC_REQUEST:
+        elif tp is Msg.sostype.SOS_ASSOC_REQUEST:
             print_debug(debug_levels.STATE, '''Received ASSOC_REQUEST from
                                                another master''')
-        elif tp == Msg.sostype.SOS_ASSOC_ANSWER:
+        elif tp is Msg.sostype.SOS_ASSOC_ANSWER:
             if msg.reqrep is not None:
                 print_debug(debug_levels.STATE, '''Received ASSOC ANSWER for
                                                    slave.''')
@@ -117,7 +117,7 @@ class Slave:
                 else:
                     print_debug(debug_levels.STATE, 'Slave ' + str(self.slaveid) + 
                                                     'cannot parse resource list.')
-        elif tp == Msg.sostype.SOS_HELLO:
+        elif tp is Msg.sostype.SOS_HELLO:
             print_debug(debug_levels.STATE, '''Received HELLO from another 
                                                master''')
         else:
@@ -129,20 +129,20 @@ class Slave:
         cur_res = bytearray()
         def parse_single_byte(state, b):
             nonlocal rlist, attrname, cur_res
-            if state == res_status.S_START:
+            if state is res_status.S_START:
                 if b == b'<':
                     cur_res = bytearray()
                     return res_status.S_RESOURCE
                 else:
                     return res_status.S_ERROR
-            elif state == res_status.S_RESOURCE:
+            elif state is res_status.S_RESOURCE:
                 if b == b'>':
                     rlist.append(Resource(cur_res.decode()))
                     return res_status.S_ENDRES
                 else:
                     cur_res.append(b)
                     return state
-            elif state == res_status.S_ENDRES:
+            elif state is res_status.S_ENDRES:
                 attrname = ''
                 if b == b';':
                     return res_status.S_ATTRNAME
@@ -150,7 +150,7 @@ class Slave:
                     return res_status.S_START
                 else:
                     return res_status.S_ERROR
-            elif state == res_status.S_ATTRNAME:
+            elif state is res_status.S_ATTRNAME:
                 if b == b'=':
                     if attrname == '':
                         return res_status.S_ERROR
@@ -166,7 +166,7 @@ class Slave:
                 else:
                     attrname = attrname + b.decode()
                     return state
-            elif state == res_status.S_ATTRVAL_START:
+            elif state is res_status.S_ATTRVAL_START:
                 cur_res = bytearray()
                 if b == b'"':
                     return res_status.S_ATTRVAL_QUOTED
@@ -180,14 +180,14 @@ class Slave:
                 else:
                     cur_res.append(b)
                     return res_status.S_ATTRVAL_NQUOTED
-            elif state == res_status.S_ATTRVAL_QUOTED:
+            elif state is res_status.S_ATTRVAL_QUOTED:
                 if b == b'"':
                     rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
                     return res_status.S_ENDRES
                 else:
                     cur_res.append(b)
                     return state
-            elif state == res_status.S_ATTRVAL_NQUOTED:
+            elif state is res_status.S_ATTRVAL_NQUOTED:
                 if b == b',':
                     rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
                     return res_status.S_START
@@ -203,16 +203,16 @@ class Slave:
             state = res_status.S_START
             for b in payload:
                 state = parse_single_byte(state, b)
-                if state == res_status.S_ERROR:
+                if state is res_status.S_ERROR:
                     break
-        # Handle terminale states
-        if state == res_status.S_ATTRNAME:
+        # Handle terminal states
+        if state is res_status.S_ATTRNAME:
             if attrname == '':
                 rlist[len(rlist)-1].add_attribute(attrname, '')
-        elif state == res_status.S_ATTRVAL_START:
+        elif state is res_status.S_ATTRVAL_START:
             rlist[len(rlist)-1].add_attribute(attrname, '')
-        elif state == res_status.S_NQUOTED:
+        elif state is res_status.S_NQUOTED:
             rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
         else:
             state = res_status.S_ERROR
-        return state != res_status.S_ERROR
+        return state is not res_status.S_ERROR

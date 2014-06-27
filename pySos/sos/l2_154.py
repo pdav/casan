@@ -69,12 +69,12 @@ class l2net_154(l2.l2net):
     XBEE_START = 0x7E
     XBEE_TX_SHORT = 0x01
     XBEE_MIN_FRAME_SIZE = 5
-    XMEE_MAX_FRAME_SIZE = 115
+    XBEE_MAX_FRAME_SIZE = 115
     RX_SHORT_OPT_BROADCAST = 0x02
     broadcast = l2addr_154('ff:ff:ff:ff:ff:ff:ff:ff')
 
     # Enums
-    class frame_type(Enum):
+    class frame_type(IntEnum):
         TX_STATUS = 0x89
         RX_LONG = 0x80
         RX_SHORT = 0x81
@@ -117,20 +117,8 @@ class l2net_154(l2.l2net):
         self.pan = l2addr_154(panid)
         self.channel = channel
 
-        def sendATCommand(serialLink, command):
-            '''
-            Sends an AT command not returning a value to the xbee and checks
-            the xbee reponse. This function will raise a RuntimeError if the
-            reponse is not equal to b'OK\r'
-            serialLink : the serial object representing the serial connection
-            command : bytes object containing the AT command to send.
-            '''
-            serialLink.write(command)
-            if not serialLink.read(3) == b'OK\r':
-                raise RuntimeError('Error sending AT command to XBEE.')
-
         if type_ == 'xbee':
-            self.mtu_ = mtu if (0 < mtu <= self.XBEE_MTU) else self.XBEE_MTU
+            self.mtu = mtu if (0 < mtu <= self.XBEE_MTU) else self.XBEE_MTU
             if not (10 < self.channel < 26):
                 return False
             try:
@@ -151,33 +139,36 @@ class l2net_154(l2.l2net):
                     pass
                 termios.tcsetattr(self.fd, termios.TCSANOW, attrs)
                 # Initialize API mode
-                sendATCommand(self.port, b'+++')
                 sleep(1)
-                sendATCommand(self.port, b'ATRE\r')
+                self.port.write(b'+++')
+                sleep(1)
+                self.port.write(b'ATRE\r')
 
                 # Short address
                 sa = ( b'ATMY' + bytes(hex(self.a.addr[1])[2:], 'utf-8') + 
                        bytes(hex(self.a.addr[0])[2:], 'utf-8') + b'\r' )
-                sendATCommand(self.port, sa)
+                self.port.write(sa)
                 
                 # PANID
                 panid = (b'ATID' + bytes(hex(self.pan.addr[1])[2:], 'utf-8') +
                         bytes(hex(self.pan.addr[0])[2:], 'utf-8') + b'\r')
-                sendATCommand(self.port, panid)
+                self.port.write(panid)
 
                 # Channel
                 chan = b'ATCH' + bytes(hex(channel)[2:], 'utf-8') + b'\r'
-                sendATCommand(self.port, chan)
+                self.port.write(chan)
 
                 # 802.15.4 w/ ACKs
-                sendATCommand(self.port, b'ATMM2\r')
+                self.port.write(b'ATMM2\r')
 
                 # Enter API mode
-                sendATCommand(self.port, b'ATAP1\r')
+                self.port.write(b'ATAP1\r')
 
                 # Quit AT command mode
-                sendATCommand(self.port, b'ATCN\r')
-
+                self.port.write(b'ATCN\r')
+            except RuntimeError as e: # AT command error
+                sys.stderr.write(str(e))
+                return False 
             except Exception as e:
                 sys.stderr.write(str(e) + '\n')
                 sys.stderr.write('Error : cannot open interface ' + iface)
@@ -190,7 +181,7 @@ class l2net_154(l2.l2net):
         '''
         Closes the connection.
         '''
-        os.close(self.fd)
+        self.port.close()
         self.fd = -1
 
     def encode_transmit(self, destAddr, data):
@@ -209,7 +200,7 @@ class l2net_154(l2.l2net):
         b[6] = destAddr.addr[0]
         b[7] = 0
         b = b + data
-        b = b + compute_checksum(b)
+        b = b + self.compute_checksum(b)
 
         return b
 
@@ -225,7 +216,7 @@ class l2net_154(l2.l2net):
             return (i1 << 8) | i2
         paylen = i16_from_2i8(buf[1], buf[2]) + 4
         c = 0
-        for i in range(3, paylen):
+        for i in range(3, paylen-1):
             c = (c + buf[i]) & 0xFF
         return 0xFF - c
 
@@ -263,12 +254,12 @@ class l2net_154(l2.l2net):
         (PACKET TYPE, (SOURCE ADDRESS, DATA, LENGTH))
         '''
         r = (l2.pktype.PK_NONE,)
-        while r[0] == l2.pktype.PK_NONE:
+        while r[0] is l2.pktype.PK_NONE:
             r = self.extract_received_packet()
-            if r[0] == l2.pktype.PK_NONE:
+            if r[0] is l2.pktype.PK_NONE:
                 if self.read_complete_frame() == -1:
-                    return 
-        print_debug(dbg_levels.STATE, 'Received packet (' + str(r[0][2]) + ' bytes)')
+                    continue
+        print_debug(dbg_levels.STATE, 'Received packet (' + str(r[1][2]) + ' bytes)')
         return r
 
     def extract_received_packet(self):
@@ -282,18 +273,19 @@ class l2net_154(l2.l2net):
                 - The length of the data
         '''
         r = l2.pktype.PK_NONE
+        a, data, = None, None
         for frame in self.framelist:
             if frame.type == self.frame_type.RX_SHORT:
-                a = l2addr_154(hex(f.rx_short & 0x00FF)[2:] + 
-                               hex((f.rx_short & 0xFF00) >> 8)[2:])
-                if len_ >= f.rx_short.len_ :
-                    data = bytes(f.rx_short.data)
-                if f.rx_short.options & self.RX_SHORT_OPT_BROADCAST:
+                a = l2addr_154(hex(frame.rx_short.saddr & 0x00FF)[2:] + ':' +
+                               hex((frame.rx_short.saddr & 0xFF00) >> 8)[2:])
+                data = frame.rx_short.data
+                if frame.rx_short.options & self.RX_SHORT_OPT_BROADCAST:
                     r = l2.pktype.PK_BCAST
                 else:
                     r = l2.pktype.PK_ME
-                break
-        return (r, (a, data, len_))
+            self.framelist.remove(frame)
+            break
+        return (r, (a, data, len(data) if data is not None else 0))
 
     def read_complete_frame(self):
         '''
@@ -302,7 +294,9 @@ class l2net_154(l2.l2net):
         found = False
         try:
             while not found:
-                buf = os.read(self.fd, 1024) # Test value, but should do it
+                buf = self.port.read(1 if self.port.inWaiting() == 0
+                                       else self.port.inWaiting())
+                pdb.set_trace()
                 self.buffer = self.buffer + buf
                 while self.is_frame_complete():
                     found = True
@@ -338,10 +332,10 @@ class l2net_154(l2.l2net):
             
             # Got checksum?
             pktlen = framelen + 4
-            if pktlen < buflen:
+            if pktlen > buflen:
                 break
 
-            cksum = compute_checksum(self.buffer)
+            cksum = self.compute_checksum(self.buffer)
             if cksum != self.buffer[pktlen - 1]:
                 buffer = self.buffer[1:]
                 continue
@@ -355,17 +349,21 @@ class l2net_154(l2.l2net):
         Extracts a complete frame from the input buffer and adds it to the
         received frames list.
         '''
+        class Frame:
+            pass
         framelen = (self.buffer[1] << 8) | self.buffer[2]
         pktlen = framelen + 4
-        f = self.frame()
+        f = Frame()
         f.type = self.buffer[3]
         if f.type == self.frame_type.TX_STATUS:
+            f.tx_status = Frame()
             f.tx_status.frame_id = self.buffer[4]
             f.tx_status.status = self.buffer[5]
         elif f.type == self.frame_type.RX_SHORT:
+            f.rx_short = Frame()
             f.rx_short.saddr = (self.buffer[4] << 8) | self.buffer[5]
-            f.rx_short.len_ = framelen - 5
-            f.rx_short.data = bytearray(self.buffer[i] for i in range(8, f.rx_short.len + 1))
+            f.rx_short.len = framelen - 5
+            f.rx_short.data = bytes(self.buffer[8 : f.rx_short.len + 9])
             f.rx_short.rssi = self.buffer[6]
             f.rx_short.options = self.buffer[7]
         else:
@@ -373,4 +371,5 @@ class l2net_154(l2.l2net):
             # Return to avoid appending unknown frame ?
             return
         self.framelist.append(f)
-        self.buffer = self.buffer[pktlen:]
+        self.buffer = (bytearray() if len(self.buffer) == pktlen 
+                                   else self.buffer[pktlen:])

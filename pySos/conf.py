@@ -221,7 +221,7 @@ class Conf:
                                     else:
                                         c.mtu = int(tokens[i])
                                 elif tokens[i] == 'type':
-                                    if c.net_154.type != self.net_154_type.NET_154_NONE:
+                                    if c.net_154.type is not self.net_154_type.NET_154_NONE:
                                         self.parse_error_dup_token(tokens[i], 'NET154')
                                         r = False
                                         break
@@ -323,9 +323,9 @@ class Conf:
                 slave.ttl = timers[cf_timer_index.I_SLAVE_TTL]
 
         for n in self.netlist:
-            if n.type == self.net_type.NET_ETH and n.net_eth.ethertype == 0:
+            if n.type is self.net_type.NET_ETH and n.net_eth.ethertype == 0:
                 n.net_eth.ethertype = 0
-            if n.type == self.net_type.NET_154 and n.net_154.channel == 0:
+            if n.type is self.net_type.NET_154 and n.net_154.channel == 0:
                 n.net_154.channel = self.DEFAULT_154_CHANNEL
 
         if r:
@@ -359,12 +359,12 @@ class Conf:
                       self.cf_timer_index.I_SLAVE_TTL : 'slavettl' }[i]
                 stream.write(p + ' ' + str(self.timers[i]) + '\n')
             for n in self.netlist:
-                if n.type == self.net_type.NET_ETH:
+                if n.type is self.net_type.NET_ETH:
                     stream.write('network ' + 'ethernet ' + n.net_eth.iface + 
                                  'ethertype ' + n.net_eth.ethertype)
-                elif n.type == self.net_type.NET_154:
+                elif n.type is self.net_type.NET_154:
                     stream.write('network ' + '802.15.4 ' + n.net_154.iface +
-                                 ' type ' + ('xbee' if n.net_154.type == self.net_154_type.NET_154_XBEE else '(none)') +
+                                 ' type ' + ('xbee' if n.net_154.type is self.net_154_type.NET_154_XBEE else '(none)') +
                                  ' addr ' + n.net_154.addr +
                                  ' panid ' + n.net_154.panid +
                                  ' channel ' + str(n.net_154.channel))
