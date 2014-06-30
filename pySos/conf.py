@@ -1,6 +1,8 @@
 from enum import Enum, IntEnum
 from io import StringIO
 
+import pdb
+
 class Conf:
     '''
     Configuration file handling

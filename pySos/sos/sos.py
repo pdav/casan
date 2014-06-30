@@ -1,29 +1,32 @@
-from . import l2
 from util import threads
 from util.debug import *
-from datetime import datetime, time
+from datetime import datetime
 from .receiver import Receiver
+from threading import Lock
 
 SOS_VERSION = 1
 
+
 class SOS:
-    '''
+    """
     This is the SOS engine class
-    '''
+    """
     # Constants
     
     # Methods
     def __init__(self):
         self.tsender = None
+        self.sos_lock = Lock()
+        self.mlist = []
 
     def init(self):
-        self.rlist = []
+        self.rlist, self.slist = [], []
         if self.tsender == None:
             self.tsender = Sender()
             self.tsender.start()
 
     def start_net(self, net):
-        r = Receiver(net)
+        r = Receiver(self, net, self.slist)
         self.rlist.append(r)
 
     def stop(self):
@@ -34,8 +37,13 @@ class SOS:
             r.stop()
         self.tsender.stop()
 
+    def add_request(self, req):
+        with self.sos_lock:
+            self.mlist.append(req)
+
+
 class Sender(threads.ThreadBase):
-    '''
+    """
      Sender thread
 
     The sender thread spends its life blocking on a condition variable,
@@ -55,7 +63,7 @@ class Sender(threads.ThreadBase):
        - expire an old message without any received answer. In this
         case, the message will only be deleted if there is no
         thread waiting for this message.
-    '''
+    """
     def run(self):
         print_debug(dbg_levels.MESSAGE, 'Sender thread lives!')
         while self.keepRunning:

@@ -28,13 +28,13 @@ class l2addr_154(l2.l2addr):
         '''
         Tests for equality between 2 l2addr_154 objects.
         '''
-        return self.addr == other.addr
+        return False if other is None else self.addr == other.addr
 
     def __ne__(self, other):
         '''
         Tests for difference between 2 l2addr_154 objects.
         '''
-        return self.addr != other.addr
+        return not self.__eq__(other)
 
     def __repr__(self):
         '''
@@ -94,6 +94,7 @@ class l2net_154(l2.l2net):
         '''
         Constructs a l2net_154 object with some default values.
         '''
+        super().__init__()
         self.maxlatency = 5
         self.fd = -1
         self.framelist = []
@@ -225,7 +226,7 @@ class l2net_154(l2.l2net):
         Sends a frame over the network.
         '''
         if len(data) <= self.L2_154_MTU:
-            cmd = encode_transmit(destAddr, data)
+            cmd = self.encode_transmit(destAddr, data)
             cmdLen = len(cmd)
             n = 0
             while cmdLen > 0:

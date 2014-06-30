@@ -107,9 +107,9 @@ class Resource:
         for attr in self.attributes:
             if attr.name == name:
                 found = True
-                attr.values.append(values)
+                attr.values.append(value)
         if not found:
-            self.attributes.append(Attribute(name, value))
+            self.attributes.append(self.Attribute(name, value))
 
 
     def add_to_message(self, msg):

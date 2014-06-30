@@ -91,7 +91,7 @@ class Option:
             self.optlen = len(self.optval) 
         else: # Opaque value
             self.optlen_check(code, optlen)
-            self.optval = bytearray(optval[:optlen])
+            self.optval = optval[:optlen]
             self.optlen = optlen
 
     def __lt__(self, other):
