@@ -311,7 +311,7 @@ class Msg:
             elif opt_len > 268:
                 self.msglen = opt.optlen + 2
             self.msglen = self.msglen + opt_len
-            if opt.paylen > 0:
+            if opt.paylen > 0: # TODO : what the fuck did I do here?
                 self.msglen = self.msglen + opt.paylen + 1
 
         # Compute an ID

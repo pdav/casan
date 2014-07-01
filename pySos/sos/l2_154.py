@@ -203,7 +203,7 @@ class l2net_154(l2.l2net):
 
     def compute_checksum(self, buf):
         """
-        Computes the checksum of a 802.15.4 frame.
+        Computes the checksum of a ZigBee frame.
         """
         def i16_from_2i8(i1, i2):
             """

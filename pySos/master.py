@@ -9,7 +9,6 @@ class Master:
         sos.engine.timer_first_hello = cf.timers[cf.CfTimerIndex.I_FIRST_HELLO]
         sos.engine.timer_interval_hello = cf.timers[cf.CfTimerIndex.I_INTERVAL_HELLO]
         sos.engine.timer_slave_ttl = cf.timers[cf.CfTimerIndex.I_SLAVE_TTL]
-        sos.engine.init()
         for net in cf.netlist:
             if net.type is Conf.NetType.NET_154:
                 l2n = l2net_154()
@@ -23,6 +22,9 @@ class Master:
             sl.ttl = s.ttl if s.ttl != 0 else sos.engine.timer_slave_ttl
             sos.engine.slist.append(sl)
         # TODO : start HTTP servers
+
+        # Initialize SOS engine last
+        sos.engine.init()
 
         return r
 
