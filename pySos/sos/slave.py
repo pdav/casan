@@ -1,6 +1,6 @@
-'''
+"""
 This module contains the Slave class
-'''
+"""
 
 from datetime import datetime, timedelta
 from enum import Enum
@@ -9,9 +9,9 @@ from sos import msg
 from .resource import Resource
 
 class Slave:
-    '''
+    """
     This class describes a slave in the SOS system.
-    '''
+    """
     class StatusCodes(Enum):
         SL_INACTIVE = 0
         SL_ASSOCIATING = 0
@@ -28,9 +28,9 @@ class Slave:
         S_ERROR = 7
 
     def __init__(self):
-        '''
+        """
         Default constructor
-        '''
+        """
         self.id = 0
         self.defmtu = 0
         self.curmtu = 0
@@ -42,9 +42,9 @@ class Slave:
         self.next_timeout = datetime.now()
 
     def __str__(self):
-        '''
+        """
         Returns a string describing the slave status and resources.
-        '''
+        """
         s1 = 'slave ' + str(self.id) + ' '
         s2 = ('INACTIVE' if self.status is self.StatusCodes.SL_INACTIVE else
               'RUNNING (curmtu=' + str(self.curmtu) + ', ttl= ' +
@@ -55,9 +55,9 @@ class Slave:
         return s1 + s2 + s3
 
     def reset(self):
-        '''
+        """
         Resets the slave to it's default state
-        '''
+        """
         self.addr = None
         self.l2n = None
         self.reslist.clear()
@@ -68,30 +68,30 @@ class Slave:
                     ' status set to INACTIVE.')
 
     def find_resource(self, res):
-        '''
+        """
         Looks for a given resource on the slave.
         This functions expects the resource to be an iterable object
         containing the resource path, e.g for resource '/a/b/c' : ['a','b','c']
         If the resource is not found, returns None
-        '''
+        """
         for r in self.reslist:
             if r == res:
                 return r
         return None
 
     def resource_list(self):
-        '''
+        """
         Returns the list of all the resources managed by the slave
-        '''
+        """
         return self.reslist
 
     def process_sos(self, sos_instance, mess):
-        '''
+        """
         This method is called by a receiver thread when the received message
         is a control message originated from this slave.
         The method implements the SOS control protocol for this slave, 
         and maintains the state associated to this slave.
-        '''
+        """
         tp = mess.sos_type
         if tp is msg.Msg.SosTypes.SOS_DISCOVER:
             print_debug(dbg_levels.STATE, 'Received DISCOVER, sending ASSOCIATE')

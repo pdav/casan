@@ -446,6 +446,9 @@ class Msg:
         return self.sos_type
 
     def add_path_ctrl(self):
+        """
+        Adds sos_namespace members to message as URI_PATH options.
+        """
         for namespace in sos_namespace:
             self.optlist.append(Option(Option.optcodes.MO_URI_PATH, namespace, len(namespace)))
 
@@ -455,3 +458,12 @@ class Msg:
         self.optlist.append(Option(Option.optcodes.MO_URI_PATH, s, len(s)))
         s = 'mtu=' + str(mtu)
         self.optlist.append(Option(Option.optcodes.MO_URI_PATH, s, len(s)))
+
+    def mk_ctrl_hello(self, hello_id):
+        """
+        Builds a hello message.
+        :param hello_id:
+        """
+        self.add_path_ctrl()
+        s = 'hello={}'.format(hello_id)
+        self.optlist.append(Option(Option.optcodes.MO_URI_QUERY, s, len(s)))

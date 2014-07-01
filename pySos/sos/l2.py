@@ -70,11 +70,3 @@ class l2net(metaclass = abc.ABCMeta):
         '''
         '''
         pass
-
-    @abc.abstractmethod
-    def bcastaddr(self):
-        '''
-        '''
-        pass
-
-

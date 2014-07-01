@@ -3,6 +3,7 @@ from util.debug import *
 from datetime import datetime
 from .msg import Msg
 from .slave import Slave
+from .l2_154 import l2addr_154
 
 class Receiver(threads.ThreadBase):
     def __init__(self, sos_instance, net, slavelist):
@@ -12,6 +13,9 @@ class Receiver(threads.ThreadBase):
         self.slavelist = slavelist
         self.next_hello = datetime.now()
         self.deduplist = []
+        self.broadcast = Slave()
+        self.broadcast.l2n = net
+        self.broadcast.addr = net.broadcast
 
     def run(self):
         print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
