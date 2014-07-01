@@ -91,7 +91,7 @@ class l2net_154(l2.l2net):
         Constructs a l2net_154 object with some default values.
         """
         super().__init__()
-        self.maxlatency = 5
+        self.max_latency = 5
         self.fd = -1
         self.framelist = []
         self.buffer = bytearray()
@@ -220,20 +220,23 @@ class l2net_154(l2.l2net):
     def send(self, destAddr, data):
         """
         Sends a frame over the network.
+        :return: True if success, False either.
         """
         if len(data) <= self.L2_154_MTU:
             cmd = self.encode_transmit(destAddr, data)
             cmdLen = len(cmd)
-            n = 0
-            while cmdLen > 0:
-                r = os.write(self.fd, cmd[:cmdLen])
-                if r == -1:
-                    return -1
-                else:
-                    cmdLen = cmdLen - r
-                    cmd = cmd[r:]
-                    n = n + r
-            return n
+            try:
+                while cmdLen > 0:
+                    r = self.port.write(cmd[:cmdLen])
+                    if r == 0:
+                        return False
+                    else:
+                        cmdLen = cmdLen - r
+                        cmd = cmd[r:]
+                return True
+            except Exception:
+                return False
+
 
     def bsend(self, data):
         """

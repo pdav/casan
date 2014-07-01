@@ -1,7 +1,10 @@
 from . import l2
 from util import threads
+from threading import Condition, Lock
 from util.debug import *
-from datetime import datetime
+from datetime import datetime, timedelta
+
+MAX_RETRANSMIT = 4
 
 class Sender(threads.ThreadBase):
     """
@@ -27,17 +30,36 @@ class Sender(threads.ThreadBase):
     """
     def __init__(self, sos_instance):
         super().__init__()
+        self.condition_var = Condition(Lock())
         self.sos_instance = sos_instance
 
     def run(self):
         print_debug(dbg_levels.MESSAGE, 'Sender thread lives!')
         while self.keepRunning:
+            self.condition_var.acquire()
             now = datetime.now()
+
+            # Traverse the receiver list and start new receivers
             for receiver in self.sos_instance.rlist:
-                if not receiver.is_alive(): # Start the receiver ?
+                if not receiver.is_alive():
                     print_debug(dbg_levels.MESSAGE, 'Found a receiver to start')
                     receiver.start()
                 if now >= receiver.next_hello: # Needs update ?
-                    pass
-                    #receiver.hellomsg.id_
+                    receiver.hellomsg.id = 0
+                    receiver.hellomsg.send()
+                    receiver.hellomsg.next_hello = datetime.now() + timedelta(seconds = self.sos_instance.timer_interval_hello)
+
+            # Traverse slavelist and check ttl
+            for slave in self.sos_instance.slist:
+                if slave.status is slave.StatusCodes.SL_RUNNING and slave.next_timeout <= now:
+                    slave.reset()
+
+            # Traverse message list to send new messages or retransmit old ones.
+            for mess in self.sos_instance.mlist:
+                if mess.ntrans == 0 or (mess.ntrans < MAX_RETRANSMIT and now >= mess.next_timeout):
+                    if mess.send():
+                        pass
+
+            self.condition_var.release()
+
         print_debug(dbg_levels.MESSAGE, 'Sender thread dies!')

@@ -6,13 +6,25 @@ from sos import l2
 from enum import Enum
 from util.debug import *
 from .option import Option
-from random import randrange
+from random import randrange, uniform
+from sys import stderr
 
 glob_msg_id = randrange(0xFFFF)
 
 # CoAP Related constants
+# Note : all times are expressed in seconds unless explicitly specified.
+ACK_RANDOM_FACTOR = 1.5
+ACK_TIMEOUT = 1
 COAP_MAX_TOKLEN = 8
 MAX_RETRANSMIT = 4
+MAX_TRANSMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
+PROCESSING_DELAY = ACK_TIMEOUT
+
+def exchange_lifetime(max_lat):
+    return MAX_TRANSMIT_SPAN + (2 * max_lat) + PROCESSING_DELAY
+
+def max_rtt(max_lat):
+    return 2 * max_lat + PROCESSING_DELAY
 
 # SOS related constants
 SOS_VERSION = 1
@@ -197,23 +209,23 @@ class Msg:
         while i < self.msglen and success and self.msg[i] != 0xFF:
             opt_delta = self.msg[i] >> 4
             opt_len = self.msg[i] & 0x0F
-            i = i + 1
+            i += 1
             # Handle special values for optdelta/optlen
             if opt_delta == 13:
                 opt_delta = self.msg[i] + 13
-                i = i + 1
+                i += 1
             elif opt_delta == 14:
                 opt_delta = ((self.msg[i] << 8) | self.msg[i+1]) + 269
-                i = i + 2
+                i += 2
             elif opt_delta == 15:
                 success = False
-            opt_nb = opt_nb + opt_delta
+            opt_nb += opt_delta
             if opt_len == 13:
                 opt_len = self.msg[i] + 13
-                i = i + 1
+                i += 1
             elif opt_len == 14:
                 opt_len = ((self.msg[i] << 8) | self.msg[i+1]) + 269
-                i = i + 2
+                i += 2
             elif opt_len == 15:
                 success = False
             if success:
@@ -230,12 +242,12 @@ class Msg:
                     print_debug(dbg_levels.OPTION, 'Error while decoding '
                                                    'message : ' + str(e))
                     success = False
-                i = i + opt_len
+                i += opt_len
             else: print_debug(dbg_levels.OPTION, 'Unknown option')
 
-        self.paylen = self.msglen - i - 1 # Mind the 0xFF marker
+        self.paylen = self.msglen - i - 1  # Mind the 0xFF marker
         if success and self.paylen > 0:
-            if self.msg[i] != 0xFF: # Oops
+            if self.msg[i] != 0xFF:  # Oops
                 success = False
             else:
                 self.payload = self.msg[i+1:]
@@ -246,15 +258,39 @@ class Msg:
         """
         Sends a CoAP message on the network.
         """
+        r = True
         if self.msg == None:
             self.coap_encode()
         print_debug(dbg_levels.MESSAGE, 'TRANSMIT id=' + str(self.id) +
                     ', ntrans=' + str(self.ntrans))
-
+        if self.msg is None:
+            self.coap_encode()
+        print_debug(dbg_levels.MESSAGE, 'TRANSMIT id={}, ntrans={}'.format(self.id, self.ntrans))
+        if not self.peer.l2n.send(self.peer, self.msg):
+            stderr.write('Error during packet transmission.\n')
+            r = False
+        else:
+            if self.type is Msg.MsgTypes.MT_CON:
+                if self.ntrans == 0:
+                    rand_timeout = uniform(ACK_RANDOM_FACTOR - 1)
+                    n_sec = ACK_TIMEOUT * (rand_timeout + 1)
+                    self.timeout = timedelta(seconds = n_sec)
+                    self.expire = datetime.now() + timedelta(seconds = exchange_lifetime(self.peer.l2n.max_latency))
+                else: self.timeout *= 2
+                self.next_timeout = datetime.now() + self.timeout
+                self.ntrans += 1
+            elif self.msg_type is Msg.MsgTypes.MT_NON: self.ntrans = MAX_RETRANSMIT
+            elif self.msg_type in [Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST]:
+                self.ntrans = MAX_RETRANSMIT
+                self.expire = datetime.now() + timedelta(seconds = max_rtt(self.peer.l2n.max_latency))
+            else:
+                print_debug(dbg_levels.MESSAGE, 'Error : unknown message type (this shouldn\'t happen, go and fix the code!')
+                r = False
+        return r
 
     def coap_encode(self):
         """
-        Encodes a message according to CoAP spec
+        Encodes a message according to CoAP spec. Revision used at the time of this writing is number 18.
         """
         # Compute message size
         self.msglen = 4 + self.toklen

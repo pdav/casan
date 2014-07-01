@@ -3,7 +3,6 @@ from util.debug import *
 from datetime import datetime
 from .msg import Msg
 from .slave import Slave
-from .l2_154 import l2addr_154
 
 class Receiver(threads.ThreadBase):
     def __init__(self, sos_instance, net, slavelist):

@@ -2,7 +2,6 @@ from sos import sos
 from conf import Conf
 from sos.l2_154 import l2net_154
 from sos.slave import Slave
-import pdb
 
 class Master:
     def start(self, cf):
@@ -25,7 +24,10 @@ class Master:
             sos.engine.slist.append(sl)
         # TODO : start HTTP servers
 
+        return r
+
     def stop(self):
         sos.engine.stop()
+
     def handle_http(self, request_path, req, rep):
         pass

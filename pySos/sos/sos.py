@@ -1,5 +1,9 @@
+"""
+This module contains the SOS class.
+"""
+
 from sos.msg import Msg
-from time import time
+from datetime import datetime, timedelta
 from util.debug import *
 from .receiver import Receiver
 from threading import Lock
@@ -13,26 +17,30 @@ SOS_VERSION = 1
 
 class SOS:
     """
-    This is the SOS engine class
+    SOS engine class
     """
     # Constants
     
     # Methods
     def __init__(self):
+        self.timer_first_hello = 0
+        self.timer_interval_hello = 0
+        self.timer_slave_ttl = 0
         self.tsender = None
         self.sos_lock = Lock()
-        self.mlist = []
+        self.rlist, self.slist, self.mlist = [], [], []
 
     def init(self):
-        self.rlist, self.slist = [], []
         if self.tsender == None:
             self.tsender = Sender(self)
             self.tsender.start()
 
     def start_net(self, net):
         r = Receiver(self, net, self.slist)
-        r.hello_id = int(time()) % 1000
-        r.next_hello = int(time()) + random.randrange(1000)
+        r.next_hello = datetime.now()
+        r.next_hello += timedelta(seconds=self.timer_first_hello)
+        r.hello_id = r.next_hello.microsecond % 1000
+
         r.hello_msg = Msg()
         r.hello_msg.peer = r.broadcast
         r.hello_msg.type = Msg.MsgTypes.MT_NON
