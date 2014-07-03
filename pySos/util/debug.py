@@ -18,10 +18,9 @@ class dbg_levels(IntEnum):
 debugLevel = dbg_levels.ALL
 
 
-def debug_title():
-    global debugLevel
+def debug_title(level):
     for name in dbg_levels.__members__.keys():
-        if debugLevel == dbg_levels[name]:
+        if level == dbg_levels[name]:
             return name
     return '(unknown level)'
 
@@ -57,4 +56,4 @@ def update_debug_level(levelStr):
 def print_debug(level, msg):
     global dbg_levels
     if debugLevel & level:
-        print(debug_title() + ' : ' + msg)
+        print(debug_title(level) + ' : ' + msg)
