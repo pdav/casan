@@ -6,7 +6,7 @@ from sos.msg import Msg
 from datetime import datetime, timedelta
 from util.debug import *
 from .receiver import Receiver
-from threading import Lock
+from threading import Lock, Condition
 from .sender import Sender
 import random
 
@@ -27,8 +27,9 @@ class SOS:
         self.timer_interval_hello = 0
         self.timer_slave_ttl = 0
         self.tsender = None
-        self.sos_lock = Lock()
         self.rlist, self.slist, self.mlist = [], [], []
+        self.sos_lock = Lock()
+        self.condition_var = Condition(Lock())
 
     def init(self):
         if self.tsender is None:
@@ -59,7 +60,9 @@ class SOS:
         self.tsender.stop()
 
     def add_request(self, req):
-        with self.sos_lock:
-            self.mlist.append(req)
+        with self.condition_var:
+            with self.sos_lock:
+                self.mlist.append(req)
+                self.condition_var.notify()
 
 engine = SOS()

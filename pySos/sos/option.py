@@ -61,12 +61,12 @@ class Option:
         If you specify both optval and optlen, constructs an option with
         opaque value.
         If you specify optval but omit optlen, it is assumed that optval is an
-        unsigned integer. If optval is not an unsigned integer, a 
+        unsigned integer. If optval is not an unsigned integer, a
         TypeError is raised.
 
         Raises : ValueError if code is invalid or optlen is specified and
                  optval is a negative integer.
-                 TypeError if optlen if specified and optval is not 
+                 TypeError if optlen if specified and optval is not
                  an integer.
                  RuntimeError is the parameter combination is invalid
         """
@@ -75,7 +75,7 @@ class Option:
             raise RuntimeError('Invalid parameters')
         if code is None and (optval is not None or optlen is not None):
             raise RuntimeError('Invalid parameters')
-        if optlen is None:
+        if optlen is None and optval is not None:
             if type(optval) != int:
                 raise TypeError('optval is of type ' + type(optval).__name__ + 
                                 ' (expected int)')
@@ -86,7 +86,7 @@ class Option:
             self.optcode = self.OptCodes.MO_NONE
 
         self.optcode_check(code)
-        self.optcode = code
+        self.optcode = self.OptCodes(code)
         if optval is None:
             self.optlen = 0
             self.optval = None

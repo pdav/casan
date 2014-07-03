@@ -102,6 +102,7 @@ class Slave:
             answer.mk_ctrl_assoc(self.init_ttl, self.curmtu)
 
             sos_instance.add_request(answer)
+
         elif tp is msg.Msg.SosTypes.SOS_ASSOC_REQUEST:
             print_debug(dbg_levels.STATE, 'Received ASSOC_REQUEST from another master')
         elif tp is msg.Msg.SosTypes.SOS_ASSOC_ANSWER:
@@ -115,7 +116,7 @@ class Slave:
                     self.reslist = reslist
                     self.next_timeout = datetime.now() + timedelta(seconds=self.init_ttl)
                 else:
-                    print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + 'cannot parse resource list.')
+                    print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + ' cannot parse resource list.')
         elif tp is msg.Msg.SosTypes.SOS_HELLO:
             print_debug(dbg_levels.STATE, 'Received HELLO from another master')
         else:
@@ -209,7 +210,7 @@ class Slave:
                 rlist[len(rlist)-1].add_attribute(attrname, '')
         elif state is self.ResStatus.S_ATTRVAL_START:
             rlist[len(rlist)-1].add_attribute(attrname, '')
-        elif state is self.ResStatus.S_NQUOTED:
+        elif state is self.ResStatus.S_ATTRVAL_NQUOTED:
             rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
         else:
             state = self.ResStatus.S_ERROR

@@ -163,6 +163,8 @@ class l2net_154(l2.l2net):
 
                 # Quit AT command mode
                 self.port.write(b'ATCN\r')
+
+                self.port.flushInput()
             except RuntimeError as e: # AT command error
                 sys.stderr.write(str(e))
                 return False 

@@ -67,8 +67,15 @@ def coap_id(mess):
 def coap_code(mess):
     """
     Extract the CoAP method code from the frame header.
+    :return: A member of the MsgCodes enumeration if possible.
+             If the value is not a member of the MsgCodes enumeration, this function will return an integer.
     """
-    return Msg.MsgCodes(mess[1])
+    b = None
+    try:
+        b = Msg.MsgCodes(mess[1])
+    except Exception as e:
+        b = mess[1]
+    return b
 
 
 class Msg:
@@ -123,7 +130,7 @@ class Msg:
         """
         Equality test operator. Valid for received messages only.
         """
-        return self.msg == other.msg_
+        return self.msg == other.msg
 
     def __str__(self):
         """
@@ -160,6 +167,7 @@ class Msg:
             self.req_rep.req_rep = None
             self.req_rep = None
         self.optlist = []
+        self.waiter = None
 
     def reset_all(self):
         """
@@ -260,15 +268,16 @@ class Msg:
                 print_debug(dbg_levels.OPTION, 'OPTION opt=' + str(opt_nb) +
                             ', len=' + str(opt_len))
                 try:
-                    o = Option(opt_nb, self.msg[i:], opt_len)
+                    if opt_len == 0:
+                        o = Option(opt_nb)
+                    else:
+                        o = Option(opt_nb, self.msg[i:].decode(), opt_len)
                     self.optlist.append(o)
                 except ValueError as e:
-                    print_debug(dbg_levels.OPTION, 'Error while decoding '
-                                                   'message : invalid value for option.' )
+                    print_debug(dbg_levels.OPTION, 'Error while decoding message : invalid value for option.')
                     success = False
                 except Exception as e:
-                    print_debug(dbg_levels.OPTION, 'Error while decoding '
-                                                   'message : ' + str(e))
+                    print_debug(dbg_levels.OPTION, 'Error while decoding message : ' + str(e))
                     success = False
                 i += opt_len
             else: print_debug(dbg_levels.OPTION, 'Unknown option')
@@ -428,8 +437,14 @@ class Msg:
         """
         if m2 is None:
             if m1.req_rep is not None:
-                # TODO : figure what the hell the C++ code does
-                pass
+                # I suspect there is a bug in the C++ program here :
+                    # if (m1->reqrep_ != nullptr)
+                    # m2->reqrep_->reqrep_ = nullptr ;
+                # I assumed it should be :
+                    # if (m1->reqrep_ != nullptr)
+                    # m1->reqrep_->reqrep_ = nullptr ;
+                if m1.req_rep.req_rep is not None:
+                    m1.req_rep.req_rep = None
             m1.req_rep = None
         else:
             m1.req_rep = m2
@@ -439,11 +454,11 @@ class Msg:
         r = True
         count = 0
         for i, opt in enumerate(self.optlist):
-            if opt.optcode == Option.OptCodes.MO_URI_PATH:
+            if opt.optcode is Option.OptCodes.MO_URI_PATH:
                 r = False
                 if i >= len(sos_namespace): break
                 if len(sos_namespace[i]) != opt.optlen: break
-                if sos_namespace[i] != opt.optval.decode(): break
+                if sos_namespace[i] != opt.optval: break
                 r = True
                 count += 1
         if r and (count != len(sos_namespace)):
@@ -454,25 +469,26 @@ class Msg:
     def is_sos_discover(self):
         """
         Checks if a message is a SOS discover message.
-        :return: a 3-tuple whose first field is True if the message is a SOS discover message, False otherwise.
+        :return: a tuple whose first field is True if the message is a SOS discover message, otherwise it is the
+                 singleton False.
                  If the message is a SOS discover, then then second field contains the slave id, and the third field
                  contains the mtu.
         """
         sid, mtu = (0, 0)
         if self.msg_code is Msg.MsgCodes.MC_POST and self.msg_type is Msg.MsgTypes.MT_NON and self.is_sos_ctrl_msg():
             for opt in self.optlist:
-                if opt.optcode == Option.OptCodes.MO_URI_QUERY:
-                    if opt.optval.startswith(b'slave='):
+                if opt.optcode is Option.OptCodes.MO_URI_QUERY:
+                    if opt.optval.startswith('slave='):
                         # Expected value : 'slave=<slave ID>'
-                        sid = int(opt.optval.partition(b'=')[2])
-                    elif opt.optval.startswith(b'mtu='):
-                        mtu = int(opt.optval.partition(b'=')[2])
+                        sid = int(opt.optval.partition('=')[2])
+                    elif opt.optval.startswith('mtu='):
+                        mtu = int(opt.optval.partition('=')[2])
                     else:
                         sid = 0
                         break
         if sid > 0 and mtu >= 0:
             self.sos_type = self.SosTypes.SOS_DISCOVER
-        r = (self.sos_type == self.SosTypes.SOS_DISCOVER,)
+        r = (self.sos_type is self.SosTypes.SOS_DISCOVER,)
         if r[0]:
             r = (r, sid, mtu)
         return r
@@ -484,26 +500,24 @@ class Msg:
         """
         found = False
         if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-            if (self.msg_type, self.msg_code, self.is_sos_ctrl_msg()) == (self.MsgTypes.MT_NON, self.MsgCodes.MC_POST, True):
+            if self.msg_type is self.MsgTypes.MT_CON and self.msg_code is self.MsgCodes.MC_POST and self.is_sos_ctrl_msg() == True:
                 for opt in self.optlist:
                     if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                         # TODO: maybe use regular expressions here
                         found = True in (opt.optval.startswith(pattern) for pattern in ['mtu=', 'ttl='])
                 if found:
                     self.sos_type = self.SosTypes.SOS_ASSOC_REQUEST
-        return self.sos_type == self.SosTypes.SOS_ASSOC_REQUEST
+        return self.sos_type is self.SosTypes.SOS_ASSOC_REQUEST
 
-    def find_sos_type(self, check_req_rep = True):
+    def find_sos_type(self, check_req_rep=True):
         if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-            if not self.is_sos_associate() and not self.is_sos_discover():
+            if not self.is_sos_associate() and not self.is_sos_discover()[0]:
                 if check_req_rep and self.req_rep is not None:
-                    st = self.req_rep.sos_type(False)
+                    st = self.req_rep.find_sos_type(False)
                     if st is self.SosTypes.SOS_ASSOC_REQUEST:
                         self.sos_type = self.SosTypes.SOS_ASSOC_ANSWER
             if self.sos_type is self.SosTypes.SOS_UNKNOWN:
                 self.sos_type = self.SosTypes.SOS_NONE
-            if self.sos_type is not self.SosTypes.SOS_NONE:
-                print_debug(dbg_levels.MESSAGE, 'Got SOS control message.')
         return self.sos_type
 
     def add_path_ctrl(self):
@@ -516,9 +530,9 @@ class Msg:
     def mk_ctrl_assoc(self, ttl, mtu):
         self.add_path_ctrl()
         s = 'ttl=' + str(ttl)
-        self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, s, len(s)))
+        self.optlist.append(Option(Option.OptCodes.MO_URI_QUERY, s, len(s)))
         s = 'mtu=' + str(mtu)
-        self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, s, len(s)))
+        self.optlist.append(Option(Option.OptCodes.MO_URI_QUERY, s, len(s)))
 
     def mk_ctrl_hello(self, hello_id):
         """

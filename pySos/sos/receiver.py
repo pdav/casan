@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from util import threads
 from util.debug import *
-from .msg import Msg
+from .msg import Msg, exchange_lifetime
 from .slave import Slave
 
 
@@ -19,24 +19,33 @@ class Receiver(threads.ThreadBase):
         self.broadcast.addr = net.broadcast
 
     def run(self):
-        print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
-                                        'lives!'.format(self.l2net.port.name))
+        print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} lives!'.format(self.l2net.port.name))
         while self.keepRunning:
             m = Msg()
             saddr = m.recv(self.l2net)
             print(m.msg)
-            print_debug(dbg_levels.MESSAGE, 'Received something!')
+            print_debug(dbg_levels.MESSAGE, 'Received something from {}!'.format(saddr))
 
-            # TODO : implement and clean deduplist
+            m.expire = datetime.now() + timedelta(milliseconds=exchange_lifetime(self.l2net.max_latency))
+            self.clean_deduplist()
 
             if not self.find_peer(m, saddr):
                 print_debug(dbg_levels.MESSAGE, 'Warning : sender not in authorized peers.')
+                continue
 
             # Is the received message a reply to pending request?
             req = self.correlate(m)
             if req is not None:
-                # TODO : if reply
-                pass
+                # Ignore if a reply was already received
+                if req.req_rep is not None:
+                    continue
+                # This is the first reply : stop message retransmissions, link the reply to the
+                # original request, and wake the emitter.
+                req.stop_retransmit()
+                Msg.link_req_rep(req, m)
+                if m.waiter is not None:
+                    m.waiter.wakeup()
+                    continue
 
             # Was the message already received? If so, ignore it if we already replied.
             dup_msg = self.deduplicate(m)
@@ -48,13 +57,13 @@ class Receiver(threads.ThreadBase):
             # Process SOS control messages first.
             if m.find_sos_type() is not Msg.SosTypes.SOS_NONE:
                 m.peer.process_sos(self.sos_instance, m)
+                continue
 
             # Orphaned message
             if m.peer.status is Slave.StatusCodes.SL_RUNNING:
                 print_debug(dbg_levels.MESSAGE, 'Orphaned message from ' + str(m.peer.addr) + ', id=' + str(m.id))
 
-        print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} '
-                                        'dies!'.format(self.l2net.port.name))
+        print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} dies!'.format(self.l2net.port.name))
 
     def find_peer(self, mess, addr):
         """
@@ -86,9 +95,11 @@ class Receiver(threads.ThreadBase):
 
                             # MTU negociation
                             l2mtu = self.l2net.mtu
-                            defmtu = s.defmtu if 0 < s.defmtu <= l2mtu else l2mtu
+                            defmtu = s.def_mtu if 0 < s.def_mtu <= l2mtu else l2mtu
                             s.curmtu = mtu if 0 < mtu <= defmtu else defmtu
                             found = True
+            else:
+                pass  # Breakpoint here
         return found
 
     def correlate(self, mess):
@@ -103,17 +114,25 @@ class Receiver(threads.ThreadBase):
                 id_ = mess.id
                 for mreq in self.sos_instance.mlist:
                     if mreq.id == id_:
-                        print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + id_)
+                        print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + str(id_) )
                         corr_req = mreq
                         break
         return corr_req
 
+    def clean_deduplist(self):
+        """
+        Removes expired messages from deduplication list.
+        :return: None
+        """
+        now = datetime.now()
+        self.deduplist = [m for m in self.deduplist if m.expire < now]
+
     def deduplicate(self, mess):
         """
         Check if a message is a duplicate and if so, returns the original message.
-        If a reply was already sent (marked with reqrep), send it again.
+        If a reply was already sent (marked with req_rep), send it again.
         :param mess: message to check
-        :return:
+        :return: original message if mess is a duplicate, None otherwise.
         """
         orig_msg = None
         mt = mess.msg_type
@@ -122,11 +141,11 @@ class Receiver(threads.ThreadBase):
                 if mess == d:
                     orig_msg = d
                     break
-        if orig_msg is not None:
-            if orig_msg.req_rep is not None:
-                print_debug(dbg_levels.MESSAGE, 'Duplicate message : id=' + orig_msg.id)
-                orig_msg.req_rep.send()
-            else:
-                # TODO : add to deduplist w/ timeout
-                pass
+            if orig_msg is not None:
+                if orig_msg.req_rep is not None:
+                    print_debug(dbg_levels.MESSAGE, 'Duplicate message : id=' + orig_msg.id)
+                    orig_msg.req_rep.send()
+                else:
+                    mess.expire = datetime.now() + timedelta(milliseconds=exchange_lifetime(self.l2net.max_latency))
+        self.deduplist.append(mess)
         return orig_msg
