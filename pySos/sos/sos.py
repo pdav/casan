@@ -31,23 +31,24 @@ class SOS:
         self.rlist, self.slist, self.mlist = [], [], []
 
     def init(self):
-        if self.tsender == None:
+        if self.tsender is None:
             self.tsender = Sender(self)
             self.tsender.start()
 
     def start_net(self, net):
-        r = Receiver(self, net, self.slist)
-        r.next_hello = datetime.now()
-        r.next_hello += timedelta(seconds=self.timer_first_hello)
-        r.hello_id = r.next_hello.microsecond % 1000
+        with self.sos_lock:
+            r = Receiver(self, net, self.slist)
+            r.next_hello = datetime.now()
+            r.next_hello += timedelta(seconds=self.timer_first_hello)
+            r.hello_id = r.next_hello.microsecond % 1000
 
-        r.hello_msg = Msg()
-        r.hello_msg.peer = r.broadcast
-        r.hello_msg.type = Msg.MsgTypes.MT_NON
-        r.hello_msg.code = Msg.MsgCodes.MC_POST
-        r.hello_msg.mk_ctrl_hello(r.hello_id)
+            r.hello_msg = Msg()
+            r.hello_msg.peer = r.broadcast
+            r.hello_msg.msg_type = Msg.MsgTypes.MT_NON
+            r.hello_msg.msg_code = Msg.MsgCodes.MC_POST
+            r.hello_msg.mk_ctrl_hello(r.hello_id)
 
-        self.rlist.append(r)
+            self.rlist.append(r)
 
     def stop(self):
         print_debug(dbg_levels.MESSAGE, 'Stopping SOS.')

@@ -1,8 +1,10 @@
+from datetime import datetime, timedelta
+
 from util import threads
 from util.debug import *
-from datetime import datetime
 from .msg import Msg
 from .slave import Slave
+
 
 class Receiver(threads.ThreadBase):
     def __init__(self, sos_instance, net, slavelist):
@@ -10,10 +12,10 @@ class Receiver(threads.ThreadBase):
         self.l2net = net
         self.sos_instance = sos_instance
         self.slavelist = slavelist
-        self.next_hello = datetime.now()
+        self.next_hello = datetime.now() + timedelta(seconds=1)  # TODO: figure out what's the point of randomness here
         self.deduplist = []
         self.broadcast = Slave()
-        self.broadcast.l2n = net
+        self.broadcast.l2_net = net
         self.broadcast.addr = net.broadcast
 
     def run(self):
@@ -25,7 +27,7 @@ class Receiver(threads.ThreadBase):
             print(m.msg)
             print_debug(dbg_levels.MESSAGE, 'Received something!')
 
-            # Clean deduplist
+            # TODO : implement and clean deduplist
 
             if not self.find_peer(m, saddr):
                 print_debug(dbg_levels.MESSAGE, 'Warning : sender not in authorized peers.')
@@ -44,7 +46,7 @@ class Receiver(threads.ThreadBase):
 
             # Process messages.
             # Process SOS control messages first.
-            if m.sos_type is not Msg.SosTypes.SOS_NONE:
+            if m.find_sos_type() is not Msg.SosTypes.SOS_NONE:
                 m.peer.process_sos(self.sos_instance, m)
 
             # Orphaned message
@@ -74,18 +76,19 @@ class Receiver(threads.ThreadBase):
             r = mess.is_sos_discover()
             # TODO : improve readability (works fine though)
             if r[0]:
-                sid, mtu = r[1], r[2]
-                for s in self.slavelist:
-                    if s.id == sid:
-                        s.l2net = self.l2net
-                        s.addr = addr
-                        mess.peer = s
+                with self.sos_instance.sos_lock:  # TODO : is this needed?
+                    sid, mtu = r[1], r[2]
+                    for s in self.slavelist:
+                        if s.id == sid:
+                            s.l2_net = self.l2net
+                            s.addr = addr
+                            mess.peer = s
 
-                        # MTU negociation
-                        l2mtu = self.l2net.mtu
-                        defmtu = s.defmtu if 0 <= s.defmtu <= l2mtu else l2mtu
-                        s.curmtu = mtu if 0 < mtu <= defmtu else defmtu
-                        found = True
+                            # MTU negociation
+                            l2mtu = self.l2net.mtu
+                            defmtu = s.defmtu if 0 < s.defmtu <= l2mtu else l2mtu
+                            s.curmtu = mtu if 0 < mtu <= defmtu else defmtu
+                            found = True
         return found
 
     def correlate(self, mess):
@@ -96,13 +99,13 @@ class Receiver(threads.ThreadBase):
         """
         corr_req = None
         if mess.msg_type in (Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST):
-            # TODO: lock
-            id_ = mess.id
-            for mreq in self.mlist:
-                if mreq.id == id_:
-                    print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + id_)
-                    corr_req = mreq
-                    break
+            with self.sos_instance.sos_lock:  # May need to be moved above the if
+                id_ = mess.id
+                for mreq in self.sos_instance.mlist:
+                    if mreq.id == id_:
+                        print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + id_)
+                        corr_req = mreq
+                        break
         return corr_req
 
     def deduplicate(self, mess):

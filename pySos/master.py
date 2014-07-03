@@ -3,8 +3,10 @@ from conf import Conf
 from sos.l2_154 import l2net_154
 from sos.slave import Slave
 
+
 class Master:
-    def start(self, cf):
+    @staticmethod
+    def start(cf):
         r = True
         sos.engine.timer_first_hello = cf.timers[cf.CfTimerIndex.I_FIRST_HELLO]
         sos.engine.timer_interval_hello = cf.timers[cf.CfTimerIndex.I_INTERVAL_HELLO]
@@ -18,8 +20,8 @@ class Master:
         for s in cf.slavelist:
             sl = Slave()
             sl.id = s.id
-            sl.defmtu = s.mtu
-            sl.ttl = s.ttl if s.ttl != 0 else sos.engine.timer_slave_ttl
+            sl.def_mtu = s.mtu
+            sl.init_ttl = s.ttl if s.ttl != 0 else sos.engine.timer_slave_ttl
             sos.engine.slist.append(sl)
         # TODO : start HTTP servers
 
@@ -28,7 +30,8 @@ class Master:
 
         return r
 
-    def stop(self):
+    @staticmethod
+    def stop():
         sos.engine.stop()
 
     def handle_http(self, request_path, req, rep):

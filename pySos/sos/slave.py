@@ -32,9 +32,9 @@ class Slave:
         Default constructor
         """
         self.id = 0
-        self.defmtu = 0
+        self.def_mtu = 0
         self.curmtu = 0
-        self.l2n = None
+        self.l2_net = None
         self.addr = None
         self.init_ttl = 0
         self.status = self.StatusCodes.SL_INACTIVE
@@ -48,8 +48,8 @@ class Slave:
         s1 = 'slave ' + str(self.id) + ' '
         s2 = ('INACTIVE' if self.status is self.StatusCodes.SL_INACTIVE else
               'RUNNING (curmtu=' + str(self.curmtu) + ', ttl= ' +
-                self.next_timeout.isoformat() + ')' 
-                if self.status is self.StatusCodes.SL_RUNNING else
+              self.next_timeout.isoformat() + ')'
+              if self.status is self.StatusCodes.SL_RUNNING else
               '(unknown state)')
         s3 = ' mac=' + str(self.addr) + '\n'
         return s1 + s2 + s3
@@ -59,7 +59,7 @@ class Slave:
         Resets the slave to it's default state
         """
         self.addr = None
-        self.l2n = None
+        self.l2_net = None
         self.reslist.clear()
         self.curmtu = 0
         self.status = self.StatusCodes.SL_INACTIVE
@@ -97,8 +97,8 @@ class Slave:
             print_debug(dbg_levels.STATE, 'Received DISCOVER, sending ASSOCIATE')
             answer = msg.Msg()
             answer.peer = mess.peer
-            answer.type_ = msg.Msg.MsgTypes.MT_CON
-            answer.code = msg.Msg.MsgCodes.MC_POST
+            answer.msg_type = msg.Msg.MsgTypes.MT_CON
+            answer.msg_code = msg.Msg.MsgCodes.MC_POST
             answer.mk_ctrl_assoc(self.init_ttl, self.curmtu)
 
             sos_instance.add_request(answer)
@@ -113,7 +113,7 @@ class Slave:
                     print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + ' status set to RUNNING')
                     self.status = self.StatusCodes.SL_RUNNING
                     self.reslist = reslist
-                    self.next_timeout = datetime.now() + timedelta(seconds = self.init_ttl)
+                    self.next_timeout = datetime.now() + timedelta(seconds=self.init_ttl)
                 else:
                     print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + 'cannot parse resource list.')
         elif tp is msg.Msg.SosTypes.SOS_HELLO:

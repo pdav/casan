@@ -11,6 +11,12 @@ from sys import stderr
 
 glob_msg_id = randrange(0xFFFF)
 
+# SOS related constants
+SOS_VERSION = 1
+SOS_NAMESPACE1 = '.well-known'
+SOS_NAMESPACE2 = 'sos'
+sos_namespace = (SOS_NAMESPACE1, SOS_NAMESPACE2)
+
 # CoAP Related constants
 # Note : all times are expressed in seconds unless explicitly specified.
 ACK_RANDOM_FACTOR = 1.5
@@ -20,24 +26,22 @@ MAX_RETRANSMIT = 4
 MAX_TRANSMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
 PROCESSING_DELAY = ACK_TIMEOUT
 
+
+# Some helper functions that don't really belong to the msg class
 def exchange_lifetime(max_lat):
     return MAX_TRANSMIT_SPAN + (2 * max_lat) + PROCESSING_DELAY
+
 
 def max_rtt(max_lat):
     return 2 * max_lat + PROCESSING_DELAY
 
-# SOS related constants
-SOS_VERSION = 1
-SOS_NAMESPACE1 = '.well-known'
-SOS_NAMESPACE2 = 'sos'
-sos_namespace = (SOS_NAMESPACE1, SOS_NAMESPACE2)
 
-# Some helper functions that don't really belong to the msg clas
 def coap_ver(mess):
     """
     Extract the CoAP protocol version from the frame header.
     """
     return (mess[0] >> 6) & 0x03
+
 
 def coap_type(mess):
     """
@@ -45,11 +49,13 @@ def coap_type(mess):
     """
     return Msg.MsgTypes((mess[0] >> 4) & 0x03)
 
+
 def coap_toklen(mess):
     """
     Extract the CoAP token length from the frame header.
     """
     return mess[0] & 0x0F
+
 
 def coap_id(mess):
     """
@@ -57,11 +63,13 @@ def coap_id(mess):
     """
     return (mess[2] << 8) | mess[3]
 
+
 def coap_code(mess):
     """
     Extract the CoAP method code from the frame header.
     """
     return Msg.MsgCodes(mess[1])
+
 
 class Msg:
     """
@@ -126,13 +134,32 @@ class Msg:
         return ('msg <id=' + str(self.id) + ', toklen=' + str(self.toklen) + ', paylen=' +
                 str(self.paylen) + ', ntrans=' + str(self.ntrans) + ', expire=' + expstr +
                 ', next_timeout=' + str(ntostr))
+
     def __init__(self):
         """
         Default constructor
         """
+        self.pk_t = l2.PkTypes.PK_NONE
+        self.msg_code = self.MsgCodes.MC_EMPTY
+        self.sos_type = self.SosTypes.SOS_UNKNOWN
         self.req_rep = None
-        self.code = self.MsgCodes.MC_EMPTY
-        self.reset_all()
+        self.peer = None
+        self.req_rep = None
+        self.msg, self.msg_len = None, 0
+        self.payload, self.paylen = None, 0
+        self.toklen = 0
+        self.ntrans = 0
+        self.timeout = timedelta()
+        self.next_timeout = datetime.max
+        self.expire = datetime.max
+        self.msg_type = None
+        self.id = 0
+        self.msg, self.msg_len = None, 0
+        self.payload, self.paylen = None, 0
+        if self.req_rep is not None:
+            self.req_rep.req_rep = None
+            self.req_rep = None
+        self.optlist = []
 
     def reset_all(self):
         """
@@ -148,46 +175,47 @@ class Msg:
         """
         self.peer = None
         self.req_rep = None
-        self.msg, self.msglen = None, 0
+        self.msg, self.msg_len = None, 0
         self.payload, self.paylen = None, 0
         self.toklen = 0
         self.ntrans = 0
         self.timeout = timedelta()
         self.next_timeout = datetime.max
         self.expire = datetime.max
-        self.pk_t = l2.pktype.PK_NONE
+        self.pk_t = l2.PkTypes.PK_NONE
         self.sos_type = self.SosTypes.SOS_UNKNOWN
+        self.msg_type = None
         self.id = 0
 
     def reset_data(self):
         """
         Erases the data stored in the object (mesage, payload...)
         """
-        self.msg, self.msglen = None, 0
+        self.msg, self.msg_len = None, 0
         self.payload, self.paylen = None, 0
-        if self.req_rep != None:
+        if self.req_rep is not None:
             self.req_rep.req_rep = None
             self.req_rep = None
         self.optlist = []
 
-    def recv(self, l2n):
+    def recv(self, l2_net):
         """
         Receives a message, store it and decode it according to CoAP spec.
         :return : source address
         """
         self.reset_values()
-        self.msg = bytearray(l2n.mtu)
-        self.pk_t, packet = l2n.recv()
-        self.msglen = packet[2]
+        self.msg = bytearray(l2_net.mtu)
+        self.pk_t, packet = l2_net.recv()
+        self.msg_len = packet[2]
         self.msg = packet[1]
-        if ((self.pk_t in [l2.pktype.PK_ME, l2.pktype.PK_BCAST])
+        if ((self.pk_t in [l2.PkTypes.PK_ME, l2.PkTypes.PK_BCAST])
             and self.coap_decode()):
             print_debug(dbg_levels.MESSAGE, 'Valid recv -> ' +
                         self.pk_t.name + ', id=' + str(self.id) +
-                        ', len=' + str(self.msglen))
+                        ', len=' + str(self.msg_len))
         else:
             print_debug(dbg_levels.MESSAGE, 'Invalid recv -> ' + self.pk_t.name +
-                        ', id=' + str(self.id) + ', len=' + str(self.msglen))
+                        ', id=' + str(self.id) + ', len=' + str(self.msg_len))
         return packet[0]
 
 
@@ -200,13 +228,13 @@ class Msg:
         self.msg_type = coap_type(self.msg)
         self.toklen = coap_toklen(self.msg)
         self.id = coap_id(self.msg)
-        self.code = coap_code(self.msg)
+        self.msg_code = coap_code(self.msg)
         i = 4 + self.toklen
         if self.toklen > 0:
             self.token = self.msg[4:i]
 
         success, opt_nb = True, 0
-        while i < self.msglen and success and self.msg[i] != 0xFF:
+        while i < self.msg_len and success and self.msg[i] != 0xFF:
             opt_delta = self.msg[i] >> 4
             opt_len = self.msg[i] & 0x0F
             i += 1
@@ -245,7 +273,7 @@ class Msg:
                 i += opt_len
             else: print_debug(dbg_levels.OPTION, 'Unknown option')
 
-        self.paylen = self.msglen - i - 1  # Mind the 0xFF marker
+        self.paylen = self.msg_len - i - 1  # Mind the 0xFF marker
         if success and self.paylen > 0:
             if self.msg[i] != 0xFF:  # Oops
                 success = False
@@ -259,30 +287,26 @@ class Msg:
         Sends a CoAP message on the network.
         """
         r = True
-        if self.msg == None:
-            self.coap_encode()
-        print_debug(dbg_levels.MESSAGE, 'TRANSMIT id=' + str(self.id) +
-                    ', ntrans=' + str(self.ntrans))
         if self.msg is None:
             self.coap_encode()
         print_debug(dbg_levels.MESSAGE, 'TRANSMIT id={}, ntrans={}'.format(self.id, self.ntrans))
-        if not self.peer.l2n.send(self.peer, self.msg):
+        if not self.peer.l2_net.send(self.peer, self.msg):
             stderr.write('Error during packet transmission.\n')
             r = False
         else:
-            if self.type is Msg.MsgTypes.MT_CON:
+            if self.msg_type is Msg.MsgTypes.MT_CON:
                 if self.ntrans == 0:
-                    rand_timeout = uniform(ACK_RANDOM_FACTOR - 1)
+                    rand_timeout = uniform(0, ACK_RANDOM_FACTOR - 1)
                     n_sec = ACK_TIMEOUT * (rand_timeout + 1)
                     self.timeout = timedelta(seconds = n_sec)
-                    self.expire = datetime.now() + timedelta(seconds = exchange_lifetime(self.peer.l2n.max_latency))
+                    self.expire = datetime.now() + timedelta(seconds=exchange_lifetime(self.peer.l2_net.max_latency))
                 else: self.timeout *= 2
                 self.next_timeout = datetime.now() + self.timeout
                 self.ntrans += 1
             elif self.msg_type is Msg.MsgTypes.MT_NON: self.ntrans = MAX_RETRANSMIT
             elif self.msg_type in [Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST]:
                 self.ntrans = MAX_RETRANSMIT
-                self.expire = datetime.now() + timedelta(seconds = max_rtt(self.peer.l2n.max_latency))
+                self.expire = datetime.now() + timedelta(seconds = max_rtt(self.peer.l2_net.max_latency))
             else:
                 print_debug(dbg_levels.MESSAGE, 'Error : unknown message type (this shouldn\'t happen, go and fix the code!')
                 r = False
@@ -293,26 +317,26 @@ class Msg:
         Encodes a message according to CoAP spec. Revision used at the time of this writing is number 18.
         """
         # Compute message size
-        self.msglen = 4 + self.toklen
+        self.msg_len = 4 + self.toklen
         self.optlist.sort()
         opt_code = 0
         for opt in self.optlist:
             opt_delta = opt.optcode - opt_code
-            self.msglen = opt.optlen + 1
+            self.msg_len = opt.optlen + 1
             if opt_delta > 12:
-                self.msglen = self.msglen + 1
+                self.msg_len += 1
             elif opt_delta > 268:
-                self.msglen = self.msglen + 2
+                self.msg_len += 2
             opt_code = opt.optcode
 
             opt_len = opt.optlen
             if opt_len > 12:
-                self.msglen = opt.optlen + 1
+                self.msg_len += 1
             elif opt_len > 268:
-                self.msglen = opt.optlen + 2
-            self.msglen = self.msglen + opt_len
-            if opt.paylen > 0: # TODO : what the fuck did I do here?
-                self.msglen = self.msglen + opt.paylen + 1
+                self.msg_len += 2
+            self.msg_len = self.msg_len + opt_len
+            if opt_len > 0:
+                self.msg_len = self.msg_len + opt_len + 1
 
         # Compute an ID
         global glob_msg_id
@@ -321,37 +345,38 @@ class Msg:
             glob_msg_id = glob_msg_id + 1 if glob_msg_id < 0xFFFF else 1
 
         # Build the message
-        self.msg = bytearray()
-        self.msg[0] = (SOS_VERSION << 6) | (self.msg_type << 4) | self.toklen
-        self.msg[1] = self.code
+        self.msg = bytearray(4)
+        self.msg[0] = (SOS_VERSION << 6) | (self.msg_type.value << 4) | self.toklen
+        self.msg[1] = self.msg_code.value
         self.msg[2] = (self.id & 0xFF00) >> 8
         self.msg[3] = self.id & 0xFF
         if self.toklen > 0:
             self.msg.append(self.token.to_bytes(self.toklen, 'big'))
         opt_nb = 0
         for opt in self.optlist:
-            optheader = 0
-            opt_delta = opt.optcode - opt_nb
+            opt_header = 0
+            opt_delta = opt.optcode.value - opt_nb
+            opt_nb = opt.optcode.value
             opt_len = opt.optlen
-            optheader = (optheader | (opt_delta << 8) if opt_delta < 13
-                         else optheader | (13 << 8) if opt_delta < 269
-            else optheader | (14 << 8))
-            optheader = (optheader | (opt_len << 8) if opt_len < 13
-                         else optheader | (13 << 8) if opt_len < 269
-            else optheader | (14 << 8))
-            self.msg.append(optheader)
+            opt_header = (opt_header | (opt_delta << 4) if opt_delta < 13
+                          else opt_header | (13 << 4) if opt_delta < 269
+                          else opt_header | (14 << 4))
+            opt_header = (opt_header | opt_len if opt_len < 13
+                          else opt_header | 13 if opt_len < 269
+                          else opt_header | 14)
+            self.msg.append(opt_header)
             if 13 <= opt_delta < 269:
-                self.msg.append((opt_delta - 13).to_bytes(1, 'big'))
+                self.msg += (opt_delta - 13).to_bytes(1, 'big')
             elif opt_delta >= 269:
-                self.msg.append((opt_delta - 269).to_bytes(2, 'big'))
+                self.msg += (opt_delta - 269).to_bytes(2, 'big')
             if 13 <= opt_len < 269:
-                self.msg.append((opt_len - 13).to_bytes(1, 'big'))
+                self.msg += (opt_len - 13).to_bytes(1, 'big')
             elif opt_len >= 269:
-                self.msg.append((opt_len - 269).to_bytes(2, 'big'))
-            self.msg.append(opt.optval)
+                self.msg += (opt_len - 269).to_bytes(2, 'big')
+            self.msg += opt.optval.encode()
         if self.paylen > 0:
             self.msg.append(b'\xFF')
-            self.msg.append(self.payload)
+            self.msg += self.payload
         self.ntrans = 0
 
     def stop_retransmit(self):
@@ -366,7 +391,7 @@ class Msg:
         if any, else, returns None.
         """
         for opt in self.optlist:
-            if opt.optcode is Option.optcodes.MO_MAX_AGE:
+            if opt.optcode is Option.OptCodes.MO_MAX_AGE:
                 return opt.optval
         return None
 
@@ -375,7 +400,7 @@ class Msg:
         Checks whether two messages match for caching.
         See CoAP spec (5.6)
         """
-        if self.msg_type != other.msg_type:
+        if self.msg_type is not other.msg_type:
             return False
         else:
             # Sort both option lists
@@ -383,17 +408,17 @@ class Msg:
             other.optlist.sort()
             i, j, imax, jmax = 0, 0, len(self.optlist)-1, len(other.optlist)-1
             while self.optlist[i].is_nocachekey() and i <= imax:
-                i = i + 1
+                i += 1
             while other.optlist[j].is_nocachekey() and j <= jmax:
-                j = j + 1
+                j += 1
             while True:
-                if j == jmax and i == imax: # Both at the end : success!
+                if j == jmax and i == imax:  # Both at the end : success!
                     return True
-                elif j == jmax or i == imax: # One at the end : failure
+                elif j == jmax or i == imax:  # One at the end : failure
                     return False
                 elif self.optlist[i] == other.optlist[j]:
                     i, j = i + 1, j + 1
-                else: # No match : failure
+                else:  # No match : failure
                     return False
 
     @staticmethod
@@ -414,7 +439,7 @@ class Msg:
         r = True
         count = 0
         for i, opt in enumerate(self.optlist):
-            if opt.optcode == Option.optcodes.MO_URI_PATH:
+            if opt.optcode == Option.OptCodes.MO_URI_PATH:
                 r = False
                 if i >= len(sos_namespace): break
                 if len(sos_namespace[i]) != opt.optlen: break
@@ -434,9 +459,9 @@ class Msg:
                  contains the mtu.
         """
         sid, mtu = (0, 0)
-        if self.code is Msg.MsgCodes.MC_POST and self.msg_type is Msg.MsgTypes.MT_NON and self.is_sos_ctrl_msg():
+        if self.msg_code is Msg.MsgCodes.MC_POST and self.msg_type is Msg.MsgTypes.MT_NON and self.is_sos_ctrl_msg():
             for opt in self.optlist:
-                if opt.optcode == Option.optcodes.MO_URI_QUERY:
+                if opt.optcode == Option.OptCodes.MO_URI_QUERY:
                     if opt.optval.startswith(b'slave='):
                         # Expected value : 'slave=<slave ID>'
                         sid = int(opt.optval.partition(b'=')[2])
@@ -459,16 +484,16 @@ class Msg:
         """
         found = False
         if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-            if (self.msg_type, self.code, self.is_sos_ctrl_msg()) == (self.MsgTypes.MT_NON, self.MsgCodes.MC_POST, True):
+            if (self.msg_type, self.msg_code, self.is_sos_ctrl_msg()) == (self.MsgTypes.MT_NON, self.MsgCodes.MC_POST, True):
                 for opt in self.optlist:
-                    if opt.optcode is Option.optcodes.MO_URI_QUERY:
+                    if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                         # TODO: maybe use regular expressions here
                         found = True in (opt.optval.startswith(pattern) for pattern in ['mtu=', 'ttl='])
                 if found:
                     self.sos_type = self.SosTypes.SOS_ASSOC_REQUEST
         return self.sos_type == self.SosTypes.SOS_ASSOC_REQUEST
 
-    def sos_type(self, check_req_rep = True):
+    def find_sos_type(self, check_req_rep = True):
         if self.sos_type is self.SosTypes.SOS_UNKNOWN:
             if not self.is_sos_associate() and not self.is_sos_discover():
                 if check_req_rep and self.req_rep is not None:
@@ -486,14 +511,14 @@ class Msg:
         Adds sos_namespace members to message as URI_PATH options.
         """
         for namespace in sos_namespace:
-            self.optlist.append(Option(Option.optcodes.MO_URI_PATH, namespace, len(namespace)))
+            self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, namespace, len(namespace)))
 
     def mk_ctrl_assoc(self, ttl, mtu):
         self.add_path_ctrl()
         s = 'ttl=' + str(ttl)
-        self.optlist.append(Option(Option.optcodes.MO_URI_PATH, s, len(s)))
+        self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, s, len(s)))
         s = 'mtu=' + str(mtu)
-        self.optlist.append(Option(Option.optcodes.MO_URI_PATH, s, len(s)))
+        self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, s, len(s)))
 
     def mk_ctrl_hello(self, hello_id):
         """
@@ -502,4 +527,4 @@ class Msg:
         """
         self.add_path_ctrl()
         s = 'hello={}'.format(hello_id)
-        self.optlist.append(Option(Option.optcodes.MO_URI_QUERY, s, len(s)))
+        self.optlist.append(Option(Option.OptCodes.MO_URI_QUERY, s, len(s)))

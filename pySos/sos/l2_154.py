@@ -38,7 +38,7 @@ class l2addr_154(l2.l2addr):
         """
         rep = ''
         for b in self.addr:
-            rep = rep + hex(b)[2:]
+            rep += hex(b)[2:]
         return rep
         
     def __str__(self):
@@ -188,16 +188,16 @@ class l2net_154(l2.l2net):
         fdlen = 5 + len(data)
         cmdlen = 4 + fdlen
         b = bytearray()
-        b[0] = self.XBEE_START
-        b[1] = (fdlen & 0xFF00) >> 8
-        b[2] = fdlen & 0x00FF
-        b[3] = self.XBEE_TX_SHORT
-        b[4] = 0x41
-        b[5] = destAddr.addr[1]
-        b[6] = destAddr.addr[0]
-        b[7] = 0
-        b = b + data
-        b = b + self.compute_checksum(b)
+        b.append(self.XBEE_START)
+        b.append((fdlen & 0xFF00) >> 8)
+        b.append(fdlen & 0x00FF)
+        b.append(self.XBEE_TX_SHORT)
+        b.append(0x41)
+        b.append(destAddr.addr[1])
+        b.append(destAddr.addr[0])
+        b.append(0)
+        b += data
+        b.append(self.compute_checksum(b))
 
         return b
 
@@ -217,13 +217,13 @@ class l2net_154(l2.l2net):
             c = (c + buf[i]) & 0xFF
         return 0xFF - c
 
-    def send(self, destAddr, data):
+    def send(self, dest_slave, data):
         """
         Sends a frame over the network.
         :return: True if success, False either.
         """
         if len(data) <= self.L2_154_MTU:
-            cmd = self.encode_transmit(destAddr, data)
+            cmd = self.encode_transmit(dest_slave.addr, data)
             cmdLen = len(cmd)
             try:
                 while cmdLen > 0:
@@ -250,10 +250,10 @@ class l2net_154(l2.l2net):
         Returns a tuple such as :
         (PACKET TYPE, (SOURCE ADDRESS, DATA, LENGTH))
         """
-        r = (l2.pktype.PK_NONE,)
-        while r[0] is l2.pktype.PK_NONE:
+        r = (l2.PkTypes.PK_NONE,)
+        while r[0] is l2.PkTypes.PK_NONE:
             r = self.extract_received_packet()
-            if r[0] is l2.pktype.PK_NONE:
+            if r[0] is l2.PkTypes.PK_NONE:
                 if self.read_complete_frame() == -1:
                     continue
         print_debug(dbg_levels.STATE, 'Received packet (' + str(r[1][2]) + ' bytes)')
@@ -269,7 +269,7 @@ class l2net_154(l2.l2net):
                 - The received data
                 - The length of the data
         """
-        r = l2.pktype.PK_NONE
+        r = l2.PkTypes.PK_NONE
         a, data, = None, None
         for frame in self.framelist:
             if frame.type == self.frame_type.RX_SHORT:
@@ -277,12 +277,12 @@ class l2net_154(l2.l2net):
                                hex((frame.rx_short.saddr & 0xFF00) >> 8)[2:])
                 data = frame.rx_short.data
                 if frame.rx_short.options & self.RX_SHORT_OPT_BROADCAST:
-                    r = l2.pktype.PK_BCAST
+                    r = l2.PkTypes.PK_BCAST
                 else:
-                    r = l2.pktype.PK_ME
+                    r = l2.PkTypes.PK_ME
             self.framelist.remove(frame)
             break
-        return (r, (a, data, len(data) if data is not None else 0))
+        return r, (a, data, len(data) if data is not None else 0)
 
     def read_complete_frame(self):
         """

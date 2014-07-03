@@ -1,9 +1,10 @@
-'''
+"""
 This module provides debugging facilities.
 To avoid long unnecessary typing, it is advised to import the module this way :
     from debug import *
-'''
+"""
 from enum import IntEnum
+
 
 class dbg_levels(IntEnum):
     MESSAGE = 0x1
@@ -16,6 +17,7 @@ class dbg_levels(IntEnum):
 
 debugLevel = dbg_levels.ALL
 
+
 def debug_title():
     global debugLevel
     for name in dbg_levels.__members__.keys():
@@ -23,12 +25,14 @@ def debug_title():
             return name
     return '(unknown level)'
 
+
 def set_debug_level(sign, name):
     global debugLevel
     try:
         debugLevel = debugLevel | dbg_levels.__dict__[name]
     except KeyError:
         return False
+
 
 def update_debug_level(levelStr):
     start, i, sign = 0, 0, 1
@@ -48,6 +52,7 @@ def update_debug_level(levelStr):
             return False
         i += 1
     return set_debug_level(sign, levelStr[start:])
+
 
 def print_debug(level, msg):
     global dbg_levels

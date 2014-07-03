@@ -2,13 +2,13 @@ from enum import Enum, IntEnum
 from io import StringIO
 
 class Conf:
-    '''
+    """
     Configuration file handling
     The conf class is used to read the configuration file and
     represent the configuration through an intermediate form,
      which is composed of instance variables that the master
      class can use.
-    '''
+    """
     # Define the constants defined in conf.h and help strings
     DEFAULT_FIRST_HELLO = 3
     DEFAULT_INTERVAL_HELLO = 10
@@ -84,8 +84,9 @@ class Conf:
         self.httplist, self.nslist, self.netlist, self.slavelist = [], [], [], []
         self.timers = [0] * 3
         self.lineno = 0
+        self.file = None
 
-    def parse(self, file_ = "./sosd.conf"):
+    def parse(self, file_="./sosd.conf"):
         return self.parse_file(file_)
 
     def parse_file(self, file_):
@@ -144,7 +145,7 @@ class Conf:
                         self.parse_error_unk_token(tokens[i], 'HTTP')
                         r = False
                 if r:
-                    if a % 2 != 1: # Odd number of parameters
+                    if a % 2 != 1:  # Odd number of parameters
                         self.parse_error_num_token(a, 'HTTP')
                         r = False
                     else:
@@ -155,11 +156,11 @@ class Conf:
                     self.parse_error_num_token(a, 'NAMESPACE')
                     r = False
                 else:
-                    c.prefix = tokens[2].split('/')[1:] # Remove leading empty string
+                    c.prefix = tokens[2].split('/')[1:]  # Remove leading empty string
                     try:
-                        c.type = {'admin' : self.CfNsType.NS_ADMIN,
-                                   'sos' : self.CfNsType.NS_SOS,
-                                   'well-known' : self.CfNsType.NS_WELL_KNOWN}[tokens[1]]
+                        c.type = {'admin': self.CfNsType.NS_ADMIN,
+                                  'sos': self.CfNsType.NS_SOS,
+                                  'well-known': self.CfNsType.NS_WELL_KNOWN}[tokens[1]]
                     except KeyError:
                         self.parse_error_unk_token(tokens[1], 'NAMESPACE')
                         r = False
@@ -171,15 +172,15 @@ class Conf:
                     r = False
                 else:
                     try:
-                        idx = self.CfTimerIndex[{'firsthello':'I_FIRST_HELLO',
-                                                   'hello':'I_INTERVAL_HELLO',
-                                                   'slavettl':'I_SLAVE_TTL'}[tokens[1]]]
+                        idx = self.CfTimerIndex[{'firsthello': 'I_FIRST_HELLO',
+                                                 'hello': 'I_INTERVAL_HELLO',
+                                                 'slavettl': 'I_SLAVE_TTL'}[tokens[1]]]
                         self.timers[idx] = int(tokens[2])
                     except KeyError:
                         self.parse_error_unk_token(tokens[1], 'TIMER')
                         r = False
             elif tokens[0] == 'network':
-                if(a < 3): # 3 Mandatory arguments according to sample sosd.conf
+                if a < 3:  # 3 Mandatory arguments according to sample sosd.conf
                     self.parse_error_mis_token('NETWORK')
                 else:
                     c = self.CfNetwork()
@@ -210,10 +211,10 @@ class Conf:
                                     else:
                                         c.net_eth.ethertype = tokens[i+1]
                                 else:
-                                    self.parse_error_unk_token(tokens[i])
+                                    self.parse_error_unk_token(tokens[i], 'NETETH')
                                     r = False
                                     break
-                            if r and i+2 != a: # Odd number of parameters
+                            if r and i+2 != a:  # Odd number of parameters
                                 self.parse_error_num_token(a, 'NETETH')
                                 # self.parse_error('No ethernet support')
                     elif tokens[1] == '802.15.4':
@@ -353,9 +354,9 @@ class Conf:
             for n in self.nslist:
                 s = ''
                 try:
-                    s = { self.CfNsType.NS_ADMIN : 'admin',
-                          self.CfNsType.NS_SOS : 'sos',
-                          self.CfNsType.NS_WELL_KNOWN : 'well-known' }[n.type]
+                    s = {self.CfNsType.NS_ADMIN: 'admin',
+                         self.CfNsType.NS_SOS: 'sos',
+                         self.CfNsType.NS_WELL_KNOWN: 'well-known'}[n.type]
                 except KeyError:
                     s = '(unknown)'
                 stream.write('namespace ' + s + ' ')
@@ -366,9 +367,9 @@ class Conf:
                         stream.write('/' + p)
                     stream.write('\n')
             for i in range(0, len(self.timers)):
-                p = { self.CfTimerIndex.I_FIRST_HELLO : 'firsthello',
-                      self.CfTimerIndex.I_INTERVAL_HELLO : 'hello',
-                      self.CfTimerIndex.I_SLAVE_TTL : 'slavettl' }[i]
+                p = {self.CfTimerIndex.I_FIRST_HELLO: 'firsthello',
+                     self.CfTimerIndex.I_INTERVAL_HELLO: 'hello',
+                     self.CfTimerIndex.I_SLAVE_TTL: 'slavettl' }[i]
                 stream.write(p + ' ' + str(self.timers[i]) + '\n')
             for n in self.netlist:
                 if n.type is self.NetType.NET_ETH:
@@ -394,7 +395,7 @@ class Conf:
         return ss.getvalue()
 
     # Error handlers
-    def parse_error(self, msg, help_ = None):
+    def parse_error(self, msg, help_=None):
         import sys
         sys.stderr.write(self.file + '(' + str(self.lineno) + '):' + msg + '\n')
         if help_ is not None:
@@ -407,7 +408,7 @@ class Conf:
         self.parse_error('unrecognised token \'' + tok + '\'', help_)
 
     def parse_error_dup_token(self, tok, help_):
-        self.parse_error('duplicate token \''+ tok + '\'', help_)
+        self.parse_error('duplicate token \'' + tok + '\'', help_)
 
     def parse_error_mis_token(self, help_):
         self.parse_error('missing token/value', help_)
