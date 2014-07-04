@@ -38,7 +38,7 @@ class Slave:
         self.addr = None
         self.init_ttl = 0
         self.status = self.StatusCodes.SL_INACTIVE
-        self.reslist = []
+        self.res_list = []
         self.next_timeout = datetime.now()
 
     def __str__(self):
@@ -60,7 +60,7 @@ class Slave:
         """
         self.addr = None
         self.l2_net = None
-        self.reslist.clear()
+        self.res_list.clear()
         self.curmtu = 0
         self.status = self.StatusCodes.SL_INACTIVE
         self.next_timeout = datetime.now()
@@ -74,7 +74,7 @@ class Slave:
         containing the resource path, e.g for resource '/a/b/c' : ['a','b','c']
         If the resource is not found, returns None
         """
-        for r in self.reslist:
+        for r in self.res_list:
             if r == res:
                 return r
         return None
@@ -83,7 +83,7 @@ class Slave:
         """
         Returns the list of all the resources managed by the slave
         """
-        return self.reslist
+        return self.res_list
 
     def process_sos(self, sos_instance, mess):
         """
@@ -113,7 +113,7 @@ class Slave:
                 if self.parse_resource_list(reslist, mess.payload):
                     print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + ' status set to RUNNING')
                     self.status = self.StatusCodes.SL_RUNNING
-                    self.reslist = reslist
+                    self.res_list = reslist
                     self.next_timeout = datetime.now() + timedelta(seconds=self.init_ttl)
                 else:
                     print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + ' cannot parse resource list.')
@@ -139,7 +139,7 @@ class Slave:
                     rlist.append(Resource(cur_res.decode()))
                     return self.ResStatus.S_ENDRES
                 else:
-                    cur_res.append(b)
+                    cur_res += b
                     return state
             elif state is self.ResStatus.S_ENDRES:
                 attrname = ''
@@ -177,14 +177,14 @@ class Slave:
                     attrname = ''
                     return self.ResStatus.S_ATTRNAME
                 else:
-                    cur_res.append(b)
+                    cur_res += b
                     return self.ResStatus.S_ATTRVAL_NQUOTED
             elif state is self.ResStatus.S_ATTRVAL_QUOTED:
                 if b == b'"':
                     rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
                     return self.ResStatus.S_ENDRES
                 else:
-                    cur_res.append(b)
+                    cur_res += b
                     return state
             elif state is self.ResStatus.S_ATTRVAL_NQUOTED:
                 if b == b',':
@@ -195,15 +195,18 @@ class Slave:
                     attrname = ''
                     return self.ResStatus.S_ATTRNAME
                 else:
-                    cur_res.append(b)
+                    cur_res += b
             else:
                 return self.ResStatus.S_ERROR
 
-            state = self.ResStatus.S_START
-            for b in payload:
-                state = parse_single_byte(state, b)
-                if state is self.ResStatus.S_ERROR:
-                    break
+        state = self.ResStatus.S_START
+        # Iterating on a bytes object yields integers but parse_single_byte takes bytes.
+        # So, iterate on indices and give it slices of length 1.
+        for i in range(len(payload)):
+            state = parse_single_byte(state, payload[i:i+1])
+            if state is self.ResStatus.S_ERROR:
+                break
+
         # Handle terminal states
         if state is self.ResStatus.S_ATTRNAME:
             if attrname == '':
@@ -212,6 +215,8 @@ class Slave:
             rlist[len(rlist)-1].add_attribute(attrname, '')
         elif state is self.ResStatus.S_ATTRVAL_NQUOTED:
             rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
+        elif state is self.ResStatus.S_ENDRES:
+            pass
         else:
             state = self.ResStatus.S_ERROR
         return state is not self.ResStatus.S_ERROR

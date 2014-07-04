@@ -55,7 +55,7 @@ class SOS:
         print_debug(dbg_levels.MESSAGE, 'Stopping SOS.')
         for i in range(len(self.rlist)):
             r = self.rlist[0]
-            del self.rlist[0] # Ensures the sender won't restart the thread
+            del self.rlist[0]  # Ensures the sender won't restart the thread
             r.stop()
         self.tsender.stop()
 

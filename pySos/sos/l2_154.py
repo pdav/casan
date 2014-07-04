@@ -142,13 +142,13 @@ class l2net_154(l2.l2net):
                 self.port.write(b'ATRE\r')
 
                 # Short address
-                sa = ( b'ATMY' + bytes(hex(self.a.addr[1])[2:], 'utf-8') + 
-                       bytes(hex(self.a.addr[0])[2:], 'utf-8') + b'\r' )
+                sa = ( b'ATMY' + bytes(hex(self.a.addr[0])[2:], 'utf-8') +
+                       bytes(hex(self.a.addr[1])[2:], 'utf-8') + b'\r' )
                 self.port.write(sa)
                 
                 # PANID
-                panid = (b'ATID' + bytes(hex(self.pan.addr[1])[2:], 'utf-8') +
-                        bytes(hex(self.pan.addr[0])[2:], 'utf-8') + b'\r')
+                panid = (b'ATID' + bytes(hex(self.pan.addr[0])[2:], 'utf-8') +
+                        bytes(hex(self.pan.addr[1])[2:], 'utf-8') + b'\r')
                 self.port.write(panid)
 
                 # Channel

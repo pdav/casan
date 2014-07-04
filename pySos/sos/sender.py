@@ -78,8 +78,8 @@ class Sender(threads.ThreadBase):
                             self.next_timeout = r.next_hello
                     for s in self.sos_instance.slist:
                         # Same here
-                        if s.status is s.StatusCodes.SL_RUNNING and self.next_timeout > s.next_hello:
-                            self.next_timeout = s.next_hello
+                        if s.status is s.StatusCodes.SL_RUNNING and self.next_timeout > s.next_timeout:
+                            self.next_timeout = s.next_timeout
                     for m in self.sos_instance.mlist:
                         # Is current timeout the time of this message's next retransmission
                         if m.ntrans < MAX_RETRANSMIT and self.next_timeout > m.next_timeout:
