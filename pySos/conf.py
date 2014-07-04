@@ -58,6 +58,7 @@ class Conf:
     class CfNamespace:
         def __init__(self):
             self.type = Conf.CfNsType.NS_NONE
+            self.prefix = ''
 
     class CfNetEth:
         def __init__(self):

@@ -59,10 +59,16 @@ class SOS:
             r.stop()
         self.tsender.stop()
 
+    def find_slave(self, sid):
+        r = None
+        for s in self.slist:
+            if s.id == sid:
+                r = sid
+                break
+        return r
+
     def add_request(self, req):
         with self.condition_var:
             with self.sos_lock:
                 self.mlist.append(req)
                 self.condition_var.notify()
-
-engine = SOS()

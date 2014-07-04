@@ -32,13 +32,10 @@ def run():
     print_debug(dbg_levels.CONF, 'Read configuration :\n' + cf.to_string())
 
     block_all_signals()
-    # Start the master
-    master = Master()
-    master.start(cf)
 
-    #print('Waiting 3 seconds')
-    #time.sleep(3)
-    #print('Done waiting! Killing all.')
+    # Start the master
+    master = Master(cf)
+    master.start()
 
     undo_block_all_signals()
     wait_for_signal()
@@ -54,12 +51,14 @@ def block_all_signals():
     global sigmask
     sigmask = signal.pthread_sigmask(signal.SIG_SETMASK, {sig for sig in range(1, signal.NSIG)})
 
+
 def undo_block_all_signals():
     """
     Restore the signal mask from before the call to block_all_signals
     """
     global sigmask
     signal.pthread_sigmask(signal.SIG_UNBLOCK, sigmask)
+
 
 def wait_for_signal():
     """

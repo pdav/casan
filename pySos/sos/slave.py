@@ -70,7 +70,7 @@ class Slave:
     def find_resource(self, res):
         """
         Looks for a given resource on the slave.
-        This functions expects the resource to be an iterable object
+        This function expects the resource to be an iterable object
         containing the resource path, e.g for resource '/a/b/c' : ['a','b','c']
         If the resource is not found, returns None
         """
