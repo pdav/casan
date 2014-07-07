@@ -95,6 +95,7 @@ class l2net_154(l2.l2net):
         self.fd = -1
         self.framelist = []
         self.buffer = bytearray()
+        self.iface = None
 
     def init(self, iface, type_, mtu, addr, panid, channel):
         """
@@ -135,43 +136,66 @@ class l2net_154(l2.l2net):
                     #attr = termios.POSIX_VDISABLE
                     pass
                 termios.tcsetattr(self.fd, termios.TCSANOW, attrs)
+
+                def send_AT_command(s):
+                    """
+                    This function sends an AT command over the serial port and checks for the returned value.
+                    It may seem a bit 'too much', but it is the best solution I could come up with.
+                    """
+                    self.port.write(s)
+                    sleep(0.1)
+                    r = bytearray()
+                    while True:
+                        c = self.port.read()
+                        r += c
+                        if c == b'\r':
+                            if r == b'OK\r':
+                                return
+                            elif r == b'ERROR\r':
+                                raise RuntimeError('Error sending AT command to XBEE.\nCommand : ' + s.decode())
+                            else:
+                                raise RuntimeError('Unknown error sending AT command to XBEE.\nCommand : ' + s.decode())
                 # Initialize API mode
-                sleep(1)
-                self.port.write(b'+++')
-                sleep(1)
-                self.port.write(b'ATRE\r')
+                try:
+                    sleep(1)
+                    send_AT_command(b'+++')
+                    sleep(1)
+                    send_AT_command(b'ATRE\r')
 
-                # Short address
-                sa = ( b'ATMY' + bytes(hex(self.a.addr[0])[2:], 'utf-8') +
-                       bytes(hex(self.a.addr[1])[2:], 'utf-8') + b'\r' )
-                self.port.write(sa)
-                
-                # PANID
-                panid = (b'ATID' + bytes(hex(self.pan.addr[0])[2:], 'utf-8') +
-                        bytes(hex(self.pan.addr[1])[2:], 'utf-8') + b'\r')
-                self.port.write(panid)
+                    # Short address
+                    sa = (b'ATMY' + bytes(hex(self.a.addr[1])[2:], 'utf-8') +
+                          bytes(hex(self.a.addr[0])[2:], 'utf-8') + b'\r')
+                    send_AT_command(sa)
 
-                # Channel
-                chan = b'ATCH' + bytes(hex(channel)[2:], 'utf-8') + b'\r'
-                self.port.write(chan)
+                    # PANID
+                    panid = (b'ATID' + bytes(hex(self.pan.addr[1])[2:], 'utf-8') +
+                            bytes(hex(self.pan.addr[0])[2:], 'utf-8') + b'\r')
+                    send_AT_command(panid)
 
-                # 802.15.4 w/ ACKs
-                self.port.write(b'ATMM2\r')
+                    # Channel
+                    chan = b'ATCH' + bytes(hex(channel)[2:], 'utf-8') + b'\r'
+                    send_AT_command(chan)
 
-                # Enter API mode
-                self.port.write(b'ATAP1\r')
+                    # 802.15.4 w/ ACKs
+                    send_AT_command(b'ATMM2\r')
 
-                # Quit AT command mode
-                self.port.write(b'ATCN\r')
+                    # Enter API mode
+                    send_AT_command(b'ATAP1\r')
 
-                self.port.flushInput()
-            except RuntimeError as e: # AT command error
-                sys.stderr.write(str(e))
-                return False 
+                    # Apply changes (maybe not needed)
+                    send_AT_command(b'ATAC\r')
+
+                    # Quit AT command mode
+                    send_AT_command(b'ATCN\r')
+
+                    self.port.flushInput()
+                except RuntimeError as e: # AT command error
+                    print(e)
+                    return False
             except Exception as e:
                 sys.stderr.write(str(e) + '\n')
                 sys.stderr.write('Error : cannot open interface ' + iface)
-                return False 
+                return False
         else:
             self.mtu = mtu if (self.mtu > 0) and (self.mtu <= self.L2_154_MTU) else self.L2_154_MTU
         return True
