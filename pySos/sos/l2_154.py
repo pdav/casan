@@ -143,18 +143,17 @@ class l2net_154(l2.l2net):
                     It may seem a bit 'too much', but it is the best solution I could come up with.
                     """
                     self.port.write(s)
-                    sleep(0.1)
                     r = bytearray()
                     while True:
                         c = self.port.read()
                         r += c
                         if c == b'\r':
-                            if r == b'OK\r':
+                            if r[-3:] == b'OK\r':
                                 return
-                            elif r == b'ERROR\r':
+                            elif r[-6:] == b'ERROR\r':
                                 raise RuntimeError('Error sending AT command to XBEE.\nCommand : ' + s.decode())
                             else:
-                                raise RuntimeError('Unknown error sending AT command to XBEE.\nCommand : ' + s.decode())
+                                r = bytearray()
                 # Initialize API mode
                 try:
                     sleep(1)

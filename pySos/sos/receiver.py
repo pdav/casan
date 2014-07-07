@@ -23,7 +23,6 @@ class Receiver(threads.ThreadBase):
         while self.keepRunning:
             m = Msg()
             saddr = m.recv(self.l2net)
-            print(m.msg)
             print_debug(dbg_levels.MESSAGE, 'Received something from {}!'.format(saddr))
 
             m.expire = datetime.now() + timedelta(milliseconds=exchange_lifetime(self.l2net.max_latency))
