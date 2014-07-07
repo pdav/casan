@@ -3,9 +3,9 @@ This module contains the subclasses of l2 and l2net for 802.15.4 networking.
 """
 from sos import l2
 import sys
-import os
 import termios
 from time import sleep
+from datetime import timedelta, datetime
 from util.debug import *
 import serial
 
@@ -97,19 +97,22 @@ class l2net_154(l2.l2net):
         self.buffer = bytearray()
         self.iface = None
 
-    def init(self, iface, type_, mtu, addr, panid, channel):
+    def init(self, iface, type_, mtu, addr, panid, channel, timeout=None):
         """
-        Initializes a l2net_154 object, opens and sets up the network 
-        interface.
-        iface : interface to start. You can spedify the full path to the
-                interface (eg : '/dev/ttyUSB0') ot just it's name (eg : 'ttyUSB0')
-        type_ : type of the interface. Use 'xbee' here.
-        mtu : MTU to use for interface iface. If not valid, will be set to a 
-              default value. If you're not sure, set this to 0.
-        addr : physical address to use for interface iface
-        panid : string representing the PANID for the interface iface.
-        channel : channel to use for the communications in the PAN
-        Returns True if the operation succeeds, False otherwise.
+        Initializes a l2net_154 object, opens and sets up the network interface.
+        :param iface: interface to start. You can specify the full path to the
+                      interface (eg : '/dev/ttyUSB0') ot just it's name (eg : 'ttyUSB0')
+        :param type_: type of the interface. Use 'xbee' here.
+        :param mtu: MTU to use for interface iface. If not valid, will be set to a
+                    default value. If you're not sure, set this to 0.
+        :param addr: physical address to use for interface iface
+        :param panid: string representing the PANID for the interface iface.
+        :param channel: channel to use for the communications in the PAN
+        :param timeout: timeout value in seconds for read operations in seconds.
+                        If None, then there is no timeout.
+                        Note that the timeout value is not very accurate, but in the worst case scenario it should not
+                        exceed twice the timeout value.
+        :return: True if the operation succeeds, False otherwise.
         """
         self.a = l2addr_154(addr)
         self.pan = l2addr_154(panid)
@@ -122,7 +125,8 @@ class l2net_154(l2.l2net):
             try:
                 # Open and initialize device
                 self.port = serial.Serial(iface if iface.startswith('/dev')
-                                          else '/dev/' + iface)
+                                          else '/dev/' + iface,
+                                          timeout=timeout)
                 self.fd = self.port.fileno()
                 attrs = termios.tcgetattr(self.fd)
                 attrs[:4] = [termios.IGNBRK | termios.IGNPAR,
@@ -180,9 +184,6 @@ class l2net_154(l2.l2net):
 
                     # Enter API mode
                     send_AT_command(b'ATAP1\r')
-
-                    # Apply changes (maybe not needed)
-                    send_AT_command(b'ATAC\r')
 
                     # Quit AT command mode
                     send_AT_command(b'ATCN\r')
@@ -272,27 +273,31 @@ class l2net_154(l2.l2net):
     def recv(self):
         """
         Receive a frame.
-        Returns a tuple such as :
-        (PACKET TYPE, (SOURCE ADDRESS, DATA, LENGTH))
+        :return: tuple such as:
+                 (PACKET_TYPE, (SOURCE_ADDRESS, DATA, LENGTH))
+                 Where PACKET_TYPE is an enumerated type from the l2.PkTypes enumeration.
+                 In case of timeout during the read operation on the network interface, returns the
+                 singleton (None,)
         """
         r = (l2.PkTypes.PK_NONE,)
         while r[0] is l2.PkTypes.PK_NONE:
             r = self.extract_received_packet()
             if r[0] is l2.PkTypes.PK_NONE:
-                if self.read_complete_frame() == -1:
-                    continue
+                t_start = datetime.now()
+                if not self.read_complete_frame():
+                    if (self.port.timeout is not None and
+                        t_start + timedelta(seconds=self.port.timeout) < datetime.now()):
+                        return (None,)
+                    else:
+                        continue
         print_debug(dbg_levels.STATE, 'Received packet (' + str(r[1][2]) + ' bytes)')
         return r
 
     def extract_received_packet(self):
         """
         Extracts a packet from the frame list.
-        Returns a tuple containing :
-            - The packet type
-            - A tuple containing:
-                - The source address
-                - The received data
-                - The length of the data
+        :return: tuple such as:
+                 (PACKET TYPE, (SOURCE ADDRESS, DATA, LENGTH))
         """
         r = l2.PkTypes.PK_NONE
         a, data, = None, None
@@ -312,17 +317,24 @@ class l2net_154(l2.l2net):
     def read_complete_frame(self):
         """
         Reads a full frame from the input buffer and adds it to the frame list.
+        This function blocks until a complete frame is received or the timeout is reached, if timeout was set
+        when init was called.
         """
         found = False
+        t_start = datetime.now()
         try:
             while not found:
                 buf = self.port.read(1 if self.port.inWaiting() == 0
                                        else self.port.inWaiting())
+                # Do not check right away for the timeout, just in case we actually have a complete frame.
                 self.buffer = self.buffer + buf
                 while self.is_frame_complete():
                     found = True
                     self.extract_frame_to_list()
-            return 0 if found else -1
+                if (self.port.timeout is not None and
+                        t_start + timedelta(seconds=self.port.timeout) < datetime.now()):
+                        return False
+            return found
         except Exception as e:
             # TODO
             sys.stderr.write('Exception caught in read_complete_frame, go fix your code!\n')

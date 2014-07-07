@@ -52,12 +52,17 @@ class SOS:
             self.rlist.append(r)
 
     def stop(self):
-        print_debug(dbg_levels.MESSAGE, 'Stopping SOS.')
+        print_debug(dbg_levels.MESSAGE, 'Stopping SOS. Shutting down receivers first...')
         for i in range(len(self.rlist)):
             r = self.rlist[0]
             del self.rlist[0]  # Ensures the sender won't restart the thread
             r.stop()
-        self.tsender.stop()
+            r.join()  # Wait until the thread stops
+        print_debug(dbg_levels.MESSAGE, 'Shutting down sender.')
+        with self.condition_var:
+            self.tsender.stop()
+            self.condition_var.notify()
+        self.tsender.join()
 
     def find_slave(self, sid):
         r = None

@@ -16,8 +16,7 @@ class ThreadBase(Thread, metaclass=abc.ABCMeta):
 
     def stop(self):
         """
-        Requests the sender thread to stop. This doesn't return until the 
-        thread has actually been stopped, which can take a while.
+        Requests the thread to stop, but doesn't wait until it stops to return. If you need to wait
+        until the thread stopped, use the join method.
         """
         self.keepRunning = False
-        self.join()

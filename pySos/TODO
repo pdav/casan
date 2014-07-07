@@ -1,3 +1,2 @@
 Rewrite conf.py and design new configuration file format.
-Fix sender thread shutdown.
 Implement HTTP server.

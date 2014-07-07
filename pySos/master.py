@@ -19,7 +19,7 @@ class Master:
             if net.type is Conf.NetType.NET_154:
                 l2n = l2net_154()
                 l2n.init(net.net_154.iface, 'xbee' if net.net_154.type is Conf.Net154Type.NET_154_XBEE else None,
-                         net.mtu, net.net_154.addr, net.net_154.panid, net.net_154.channel)
+                         net.mtu, net.net_154.addr, net.net_154.panid, net.net_154.channel, 2)
                 self.engine.start_net(l2n)
         for s in self.cf.slavelist:
             sl = Slave()

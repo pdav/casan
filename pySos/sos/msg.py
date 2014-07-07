@@ -209,11 +209,17 @@ class Msg:
     def recv(self, l2_net):
         """
         Receives a message, store it and decode it according to CoAP spec.
-        :return : source address
+        :param l2_net: a subclass of l2_net representing the network to listen to.
+        :return : source address if the reception was successful. None otherwise.
+                  For now, None is only returned in case of timeout.
         """
         self.reset_values()
         self.msg = bytearray(l2_net.mtu)
-        self.pk_t, packet = l2_net.recv()
+        r = l2_net.recv()
+        if r[0] is None:
+            return None
+        else:
+            self.pk_t, packet = r
         self.msg_len = packet[2]
         self.msg = packet[1]
         if ((self.pk_t in [l2.PkTypes.PK_ME, l2.PkTypes.PK_BCAST])
