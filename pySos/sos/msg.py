@@ -321,9 +321,9 @@ class Msg:
             elif self.msg_type is Msg.MsgTypes.MT_NON: self.ntrans = MAX_RETRANSMIT
             elif self.msg_type in [Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST]:
                 self.ntrans = MAX_RETRANSMIT
-                self.expire = datetime.now() + timedelta(seconds = max_rtt(self.peer.l2_net.max_latency))
+                self.expire = datetime.now() + timedelta(seconds=max_rtt(self.peer.l2_net.max_latency))
             else:
-                print_debug(dbg_levels.MESSAGE, 'Error : unknown message type (this shouldn\'t happen, go and fix the code!')
+                print_debug(dbg_levels.MESSAGE, 'Error : unknown message type (this shouldn\'t happen, go and fix the code!)')
                 r = False
         return r
 

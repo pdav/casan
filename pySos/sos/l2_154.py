@@ -101,17 +101,19 @@ class l2net_154(l2.l2net):
         """
         Initializes a l2net_154 object, opens and sets up the network interface.
         :param iface: interface to start. You can specify the full path to the
-                      interface (eg : '/dev/ttyUSB0') ot just it's name (eg : 'ttyUSB0')
+                      interface (eg : '/dev/ttyUSB0') ot just it's name (eg : 'ttyUSB0').
         :param type_: type of the interface. Use 'xbee' here.
         :param mtu: MTU to use for interface iface. If not valid, will be set to a
                     default value. If you're not sure, set this to 0.
-        :param addr: physical address to use for interface iface
+        :param addr: physical address to use for interface iface.
         :param panid: string representing the PANID for the interface iface.
-        :param channel: channel to use for the communications in the PAN
+        :param channel: channel used to communicate within the PAN.
         :param timeout: timeout value in seconds for read operations in seconds.
                         If None, then there is no timeout.
                         Note that the timeout value is not very accurate, but in the worst case scenario it should not
                         exceed twice the timeout value.
+                        If you do net set a timeout value, then the program won't be able to shut down gracefully
+                        and will have to be killed.
         :return: True if the operation succeeds, False otherwise.
         """
         self.a = l2addr_154(addr)

@@ -28,6 +28,7 @@ class SOS:
         self.timer_slave_ttl = 0
         self.tsender = None
         self.rlist, self.slist, self.mlist = [], [], []
+        self.httplist = []
         self.sos_lock = Lock()
         self.condition_var = Condition(Lock())
 
@@ -35,6 +36,8 @@ class SOS:
         if self.tsender is None:
             self.tsender = Sender(self)
             self.tsender.start()
+        for server in self.httplist:
+            server.start()
 
     def start_net(self, net):
         with self.sos_lock:
@@ -52,7 +55,12 @@ class SOS:
             self.rlist.append(r)
 
     def stop(self):
-        print_debug(dbg_levels.MESSAGE, 'Stopping SOS. Shutting down receivers first...')
+        print_debug(dbg_levels.MESSAGE, 'Stopping SOS. Shutting down HTTP servers...')
+        for h in self.httplist:
+            h.stop()
+            h.join()
+
+        print_debug(dbg_levels.MESSAGE, 'Shutting down receivers...')
         for i in range(len(self.rlist)):
             r = self.rlist[0]
             del self.rlist[0]  # Ensures the sender won't restart the thread

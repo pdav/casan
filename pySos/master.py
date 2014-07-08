@@ -3,6 +3,7 @@ from conf import Conf
 from sos.l2_154 import l2net_154
 from sos.slave import Slave
 from util.debug import *
+from sos_http_server.http_server import HTTPServer
 
 
 class Master:
@@ -27,7 +28,9 @@ class Master:
             sl.def_mtu = s.mtu
             sl.init_ttl = s.ttl if s.ttl != 0 else self.engine.timer_slave_ttl
             self.engine.slist.append(sl)
-        # TODO : start HTTP servers
+
+        for h in self.cf.httplist:
+            self.engine.httplist.append(HTTPServer(h.listen, h.port))
 
         # Initialize SOS engine last
         self.engine.init()
