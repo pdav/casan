@@ -120,12 +120,57 @@ class HTTPServer(ThreadBase):
             else:
                 return None
 
-        # Store the raw payload if the method is POST.
-        if req.method == 'POST':
-            payload = yield from asyncio.wait_for(reader.read(), self.timeout)
-            req.raw_post_args = payload
+        # Store the raw payload if there is any. RFC 7230 says:
+        # The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field.
+        if req.method == b'POST':
+            for h in req.headers:
+                if h[0] in [b'content-length', b'transfer-encoding']:
+                    req.raw_post_args = yield from asyncio.wait_for(reader.read(), self.timeout)
+                    break
 
         return req
+
+    def decode_request(self, req):
+        """
+        Decodes the payload string of POST requests. Only requests using 'application/x-www-form-urlencoded' encoding
+        to pass parameters are supported.
+        The algorithm used for decoding is inspired by the one described at:
+        http://www.w3.org/html/wg/drafts/html/CR/forms.html#application/x-www-form-urlencoded-decoding-algorithm
+        The differences are:
+            - We don't expect wide-char unicode characters in the request body, so step 4.4 is skipped.
+            - For the same reason, steps 5 and 6 are skipped.
+        :param req: Request object to decode
+        :return: True if success, False either.
+        """
+        r = True
+
+        # Look for Content-Type header
+        x_www_form_encoding = False
+        for h in req.headers:
+            if h[0] == b'content-type':
+                if h[1].startswith(b'application/x-www-form-urlencoded'):
+                    x_www_form_encoding = True
+                    break
+
+        if x_www_form_encoding:
+            try:
+                strings = req.raw_post_args.split(b'&')
+                for s in strings:
+                    name, value = (bytearray(x) for x in s.split(b'='))
+                    name, value = (x.replace(b'+', b' ') for x in [name, value])
+                    while b'%' in name:
+                        i = name.find(b'%')
+                        name[i:i+3] = int(name[i:i+1].decode(), 16)*16 + int(name[i+1:i+2].decode(), 16)
+                    while b'%' in value:
+                        i = value.find(b'%')
+                        v = bytes([int(value[i+1:i+2].decode(), 16)*16 + int(value[i+2:i+3].decode(), 16)])
+                        value[i:i+3] = v
+                    req.post_args.append((bytes(name), bytes(value)))
+            except Exception as e:
+                r = False
+            if not r:  # In case of failure, restore req to it's initial state
+                req.raw_post_args = []
+        return r
 
     @asyncio.coroutine
     def client_connected(self, reader, writer):
@@ -137,11 +182,11 @@ class HTTPServer(ThreadBase):
         try:
             req = yield from self.parse_request(reader)
             print_debug(dbg_levels.HTTP, 'Incoming connection!')
-            print_debug(dbg_levels.HTTP, 'Method : {req.method}\nURI : {req.uri}\nHTTP '
-                                         'version : {req.http_ver_major}.{req.http_ver_minor}'.format(req=req))
-            for h in req.headers:
-                print_debug(dbg_levels.HTTP, 'Header name : {}\nHeader value : {}'.format(h[0], h[1]))
-            print_debug(dbg_levels.HTTP, 'Raw payload :\n{}'.format(req.raw_post_args))
+            if self.decode_request(req):
+                pass
+            else:
+                # TODO : send HTTP 400 : Bad Request
+                pass
         except asyncio.futures.TimeoutError:
             # Request read timed out, drop it.
             print_debug(dbg_levels.HTTP, 'Incoming request timed out.')
