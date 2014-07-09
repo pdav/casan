@@ -17,4 +17,4 @@ class Request:
         self.http_ver_major, self.http_ver_minor = None, None
         self.headers = []
         self.post_args = []
-        # self.raw_post_args  # Do we really need this?
+        self.raw_post_args = bytes()
