@@ -6,15 +6,17 @@ __author__ = 'chavignat'
 import asyncio  # Requires python 3.4
 from itertools import takewhile
 import re
+from urllib.parse import parse_qsl
 
 from sos_http_server.request import Request
 from util.threads import ThreadBase
 from util.debug import *
+from .request_handler import SOSRequestHandler
 
 
 class HTTPServer(ThreadBase):
     """
-    This class implements a HTTP server. It relies it asyncio module for parallel request handling, so, many
+    This class implements a HTTP server. It relies on asyncio module for parallel request handling, so, many
     of it's methods are coroutines. See asyncio documentation.
     """
 
@@ -36,6 +38,7 @@ class HTTPServer(ThreadBase):
         self.host = host
         if connection_timeout is None:
             self.timeout = 10
+        self.request_handler = SOSRequestHandler()
 
     def run(self):
         """
@@ -134,42 +137,14 @@ class HTTPServer(ThreadBase):
         """
         Decodes the payload string of POST requests. Only requests using 'application/x-www-form-urlencoded' encoding
         to pass parameters are supported.
-        The algorithm used for decoding is inspired by the one described at:
-        http://www.w3.org/html/wg/drafts/html/CR/forms.html#application/x-www-form-urlencoded-decoding-algorithm
-        The differences are:
-            - We don't expect wide-char unicode characters in the request body, so step 4.4 is skipped.
-            - For the same reason, steps 5 and 6 are skipped.
         :param req: Request object to decode
         :return: True if success, False either.
         """
         r = True
-
-        # Look for Content-Type header
-        x_www_form_encoding = False
-        for h in req.headers:
-            if h[0] == b'content-type':
-                if h[1].startswith(b'application/x-www-form-urlencoded'):
-                    x_www_form_encoding = True
-                    break
-
-        if x_www_form_encoding:
-            try:
-                strings = req.raw_post_args.split(b'&')
-                for s in strings:
-                    name, value = (bytearray(x) for x in s.split(b'='))
-                    name, value = (x.replace(b'+', b' ') for x in [name, value])
-                    while b'%' in name:
-                        i = name.find(b'%')
-                        name[i:i+3] = int(name[i:i+1].decode(), 16)*16 + int(name[i+1:i+2].decode(), 16)
-                    while b'%' in value:
-                        i = value.find(b'%')
-                        v = bytes([int(value[i+1:i+2].decode(), 16)*16 + int(value[i+2:i+3].decode(), 16)])
-                        value[i:i+3] = v
-                    req.post_args.append((bytes(name), bytes(value)))
-            except Exception as e:
-                r = False
-            if not r:  # In case of failure, restore req to it's initial state
-                req.raw_post_args = []
+        try:
+            req.post_args = parse_qsl(req.raw_post_args.decode())
+        except Exception as e:
+            r = False
         return r
 
     @asyncio.coroutine
