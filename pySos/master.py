@@ -30,7 +30,7 @@ class Master:
             self.engine.slist.append(sl)
 
         for h in self.cf.httplist:
-            self.engine.httplist.append(HTTPServer(h.listen, h.port))
+            self.engine.httplist.append(HTTPServer(self, h.listen, h.port))
 
         # Initialize SOS engine last
         self.engine.init()
@@ -41,10 +41,15 @@ class Master:
         self.engine.stop()
 
     def parse_path(self, path):
-        class dummy:
+        """
+        Parse a PATH to extract namespace type, slave and resource on this slave
+        :param path: path to parse
+        :return: object of ParseResult type if parsing was succesful, None either.
+        """
+        class ParseResult:
             def __init__(self):
                 self.type, self.base, self.slave, self.resource, self.str_ = (None,) * 5
-        res = dummy()
+        res = ParseResult()
         try:
             path_list = self.split_path(path)
             for ns in self.cf.nslist:

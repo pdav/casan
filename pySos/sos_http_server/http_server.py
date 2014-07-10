@@ -14,6 +14,7 @@ from util.threads import ThreadBase
 from util.debug import *
 from .request_handler import SOSRequestHandler
 from util.exceptions import ServerShutdownRequestException
+from .reply import Reply, HTTPCodes
 
 
 class HTTPServer(ThreadBase):
@@ -22,9 +23,10 @@ class HTTPServer(ThreadBase):
     of it's methods are coroutines. See asyncio documentation.
     """
 
-    def __init__(self, host=None, port=None, connection_timeout=None):
+    def __init__(self, master, host=None, port=None, connection_timeout=None):
         """
         Default constructor.
+        :param master: reference to the instance of the Master class.
         :param host: Defaults to localhost ('127.0.0.1')
         :param port: Port to listen on. Defaults to port 80.
         :param connection_timeout: time in seconds to wait for the client request to arrive once HTTP
@@ -40,7 +42,7 @@ class HTTPServer(ThreadBase):
         self.host = host
         if connection_timeout is None:
             self.timeout = 10
-        self.request_handler = SOSRequestHandler()
+        self.request_handler = SOSRequestHandler(master)
 
     def run(self):
         """
@@ -161,14 +163,13 @@ class HTTPServer(ThreadBase):
         """
         try:
             req = yield from self.parse_request(reader)
+            rep = Reply()
             print_debug(dbg_levels.HTTP, 'Incoming connection!')
             if self.decode_request(req):
-                pass
+                self.request_handler(req, rep)
             else:
-                # TODO : send HTTP 400 : Bad Request
-                pass
+                rep = Reply(HTTPCodes.HTTP_BAD_REQUEST)
+            yield from rep.send(writer)
         except asyncio.futures.TimeoutError:
             # Request read timed out, drop it.
             print_debug(dbg_levels.HTTP, 'Incoming request timed out.')
-
-        # Send reply
