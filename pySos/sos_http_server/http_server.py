@@ -7,11 +7,13 @@ import asyncio  # Requires python 3.4
 from itertools import takewhile
 import re
 from urllib.parse import parse_qsl
+from sys import stderr
 
 from sos_http_server.request import Request
 from util.threads import ThreadBase
 from util.debug import *
 from .request_handler import SOSRequestHandler
+from util.exceptions import ServerShutdownRequestException
 
 
 class HTTPServer(ThreadBase):
@@ -52,9 +54,12 @@ class HTTPServer(ThreadBase):
 
         try:
             loop.run_until_complete(self.server_control())
-        except:
-            # TODO : create a specific exception for server shutdown, handle other exceptions gracefully.
+        except ServerShutdownRequestException:
             pass
+        except Exception as e:
+            stderr.write('Error : unhandled exception in HTTP server.\n'
+                         'Reason : ' + str(e))
+            raise
         finally:
             loop.close()
 
@@ -71,7 +76,7 @@ class HTTPServer(ThreadBase):
         while True:
             yield from asyncio.sleep(1)
             if not self.keepRunning:
-                raise Exception()  # Interrupt execution.
+                raise ServerShutdownRequestException()  # Interrupt execution.
 
     @asyncio.coroutine
     def parse_request(self, reader):
