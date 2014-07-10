@@ -5,7 +5,7 @@ __author__ = 'chavignat'
 
 from urllib.parse import unquote_plus
 
-from .reply import Reply, HTTPCodes
+from .reply import HTTPCodes
 
 class SOSRequestHandler:
     """
@@ -28,14 +28,13 @@ class SOSRequestHandler:
         # First, attempt to decode URI
         try:
             # Unfortunately, unquote_plus doesn't accept bytes
-            uri = unquote_plus(req.uri.decode()).encode()
+            uri = unquote_plus(req.uri.decode())
 
             # Make sure path name is absolute and does not represent a directory.
-            if len(uri) == 0 or uri[0] != b'/' or b'..' in uri:
-                rep = Reply(HTTPCodes.HTTP_BAD_REQUEST)
-                pass
+            if len(uri) == 0 or uri[0] != '/' or '..' in uri:
+                rep.code = HTTPCodes.HTTP_BAD_REQUEST
             else:
-                self.master.handle_http(uri, req)
+                self.master.handle_http(uri, req, rep)
 
         except Exception as e:
             pass

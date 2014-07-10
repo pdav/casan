@@ -29,7 +29,7 @@ def run():
     if not cf.parse(args.c):
         stderr.write('Cannot parse configuration file ' + args.c + 
                      '\nAborting.\n')
-    print_debug(dbg_levels.CONF, 'Read configuration :\n' + cf.to_string())
+    print_debug(dbg_levels.CONF, 'Read configuration :\n' + str(cf))
 
     block_all_signals()
 

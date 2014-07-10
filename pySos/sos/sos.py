@@ -2,13 +2,15 @@
 This module contains the SOS class.
 """
 
-from sos.msg import Msg
+import random
+from io import StringIO
+from threading import Lock, Condition
 from datetime import datetime, timedelta
+
+from sos.msg import Msg
 from util.debug import *
 from .receiver import Receiver
-from threading import Lock, Condition
 from .sender import Sender
-import random
 
 # Seed the RNG
 random.seed()
@@ -31,6 +33,18 @@ class SOS:
         self.httplist = []
         self.sos_lock = Lock()
         self.condition_var = Condition(Lock())
+
+    def __str__(self):
+        """
+        Dumps the SOS state into a string.
+        """
+        ss = StringIO()
+        ss.write('Delay for first HELLO message = ' + str(self.timer_first_hello) + '\n')
+        ss.write('HELLO interval = ' + str(self.timer_interval_hello) +'\n')
+        ss.write('Default TTL = ' + str(self.timer_slave_ttl) + '\nSlaves :\n')
+        for s in self.slist:
+            ss.write('\t' + str(s))
+        return ss.getvalue()
 
     def init(self):
         if self.tsender is None:

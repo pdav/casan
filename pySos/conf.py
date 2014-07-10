@@ -390,7 +390,7 @@ class Conf:
                              ' ttl ' + str(s.ttl) +
                              ' mtu ' + str(s.mtu) + '\n')
 
-    def to_string(self):
+    def __str__(self):
         ss = StringIO()
         self.write_to_stream(ss)
         return ss.getvalue()

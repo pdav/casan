@@ -4,6 +4,7 @@ from sos.l2_154 import l2net_154
 from sos.slave import Slave
 from util.debug import *
 from sos_http_server.http_server import HTTPServer
+from sos_http_server.reply import HTTPCodes
 
 
 class Master:
@@ -60,7 +61,7 @@ class Master:
                             res.str_ = '/'
                         else:
                             res.str_ = '/' + '/'.join(path_list[len(ns.prefix):])
-                        print_debug(dbg_levels.HTTP, 'HTTP request for admin namespace: {}, remainder='.format(res.base, res.str_))
+                        print_debug(dbg_levels.HTTP, 'HTTP request for admin namespace: {}, remainder={}'.format(res.base, res.str_))
                     elif ns.type is Conf.CfNsType.NS_SOS:
                         if len(path_list) == len(ns.prefix):
                             raise Exception()
@@ -79,7 +80,7 @@ class Master:
                         pass  # No specific handling
                     else:
                         raise Exception()
-                res.type = ns.type
+                    res.type = ns.type
         except Exception as e:
             res = None
 
@@ -90,7 +91,103 @@ class Master:
         if not path.startswith('/'):
             return []
         else:
-            return path.split()[1:]  # Discard first empty string
+            return path.split('/')[1:]  # Discard first empty string
 
     def handle_http(self, request_path, req, rep):
+        """
+        :param request_path: string
+        :param req:
+        :param rep:
+        :return:
+        """
+        path_res = self.parse_path(request_path)
+        if path_res is None:
+            rep.code = HTTPCodes.HTTP_NOT_FOUND
+        if path_res.type in [Conf.CfNsType.NS_ADMIN, Conf.CfNsType.NS_SOS, Conf.CfNsType.NS_WELL_KNOWN]:
+            {Conf.CfNsType.NS_ADMIN: self.http_admin,
+             Conf.CfNsType.NS_SOS: self.http_sos,
+             Conf.CfNsType.NS_WELL_KNOWN: self.http_well_known}[path_res.type](path_res, req, rep)
+        else:
+            rep.code = HTTPCodes.HTTP_NOT_FOUND
+
+    def http_admin(self, res, req, rep):
+        """
+        Handle a HTTP request for admin namespace.
+        :param res:
+        :param req:
+        :param rep:
+        :return:
+        """
+        if res.str_ == '/':
+            rep.code = HTTPCodes.HTTP_OK
+            rep.body = ('<html><body><ul>'
+                        '<li><a href=\'{base}/conf\'>configuration</a>'
+                        '<li><a href=\'{base}/run\'>running status</a>'
+                        '<li><a href=\'{base}/slave\'>slave status</a>'
+                        '</ul></body></html>'.format(base=res.base).encode())
+            rep.headers = [(b'Content-Length', str(len(rep.body)).encode()),
+                           (b'Content-Type', b'text/html')]
+        elif res.str_ == '/conf':
+            rep.code = HTTPCodes.HTTP_OK
+            rep.body = ('<html><body><pre>' + str(self.cf) + '</pre></body></html>').encode()
+            rep.headers = [(b'Content-Length', str(len(rep.body)).encode()),
+                           (b'Content-Type', b'text/html')]
+        elif res.str_ == '/run':
+            rep.code = HTTPCodes.HTTP_OK
+            rep.body = ('<html><body><pre>' + str(self.engine) + '</pre></body></html>').encode()
+            rep.headers = [(b'Content-Length', str(len(rep.body)).encode()),
+                           (b'Content-Type', b'text/html')]
+        elif res.str_ == '/slave':
+            if req.method == b'POST':
+                sid = -1
+                new_status = None
+                for arg in req.post_args:
+                    if arg[0] == 'slaveid':
+                        sid = int(arg[1])
+                    elif arg[0] == 'status':
+                        if arg[1] == 'inactive':
+                            new_status = Slave.StatusCodes.SL_INACTIVE
+                        elif arg[1] == 'running':
+                            new_status = Slave.StatusCodes.SL_RUNNING
+                if sid != -1:
+                    r = True
+                    if r:
+                        rep.code = HTTPCodes.HTTP_OK
+                        rep.body = ('<html><body><pre>set to {} (note: not implemented)'
+                                    '</pre></body></html>').format('inactive' if new_status is Slave.StatusCodes.SL_INACTIVE else 'running').encode()
+                else:
+                    rep.code = HTTPCodes.HTTP_BAD_REQUEST
+            else:
+                rep.code = HTTPCodes.HTTP_OK
+                rep.body = ('<html><body>'
+                            '<form method=\'post\' action=\'{}/slave\'>'
+                            'slave id <input type=text name=slaveid><p>'
+                            'status <select size=1 name=status>'
+                            '<option value=\'inactive\'>INACTIVE'
+                            '<option value=\'running\'>RUNNING'
+                            '</select>'
+                            '<input type=submit value=set>' '</pre></body></html>').format(res.base).encode()
+            rep.headers = [(b'Content-Length', str(len(rep.body)).encode()),
+                           (b'Content-Type', b'text/html')]
+        else:
+            rep.code = HTTPCodes.HTTP_NOT_FOUND
+
+    def http_sos(self, res, req, rep):
+        """
+        Handle a HTTP request for SOS namespace.
+        :param res:
+        :param req:
+        :param rep:
+        :return:
+        """
+        pass
+
+    def http_well_known(self, res, req, rep):
+        """
+        Handle a HTTP request for '.well-known' namespace.
+        :param res:
+        :param req:
+        :param rep:
+        :return:
+        """
         pass

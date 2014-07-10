@@ -70,7 +70,7 @@ class HTTPServer(ThreadBase):
     @asyncio.coroutine
     def server_control(self):
         """
-        This function starts the HTTP server, and then sleeps an wakes up periodically to check if
+        This function starts the HTTP server, and then sleeps and wakes up periodically to check if
         the server has been requested to shut down.
         This function is a coroutine.
         """
@@ -115,11 +115,11 @@ class HTTPServer(ThreadBase):
         # implement that behaviour.
         def take_until_colon(b):
             return takewhile(lambda c: c != b':'[0], b)
+        http_header_re = re.compile(b'^[a-zA-Z0-9-]+: ?.+ ?\r$')
         while True:
             line = yield from asyncio.wait_for(reader.readline(), self.timeout)
             if line == b'\r\n':  # Catch header terminator
                 break
-            http_header_re = re.compile(b'^[a-zA-Z0-9-]+: ?.+ ?\r$')
             if http_header_re.match(line):
                 # RFC7230 : "Each header field consists of a case-insensitive field name"
                 header_name = bytes(take_until_colon(line)).lower()
@@ -132,10 +132,14 @@ class HTTPServer(ThreadBase):
 
         # Store the raw payload if there is any. RFC 7230 says:
         # The presence of a message body in a request is signaled by a Content-Length or Transfer-Encoding header field.
+        # Let's assume content-length is present.
         if req.method == b'POST':
             for h in req.headers:
-                if h[0] in [b'content-length', b'transfer-encoding']:
-                    req.raw_post_args = yield from asyncio.wait_for(reader.read(), self.timeout)
+                if h[0] == b'content-length':
+                    line = None
+                    line = yield from asyncio.wait_for(reader.readexactly(int(h[1].decode())), self.timeout)
+                    req.raw_post_args += line
+                    reader.feed_eof()
                     break
 
         return req
@@ -168,7 +172,7 @@ class HTTPServer(ThreadBase):
             if self.decode_request(req):
                 self.request_handler(req, rep)
             else:
-                rep = Reply(HTTPCodes.HTTP_BAD_REQUEST)
+                rep.code = HTTPCodes.HTTP_BAD_REQUEST
             yield from rep.send(writer)
         except asyncio.futures.TimeoutError:
             # Request read timed out, drop it.
