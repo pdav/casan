@@ -44,9 +44,8 @@ class Receiver(threads.ThreadBase):
                 # original request, and wake the emitter.
                 req.stop_retransmit()
                 Msg.link_req_rep(req, m)
-                if m.waiter is not None:
-                    m.waiter.wakeup()
-                    continue
+                with self.sos_instance.condition_var as cv:
+                    self.sos_instance.condition_var.notify()
 
             # Was the message already received? If so, ignore it if we already replied.
             dup_msg = self.deduplicate(m)
@@ -69,7 +68,7 @@ class Receiver(threads.ThreadBase):
     def find_peer(self, mess, addr):
         """
         Check if the sender of a message is an authorized peer. If not, check if it is an SOS slave
-        coming up
+        coming up.
         :param mess: received message
         :return: True if the sender is an authorized peer or a new SOS slave.
         """
@@ -81,12 +80,11 @@ class Receiver(threads.ThreadBase):
                 mess.peer = sl
                 break
 
-        # If not found, it maybe a new slave coming up.
+        # If not found, it may be a new slave coming up.
         if not found:
             r = mess.is_sos_discover()
-            # TODO : improve readability (works fine though)
             if r[0]:
-                with self.sos_instance.sos_lock:  # TODO : is this needed?
+                with self.sos_instance.sos_lock:
                     sid, mtu = r[1], r[2]
                     for s in self.slavelist:
                         if s.id == sid:
@@ -99,8 +97,6 @@ class Receiver(threads.ThreadBase):
                             defmtu = s.def_mtu if 0 < s.def_mtu <= l2mtu else l2mtu
                             s.curmtu = mtu if 0 < mtu <= defmtu else defmtu
                             found = True
-            else:
-                pass  # Breakpoint here
         return found
 
     def correlate(self, mess):

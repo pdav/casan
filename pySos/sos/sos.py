@@ -26,6 +26,11 @@ class SOS:
     
     # Methods
     def __init__(self):
+        """
+        SOS engine constructor. Initialized the instance with default values, but does not
+        start the SOS system. See 'init' method.
+        :return:
+        """
         self.timer_first_hello = 0
         self.timer_interval_hello = 0
         self.timer_slave_ttl = 0
@@ -48,6 +53,9 @@ class SOS:
         return ss.getvalue()
 
     def init(self):
+        """
+        Start the engine.
+        """
         if self.tsender is None:
             self.tsender = Sender(self)
             self.tsender.start()
@@ -55,6 +63,9 @@ class SOS:
             server.start()
 
     def start_net(self, net):
+        """
+        Start listening on a new L2 network.
+        """
         with self.sos_lock:
             r = Receiver(self, net, self.slist)
             r.next_hello = datetime.now()
@@ -70,6 +81,13 @@ class SOS:
             self.rlist.append(r)
 
     def stop(self):
+        """
+        Stop the engine. Note that this function WILL block if there is a
+        managed L2 network without read timeout set, as it's read function
+        will wait for data forever. In that case, your best bet is to just
+        kill the program, or set a timeout.
+        """
+        # TODO : find a workaround the timeout issue. Maybe feed some data to the L2 or set a timeout on the fly?
         print_debug(dbg_levels.MESSAGE, 'Stopping SOS. Shutting down HTTP servers...')
         for h in self.httplist:
             h.stop()
@@ -88,14 +106,23 @@ class SOS:
         self.tsender.join()
 
     def find_slave(self, sid):
+        """
+        Find a slave managed by the SOS system from it's identification number.
+        :param sid: Slave ID number.
+        :return: reference to the slave if found, else None.
+        """
         r = None
         for s in self.slist:
             if s.id == sid:
-                r = sid
+                r = s
                 break
         return r
 
     def add_request(self, req):
+        """
+        Queue a request for processing by the sender thread.
+        :param req: request to queue
+        """
         with self.condition_var:
             with self.sos_lock:
                 self.mlist.append(req)

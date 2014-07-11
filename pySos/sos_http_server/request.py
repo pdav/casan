@@ -6,7 +6,8 @@ __author__ = 'chavignat'
 
 class Request:
     """
-    This class represents a HTTP request.
+    This class represents a HTTP request. All fields are internally stored as bytes, so
+    decode them first if you need to work with them as strings.
     """
     def __init__(self):
         """

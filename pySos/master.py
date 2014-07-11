@@ -1,3 +1,9 @@
+"""
+This module contains the Master class.
+"""
+import asyncio
+from datetime import datetime, timedelta
+
 from sos import sos
 from conf import Conf
 from sos.l2_154 import l2net_154
@@ -5,12 +11,16 @@ from sos.slave import Slave
 from util.debug import print_debug, dbg_levels
 from sos_http_server.http_server import HTTPServer
 from sos_http_server.reply import HTTPCodes
+from sos import msg
+from sos.cache import Cache
+from sos.option import Option
 
 
 class Master:
     def __init__(self, cf):
         self.cf = cf
         self.engine = sos.SOS()
+        self.cache = Cache()
 
     def start(self):
         r = True
@@ -20,6 +30,9 @@ class Master:
         for net in self.cf.netlist:
             if net.type is Conf.NetType.NET_154:
                 l2n = l2net_154()
+                # The last parameter of the l2n.init method is the read timeout for the serial link.
+                # If none is set, the receiver thread in charge of the network won't be able to exit
+                # gracefully and the process will have to be killed. Don't touch that.
                 l2n.init(net.net_154.iface, 'xbee' if net.net_154.type is Conf.Net154Type.NET_154_XBEE else None,
                          net.mtu, net.net_154.addr, net.net_154.panid, net.net_154.channel, 2)
                 self.engine.start_net(l2n)
@@ -63,7 +76,7 @@ class Master:
                             res.str_ = '/' + '/'.join(path_list[len(ns.prefix):])
                         print_debug(dbg_levels.HTTP, 'HTTP request for admin namespace: {}, remainder={}'.format(res.base, res.str_))
                     elif ns.type is Conf.CfNsType.NS_SOS:
-                        if len(path_list) == len(ns.prefix):
+                        if len(path_list) <= len(ns.prefix):
                             raise Exception()
                         else:
                             sid = path_list[len(ns.prefix)]
@@ -72,7 +85,7 @@ class Master:
                             res.slave = self.engine.find_slave(sid)
                             if res.slave is None or res.slave.status is not Slave.StatusCodes.SL_RUNNING:
                                 raise Exception()
-                            res.resource = res.slave.find_resource(path_list[len(ns.prefix)+1:])
+                            res.resource = res.slave.find_resource(path_list[len(ns.prefix):])
                             if res.resource is None:
                                 raise Exception()
                             print_debug(dbg_levels.HTTP, 'HTTP request for SOS namespace : {}, slave id= {}'.format(res.base, res.slave.id))
@@ -104,7 +117,7 @@ class Master:
         path_res = self.parse_path(request_path)
         if path_res is None:
             rep.code = HTTPCodes.HTTP_NOT_FOUND
-        if path_res.type in [Conf.CfNsType.NS_ADMIN, Conf.CfNsType.NS_SOS, Conf.CfNsType.NS_WELL_KNOWN]:
+        elif path_res.type in [Conf.CfNsType.NS_ADMIN, Conf.CfNsType.NS_SOS, Conf.CfNsType.NS_WELL_KNOWN]:
             {Conf.CfNsType.NS_ADMIN: self.http_admin,
              Conf.CfNsType.NS_SOS: self.http_sos,
              Conf.CfNsType.NS_WELL_KNOWN: self.http_well_known}[path_res.type](path_res, req, rep)
@@ -172,14 +185,76 @@ class Master:
         else:
             rep.code = HTTPCodes.HTTP_NOT_FOUND
 
+    @asyncio.coroutine
     def http_sos(self, res, req, rep):
         """
-        Handle a HTTP request for SOS namespace.
+        Handle a HTTP request for SOS namespace. This function is a coroutine.
         :param request_path: RequestPath object returned by parse_path method
         :param req: received Request to process
         :param rep: Reply object
         """
-        pass
+        m = msg.Msg()
+        code = {b'GET': msg.Msg.MsgCodes.MC_GET,
+                b'HEAD': msg.Msg.MsgCodes.MC_GET,
+                b'PUT': msg.Msg.MsgCodes.MC_PUT,
+                b'POST': msg.Msg.MsgCodes.MC_POST,
+                b'DELETE': msg.Msg.MsgCodes.MC_DELETE}[req.method]
+        m.peer = res.slave
+        m.msg_type = msg.Msg.MsgTypes.MT_CON
+        m.msg_code = code
+        res.resource.add_to_message(m)
+
+        # Return 'Bad Request' if request is too large for slave MTU
+        # TODO : find request length
+        if m.paylen > res.slave.curmtu:
+            rep.code = HTTPCodes.HTTP_BAD_REQUEST
+            return
+        # Is the request in the cache?
+        mc = self.cache.get(m)
+        if mc is None:
+            # Request is in the cache! Don't forward it.
+            m = mc
+            print_debug(dbg_levels.CACHE, 'Found request ' + str(m) + ' in cache.')
+            print_debug(dbg_levels.CACHE, 'reply = ' + str(m.reqrep))
+        else:
+            # Request not found in cache : send it and wait for a reply.
+            max = msg.exchange_lifetime(res.slave.l2_net.max_latency)
+            timeout = datetime.now() + timedelta(seconds=max)
+            print_debug(dbg_levels.HTTP, 'HTTP request, timeout = ' + str(max) +'ms')
+            self.engine.add_request(m)
+            for i in range(max):
+                yield from asyncio.wait_for(1)
+                if m.req_rep is not None:
+                    break
+        r = m.req_rep
+        if r is None:
+            # No reply to our request
+            rep.code = HTTPCodes.HTTP_SERVICE_UNAVAILABLE
+        else:
+            if mc is None:
+                # Request wasn't in the cache, let's add it
+                self.cache.add(m)
+            # Get content format
+            content_format = None
+            for opt in m.optlist:
+                if opt.optcode is Option.OptCodes.MO_CONTENT_FORMAT:
+                    content_format = opt.optval
+            # Get announced MTU
+            for opt in m.optlist:
+                if opt.optcode is Option.OptCodes.MO_SIZE1:
+                    res.slave.curmtu = opt.optval
+            rep.code = HTTPCodes.HTTP_OK
+
+            rep.body = bytes()
+            if content_format == 0:
+                for c in range(m.payload):
+                    rep.body += c
+                rep.headers.append((b'Content-Type', b'text/plain'))
+            elif content_format == 50:
+                for c in range(m.payload):
+                    rep.body += c
+                rep.headers.append((b'Content-Type', b'application/json'))
+            rep.headers.append((b'Content-Length', str(len(rep.body)).encode()))
 
     def http_well_known(self, res, req, rep):
         """
@@ -191,4 +266,4 @@ class Master:
         rep.code = HTTPCodes.HTTP_OK
         rep.body = self.engine.resource_list().encode()
         rep.headers = [(b'Content-Length', str(len(rep.body)).encode()),
-                           (b'Content-Type', b'text/html')]
+                       (b'Content-Type', b'text/html')]
