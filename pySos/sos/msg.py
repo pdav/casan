@@ -4,7 +4,7 @@ This module contains the Msg class and a few helper functions that it needs.
 from datetime import datetime, timedelta
 from sos import l2
 from enum import Enum
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from .option import Option
 from random import randrange, uniform
 from sys import stderr

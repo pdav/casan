@@ -6,6 +6,9 @@ import abc
 from enum import Enum
 
 class PkTypes(Enum):
+    """
+    Enumerates packet types (sent to me, broadcasted, whatever...)
+    """
     PK_ME = 0
     PK_BCAST = 1
     PK_NONE = 2
@@ -42,34 +45,43 @@ class l2addr(metaclass = abc.ABCMeta):
         """
         pass
 
-class l2net(metaclass = abc.ABCMeta):
+
+class l2net(metaclass=abc.ABCMeta):
     """
     This abstract class is the base for all l2net-* subclasses
     """
     def __init__(self):
+        """
+        Base constructor for l2nets.
+        :return:
+        """
         self.mtu = 0
         self.max_latency = 0
 
     @abc.abstractmethod
     def term(self):
         """
+        Close the connection.
         """
         pass
 
     @abc.abstractmethod
     def send(self, daddr, data):
         """
+        Send some data to a specific address.
         """
         pass
 
     @abc.abstractmethod
     def bsend(self, data):
         """
+        Broadcast some data.
         """
         pass
 
     @abc.abstractmethod
     def recv(self):
         """
+        Receive some data from the network.
         """
         pass

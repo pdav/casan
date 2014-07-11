@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from util import threads
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from .msg import Msg, exchange_lifetime
 from .slave import Slave
 

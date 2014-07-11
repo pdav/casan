@@ -6,7 +6,7 @@ This is the 'main' module of the program, containing the entry point.
 import signal
 import argparse
 from sys import stderr
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 import conf
 from master import Master
 
@@ -25,9 +25,9 @@ def run():
 
     args = parser.parse_args()
 
-    cf = conf.Conf() 
+    cf = conf.Conf()
     if not cf.parse(args.c):
-        stderr.write('Cannot parse configuration file ' + args.c + 
+        stderr.write('Cannot parse configuration file ' + args.c +
                      '\nAborting.\n')
     print_debug(dbg_levels.CONF, 'Read configuration :\n' + str(cf))
 

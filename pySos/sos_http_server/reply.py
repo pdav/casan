@@ -34,7 +34,8 @@ class Reply():
     """
     def __init__(self, status_code=None):
         """
-        Reply constructor. Constructs an empty reply or a stock reply from a status code.
+        Reply constructor. Constructs an empty reply or a stock reply from a
+        status code.
         :param status_code: enumerated type from the HTTPCodes enumeration.
         :return:
         """
@@ -58,8 +59,10 @@ class Reply():
     def code(self, new_code):
         """
         Setter for the code property.
-        Besides changing the HTTP status code, this method loads the response body for stock replies.
-        :param new_code: a member of HTTPCodes enumeration, or ValueError will be raised.
+        Besides changing the HTTP status code, this method loads the response
+        body for stock replies.
+        :param new_code: a member of HTTPCodes enumeration, or ValueError will
+            be raised.
         """
         if not type(new_code) == HTTPCodes:
             raise ValueError
@@ -71,7 +74,8 @@ class Reply():
     def send(self, writer):
         """
         Sends the reply to the client. This method is a coroutine.
-        :param writer: StreamWriter object received by HttpServer.client_connected
+        :param writer: StreamWriter object received by
+            HttpServer.client_connected
         """
         try:
             writer.write(reply_lines[self.code])

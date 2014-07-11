@@ -2,7 +2,7 @@ from sos import sos
 from conf import Conf
 from sos.l2_154 import l2net_154
 from sos.slave import Slave
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from sos_http_server.http_server import HTTPServer
 from sos_http_server.reply import HTTPCodes
 

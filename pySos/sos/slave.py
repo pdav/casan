@@ -4,7 +4,7 @@ This module contains the Slave class
 
 from datetime import datetime, timedelta
 from enum import Enum
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from sos import msg
 from .resource import Resource
 

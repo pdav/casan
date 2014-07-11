@@ -31,7 +31,7 @@ class SOSRequestHandler:
             uri = unquote_plus(req.uri.decode())
 
             # Make sure path name is absolute and does not represent a directory.
-            if len(uri) == 0 or uri[0] != '/' or '..' in uri:
+            if len(uri) == 0 or uri[0] != '/' or '..' in uri or uri.endswith('/'):
                 rep.code = HTTPCodes.HTTP_BAD_REQUEST
             else:
                 self.master.handle_http(uri, req, rep)

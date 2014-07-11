@@ -8,7 +8,7 @@ from threading import Lock, Condition
 from datetime import datetime, timedelta
 
 from sos.msg import Msg
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from .receiver import Receiver
 from .sender import Sender
 

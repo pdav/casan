@@ -11,7 +11,7 @@ from sys import stderr
 
 from sos_http_server.request import Request
 from util.threads import ThreadBase
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from .request_handler import SOSRequestHandler
 from util.exceptions import ServerShutdownRequestException
 from .reply import Reply, HTTPCodes

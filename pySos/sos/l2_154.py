@@ -1,13 +1,17 @@
 """
 This module contains the subclasses of l2 and l2net for 802.15.4 networking.
 """
-from sos import l2
 import sys
 import termios
 from time import sleep
 from datetime import timedelta, datetime
-from util.debug import *
+from enum import IntEnum
+
 import serial
+
+from sos import l2
+from util.debug import print_debug, dbg_levels
+
 
 class l2addr_154(l2.l2addr):
     """
@@ -48,7 +52,8 @@ class l2addr_154(l2.l2addr):
         rep = []
         for b in self.addr:
             atom = hex(b)[2:]
-            if len(atom) == 1 : atom = '0' + atom # Prefix single-digits with 0
+            if len(atom) == 1:
+                atom = '0' + atom  # Prefix single-digits with 0
             rep.append(atom)
         return ':'.join(rep)
 
@@ -71,6 +76,10 @@ class l2net_154(l2.l2net):
 
     # Enums
     class frame_type(IntEnum):
+        """
+        Enumerates frame types.
+        TODO : use a regular Enum (gotta change every occurence of it though)
+        """
         TX_STATUS = 0x89
         RX_LONG = 0x80
         RX_SHORT = 0x81
@@ -121,7 +130,7 @@ class l2net_154(l2.l2net):
         self.channel = channel
 
         if type_ == 'xbee':
-            self.mtu = mtu if (0 < mtu <= self.XBEE_MTU) else self.XBEE_MTU
+            self.mtu = mtu if 0 < mtu <= self.XBEE_MTU else self.XBEE_MTU
             if not (10 < self.channel < 26):
                 return False
             try:
@@ -174,7 +183,7 @@ class l2net_154(l2.l2net):
 
                     # PANID
                     panid = (b'ATID' + bytes(hex(self.pan.addr[1])[2:], 'utf-8') +
-                            bytes(hex(self.pan.addr[0])[2:], 'utf-8') + b'\r')
+                             bytes(hex(self.pan.addr[0])[2:], 'utf-8') + b'\r')
                     send_AT_command(panid)
 
                     # Channel
@@ -229,7 +238,8 @@ class l2net_154(l2.l2net):
 
         return b
 
-    def compute_checksum(self, buf):
+    @staticmethod
+    def compute_checksum(buf):
         """
         Computes the checksum of a ZigBee frame.
         """
@@ -288,7 +298,7 @@ class l2net_154(l2.l2net):
                 t_start = datetime.now()
                 if not self.read_complete_frame():
                     if (self.port.timeout is not None and
-                        t_start + timedelta(seconds=self.port.timeout) < datetime.now()):
+                       (t_start + timedelta(seconds=self.port.timeout) < datetime.now())):
                         return (None,)
                     else:
                         continue
@@ -319,27 +329,29 @@ class l2net_154(l2.l2net):
     def read_complete_frame(self):
         """
         Reads a full frame from the input buffer and adds it to the frame list.
-        This function blocks until a complete frame is received or the timeout is reached, if timeout was set
-        when init was called.
+        This function blocks until a complete frame is received or the timeout
+        is reached, if timeout was set when init was called.
         """
         found = False
         t_start = datetime.now()
         try:
             while not found:
                 buf = self.port.read(1 if self.port.inWaiting() == 0
-                                       else self.port.inWaiting())
+                                     else self.port.inWaiting())
                 # Do not check right away for the timeout, just in case we actually have a complete frame.
                 self.buffer = self.buffer + buf
                 while self.is_frame_complete():
                     found = True
                     self.extract_frame_to_list()
                 if (self.port.timeout is not None and
-                        t_start + timedelta(seconds=self.port.timeout) < datetime.now()):
-                        return False
+                   (t_start + timedelta(seconds=self.port.timeout) < datetime.now())):
+                    return False
             return found
         except Exception as e:
-            # TODO
-            sys.stderr.write('Exception caught in read_complete_frame, go fix your code!\n')
+            # pySerial doesn't really say which exceptions read() can raise,
+            # but I expect most of them to be fatal. Do we need specific error
+            # handling ?
+            sys.stderr.write('An error happened while reading frame :\n' + str(e))
             raise
 
     def is_frame_complete(self):

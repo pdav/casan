@@ -4,7 +4,7 @@
 from datetime import datetime, timedelta
 from sys import stderr
 
-from util.debug import *
+from util.debug import print_debug, dbg_levels
 from util import threads
 
 MAX_RETRANSMIT = 4
