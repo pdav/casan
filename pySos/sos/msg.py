@@ -167,7 +167,6 @@ class Msg:
             self.req_rep.req_rep = None
             self.req_rep = None
         self.optlist = []
-        self.waiter = None
 
     def reset_all(self):
         """
