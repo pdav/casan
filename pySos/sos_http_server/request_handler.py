@@ -4,6 +4,7 @@ This module contains the SOSRequestHandler class.
 __author__ = 'chavignat'
 
 from urllib.parse import unquote_plus
+from sys import stderr
 
 from .reply import HTTPCodes
 
@@ -37,4 +38,6 @@ class SOSRequestHandler:
                 self.master.handle_http(uri, req, rep)
 
         except Exception as e:
-            pass
+            # Unhandled errors are caught here and result in code HTTP 500 being sent.
+            stderr.write('Error while processing request :\n' + str(e))
+            rep.code = HTTPCodes.HTTP_INTERNAL_SERVER_ERROR

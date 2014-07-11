@@ -8,31 +8,35 @@ from .msg import Msg
 class Resource:
     """
     An object of class Resource represents a resource which
-  	is provided by an SOS slave.
+    is provided by an SOS slave.
   
     This class represents a resource. A resource has:
     - an URL (vector of path components)
     - some attributes: name, title, etc. which are stored as a
-  	list of (key, val) where the key is the name of the
-  	attribute (e.g. `name`, `title`, `ct`) and val is a list
-  	of associated values (`temp`, `Temperature`, `0`).
+        list of (key, val) where the key is the name of the
+        attribute (e.g. `name`, `title`, `ct`) and val is a list
+        of associated values (`temp`, `Temperature`, `0`).
     """
 
     class Attribute:
         """
         Class representing attributes
         """
-        def __init__(self, name = None, values = None):
+        def __init__(self, name, values=None):
             """
             Default constructor for attribute type
+            :param name: name of the attribute
+            :param values: value(s) of the attribute, if any. Can be a str,
+                   a list of strs, or None.
             """
-            # This construct is not important in this case, but it can be
+            # This construct (if param is None: param = ...) is not important
+            # in this case, but it can be and is used throughout the code.
             # See explanation here :
             # http://stackoverflow.com/questions/101268/hidden-features-of-python#113198
             if values is None:
                 values = []
             self.name = name
-            self.values = values
+            self.values = values if type(values) == list else [values]
 
     def __init__(self, path):
         """

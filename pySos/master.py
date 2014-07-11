@@ -77,7 +77,8 @@ class Master:
                                 raise Exception()
                             print_debug(dbg_levels.HTTP, 'HTTP request for SOS namespace : {}, slave id= {}'.format(res.base, res.slave.id))
                     elif ns.type is Conf.CfNsType.NS_WELL_KNOWN:
-                        pass  # No specific handling
+                        # No specific handling
+                        print_debug(dbg_levels.HTTP, 'HTTP request for .well-known namespace.')
                     else:
                         raise Exception()
                     res.type = ns.type
@@ -95,9 +96,9 @@ class Master:
 
     def handle_http(self, request_path, req, rep):
         """
-        :param request_path: string
-        :param req:
-        :param rep:
+        :param request_path: RequestPath object returned by parse_path method
+        :param req: received Request to process
+        :param rep: Reply object
         :return:
         """
         path_res = self.parse_path(request_path)
@@ -113,10 +114,9 @@ class Master:
     def http_admin(self, res, req, rep):
         """
         Handle a HTTP request for admin namespace.
-        :param res:
-        :param req:
-        :param rep:
-        :return:
+        :param request_path: RequestPath object returned by parse_path method
+        :param req: received Request to process
+        :param rep: Reply object
         """
         if res.str_ == '/':
             rep.code = HTTPCodes.HTTP_OK
@@ -175,19 +175,20 @@ class Master:
     def http_sos(self, res, req, rep):
         """
         Handle a HTTP request for SOS namespace.
-        :param res:
-        :param req:
-        :param rep:
-        :return:
+        :param request_path: RequestPath object returned by parse_path method
+        :param req: received Request to process
+        :param rep: Reply object
         """
         pass
 
     def http_well_known(self, res, req, rep):
         """
         Handle a HTTP request for '.well-known' namespace.
-        :param res:
-        :param req:
-        :param rep:
-        :return:
+        :param request_path: RequestPath object returned by parse_path method
+        :param req: received Request to process
+        :param rep: Reply object
         """
-        pass
+        rep.code = HTTPCodes.HTTP_OK
+        rep.body = self.engine.resource_list().encode()
+        rep.headers = [(b'Content-Length', str(len(rep.body)).encode()),
+                           (b'Content-Type', b'text/html')]

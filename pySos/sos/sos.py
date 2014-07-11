@@ -11,6 +11,7 @@ from sos.msg import Msg
 from util.debug import print_debug, dbg_levels
 from .receiver import Receiver
 from .sender import Sender
+from .slave import Slave
 
 # Seed the RNG
 random.seed()
@@ -99,3 +100,15 @@ class SOS:
             with self.sos_lock:
                 self.mlist.append(req)
                 self.condition_var.notify()
+
+    def resource_list(self):
+        """
+        Returns aggregated /.well-known/sos for all running slaves.
+        :return: string containing the global /.well-known/sos resource list
+        """
+        ss = StringIO()
+        for slave in self.slist:
+            if slave.status is Slave.StatusCodes.SL_RUNNING:
+                for res in slave.res_list:
+                    ss.write(str(res))
+        return ss.getvalue()
