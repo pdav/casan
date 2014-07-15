@@ -58,7 +58,7 @@ class Master:
         """
         Parse a PATH to extract namespace type, slave and resource on this slave
         :param path: path to parse
-        :return: object of ParseResult type if parsing was succesful, None either.
+        :return: object of ParseResult type if parsing was successful, else None.
         """
         class ParseResult:
             def __init__(self):
@@ -85,7 +85,7 @@ class Master:
                             res.slave = self.engine.find_slave(sid)
                             if res.slave is None or res.slave.status is not Slave.StatusCodes.SL_RUNNING:
                                 raise Exception()
-                            res.resource = res.slave.find_resource(path_list[len(ns.prefix):])
+                            res.resource = res.slave.find_resource(path_list[len(ns.prefix)+1:])
                             if res.resource is None:
                                 raise Exception()
                             print_debug(dbg_levels.HTTP, 'HTTP request for SOS namespace : {}, slave id= {}'.format(res.base, res.slave.id))
@@ -107,27 +107,31 @@ class Master:
         else:
             return path.split('/')[1:]  # Discard first empty string
 
+    @asyncio.coroutine
     def handle_http(self, request_path, req, rep):
         """
+        Handles HTTP requests. This method is a coroutine.
         :param request_path: RequestPath object returned by parse_path method
         :param req: received Request to process
         :param rep: Reply object
-        :return:
         """
         path_res = self.parse_path(request_path)
         if path_res is None:
             rep.code = HTTPCodes.HTTP_NOT_FOUND
         elif path_res.type in [Conf.CfNsType.NS_ADMIN, Conf.CfNsType.NS_SOS, Conf.CfNsType.NS_WELL_KNOWN]:
-            {Conf.CfNsType.NS_ADMIN: self.http_admin,
-             Conf.CfNsType.NS_SOS: self.http_sos,
-             Conf.CfNsType.NS_WELL_KNOWN: self.http_well_known}[path_res.type](path_res, req, rep)
+            if path_res.type is Conf.CfNsType.NS_ADMIN:
+                self.http_admin(path_res, req, rep)
+            elif path_res.type is Conf.CfNsType.NS_SOS:
+                yield from self.http_sos(path_res, req, rep)
+            elif path_res.type is Conf.CfNsType.NS_WELL_KNOWN:
+                self.http_well_known(path_res, req, rep)
         else:
             rep.code = HTTPCodes.HTTP_NOT_FOUND
 
     def http_admin(self, res, req, rep):
         """
         Handle a HTTP request for admin namespace.
-        :param request_path: RequestPath object returned by parse_path method
+        :param res: RequestPath object returned by parse_path method
         :param req: received Request to process
         :param rep: Reply object
         """
@@ -189,7 +193,7 @@ class Master:
     def http_sos(self, res, req, rep):
         """
         Handle a HTTP request for SOS namespace. This function is a coroutine.
-        :param request_path: RequestPath object returned by parse_path method
+        :param res: RequestPath object returned by parse_path method
         :param req: received Request to process
         :param rep: Reply object
         """
@@ -211,19 +215,19 @@ class Master:
             return
         # Is the request in the cache?
         mc = self.cache.get(m)
-        if mc is None:
+        if mc is not None:
             # Request is in the cache! Don't forward it.
             m = mc
             print_debug(dbg_levels.CACHE, 'Found request ' + str(m) + ' in cache.')
-            print_debug(dbg_levels.CACHE, 'reply = ' + str(m.reqrep))
+            print_debug(dbg_levels.CACHE, 'reply = ' + str(m.req_rep))
         else:
             # Request not found in cache : send it and wait for a reply.
             max = msg.exchange_lifetime(res.slave.l2_net.max_latency)
             timeout = datetime.now() + timedelta(seconds=max)
-            print_debug(dbg_levels.HTTP, 'HTTP request, timeout = ' + str(max) +'ms')
+            print_debug(dbg_levels.HTTP, 'HTTP request, timeout = ' + str(max) + 's')
             self.engine.add_request(m)
-            for i in range(max):
-                yield from asyncio.wait_for(1)
+            for i in range(int(max)+1):
+                yield from asyncio.sleep(1)
                 if m.req_rep is not None:
                     break
         r = m.req_rep

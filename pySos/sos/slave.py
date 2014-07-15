@@ -74,7 +74,6 @@ class Slave:
         containing the resource path, e.g for resource '/a/b/c' : ['a','b','c']
         If the resource is not found, returns None
         """
-        # TODO : the bug is here
         for r in self.res_list:
             if r == res:
                 return r
@@ -127,6 +126,7 @@ class Slave:
         attrname = ''
         cur_res = bytearray()
         state = None
+
         def parse_single_byte(state, b):
             nonlocal rlist, attrname, cur_res
             if state is self.ResStatus.S_START:

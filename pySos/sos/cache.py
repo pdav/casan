@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from threading import Lock
 
 from util.debug import print_debug, dbg_levels
+from .option import Option
+
 
 class Cache:
     """
@@ -21,7 +23,7 @@ class Cache:
             Entry constructor.
             :param req: Request to add in the cache.
             """
-            self.expire = datetime()
+            self.expire = datetime.now()
             self.req = req
 
     def __init__(self):
@@ -36,12 +38,12 @@ class Cache:
         Add a request to the cache
         :param req: Msg object to add to the cache
         """
-        rep = req.reqrep
+        rep = req.req_rep
         if rep is not None:
-            max_age = rep.max_age()
+            max_age = Option.int_from_bytes(rep.max_age())
             if max_age is not None:
                 with self.lock:
-                    e = self.Entry()
+                    e = self.Entry(req)
                     print_debug(dbg_levels.CACHE, 'Adding ' + str(req) + 'for '
                                 + str(max_age) + 'seconds')
                     e.expire = datetime.now() + timedelta(seconds=max_age)
@@ -65,7 +67,7 @@ class Cache:
                     do_cleanup = True
                     print_debug(dbg_levels.CACHE, 'Expiring ' + str(entry.req))
                 else:
-                    if req.cache_match(e.req):
+                    if req.cache_match(entry.req):
                         print_debug(dbg_levels.CACHE, 'found ' + str(entry.req))
                         r = entry.req
             if do_cleanup:

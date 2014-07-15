@@ -1,6 +1,7 @@
 from enum import Enum, IntEnum
 from io import StringIO
 
+
 class Conf:
     """
     Configuration file handling

@@ -77,11 +77,11 @@ class Resource:
                  RuntimeError if 'something' is an empty list.
         Exception safety : strong
         """
-        if something.type() == str:
+        if type(something) == str:
             something = something.split('/')
             for i in range(something.count('')):
                 something.remove('')
-        if something.type() == list:
+        if type(something) == list:
             if len(something) == 0:
                 raise RuntimeError("""Cannot perform comparison with an empty 
                                     list.""")

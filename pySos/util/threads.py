@@ -6,8 +6,8 @@ class ThreadBase(Thread, metaclass=abc.ABCMeta):
     """
     Abstract base class for threads. Subclasses must override the run method.
     """
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(args=args, kwargs=kwargs)
         self.keepRunning = True
 
     @abc.abstractmethod

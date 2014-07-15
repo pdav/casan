@@ -273,10 +273,16 @@ class Msg:
                 print_debug(dbg_levels.OPTION, 'OPTION opt=' + str(opt_nb) +
                             ', len=' + str(opt_len))
                 try:
+                    o = None
                     if opt_len == 0:
                         o = Option(opt_nb)
                     else:
-                        o = Option(opt_nb, self.msg[i:].decode(), opt_len)
+                        if Option.optdesc[Option.OptCodes(opt_nb)][0] is Option.OptDesc.OF_OPAQUE:
+                            o = Option(opt_nb, self.msg[i:i+opt_len], opt_len)
+                        elif Option.optdesc[Option.OptCodes(opt_nb)][0] is Option.OptDesc.OF_STRING:
+                            o = Option(opt_nb, self.msg[i:i+opt_len].decode(encoding='utf-8'))
+                        elif Option.optdesc[Option.OptCodes(opt_nb)][0] is Option.OptDesc.OF_UINT:
+                            o = Option(opt_nb, Option.int_from_bytes(self.msg[i:i+opt_len]))
                     self.optlist.append(o)
                 except ValueError as e:
                     print_debug(dbg_levels.OPTION, 'Error while decoding message : invalid value for option.')
@@ -335,13 +341,13 @@ class Msg:
         self.optlist.sort()
         opt_code = 0
         for opt in self.optlist:
-            opt_delta = opt.optcode - opt_code
+            opt_delta = opt.optcode.value - opt_code
             self.msg_len = opt.optlen + 1
             if opt_delta > 12:
                 self.msg_len += 1
             elif opt_delta > 268:
                 self.msg_len += 2
-            opt_code = opt.optcode
+            opt_code = opt.optcode.value
 
             opt_len = opt.optlen
             if opt_len > 12:

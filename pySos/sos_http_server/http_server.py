@@ -170,7 +170,7 @@ class HTTPServer(ThreadBase):
             rep = Reply()
             print_debug(dbg_levels.HTTP, 'Incoming connection!')
             if self.decode_request(req):
-                self.request_handler(req, rep)
+                yield from self.request_handler(req, rep)
             else:
                 rep.code = HTTPCodes.HTTP_BAD_REQUEST
             yield from rep.send(writer)

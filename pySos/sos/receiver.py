@@ -8,11 +8,11 @@ from .slave import Slave
 
 class Receiver(threads.ThreadBase):
     def __init__(self, sos_instance, net, slavelist):
-        super().__init__()
+        super().__init__(name='Receiver<{}>'.format(net.iface))
         self.l2net = net
         self.sos_instance = sos_instance
         self.slavelist = slavelist
-        self.next_hello = datetime.now() + timedelta(seconds=1)  # TODO: figure out what's the point of randomness here
+        self.next_hello = datetime.now() + timedelta(seconds=1)
         self.deduplist = []
         self.broadcast = Slave()
         self.broadcast.l2_net = net
@@ -46,6 +46,11 @@ class Receiver(threads.ThreadBase):
                 Msg.link_req_rep(req, m)
                 with self.sos_instance.condition_var as cv:
                     self.sos_instance.condition_var.notify()
+                # If it is not a SOS message, i.e. it doesn't need processing, keep loopin'
+                if m.sos_type is Msg.SosTypes.SOS_UNKNOWN:
+                    m.find_sos_type()
+                if m.sos_type is m.SosTypes.SOS_NONE:
+                    continue
 
             # Was the message already received? If so, ignore it if we already replied.
             dup_msg = self.deduplicate(m)

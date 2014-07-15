@@ -1,13 +1,13 @@
 """
 This module contains the Option class
 """
-from enum import Enum, IntEnum
+from enum import Enum
 
 class Option:
     """
     Represents an option in a CoAP message, and it's value, if any.
     """
-    class OptCodes(IntEnum):
+    class OptCodes(Enum):
         MO_NONE = 0
         MO_CONTENT_FORMAT = 12
         MO_ETAG = 4
@@ -54,15 +54,14 @@ class Option:
         """
         return (self.optcode & 0x1E) == 0x1C
 
-    def __init__(self, code = None, optval = None, optlen = None):
+    def __init__(self, code=None, optval=None, optlen=None):
         """
         Constructor for the option class.
         Default constructor constructs empty option.
         If you specify both optval and optlen, constructs an option with
         opaque value.
         If you specify optval but omit optlen, it is assumed that optval is an
-        unsigned integer. If optval is not an unsigned integer, a
-        TypeError is raised.
+        unsigned integer or a string. If not, TypeError is raised.
 
         Raises : ValueError if code is invalid or optlen is specified and
                  optval is a negative integer.
@@ -76,10 +75,10 @@ class Option:
         if code is None and (optval is not None or optlen is not None):
             raise RuntimeError('Invalid parameters')
         if optlen is None and optval is not None:
-            if type(optval) != int:
+            if type(optval) not in [int, str]:
                 raise TypeError('optval is of type ' + type(optval).__name__ + 
-                                ' (expected int)')
-            elif optval < 0:
+                                ' (expected int or str)')
+            elif type(optval) == int and optval < 0:
                 raise ValueError()
 
         if code is None or code is self.OptCodes.MO_NONE:
@@ -90,13 +89,12 @@ class Option:
         if optval is None:
             self.optlen = 0
             self.optval = None
-        elif optlen is None: # Integer value
-            self.optval = self.int_to_bytes(optval)
-            # I'm not quite sure of this one, c++ code is kinda funky
+        elif optlen is None: # Integer/String value
+            self.optval = self.int_to_bytes(optval) if type(optval) == int else optval
             self.optlen = len(self.optval) 
         else: # Opaque value
             self.optlen_check(code, optlen)
-            self.optval = optval[:optlen]
+            self.optval = optval
             self.optlen = optlen
 
     def __lt__(self, other):
@@ -105,7 +103,7 @@ class Option:
         sorting an option list.
         Options are sorted by option code.
         """
-        return self.optcode < other.optcode
+        return self.optcode.value < other.optcode.value
 
     def __eq__(self, other):
         """
@@ -120,7 +118,7 @@ class Option:
         Difference test operator.
 
         """
-        return (self.optcode != other.optcode or self.optlen != other.optlen
+        return (self.optcode.value != other.optcode.value or self.optlen != other.optlen
                 or self.optval != other.optval)
 
     @staticmethod
@@ -129,9 +127,10 @@ class Option:
         Checks the validity of an optcode.
         Will raise a ValueError exception if it is invalid.
         """
-        if (code not in Option.OptCodes.__members__.values() 
-        or code is Option.OptCodes.MO_NONE):
-            raise ValueError()
+        try:
+            Option.OptCodes(code)
+        except:
+            raise
 
     @staticmethod
     def optlen_check(code, len_):
@@ -159,6 +158,17 @@ class Option:
         while bytes_[0] == 0:
             del bytes_[0]
         return bytes_
+
+    @staticmethod
+    def int_from_bytes(b):
+        """
+        Converts sequence of bytes in network byte order into an unsigned integer.
+        """
+        t = b[0]
+        if len(b) != 1:
+            for byte in b[1:]:
+                t *= byte
+        return t
 
 
 # Static initialization goes here

@@ -3,6 +3,7 @@ This module contains the SOSRequestHandler class.
 """
 __author__ = 'chavignat'
 
+import asyncio
 from urllib.parse import unquote_plus
 from sys import stderr
 
@@ -20,11 +21,11 @@ class SOSRequestHandler:
         """
         self.master = master
 
+    @asyncio.coroutine
     def __call__(self, req, rep):
         """
-        Call operator.
+        Call operator. This method is a coroutine.
         :param req: request to handle
-        :return:
         """
         # First, attempt to decode URI
         try:
@@ -35,9 +36,9 @@ class SOSRequestHandler:
             if len(uri) == 0 or uri[0] != '/' or '..' in uri or uri.endswith('/'):
                 rep.code = HTTPCodes.HTTP_BAD_REQUEST
             else:
-                self.master.handle_http(uri, req, rep)
+                yield from self.master.handle_http(uri, req, rep)
 
         except Exception as e:
             # Unhandled errors are caught here and result in code HTTP 500 being sent.
-            stderr.write('Error while processing request :\n' + str(e))
+            stderr.write('Error while processing request :\n' + str(e) + '\n')
             rep.code = HTTPCodes.HTTP_INTERNAL_SERVER_ERROR
