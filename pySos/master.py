@@ -2,7 +2,6 @@
 This module contains the Master class.
 """
 import asyncio
-from datetime import datetime, timedelta
 
 from sos import sos
 from conf import Conf
@@ -17,12 +16,18 @@ from sos.option import Option
 
 
 class Master:
+    """
+    This class drives the SOS system and handles the HTTP servers, acting like a bridge between them.
+    """
     def __init__(self, cf):
         self.cf = cf
         self.engine = sos.SOS()
         self.cache = Cache()
 
     def start(self):
+        """
+        Initialize the SOS engine from the configuration file.
+        """
         r = True
         self.engine.timer_first_hello = self.cf.timers[self.cf.CfTimerIndex.I_FIRST_HELLO]
         self.engine.timer_interval_hello = self.cf.timers[self.cf.CfTimerIndex.I_INTERVAL_HELLO]
@@ -52,6 +57,9 @@ class Master:
         return r
 
     def stop(self):
+        """
+        Stops SOS engine.
+        """
         self.engine.stop()
 
     def parse_path(self, path):
@@ -61,6 +69,9 @@ class Master:
         :return: object of ParseResult type if parsing was successful, else None.
         """
         class ParseResult:
+            """
+            Dummy class to represent the result of the parse_path method.
+            """
             def __init__(self):
                 self.type, self.base, self.slave, self.resource, self.str_ = (None,) * 5
         res = ParseResult()
@@ -95,13 +106,18 @@ class Master:
                     else:
                         raise Exception()
                     res.type = ns.type
-        except Exception as e:
+        except Exception:
             res = None
 
         return res
 
     @staticmethod
     def split_path(path):
+        """
+        Splits a string containing a path in a list of the path components.
+        :param path: path to split
+        :return: list of path's components
+        """
         if not path.startswith('/'):
             return []
         else:
@@ -222,11 +238,11 @@ class Master:
             print_debug(dbg_levels.CACHE, 'reply = ' + str(m.req_rep))
         else:
             # Request not found in cache : send it and wait for a reply.
-            max = msg.exchange_lifetime(res.slave.l2_net.max_latency)
-            timeout = datetime.now() + timedelta(seconds=max)
-            print_debug(dbg_levels.HTTP, 'HTTP request, timeout = ' + str(max) + 's')
+            max_ = msg.exchange_lifetime(res.slave.l2_net.max_latency)
+            # timeout = datetime.now() + timedelta(seconds=max)
+            print_debug(dbg_levels.HTTP, 'HTTP request, timeout = ' + str(max_) + 's')
             self.engine.add_request(m)
-            for i in range(int(max)+1):
+            for i in range(int(max_)+1):
                 yield from asyncio.sleep(1)
                 if m.req_rep is not None:
                     break
@@ -263,7 +279,7 @@ class Master:
     def http_well_known(self, res, req, rep):
         """
         Handle a HTTP request for '.well-known' namespace.
-        :param request_path: RequestPath object returned by parse_path method
+        :param res: RequestPath object returned by parse_path method
         :param req: received Request to process
         :param rep: Reply object
         """

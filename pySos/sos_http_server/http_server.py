@@ -84,13 +84,20 @@ class HTTPServer(ThreadBase):
     def parse_request(self, reader):
         """
         Parses a received request into a Request object. This function is a coroutine.
+        :param reader: StreamReader object.
         :return: Request object, or None if a problem was encountered when parsing the request.
         """
         req = Request()
 
         # Parse the request line (method, URI, and http version)
         first_line = yield from asyncio.wait_for(reader.readline(), self.timeout)
+
         def take_until_space(b):
+            """
+            Returns a substring from the input stopping at the first space encountered.
+            :param b: bytes object
+            :return: substring of b up to it's first space.
+            """
             return takewhile(lambda c: c != b' '[0], b)
         req.method = bytes(take_until_space(first_line))
         req.uri = bytes(take_until_space(first_line[len(req.method)+1:]))
@@ -107,13 +114,18 @@ class HTTPServer(ThreadBase):
             if not req.http_ver_minor == 9:
                 return None
         elif req.http_ver_major == 1:
-            if req.http_ver_minor not in [0,1]:
+            if req.http_ver_minor not in [0, 1]:
                 return None
 
         # Parse header fields
         # Boost's server2 allows multiline header fields, which was deprecated by RFC7230, so I didn't
         # implement that behaviour.
         def take_until_colon(b):
+            """
+            Returns a substring from the input stopping at the first space encountered.
+            :param b: bytes object
+            :return: substring of b up to it's first space.
+            """
             return takewhile(lambda c: c != b':'[0], b)
         http_header_re = re.compile(b'^[a-zA-Z0-9-]+: ?.+ ?\r$')
         while True:
@@ -136,7 +148,6 @@ class HTTPServer(ThreadBase):
         if req.method == b'POST':
             for h in req.headers:
                 if h[0] == b'content-length':
-                    line = None
                     line = yield from asyncio.wait_for(reader.readexactly(int(h[1].decode())), self.timeout)
                     req.raw_post_args += line
                     reader.feed_eof()
@@ -144,7 +155,8 @@ class HTTPServer(ThreadBase):
 
         return req
 
-    def decode_request(self, req):
+    @staticmethod
+    def decode_request(req):
         """
         Decodes the payload string of POST requests. Only requests using 'application/x-www-form-urlencoded' encoding
         to pass parameters are supported.
@@ -154,7 +166,7 @@ class HTTPServer(ThreadBase):
         r = True
         try:
             req.post_args = parse_qsl(req.raw_post_args.decode())
-        except Exception as e:
+        except Exception:
             r = False
         return r
 
@@ -164,6 +176,8 @@ class HTTPServer(ThreadBase):
         Callback function automatically called when a new client connects to the server. Parses client request
         and forwards it to a RequestHandler for processing.
         This function is a coroutine.
+        :param reader: StreamReader object.
+        :param writer: StreamWriter object.
         """
         try:
             req = yield from self.parse_request(reader)

@@ -63,7 +63,7 @@ class Cache:
             do_cleanup = False
             now = datetime.now()
             for entry in self.cache:
-                if entry.expire > now:
+                if entry.expire < now:
                     do_cleanup = True
                     print_debug(dbg_levels.CACHE, 'Expiring ' + str(entry.req))
                 else:
