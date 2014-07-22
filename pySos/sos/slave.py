@@ -4,25 +4,34 @@ This module contains the Slave class
 
 from datetime import datetime, timedelta
 from enum import Enum
+from functools import reduce
+
 from util.debug import print_debug, dbg_levels
 from sos import msg
 from .resource import Resource
+
 
 class Slave:
     """
     This class describes a slave in the SOS system.
     """
     class StatusCodes(Enum):
+        """
+        Possible status codes for slaves.
+        """
         SL_INACTIVE = 0
         SL_ASSOCIATING = 0
         SL_RUNNING = 1
 
     class ResStatus(Enum):
+        """
+        Possible resource status codes.
+        """
         S_START = 0
         S_RESOURCE = 1
         S_ENDRES = 2
         S_ATTRNAME = 3
-        S_ATTRVAL_START  = 4
+        S_ATTRVAL_START = 4
         S_ATTRVAL_NQUOTED = 5
         S_ATTRVAL_QUOTED = 6
         S_ERROR = 7
@@ -45,14 +54,15 @@ class Slave:
         """
         Returns a string describing the slave status and resources.
         """
-        s1 = 'slave ' + str(self.id) + ' '
-        s2 = ('INACTIVE' if self.status is self.StatusCodes.SL_INACTIVE else
+        l1 = 'slave ' + str(self.id) + ' '
+        l2 = ('INACTIVE' if self.status is self.StatusCodes.SL_INACTIVE else
               'RUNNING (curmtu=' + str(self.curmtu) + ', ttl= ' +
               self.next_timeout.isoformat() + ')'
               if self.status is self.StatusCodes.SL_RUNNING else
               '(unknown state)')
-        s3 = ' mac=' + str(self.addr) + '\n'
-        return s1 + s2 + s3
+        l3 = ' mac=' + str(self.addr) + '\n'
+        res = '\t' + reduce(lambda s1, s2: s1 + s2, (str(w) for w in self.res_list), '') + '\n'
+        return l1 + l2 + l3 + res
 
     def reset(self):
         """
@@ -73,6 +83,7 @@ class Slave:
         This function expects the resource to be an iterable object
         containing the resource path, e.g for resource '/a/b/c' : ['a','b','c']
         If the resource is not found, returns None
+        :param res: iterable object containing the resource path.
         """
         for r in self.res_list:
             if r == res:
@@ -91,6 +102,8 @@ class Slave:
         is a control message originated from this slave.
         The method implements the SOS control protocol for this slave, 
         and maintains the state associated to this slave.
+        :param sos_instance: SOS engine instance.
+        :param mess: message to process.
         """
         tp = mess.sos_type
         if tp is msg.Msg.SosTypes.SOS_DISCOVER:
@@ -123,11 +136,21 @@ class Slave:
             print_debug(dbg_levels.STATE, 'Received an unrecognized message')
 
     def parse_resource_list(self, rlist, payload):
+        """
+        Parses the resource list for a slave.
+        :param rlist: list used to store the parsed resource list.
+        :param payload: payload of a SOS association message.
+        """
         attrname = ''
         cur_res = bytearray()
-        state = None
 
         def parse_single_byte(state, b):
+            """
+            Parses a single byte from the resource list.
+            :param state: current state of the parser
+            :param b: byte to parse
+            :return: new state of the parser
+            """
             nonlocal rlist, attrname, cur_res
             if state is self.ResStatus.S_START:
                 if b == b'<':
@@ -200,24 +223,24 @@ class Slave:
             else:
                 return self.ResStatus.S_ERROR
 
-        state = self.ResStatus.S_START
+        state_ = self.ResStatus.S_START
         # Iterating on a bytes object yields integers but parse_single_byte takes bytes.
         # So, iterate on indices and give it slices of length 1.
         for i in range(len(payload)):
-            state = parse_single_byte(state, payload[i:i+1])
-            if state is self.ResStatus.S_ERROR:
+            state_ = parse_single_byte(state_, payload[i:i+1])
+            if state_ is self.ResStatus.S_ERROR:
                 break
 
         # Handle terminal states
-        if state is self.ResStatus.S_ATTRNAME:
+        if state_ is self.ResStatus.S_ATTRNAME:
             if attrname == '':
                 rlist[len(rlist)-1].add_attribute(attrname, '')
-        elif state is self.ResStatus.S_ATTRVAL_START:
+        elif state_ is self.ResStatus.S_ATTRVAL_START:
             rlist[len(rlist)-1].add_attribute(attrname, '')
-        elif state is self.ResStatus.S_ATTRVAL_NQUOTED:
+        elif state_ is self.ResStatus.S_ATTRVAL_NQUOTED:
             rlist[len(rlist)-1].add_attribute(attrname, cur_res.decode())
-        elif state is self.ResStatus.S_ENDRES:
+        elif state_ is self.ResStatus.S_ENDRES:
             pass
         else:
-            state = self.ResStatus.S_ERROR
-        return state is not self.ResStatus.S_ERROR
+            state_ = self.ResStatus.S_ERROR
+        return state_ is not self.ResStatus.S_ERROR
