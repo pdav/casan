@@ -256,23 +256,22 @@ class Master:
                 self.cache.add(m)
             # Get content format
             content_format = None
-            for opt in m.optlist:
+            for opt in r.optlist:
                 if opt.optcode is Option.OptCodes.MO_CONTENT_FORMAT:
                     content_format = opt.optval
+            content_format = content_format if content_format is not None else 0  # Default to text/plain
             # Get announced MTU
-            for opt in m.optlist:
+            for opt in r.optlist:
                 if opt.optcode is Option.OptCodes.MO_SIZE1:
                     res.slave.curmtu = opt.optval
             rep.code = HTTPCodes.HTTP_OK
 
             rep.body = bytes()
             if content_format == 0:
-                for c in range(m.payload):
-                    rep.body += c
+                rep.body = r.payload
                 rep.headers.append((b'Content-Type', b'text/plain'))
             elif content_format == 50:
-                for c in range(m.payload):
-                    rep.body += c
+                rep.body = r.payload
                 rep.headers.append((b'Content-Type', b'application/json'))
             rep.headers.append((b'Content-Length', str(len(rep.body)).encode()))
 
