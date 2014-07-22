@@ -1,3 +1,7 @@
+"""
+This module contains the Receiver class.
+"""
+
 from datetime import datetime, timedelta
 
 from util import threads
@@ -7,6 +11,9 @@ from .slave import Slave
 
 
 class Receiver(threads.ThreadBase):
+    """
+    This class reads data from a L2 network interface and processes it by sending replies to the Sender.
+    """
     def __init__(self, sos_instance, net, slavelist):
         super().__init__(name='Receiver<{}>'.format(net.iface))
         self.l2net = net
@@ -19,6 +26,10 @@ class Receiver(threads.ThreadBase):
         self.broadcast.addr = net.broadcast
 
     def run(self):
+        """
+        Override of the Thread.run method.
+        This function loops reading for data and processes it.
+        """
         print_debug(dbg_levels.MESSAGE, 'Receiver for network interface {} lives!'.format(self.l2net.port.name))
         while self.keepRunning:
             m = Msg()
@@ -45,7 +56,7 @@ class Receiver(threads.ThreadBase):
                 req.stop_retransmit()
                 Msg.link_req_rep(req, m)
                 with self.sos_instance.condition_var as cv:
-                    self.sos_instance.condition_var.notify()
+                    cv.notify()
                 # If it is not a SOS message, i.e. it doesn't need processing, keep loopin'
                 if m.sos_type is Msg.SosTypes.SOS_UNKNOWN:
                     m.find_sos_type()
@@ -75,6 +86,7 @@ class Receiver(threads.ThreadBase):
         Check if the sender of a message is an authorized peer. If not, check if it is an SOS slave
         coming up.
         :param mess: received message
+        :param addr: MAC address of the slave to find.
         :return: True if the sender is an authorized peer or a new SOS slave.
         """
         # Is the peer already known?
@@ -116,7 +128,7 @@ class Receiver(threads.ThreadBase):
                 id_ = mess.id
                 for mreq in self.sos_instance.mlist:
                     if mreq.id == id_:
-                        print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + str(id_) )
+                        print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + str(id_))
                         corr_req = mreq
                         break
         return corr_req

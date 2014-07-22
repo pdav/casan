@@ -19,6 +19,7 @@ class Master:
     """
     This class drives the SOS system and handles the HTTP servers, acting like a bridge between them.
     """
+
     def __init__(self, cf):
         self.cf = cf
         self.engine = sos.SOS()
@@ -68,12 +69,15 @@ class Master:
         :param path: path to parse
         :return: object of ParseResult type if parsing was successful, else None.
         """
+
         class ParseResult:
             """
             Dummy class to represent the result of the parse_path method.
             """
+
             def __init__(self):
                 self.type, self.base, self.slave, self.resource, self.str_ = (None,) * 5
+
         res = ParseResult()
         try:
             path_list = self.split_path(path)
@@ -85,7 +89,8 @@ class Master:
                             res.str_ = '/'
                         else:
                             res.str_ = '/' + '/'.join(path_list[len(ns.prefix):])
-                        print_debug(dbg_levels.HTTP, 'HTTP request for admin namespace: {}, remainder={}'.format(res.base, res.str_))
+                        print_debug(dbg_levels.HTTP, ('HTTP request for admin namespace: {}, '
+                                                      'remainder={}'.format(res.base, res.str_)))
                     elif ns.type is Conf.CfNsType.NS_SOS:
                         if len(path_list) <= len(ns.prefix):
                             raise Exception()
@@ -96,10 +101,11 @@ class Master:
                             res.slave = self.engine.find_slave(sid)
                             if res.slave is None or res.slave.status is not Slave.StatusCodes.SL_RUNNING:
                                 raise Exception()
-                            res.resource = res.slave.find_resource(path_list[len(ns.prefix)+1:])
+                            res.resource = res.slave.find_resource(path_list[len(ns.prefix) + 1:])
                             if res.resource is None:
                                 raise Exception()
-                            print_debug(dbg_levels.HTTP, 'HTTP request for SOS namespace : {}, slave id= {}'.format(res.base, res.slave.id))
+                            print_debug(dbg_levels.HTTP, ('HTTP request for SOS namespace : {}, '
+                                                          'slave id= {}'.format(res.base, res.slave.id)))
                     elif ns.type is Conf.CfNsType.NS_WELL_KNOWN:
                         # No specific handling
                         print_debug(dbg_levels.HTTP, 'HTTP request for .well-known namespace.')
@@ -242,7 +248,7 @@ class Master:
             # timeout = datetime.now() + timedelta(seconds=max)
             print_debug(dbg_levels.HTTP, 'HTTP request, timeout = ' + str(max_) + 's')
             self.engine.add_request(m)
-            for i in range(int(max_)+1):
+            for i in range(int(max_) + 1):
                 yield from asyncio.sleep(1)
                 if m.req_rep is not None:
                     break

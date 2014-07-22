@@ -166,7 +166,7 @@ class HTTPServer(ThreadBase):
         r = True
         try:
             req.post_args = parse_qsl(req.raw_post_args.decode())
-        except Exception:
+        except ValueError:
             r = False
         return r
 

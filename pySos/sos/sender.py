@@ -1,5 +1,5 @@
 """
-
+This module contains the Sender class.
 """
 from datetime import datetime, timedelta
 from sys import stderr
@@ -35,8 +35,14 @@ class Sender(threads.ThreadBase):
     def __init__(self, sos_instance):
         super().__init__()
         self.sos_instance = sos_instance
+        self.next_timeout = datetime.now() + timedelta(seconds=1)
 
     def run(self):
+        """
+        Override of the Thread.run method.
+        This method sleeps and wakes up periodically when there is something to be done, i.e starting a Receiver
+        for a new L2 network, or sending a pending message.
+        """
         print_debug(dbg_levels.MESSAGE, 'Sender thread lives!')
         while self.keepRunning:
             now = datetime.now()
@@ -51,7 +57,8 @@ class Sender(threads.ThreadBase):
                             receiver.hello_msg.id = 0
                             if not receiver.hello_msg.send():
                                 print_debug(dbg_levels.MESSAGE, 'Error sending hello!')
-                            receiver.next_hello = datetime.now() + timedelta(seconds=self.sos_instance.timer_interval_hello)
+                            receiver.next_hello = (datetime.now() +
+                                                   timedelta(seconds=self.sos_instance.timer_interval_hello))
 
                     # Traverse slavelist and check ttl
                     for slave in self.sos_instance.slist:
@@ -91,7 +98,8 @@ class Sender(threads.ThreadBase):
                 else:
                     delay = (self.next_timeout - datetime.now()).total_seconds()
                     if delay < 0:  # Just to be safe
-                        print_debug(dbg_levels.MESSAGE, 'WARNING : negative delay ({}), trying to continue.'.format(delay))
+                        print_debug(dbg_levels.MESSAGE, ('WARNING : negative delay ({}), '
+                                                         'trying to continue.'.format(delay)))
                     else:
                         print_debug(dbg_levels.MESSAGE, 'WAIT FOR: {} seconds'.format(delay))
                         self.sos_instance.condition_var.wait(delay)
