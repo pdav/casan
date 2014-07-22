@@ -3,11 +3,15 @@ This module contains the Option class
 """
 from enum import Enum
 
+
 class Option:
     """
     Represents an option in a CoAP message, and it's value, if any.
     """
     class OptCodes(Enum):
+        """
+        This enumeration represents all valid option codes.
+        """
         MO_NONE = 0
         MO_CONTENT_FORMAT = 12
         MO_ETAG = 4
@@ -26,6 +30,9 @@ class Option:
         MO_SIZE1 = 60
 
     class OptDesc(Enum):
+        """
+        This enumeration represents the type of an option value.
+        """
         OF_NONE = 0
         OF_OPAQUE = 1
         OF_STRING = 2
@@ -35,24 +42,6 @@ class Option:
     # Dictionary of 3-tuples
     # OptDesc[OPTCODE] = (OPT_FORMAT, OPT_MINLEN, OPT_MAXLEN)
     optdesc = {}
-
-    def is_critical(self):
-        """
-        Returns True if the option is critical (see CoAP draft 5.4.1)
-        """
-        return self.optcode & 1
-
-    def is_unsafe(self):
-        """
-        Returns True if the option is unsafe to forward (see CoAP draft 5.4.2)
-        """
-        return self.optcode & 2
-
-    def is_nocachekey(self):
-        """
-        Returns True if the option is nocachekey (see CoAP draft 5.4.2)
-        """
-        return (self.optcode & 0x1E) == 0x1C
 
     def __init__(self, code=None, optval=None, optlen=None):
         """
@@ -76,7 +65,7 @@ class Option:
             raise RuntimeError('Invalid parameters')
         if optlen is None and optval is not None:
             if type(optval) not in [int, str]:
-                raise TypeError('optval is of type ' + type(optval).__name__ + 
+                raise TypeError('optval is of type ' + type(optval).__name__ +
                                 ' (expected int or str)')
             elif type(optval) == int and optval < 0:
                 raise ValueError()
@@ -89,17 +78,17 @@ class Option:
         if optval is None:
             self.optlen = 0
             self.optval = None
-        elif optlen is None: # Integer/String value
+        elif optlen is None:  # Integer/String value
             self.optval = self.int_to_bytes(optval) if type(optval) == int else optval
-            self.optlen = len(self.optval) 
-        else: # Opaque value
+            self.optlen = len(self.optval)
+        else:  # Opaque value
             self.optlen_check(code, optlen)
             self.optval = optval
             self.optlen = optlen
 
     def __lt__(self, other):
         """
-        Comparison operator '<'. Implemented for the sole purpose of 
+        Comparison operator '<'. Implemented for the sole purpose of
         sorting an option list.
         Options are sorted by option code.
         """
@@ -121,11 +110,30 @@ class Option:
         return (self.optcode.value != other.optcode.value or self.optlen != other.optlen
                 or self.optval != other.optval)
 
+    def is_critical(self):
+        """
+        Returns True if the option is critical (see CoAP draft 5.4.1)
+        """
+        return self.optcode.value & 1
+
+    def is_unsafe(self):
+        """
+        Returns True if the option is unsafe to forward (see CoAP draft 5.4.2)
+        """
+        return self.optcode.value & 2
+
+    def is_nocachekey(self):
+        """
+        Returns True if the option is nocachekey (see CoAP draft 5.4.2)
+        """
+        return (self.optcode.value & 0x1E) == 0x1C
+
     @staticmethod
     def optcode_check(code):
         """
         Checks the validity of an optcode.
         Will raise a ValueError exception if it is invalid.
+        :param code: integer representing an option code.
         """
         try:
             Option.OptCodes(code)
@@ -138,7 +146,9 @@ class Option:
         Checks the validity of an option length. This check does not assume
         that the option code is valid, so it will raise a ValueError
         exception if the option is invalid, or if the option is valid
-        but its length is not.
+        but it's length is not.
+        :param code: OptCodes enumeration member
+        :param len_: length of the option.
         """
         if not Option.optdesc[code][1] <= len_ <= Option.optdesc[code][2]:
             raise ValueError()
@@ -148,6 +158,7 @@ class Option:
         """
         Converts an integer into a sequence of bytes in network byte order,
         without leading null bytes.
+        :param n: integer to convert.
         """
         bytes_ = bytearray()
         while n != 0:
@@ -163,6 +174,7 @@ class Option:
     def int_from_bytes(b):
         """
         Converts sequence of bytes in network byte order into an unsigned integer.
+        :param b: bytes to convert.
         """
         t = b[0]
         if len(b) != 1:
