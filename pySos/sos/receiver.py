@@ -55,8 +55,8 @@ class Receiver(threads.ThreadBase):
                 # original request, and wake the emitter.
                 req.stop_retransmit()
                 Msg.link_req_rep(req, m)
-                with self.sos_instance.condition_var as cv:
-                    cv.notify()
+                with self.sos_instance.condition_var:
+                    self.sos_instance.condition_var.notify()
                 # If it is not a SOS message, i.e. it doesn't need processing, keep loopin'
                 if m.sos_type is Msg.SosTypes.SOS_UNKNOWN:
                     m.find_sos_type()
