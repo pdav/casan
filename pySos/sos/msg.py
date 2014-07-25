@@ -19,26 +19,42 @@ sos_namespace = (SOS_NAMESPACE1, SOS_NAMESPACE2)
 
 # CoAP Related constants
 # Note : all times are expressed in seconds unless explicitly specified.
+# ACK random factor to compute initial timeout for CON messages
 ACK_RANDOM_FACTOR = 1.5
+# ACK timeout for CONfirmable messages
 ACK_TIMEOUT = 1
+# CoAP maximum token length.
 COAP_MAX_TOKLEN = 8
+# Maximum number of retransmissions for a CoAP message.
 MAX_RETRANSMIT = 4
+# Max time from the first transmission of a CON message to the last.
 MAX_TRANSMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
+# Processing delay from CON reception to the ACK send
 PROCESSING_DELAY = ACK_TIMEOUT
 
 
 # Some helper functions that don't really belong to the msg class
 def exchange_lifetime(max_lat):
+    """
+    Computes the time from starting to send a CONfirmable message
+    to the time when an ACK is no longer expected.
+    :param max_lat: maximum latency of the network.
+    """
     return MAX_TRANSMIT_SPAN + (2 * max_lat) + PROCESSING_DELAY
 
 
 def max_rtt(max_lat):
+    """
+    Computes the maximum round trip time.
+    :param max_lat: maximum latency of the network.
+    """
     return 2 * max_lat + PROCESSING_DELAY
 
 
 def coap_ver(mess):
     """
     Extract the CoAP protocol version from the frame header.
+    :param mess: Message to extract information from.
     """
     return (mess[0] >> 6) & 0x03
 
@@ -46,6 +62,7 @@ def coap_ver(mess):
 def coap_type(mess):
     """
     Extract the CoAP message type from the frame header.
+    :param mess: Message to extract information from.
     """
     return Msg.MsgTypes((mess[0] >> 4) & 0x03)
 
@@ -53,6 +70,7 @@ def coap_type(mess):
 def coap_toklen(mess):
     """
     Extract the CoAP token length from the frame header.
+    :param mess: Message to extract information from.
     """
     return mess[0] & 0x0F
 
@@ -60,6 +78,7 @@ def coap_toklen(mess):
 def coap_id(mess):
     """
     Extract the CoAP message ID from the frame header.
+    :param mess: Message to extract information from.
     """
     return (mess[2] << 8) | mess[3]
 
@@ -67,13 +86,14 @@ def coap_id(mess):
 def coap_code(mess):
     """
     Extract the CoAP method code from the frame header.
+    :param mess: Message to extract information from.
     :return: A member of the MsgCodes enumeration if possible.
              If the value is not a member of the MsgCodes enumeration, this function will return an integer.
     """
     b = None
     try:
         b = Msg.MsgCodes(mess[1])
-    except Exception as e:
+    except Exception:
         b = mess[1]
     return b
 
@@ -106,12 +126,18 @@ class Msg:
     @bug should wake the waiter if a request is abandoned due to a time-out
     """
     class MsgTypes(Enum):
+        """
+        This enumeration lists the possible message types.
+        """
         MT_CON = 0
         MT_NON = 1
         MT_ACK = 2
         MT_RST = 3
         
     class MsgCodes(Enum):
+        """
+        The enumeration lists the possible CoAP method codes.
+        """
         MC_EMPTY = 0
         MC_GET = 1
         MC_POST = 2
@@ -119,6 +145,9 @@ class Msg:
         MC_DELETE = 4
         
     class SosTypes(Enum):
+        """
+        This enumeration lists the possible SOS message types.
+        """
         SOS_NONE = 0
         SOS_DISCOVER = 1
         SOS_ASSOC_REQUEST = 2
@@ -155,6 +184,7 @@ class Msg:
         self.msg, self.msg_len = None, 0
         self.payload, self.paylen = None, 0
         self.toklen = 0
+        self.token = None
         self.ntrans = 0
         self.timeout = timedelta()
         self.next_timeout = datetime.max
@@ -221,8 +251,7 @@ class Msg:
             self.pk_t, packet = r
         self.msg_len = packet[2]
         self.msg = packet[1]
-        if ((self.pk_t in [l2.PkTypes.PK_ME, l2.PkTypes.PK_BCAST])
-            and self.coap_decode()):
+        if (self.pk_t in [l2.PkTypes.PK_ME, l2.PkTypes.PK_BCAST]) and self.coap_decode():
             print_debug(dbg_levels.MESSAGE, 'Valid recv -> ' +
                         self.pk_t.name + ', id=' + str(self.id) +
                         ', len=' + str(self.msg_len))
@@ -230,7 +259,6 @@ class Msg:
             print_debug(dbg_levels.MESSAGE, 'Invalid recv -> ' + self.pk_t.name +
                         ', id=' + str(self.id) + ', len=' + str(self.msg_len))
         return packet[0]
-
 
     def coap_decode(self):
         """
@@ -284,14 +312,15 @@ class Msg:
                         elif Option.optdesc[Option.OptCodes(opt_nb)][0] is Option.OptDesc.OF_UINT:
                             o = Option(opt_nb, Option.int_from_bytes(self.msg[i:i+opt_len]))
                     self.optlist.append(o)
-                except ValueError as e:
+                except ValueError:
                     print_debug(dbg_levels.OPTION, 'Error while decoding message : invalid value for option.')
                     success = False
                 except Exception as e:
                     print_debug(dbg_levels.OPTION, 'Error while decoding message : ' + str(e))
                     success = False
                 i += opt_len
-            else: print_debug(dbg_levels.OPTION, 'Unknown option')
+            else:
+                print_debug(dbg_levels.OPTION, 'Unknown option')
 
         self.paylen = self.msg_len - i - 1  # Mind the 0xFF marker
         if success and self.paylen > 0:
@@ -299,7 +328,8 @@ class Msg:
                 success = False
             else:
                 self.payload = self.msg[i+1:]
-        else: self.paylen = 0
+        else:
+            self.paylen = 0
         return success
 
     def send(self):
@@ -318,12 +348,14 @@ class Msg:
                 if self.ntrans == 0:
                     rand_timeout = uniform(0, ACK_RANDOM_FACTOR - 1)
                     n_sec = ACK_TIMEOUT * (rand_timeout + 1)
-                    self.timeout = timedelta(seconds = n_sec)
+                    self.timeout = timedelta(seconds=n_sec)
                     self.expire = datetime.now() + timedelta(seconds=exchange_lifetime(self.peer.l2_net.max_latency))
-                else: self.timeout *= 2
+                else:
+                    self.timeout *= 2
                 self.next_timeout = datetime.now() + self.timeout
                 self.ntrans += 1
-            elif self.msg_type is Msg.MsgTypes.MT_NON: self.ntrans = MAX_RETRANSMIT
+            elif self.msg_type is Msg.MsgTypes.MT_NON:
+                self.ntrans = MAX_RETRANSMIT
             elif self.msg_type in [Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST]:
                 self.ntrans = MAX_RETRANSMIT
                 self.expire = datetime.now() + timedelta(seconds=max_rtt(self.peer.l2_net.max_latency))
@@ -419,6 +451,7 @@ class Msg:
         """
         Checks whether two messages match for caching.
         See CoAP spec (5.6)
+        :param other: message to check for a match with.
         """
         if self.msg_type is not other.msg_type:
             return False
@@ -445,6 +478,8 @@ class Msg:
     def link_req_rep(m1, m2):
         """
         Mutually link a request message and it's reply.
+        :param m1: a message
+        :param m2: message to mark as a reply of m1
         """
         if m2 is None:
             if m1.req_rep is not None:
@@ -462,14 +497,21 @@ class Msg:
             m2.req_rep = m1
 
     def is_sos_ctrl_msg(self):
+        """
+        Checks if the message is a SOS control message.
+        :return: True if the message is a SOS control message, else False.
+        """
         r = True
         count = 0
         for i, opt in enumerate(self.optlist):
             if opt.optcode is Option.OptCodes.MO_URI_PATH:
                 r = False
-                if i >= len(sos_namespace): break
-                if len(sos_namespace[i]) != opt.optlen: break
-                if sos_namespace[i] != opt.optval: break
+                if i >= len(sos_namespace):
+                    break
+                if len(sos_namespace[i]) != opt.optlen:
+                    break
+                if sos_namespace[i] != opt.optval:
+                    break
                 r = True
                 count += 1
         if r and (count != len(sos_namespace)):
@@ -511,7 +553,7 @@ class Msg:
         """
         found = False
         if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-            if self.msg_type is self.MsgTypes.MT_CON and self.msg_code is self.MsgCodes.MC_POST and self.is_sos_ctrl_msg() == True:
+            if self.msg_type is self.MsgTypes.MT_CON and self.msg_code is self.MsgCodes.MC_POST and self.is_sos_ctrl_msg():
                 for opt in self.optlist:
                     if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                         # TODO: maybe use regular expressions here
@@ -521,6 +563,13 @@ class Msg:
         return self.sos_type is self.SosTypes.SOS_ASSOC_REQUEST
 
     def find_sos_type(self, check_req_rep=True):
+        """
+        Computes the type of an SOS message.
+        :param check_req_rep: defines whether to check the linked message to enable
+            recognising SOS association messages. You should not have to mess with this
+            parameter, it's purpose is to provide a single level of recursion.
+        :return:
+        """
         if self.sos_type is self.SosTypes.SOS_UNKNOWN:
             if not self.is_sos_associate() and not self.is_sos_discover()[0]:
                 if check_req_rep and self.req_rep is not None:
@@ -539,6 +588,12 @@ class Msg:
             self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, namespace, len(namespace)))
 
     def mk_ctrl_assoc(self, ttl, mtu):
+        """
+        Build a SOS_ASSOC_ANSWER message to be sent to a discovered slave,
+        or a slave renewing it's association with the master.
+        :param ttl: association ttl
+        :param mtu: slave mtu
+        """
         self.add_path_ctrl()
         s = 'ttl=' + str(ttl)
         self.optlist.append(Option(Option.OptCodes.MO_URI_QUERY, s, len(s)))
@@ -548,7 +603,7 @@ class Msg:
     def mk_ctrl_hello(self, hello_id):
         """
         Builds a hello message.
-        :param hello_id:
+        :param hello_id: integer to use as the hello ID number.
         """
         self.add_path_ctrl()
         s = 'hello={}'.format(hello_id)

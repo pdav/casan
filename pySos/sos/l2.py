@@ -5,6 +5,7 @@ This module defines the various classes used for L2 network addressing.
 import abc
 from enum import Enum
 
+
 class PkTypes(Enum):
     """
     Enumerates packet types (sent to me, broadcasted, whatever...)
@@ -13,7 +14,8 @@ class PkTypes(Enum):
     PK_BCAST = 1
     PK_NONE = 2
 
-class l2addr(metaclass = abc.ABCMeta):
+
+class l2addr(metaclass=abc.ABCMeta):
     """
     This abstract class is the base for all l2addr-* subclasses
     """
@@ -69,6 +71,8 @@ class l2net(metaclass=abc.ABCMeta):
     def send(self, daddr, data):
         """
         Send some data to a specific address.
+        :param daddr: destination address.
+        :param data: data to send.
         """
         pass
 
@@ -76,6 +80,7 @@ class l2net(metaclass=abc.ABCMeta):
     def bsend(self, data):
         """
         Broadcast some data.
+        :param data: data to send.
         """
         pass
 
