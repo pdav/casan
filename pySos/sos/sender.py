@@ -54,7 +54,10 @@ class Sender(threads.ThreadBase):
                             print_debug(dbg_levels.MESSAGE, 'Found a receiver to start')
                             receiver.start()
                         if now >= receiver.next_hello:  # Needs update ?
+                            # Set ID to 0 will generate a new one, but we need to clear
+                            # the binary representation of the message.
                             receiver.hello_msg.id = 0
+                            receiver.hello_msg.msg = None
                             if not receiver.hello_msg.send():
                                 print_debug(dbg_levels.MESSAGE, 'Error sending hello!')
                             receiver.next_hello = (datetime.now() +
