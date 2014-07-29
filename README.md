@@ -74,3 +74,22 @@ Unplug and plug again your devices. You should show them:
     # ls -l /dev/zig*
     lrwxrwxrwx 1 root root 7 Apr 17 11:54 /dev/zig0 -> ttyUSB0
     lrwxrwxrwx 1 root root 7 Apr 17 11:54 /dev/zig1 -> ttyUSB1
+
+
+Code metrics
+------------
+
+Reliable code metrics:
+
+### Master
+
+    $ find master -name "*.[ch]*" | xargs wc -l
+    $ find master -name "*.[ch]*" | xargs cat | tr -d -c ";" | wc -c
+
+### Arduino slave
+
+    $ find arduino/libraries -name "*.[ch]*" | grep -v /boards/ | xargs wc -l
+    $ find arduino/libraries -name "*.[ch]*" | grep -v /boards/ | xargs cat | tr -d -c ";" | wc -c
+
+Note: sub-directory `/boards` is not counted since it includes all boards
+supported by the uracoli library.
