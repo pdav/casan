@@ -18,7 +18,9 @@ The SOS slave program needs:
 
 
 On Linux, the needed packages are:
-- (to be completed)
+- arduino
+- screen
+- libdevice-serialport-perl
 
 On FreeBSD, the needed ports are:
 - devel/arduino
@@ -35,7 +37,8 @@ https://github.com/logos-electromechanical/Zigduino-1.0
 
 To install it, do the following steps:
 
-    # ZDIR=..../Zigduino-1.0/hardware/arduino
+    # git clone https://github.com/logos-electromechanical/Zigduino-1.0
+    # ZDIR=`pwd`/Zigduino-1.0/hardware/arduino
     # ADIR=/usr/share/arduino/hardware/arduino		# standard Arduino IDE
     # ln -s $ZDIR/cores/zigduino $ADIR/cores
     # ln -s $ZDIR/variants/zigduino_r2 $ADIR/variants
@@ -43,6 +46,7 @@ To install it, do the following steps:
     # ln -s $ZDIR/boards.txt $ADIR
 
 On FreeBSD, ADIR must be set to `/usr/local/arduino/hardware/arduino`.
+On MacOS, ADIR must be set to ?
 
 
 Test sketches and examples
