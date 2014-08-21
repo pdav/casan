@@ -3,7 +3,7 @@
  * @brief request_handler class interface
  *
  * Note: this file is a modified version of the equivalent
- * file from the Boost "http server2".
+ * file from the ASIO example "http server2".
  * See source file for license and credits.
  */
 
@@ -11,10 +11,7 @@
 // request_handler.hpp
 // ~~~~~~~~~~~~~~~~~~~
 //
-// Modified by Pierre David from the Boost "http server2"
-// example by Christopher M. Kohlhoff
-//
-// Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2014 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)

@@ -2,7 +2,7 @@
 // server.hpp
 // ~~~~~~~~~~
 //
-// Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2014 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -36,15 +36,24 @@ public:
   /// Run the server's io_service loop.
   void run();
 
-  /// Stop the server.
+  /// Make this method public
   void stop();
 
 private:
+  /// Initiate an asynchronous accept operation.
+  void start_accept();
+
   /// Handle completion of an asynchronous accept operation.
   void handle_accept(const asio::error_code& e);
 
+  /// Handle a request to stop the server.
+  void handle_stop();
+
   /// The pool of io_service objects used to perform asynchronous operations.
   io_service_pool io_service_pool_;
+
+  /// The signal_set is used to register for process termination notifications.
+  asio::signal_set signals_;
 
   /// Acceptor used to listen for incoming connections.
   asio::ip::tcp::acceptor acceptor_;

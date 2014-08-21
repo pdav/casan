@@ -21,18 +21,15 @@ OBJS = \
 	request_parser.o \
 	server.o \
 
-all:	libhttp.a testhttp
+all:	libhttp.a
 
 libhttp.a: $(OBJS)
 	ar r libhttp.a $(OBJS)
 
-testhttp: posix_main.o libhttp.a
-	c++ $(CXXFLAGS) -o testhttpd posix_main.o $(LDFLAGS)
-
 *.o: $(HDRS)
 
 clean:
-	rm -f *.o testhttp libhttp.a tags
+	rm -f *.o libhttp.a tags
 
 tags:
 	ctags --extra=+qf *.[ch]*
