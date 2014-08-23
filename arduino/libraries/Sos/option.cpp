@@ -131,7 +131,7 @@ option::option (optcode_t optcode)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	Serial.println (F (RED ("option::optval err: CHK_OPTCODE 1"))) ;
+	DBGLN1 (F (RED ("option::optval err: CHK_OPTCODE 1"))) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     RESET ;
@@ -155,13 +155,13 @@ option::option (optcode_t optcode, const void *optval, int optlen)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	Serial.println (F (RED ("option::optval err: CHK_OPTCODE 2"))) ;
+	DBGLN1 (F (RED ("option::optval err: CHK_OPTCODE 2"))) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     CHK_OPTLEN (optcode, optlen, err) ;
     if (err)
     {
-	Serial.println (F (RED ("option::optval err: CHK_OPTLEN 2"))) ;
+	DBGLN1 (F (RED ("option::optval err: CHK_OPTLEN 2"))) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
     }
     RESET ;
@@ -192,13 +192,13 @@ option::option (optcode_t optcode, option::uint optval)
     CHK_OPTCODE (optcode, err) ;
     if (err)
     {
-	Serial.println (F (RED ("option::optval err: CHK_OPTCODE 3"))) ;
+	DBGLN1 (F (RED ("option::optval err: CHK_OPTCODE 3"))) ;
 	option::errno_ = OPT_ERR_OPTCODE ;
     }
     CHK_OPTLEN (optcode, len, err) ;
     if (err)
     {
-	Serial.println (F (RED ("option::optval err: CHK_OPTLEN 3"))) ;
+	DBGLN1 (F (RED ("option::optval err: CHK_OPTLEN 3"))) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
     }
     RESET ;
@@ -380,7 +380,7 @@ void option::optval (option::uint val)
     CHK_OPTLEN (optcode_, len, err) ;
     if (err)
     {
-	Serial.println (F (RED ("option::optval err: CHK_OPTLEN"))) ;
+	DBGLN1 (F (RED ("option::optval err: CHK_OPTLEN"))) ;
 	option::errno_ = OPT_ERR_OPTLEN ;
 	return ;
     }
@@ -412,53 +412,53 @@ uint8_t option::get_errno (void)
 
 void option::print (void)
 {
-    Serial.print (F (YELLOW ("OPTION") " : " RED ("optcode") "=")) ;
+    DBG1 (F (YELLOW ("OPTION") " : " RED ("optcode") "=")) ;
     switch ((unsigned char) optcode_)
     {
-	case MO_None		: Serial.print (F("MO_None")) ; break ;
-	case MO_Content_Format	: Serial.print (F("MO_Content_Format")) ; break;
-	case MO_Etag		: Serial.print (F("MO_Etag")) ; break ;
-	case MO_Location_Path	: Serial.print (F("MO_Location_Path")) ; break ;
-	case MO_Location_Query	: Serial.print (F("MO_Location_Query")) ; break;
-	case MO_Max_Age		: Serial.print (F("MO_Max_Age")) ; break ;
-	case MO_Proxy_Uri	: Serial.print (F("MO_Proxy_Uri")) ; break ;
-	case MO_Proxy_Scheme	: Serial.print (F("MO_Proxy_Scheme")) ; break ;
-	case MO_Uri_Host	: Serial.print (F("MO_Uri_Host")) ; break ;
-	case MO_Uri_Path	: Serial.print (F("MO_Uri_Path")) ; break ;
-	case MO_Uri_Port	: Serial.print (F("MO_Uri_Port")) ; break ;
-	case MO_Uri_Query	: Serial.print (F("MO_Uri_Query")) ; break ;
-	case MO_Accept		: Serial.print (F("MO_Accept")) ; break ;
-	case MO_If_None_Match	: Serial.print (F("MO_If_None_Match")) ; break ;
-	case MO_If_Match	: Serial.print (F("MO_If_Match")) ; break ;
+	case MO_None		: DBG1 (F("MO_None")) ; break ;
+	case MO_Content_Format	: DBG1 (F("MO_Content_Format")) ; break;
+	case MO_Etag		: DBG1 (F("MO_Etag")) ; break ;
+	case MO_Location_Path	: DBG1 (F("MO_Location_Path")) ; break ;
+	case MO_Location_Query	: DBG1 (F("MO_Location_Query")) ; break;
+	case MO_Max_Age		: DBG1 (F("MO_Max_Age")) ; break ;
+	case MO_Proxy_Uri	: DBG1 (F("MO_Proxy_Uri")) ; break ;
+	case MO_Proxy_Scheme	: DBG1 (F("MO_Proxy_Scheme")) ; break ;
+	case MO_Uri_Host	: DBG1 (F("MO_Uri_Host")) ; break ;
+	case MO_Uri_Path	: DBG1 (F("MO_Uri_Path")) ; break ;
+	case MO_Uri_Port	: DBG1 (F("MO_Uri_Port")) ; break ;
+	case MO_Uri_Query	: DBG1 (F("MO_Uri_Query")) ; break ;
+	case MO_Accept		: DBG1 (F("MO_Accept")) ; break ;
+	case MO_If_None_Match	: DBG1 (F("MO_If_None_Match")) ; break ;
+	case MO_If_Match	: DBG1 (F("MO_If_Match")) ; break ;
 	default :
-	    Serial.print (F (RED ("ERROR"))) ;
-	    Serial.print ((unsigned char) optcode_) ;
+	    DBG1 (F (RED ("ERROR"))) ;
+	    DBG1 ((unsigned char) optcode_) ;
 	    break ;
     }
-    Serial.print (F ("/")) ;
-    Serial.print (optcode_) ;
-    Serial.print (F (BLUE (" optlen") "=")) ;
-    Serial.print (optlen_) ;
+    DBG1 (F ("/")) ;
+    DBG1 (optcode_) ;
+    DBG1 (F (BLUE (" optlen") "=")) ;
+    DBG1 (optlen_) ;
 
     if (optval_)
     {
-	Serial.print (F (BLUE (" optval") "=")) ;
+	DBG1 (F (BLUE (" optval") "=")) ;
 	char *buf = (char *) malloc (sizeof (char) * optlen_ + 1) ;
 	memcpy (buf, optval_, optlen_) ;
 	buf[optlen_] = '\0' ;
-	Serial.print (buf) ;
+	DBG1 (buf) ;
 	free (buf) ;
     }
     else if (optlen_ > 0 )
     {
-	Serial.print (F (BLUE (" staticval") "=")) ;
+	DBG1 (F (BLUE (" staticval") "=")) ;
 	char *buf = (char *) malloc (sizeof (char) * optlen_ + 1) ;
 	memcpy (buf, staticval_, optlen_) ;
 	buf[optlen_] = '\0' ;
-	Serial.print (buf) ;
+	DBG1 (buf) ;
 	free (buf) ;
     }
-    Serial.println () ;
+    DBGLN0 () ;
 }
 
 void option::reset_errno (void)

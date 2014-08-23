@@ -10,6 +10,21 @@
 // number of elements in an array
 #define NTAB(t)		((int) (sizeof (t)/sizeof (t)[0]))
 
+/*
+ * Debug macros, which can be disabled to count program size
+ */
+
+#if DBLEVEL > 0
+#  define DBG1(a)	Serial.print (a)
+#  define DBG2(a,b)	Serial.print (a, b)
+#  define DBGLN0()	Serial.println ()
+#  define DBGLN1(a)	Serial.println (a)
+#else
+#  define DBG1(a)	/* nothing */
+#  define DBG2(a,b)	/* nothing */
+#  define DBGLN0()	/* nothing */
+#  define DBGLN1(a)	/* nothing */
+#endif
 
 /*
  * ANSI escape sequences

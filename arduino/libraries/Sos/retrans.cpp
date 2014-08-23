@@ -45,7 +45,7 @@ void Retrans::del (Msg *msg)
 // TODO
 void Retrans::loop (l2net &l2, time_t &curtime)
 {
-    // Serial.println (F ("retransmit loop")) ;
+    // DBGLN1 (F ("retransmit loop")) ;
 
     if (*master_addr_ == NULL)
     {

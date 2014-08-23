@@ -35,7 +35,7 @@ uint8_t process_temp1 (Msg &in, Msg &out)
 {
     char payload [10] ;
 
-    Serial.println (F ("process_temp")) ;
+    DBGLN1 (F ("process_temp")) ;
 
     int sensorValue = analogRead (tmp_sensor) ;
     snprintf (payload, 10, "%d", sensorValue) ;
@@ -51,7 +51,7 @@ uint8_t process_temp2 (Msg &in, Msg &out)
 
     out.max_age (true, 60) ;		// answer is cacheable
 
-    Serial.println (F ("process_temp")) ;
+    DBGLN1 (F ("process_temp")) ;
 
     int sensorValue = analogRead (tmp_sensor) ;
     snprintf (payload, 10, "%d", sensorValue) ;
@@ -63,7 +63,7 @@ uint8_t process_temp2 (Msg &in, Msg &out)
 
 uint8_t process_led (Msg &in, Msg &out) 
 {
-    Serial.println (F ("process_led")) ;
+    DBGLN1 (F ("process_led")) ;
 
     int n ;
     char *payload = (char*) in.get_payload () ;
@@ -93,11 +93,9 @@ void setup ()
 
     /* definitions for a resource: name (in URL), title, rt for /.well-known */
 
-#if 0
     Resource *r1 = new Resource ("t1", "Desk temp", "celsius") ;
     r1->handler (COAP_CODE_GET, process_temp1) ;
     sos->register_resource (r1) ;
-#endif
 
     Resource *r2 = new Resource ("t2", "B201 temp", "celsius") ;
     r2->handler (COAP_CODE_GET, process_temp2) ;

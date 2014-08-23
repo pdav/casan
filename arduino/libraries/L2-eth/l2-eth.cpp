@@ -118,8 +118,8 @@ void l2addr_eth::print (void)
     for (i = 0 ; i < ETH_ADDRLEN ; i++)
     {
 	if (i > 0)
-	    Serial.print (':') ;
-	Serial.print (addr_ [i], HEX) ;
+	    DBG1 (':') ;
+	DBG2 (addr_ [i], HEX) ;
     }
 }
 
@@ -466,10 +466,10 @@ void l2net_eth::dump_packet (size_t start, size_t maxlen)
     for (i = start ; i < n ; i++)
     {
 	if (i > start)
-	    Serial.print (' ') ;
-	Serial.print ((rbuf_ [i] >> 4) & 0xf, HEX) ;
-	Serial.print ((rbuf_ [i]     ) & 0xf, HEX) ;
+	    DBG1 (' ') ;
+	DBG2 ((rbuf_ [i] >> 4) & 0xf, HEX) ;
+	DBG2 ((rbuf_ [i]     ) & 0xf, HEX) ;
     }
 
-    Serial.println () ;
+    DBGLN0 () ;
 }

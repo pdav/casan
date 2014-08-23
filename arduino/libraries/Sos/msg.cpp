@@ -225,12 +225,12 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
 	    else
 	    {
 		success = false ;
-		Serial.print (F (RED ("Option unrecognized"))) ;
-		Serial.print (F (" opt_delta=")) ;
-		Serial.print (opt_delta) ;
-		Serial.print (F (", opt_len=")) ;
-		Serial.print (opt_len) ;
-		Serial.println () ;
+		DBG1 (F (RED ("Option unrecognized"))) ;
+		DBG1 (F (" opt_delta=")) ;
+		DBG1 (opt_delta) ;
+		DBG1 (F (", opt_len=")) ;
+		DBG1 (opt_len) ;
+		DBGLN0 () ;
 	    }
 	}
 
@@ -293,7 +293,7 @@ bool Msg::send (l2addr &dest)
 	encoded_ = (uint8_t *) malloc (enclen_) ;
 	success = coap_encode (encoded_, enclen_) ;
 	if (! success)
-	    Serial.println (F (RED ("Cannot encode the message"))) ;
+	    DBGLN1 (F (RED ("Cannot encode the message"))) ;
     }
     else success = true ;			// if msg is already encoded
 
@@ -301,7 +301,7 @@ bool Msg::send (l2addr &dest)
     {
 	success = l2_->send (dest, encoded_, enclen_) ;
 	if (! success)
-	    Serial.println (F (RED ("Cannot L2-send the message"))) ;
+	    DBGLN1 (F (RED ("Cannot L2-send the message"))) ;
     }
     else
     {
@@ -419,7 +419,7 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
     }
     else
     {
-	Serial.print (F ("Message truncated on CoAP encoding")) ;
+	DBGLN1 (F ("Message truncated on CoAP encoding")) ;
 	success = false ;
     }
 
@@ -790,39 +790,39 @@ void Msg::print (void)
     char *p ;
     int len ;
 
-    Serial.print (F (BLUE ("msg") " id=")) ;
-    Serial.print (get_id ()) ;
-    Serial.print (F (", type=")) ;
+    DBG1 (F (BLUE ("msg") " id=")) ;
+    DBG1 (get_id ()) ;
+    DBG1 (F (", type=")) ;
     switch (get_type ()) {
-	case COAP_TYPE_CON : Serial.print (F ("CON")) ; break ;
-	case COAP_TYPE_NON : Serial.print (F ("NON")) ; break ;
-	case COAP_TYPE_ACK : Serial.print (F ("ACK")) ; break ;
-	case COAP_TYPE_RST : Serial.print (F ("RST")) ; break ;
-	default : Serial.print (F (RED ("ERROR"))) ;
+	case COAP_TYPE_CON : DBG1 (F ("CON")) ; break ;
+	case COAP_TYPE_NON : DBG1 (F ("NON")) ; break ;
+	case COAP_TYPE_ACK : DBG1 (F ("ACK")) ; break ;
+	case COAP_TYPE_RST : DBG1 (F ("RST")) ; break ;
+	default : DBG1 (F (RED ("ERROR"))) ;
     }
-    Serial.print (F (", code=")) ;
-    Serial.print (get_code () >> 5, HEX) ;
-    Serial.print (".") ;
-    Serial.print (get_code () & 0x1f, HEX) ;
-    Serial.print (F (", toklen=")) ;
-    Serial.print (get_toklen ()) ;
+    DBG1 (F (", code=")) ;
+    DBG2 (get_code () >> 5, HEX) ;
+    DBG1 (".") ;
+    DBG2 (get_code () & 0x1f, HEX) ;
+    DBG1 (F (", toklen=")) ;
+    DBG1 (get_toklen ()) ;
 
     if (get_toklen () > 0) {
-	Serial.print (F (", token=")) ;
+	DBG1 (F (", token=")) ;
 	uint8_t *token = get_token () ;
 	for (int i = 0 ; i < get_toklen () ; i++)
-	    Serial.print (token [i], HEX) ;
-	Serial.println () ;
+	    DBG2 (token [i], HEX) ;
+	DBGLN0 () ;
     }
 
     p = (char *) get_payload () ;
     len = get_paylen () ;
-    Serial.print (F (", paylen=")) ;
-    Serial.print (len) ;
-    Serial.print (F (", payload=")) ;
+    DBG1 (F (", paylen=")) ;
+    DBG1 (len) ;
+    DBG1 (F (", payload=")) ;
     for (int i = 0 ; i < len ; i++)
-	Serial.print (p [i]) ;
-    Serial.println () ;
+	DBG1 (p [i]) ;
+    DBGLN0 () ;
 
     reset_next_option () ;
     for (option *o = next_option () ; o != NULL ; o = next_option ()) {

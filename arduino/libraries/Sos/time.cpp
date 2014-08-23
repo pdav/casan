@@ -47,10 +47,10 @@ void sync_time (time_t &cur)
 
 void print_time (time_t &t)
 {
-    Serial.print (F ("time = ")) ;
-    Serial.print (TIME_HIGH (t)) ;
-    Serial.print (F (":")) ;
-    Serial.print (TIME_LOW (t)) ;
+    DBG1 (F ("time = ")) ;
+    DBG1 (TIME_HIGH (t)) ;
+    DBG1 (F (":")) ;
+    DBG1 (TIME_LOW (t)) ;
 }
 
 /*******************************************************************************

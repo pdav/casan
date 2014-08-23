@@ -82,8 +82,8 @@ int Resource::well_known (char *buf, size_t maxlen)
 
 void Resource::print (void)
 {
-    Serial.print (F ("RES name=")) ;	Serial.print (name_) ;
-    Serial.print (F (", title=")) ;	Serial.print (title_) ;
-    Serial.print (F (", rt=")) ;	Serial.print (rt_) ;
-    Serial.println () ;
+    DBG1 (F ("RES name=")) ;	DBG1 (name_) ;
+    DBG1 (F (", title=")) ;	DBG1 (title_) ;
+    DBG1 (F (", rt=")) ;	DBG1 (rt_) ;
+    DBGLN0 () ;
 }

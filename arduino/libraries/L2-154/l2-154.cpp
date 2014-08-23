@@ -116,9 +116,9 @@ bool l2addr_154::operator!= (const l2addr &other)
 
 void l2addr_154::print (void)
 {
-    Serial.print (BYTE_LOW (addr_), HEX) ;	// first byte: low bits
-    Serial.print (':') ;
-    Serial.print (BYTE_HIGH (addr_), HEX) ;	// second byte: high bits
+    DBG2 (BYTE_LOW (addr_), HEX) ;	// first byte: low bits
+    DBG1 (':') ;
+    DBG2 (BYTE_HIGH (addr_), HEX) ;	// second byte: high bits
 }
 
 /******************************************************************************
@@ -319,10 +319,10 @@ void l2net_154::dump_packet (size_t start, size_t maxlen)
     for (i = start ; i < n ; i++)
     {
 	if (i > start)
-	    Serial.print (' ') ;
-	Serial.print ((curframe_->rawframe [i] >> 4) & 0xf, HEX) ;
-	Serial.print ((curframe_->rawframe [i]     ) & 0xf, HEX) ;
+	    DBG1 (' ') ;
+	DBG2 ((curframe_->rawframe [i] >> 4) & 0xf, HEX) ;
+	DBG2 ((curframe_->rawframe [i]     ) & 0xf, HEX) ;
     }
 
-    Serial.println () ;
+    DBGLN0 () ;
 }

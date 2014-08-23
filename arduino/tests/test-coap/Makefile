@@ -4,6 +4,9 @@ AVR_TOOLS_DIR		= /usr
 
 TARGET			= .
 
+#DEBUG			= -DDBLEVEL=0
+DEBUG			= -DDBLEVEL=1
+
 #### For Arduino Uno platform and Ethernet
 BOARD_TAG		= uno
 # no need for ARDUINO_CORE_PATH	for uno
@@ -19,7 +22,7 @@ USER_LIB_PATH		= $(realpath ../../libraries)
 
 include $(ARDMK_DIR)/Arduino.mk
 
-CPPFLAGS		+= -U__PROG_TYPES_COMPAT__
+CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DEBUG)
 
 test : all upload monitor
 

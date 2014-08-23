@@ -146,7 +146,7 @@ void Sos::reset_master (void)
     master_ = NULL ;
     hlid_ = -1 ;
     reset_mtu () ;			// reset MTU to default
-    Serial.println (F ("Master reset to broadcast address and default MTU")) ;
+    DBGLN1 (F ("Master reset to broadcast address and default MTU")) ;
 }
 
 /**
@@ -195,13 +195,13 @@ void Sos::change_master (long int hlid, int mtu)
     if (mtu != -1)
 	negociate_mtu (mtu) ;
 
-    Serial.print (F ("Master set to ")) ;
+    DBG1 (F ("Master set to ")) ;
     master_->print () ;
-    Serial.print (F (", helloid=")) ;
-    Serial.print (hlid_) ;
-    Serial.print (F (", mtu=")) ;
-    Serial.print (curmtu_) ;
-    Serial.println () ;
+    DBG1 (F (", helloid=")) ;
+    DBG1 (hlid_) ;
+    DBG1 (F (", mtu=")) ;
+    DBG1 (curmtu_) ;
+    DBGLN0 () ;
 }
 
 /******************************************************************************
@@ -404,11 +404,11 @@ bool Sos::get_well_known (Msg &out)
 
     if (rl != NULL)
     {
-	Serial.print (F (B_RED "Resource '")) ;
-	Serial.print (rl->res->name ()) ;
-	Serial.print (F ("' do not fit in buffer of ")) ;
-	Serial.print (avail) ;
-	Serial.println (F (" bytes" C_RESET)) ;
+	DBG1 (F (B_RED "Resource '")) ;
+	DBG1 (rl->res->name ()) ;
+	DBG1 (F ("' do not fit in buffer of ")) ;
+	DBG1 (avail) ;
+	DBGLN1 (F (" bytes" C_RESET)) ;
     }
 
     return rl == NULL ;			// true if all res are in the message
@@ -462,20 +462,20 @@ void Sos::loop ()
 		{
 		    if (is_hello (in, hlid))
 		    {
-			Serial.println (F ("Received a CTL HELLO msg")) ;
+			DBGLN1 (F ("Received a CTL HELLO msg")) ;
 			change_master (hlid, -1) ;	// don't change mtu
 			twait_.init (curtime) ;
 			status_ = SL_WAITING_KNOWN ;
 		    }
 		    else if (is_assoc (in, sttl_, mtu))
 		    {
-			Serial.println (F ("Received a CTL ASSOC msg")) ;
+			DBGLN1 (F ("Received a CTL ASSOC msg")) ;
 			change_master (-1, mtu) ;	// "unknown" hlid
 			send_assoc_answer (in, out) ;
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
 		    }
-		    else Serial.println (F (RED ("Unkwnon CTL"))) ;
+		    else DBGLN1 (F (RED ("Unkwnon CTL"))) ;
 		}
 	    }
 
@@ -493,18 +493,18 @@ void Sos::loop ()
 		{
 		    if (is_hello (in, hlid))
 		    {
-			Serial.println (F ("Received a CTL HELLO msg")) ;
+			DBGLN1 (F ("Received a CTL HELLO msg")) ;
 			change_master (hlid, -1) ;	// don't change mtu
 		    }
 		    else if (is_assoc (in, sttl_, mtu))
 		    {
-			Serial.println (F ("Received a CTL ASSOC msg")) ;
+			DBGLN1 (F ("Received a CTL ASSOC msg")) ;
 			change_master (-1, mtu) ;	// unknown hlid
 			send_assoc_answer (in, out) ;
 			trenew_.init (curtime, sttl_) ;
 			status_ = SL_RUNNING ;
 		    }
-		    else Serial.println (F (RED ("Unkwnon CTL"))) ;
+		    else DBGLN1 (F (RED ("Unkwnon CTL"))) ;
 		}
 	    }
 
@@ -535,7 +535,7 @@ void Sos::loop ()
 		{
 		    if (is_hello (in, hlid))
 		    {
-			Serial.println (F ("Received a CTL HELLO msg")) ;
+			DBGLN1 (F ("Received a CTL HELLO msg")) ;
 			if (! same_master (srcaddr) || hlid != hlid_)
 			{
 			    int oldhlid = hlid_ ;
@@ -550,7 +550,7 @@ void Sos::loop ()
 		    }
 		    else if (is_assoc (in, sttl_, mtu))
 		    {
-			Serial.println (F ("Received a CTL ASSOC msg")) ;
+			DBGLN1 (F ("Received a CTL ASSOC msg")) ;
 			if (same_master (srcaddr))
 			{
 			    negociate_mtu (mtu) ;
@@ -559,7 +559,7 @@ void Sos::loop ()
 			    status_ = SL_RUNNING ;
 			}
 		    }
-		    else Serial.println (F (RED ("Unkwnon CTL"))) ;
+		    else DBGLN1 (F (RED ("Unkwnon CTL"))) ;
 		}
 		else		// request for a normal resource
 		{
@@ -570,7 +570,7 @@ void Sos::loop ()
 	    }
 	    else if (ret == l2net::RECV_TRUNCATED)
 	    {
-		Serial.println (F (RED ("Request too large"))) ;
+		DBGLN1 (F (RED ("Request too large"))) ;
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
 		out.set_token (in.get_toklen (), in.get_token ()) ;
@@ -602,18 +602,18 @@ void Sos::loop ()
 	    break ;
 
 	default :
-	    Serial.println (F ("Error : sos status not known")) ;
-	    Serial.println (status_) ;
+	    DBGLN1 (F ("Error : sos status not known")) ;
+	    DBGLN1 (status_) ;
 	    break ;
     }
 
     if (oldstatus != status_)
     {
-	Serial.print (F ("Status: " C_GREEN)) ;
+	DBG1 (F ("Status: " C_GREEN)) ;
 	print_status (oldstatus) ;
-	Serial.print (F (C_RESET " -> " C_GREEN)) ;
+	DBG1 (F (C_RESET " -> " C_GREEN)) ;
 	print_status (status_) ;
-	Serial.println (F (C_RESET)) ;
+	DBGLN1 (F (C_RESET)) ;
     }
 
     if (srcaddr != NULL)
@@ -704,18 +704,18 @@ bool Sos::is_assoc (Msg &m, time_t &sttl, int &mtu)
 		// we benefit from the added nul byte at the end of val
 		if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC_TTL, &n) == 1)
 		{
-		    Serial.print (BLUE ("TTL recv: ")) ;
-		    Serial.print (n) ;
-		    Serial.println () ;
+		    DBG1 (BLUE ("TTL recv: ")) ;
+		    DBG1 (n) ;
+		    DBGLN0 () ;
 		    sttl = ((time_t) n) * 1000 ;
 		    found_ttl = true ;
 		    // continue, just in case there are other query strings
 		}
 		else if (sscanf ((const char *) o->optval ((int *) 0), SOS_ASSOC_MTU, &n) == 1)
 		{
-		    Serial.print (BLUE ("MTU recv: ")) ;
-		    Serial.print (n) ;
-		    Serial.println () ;
+		    DBG1 (BLUE ("MTU recv: ")) ;
+		    DBG1 (n) ;
+		    DBGLN0 () ;
 		    mtu = n ;
 		    found_mtu = true ;
 		    // continue, just in case there are other query strings
@@ -758,7 +758,7 @@ void Sos::send_discover (Msg &out)
     char tmpstr [SOS_BUF_LEN] ;
     l2addr *dest ;
 
-    Serial.println (F ("Sending Discover")) ;
+    DBGLN1 (F ("Sending Discover")) ;
 
     out.reset () ;
     out.set_id (curid_++) ;
@@ -800,7 +800,7 @@ void Sos::send_assoc_answer (Msg &in, Msg &out)
 
     // send the packet
     if (! out.send (*dest))
-	Serial.println (F (RED ("Cannot send the assoc answer message"))) ;
+	DBGLN1 (F (RED ("Cannot send the assoc answer message"))) ;
 
     delete dest ;
 }
@@ -826,16 +826,16 @@ void Sos::print_coap_ret_type (l2net::l2_recv_t ret)
     switch (ret)
     {
 	case l2net::RECV_WRONG_DEST :
-	    Serial.println (F ("RECV_WRONG_DEST")) ;
+	    DBGLN1 (F ("RECV_WRONG_DEST")) ;
 	    break ;
 	case l2net::RECV_WRONG_TYPE :
-	    Serial.println (F ("RECV_WRONG_TYPE")) ;
+	    DBGLN1 (F ("RECV_WRONG_TYPE")) ;
 	    break ;
 	case l2net::RECV_OK :
-	    Serial.println (F ("RECV_OK")) ;
+	    DBGLN1 (F ("RECV_OK")) ;
 	    break ;
 	default :
-	    Serial.println (F ("ERROR RECV")) ;
+	    DBGLN1 (F ("ERROR RECV")) ;
 	    break ;
     }
 }
@@ -845,23 +845,23 @@ void Sos::print_status (uint8_t status)
     switch (status)
     {
 	case SL_COLDSTART :
-	    Serial.print (F ("SL_COLDSTART")) ;
+	    DBG1 (F ("SL_COLDSTART")) ;
 	    break ;
 	case SL_WAITING_UNKNOWN :
-	    Serial.print (F ("SL_WAITING_UNKNOWN")) ;
+	    DBG1 (F ("SL_WAITING_UNKNOWN")) ;
 	    break ;
 	case SL_WAITING_KNOWN :
-	    Serial.print (F ("SL_WAITING_KNOWN")) ;
+	    DBG1 (F ("SL_WAITING_KNOWN")) ;
 	    break ;
 	case SL_RENEW :
-	    Serial.print (F ("SL_RENEW")) ;
+	    DBG1 (F ("SL_RENEW")) ;
 	    break ;
 	case SL_RUNNING :
-	    Serial.print (F ("SL_RUNNING")) ;
+	    DBG1 (F ("SL_RUNNING")) ;
 	    break ;
 	default :
-	    Serial.print (F ("???")) ;
-	    Serial.print (status) ;
+	    DBG1 (F ("???")) ;
+	    DBG1 (status) ;
 	    break ;
     }
 }
