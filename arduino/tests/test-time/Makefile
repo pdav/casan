@@ -4,8 +4,8 @@ AVR_TOOLS_DIR		= /usr
 
 TARGET			= .
 
-#DEBUG			= -DDBLEVEL=0
-DEBUG			= -DDBLEVEL=1
+#DBLEVEL		= -DDBLEVEL=0
+DBLEVEL			= -DDBLEVEL=1
 
 #### For Arduino Uno platform and Ethernet
 BOARD_TAG		= uno
@@ -24,7 +24,7 @@ ARDUINO_LIBS		= Sos SPI Ethernet
 
 include $(ARDMK_DIR)/Arduino.mk
 
-CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DEBUG)
+CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DBLEVEL)
 
 test : all upload monitor
 
