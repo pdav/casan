@@ -47,6 +47,12 @@ else
     $(call show_config_variable,MPIDE_DIR,[USER])
 endif
 
+ifeq ($(CURRENT_OS),WINDOWS)
+    ifneq ($(shell echo $(ARDUINO_DIR) | egrep '^(/|[a-zA-Z]:\\)'),)
+        echo $(error On Windows, MPIDE_DIR must be a relative path)
+    endif
+endif
+
 ifndef MPIDE_PREFERENCES_PATH
     AUTO_MPIDE_PREFERENCES_PATH := $(firstword \
         $(call dir_if_exists,$(HOME)/.mpide/preferences.txt) \
@@ -57,8 +63,13 @@ ifndef MPIDE_PREFERENCES_PATH
     endif
 endif
 
+# The same as in Arduino, the Linux distribution contains avrdude and #
+# avrdude.conf in a different location, but for chipKIT it's even slightly
+# different than the Linux paths for Arduino, so we have to "double override".
 ifeq ($(CURRENT_OS),LINUX)
-    BUNDLED_AVR_TOOLS_DIR = $(call dir_if_exists,$(MPIDE_DIR)/hardware/tools)
+    AVRDUDE_DIR = $(ARDUINO_DIR)/hardware/tools
+    AVRDUDE = $(AVRDUDE_DIR)/avrdude
+    AVRDUDE_CONF = $(AVRDUDE_DIR)/avrdude.conf
 endif
 
 PIC32_TOOLS_DIR = $(ARDUINO_DIR)/hardware/pic32/compiler/pic32-tools
