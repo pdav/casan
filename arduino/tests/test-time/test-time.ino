@@ -1,4 +1,4 @@
-#include "sos.h"
+#include "casan.h"
 
 /*
  * Test program for the "time" class

@@ -8,8 +8,8 @@
 
 #include "global.h"
 
-// #define	CONF_PATH	"/etc/sosd.conf"
-#define	CONF_PATH	"./sosd.conf"
+// #define	CONF_PATH	"/etc/casand.conf"
+#define	CONF_PATH	"./casand.conf"
 
 /**
  * @brief Configuration file handling
@@ -28,7 +28,7 @@ class conf
 
 	friend std::ostream& operator<< (std::ostream &os, const conf &cf) ;
 
-	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_SOS, NS_WELL_KNOWN } ;
+	enum cf_ns_type { NS_NONE, NS_ADMIN, NS_CASAN, NS_WELL_KNOWN } ;
 
     protected:
 	friend class master ;
@@ -44,7 +44,7 @@ class conf
 	    I_SLAVE_TTL = 2,		///< default slave ttl
 	    I_LAST = 3			///< last value
 	} ;
-	sostimer_t timers [I_LAST] ;
+	casantimer_t timers [I_LAST] ;
 
 	/// HTTP server configuration
 	struct cf_http
@@ -114,9 +114,9 @@ class conf
 	void parse_error_unk_token (const std::string tok, int help) ;
 	void parse_error_mis_token (int help) ;
 
-	const sostimer_t DEFAULT_FIRST_HELLO	= 3 ;		// 3 s
-	const sostimer_t DEFAULT_INTERVAL_HELLO	= 10 ;		// 10 s
-	const sostimer_t DEFAULT_SLAVE_TTL	= 3600 ;	// 1 h
+	const casantimer_t DEFAULT_FIRST_HELLO	= 3 ;		// 3 s
+	const casantimer_t DEFAULT_INTERVAL_HELLO = 10 ;	// 10 s
+	const casantimer_t DEFAULT_SLAVE_TTL	= 3600 ;	// 1 h
 
 	const char *DEFAULT_HTTP_PORT		= "http" ;
 	const char *DEFAULT_HTTP_LISTEN		= "*" ;

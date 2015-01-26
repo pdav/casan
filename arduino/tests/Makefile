@@ -5,7 +5,7 @@
 
 SUBDIRS = test-coap test-l2addr test-l2net test-msg test-res test-time
 SUBDIRS += test-zig
-SUBDIRS += sos
+SUBDIRS += casan
 
 all:
 	for i in $(SUBDIRS) ; do \

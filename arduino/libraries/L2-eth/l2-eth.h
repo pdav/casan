@@ -14,7 +14,7 @@
 #include <w5100.h>
 #include "l2.h"
 
-/** Ethernet frame type used for SOS frames */
+/** Ethernet frame type used for CASAN frames */
 #define	ETH_TYPE	0x88b5
 
 /** Ethernet address length */

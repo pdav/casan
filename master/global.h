@@ -1,6 +1,6 @@
 /**
  * @file global.h
- * @brief This file contains some global definitions used though SOS
+ * @brief This file contains some global definitions used though CASAN
  */
 
 #ifndef	GLOBAL_H
@@ -13,7 +13,7 @@
 #define NTAB(t)		(int (sizeof (t)/sizeof (t)[0]))
 
 // http://stackoverflow.com/questions/3366812/linux-raw-ethernet-socket-bind-to-specific-protocol
-#define	ETHTYPE_SOS	0x88b5		// public use for prototype
+#define	ETHTYPE_CASAN	0x88b5		// public use for prototype
 
 #define	MAXBUF		1024
 
@@ -21,7 +21,7 @@ typedef std::uint8_t byte ;
 typedef std::uint32_t uint32 ;
 
 typedef long int slaveid_t ;
-typedef long int sostimer_t ;
+typedef long int casantimer_t ;
 
 typedef	std::chrono::system_clock::time_point timepoint_t ;
 typedef std::chrono::milliseconds duration_t ;
@@ -31,12 +31,12 @@ typedef std::chrono::milliseconds duration_t ;
 #define	DATE_TIMEOUT_S(s)	(std::chrono::system_clock::now () + \
 				    std::chrono::seconds (s))
 
-namespace sos {
+namespace casan {
     class msg ;
 }
 
-typedef void (*reply_handler_t) (sos::msg *request, sos::msg *reply) ;
-typedef void (*msghandler_t) (sos::msg &m) ;
+typedef void (*reply_handler_t) (casan::msg *request, casan::msg *reply) ;
+typedef void (*msghandler_t) (casan::msg &m) ;
 
 /*
  * Debug facilities

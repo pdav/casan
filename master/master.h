@@ -8,7 +8,7 @@
 
 #include "conf.h"
 #include "cache.h"
-#include "sos.h"
+#include "casan.h"
 
 namespace http {
 namespace server2 {
@@ -20,7 +20,7 @@ struct request;
 class resource ;
 
 /**
- * @brief The master class is the main class of the SOS master.
+ * @brief The master class is the main class of the CASAN master.
  *
  * The master class contains two main methods: master::start
  * and master::stop. All work is done in the various threads
@@ -38,9 +38,9 @@ class master
 	void handle_http (const std::string request_path, const http::server2::request& req, http::server2::reply& rep);
 
     private:
-	sos::sos engine_ ;
+	casan::casan engine_ ;
 	conf *conf_ ;
-	sos::cache cache_ ;
+	casan::cache cache_ ;
 
 	struct httpserver
 	{
@@ -53,13 +53,13 @@ class master
 	{
 	    conf::cf_ns_type type_ ;
 	    std::string base_ ;		// first part of path
-	    sos::slave *slave_ ;	// for NS_SOS
-	    sos::resource *res_ ;	// for NS_SOS
+	    casan::slave *slave_ ;	// for NS_CASAN
+	    casan::resource *res_ ;	// for NS_CASAN
 	    std::string str_ ;		// for NS_ADMIN
 	} ;
 
 	void http_admin (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
-	void http_sos (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
+	void http_casan (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
 	void http_well_known (const parse_result &res, const http::server2::request& req, http::server2::reply& rep) ;
 	bool parse_path (const std::string path, parse_result &res) ;
 

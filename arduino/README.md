@@ -1,4 +1,4 @@
-SOS slave for Arduino
+CASAN slave for Arduino
 =====================
 
 Introduction
@@ -11,7 +11,7 @@ Arduino/Zigduino boards.
 Prerequisites
 -------------
 
-The SOS slave program needs:
+The CASAN slave program needs:
 - the Arduino IDE (not used at all, but installing it will bring all
     required dependancies for compilation of Arduino sketches)
 - the `screen` program (in order to access serial ports)
@@ -53,12 +53,12 @@ Test sketches and examples
 --------------------------
 
 The `tests` subdirectory contains some individual tests sketches
-for various C++ classes of the SOS slave. Moreover, the `tests/sos`
+for various C++ classes of the CASAN slave. Moreover, the `tests/casan`
 subdirectory contains a ready-to-use example applcation.
 
 To run these tests:
 
-    $ cd test/sos/
+    $ cd test/casan/
     $ make && make upload			# or make test
 
 There is a Makefile in every test sketch, change the device you have to use 

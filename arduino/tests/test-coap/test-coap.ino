@@ -1,11 +1,11 @@
 /*
- * Test program for sending and receiving SOS/CoAP messages
+ * Test program for sending and receiving CASAN/CoAP messages
  */
 
-#include "sos.h"
+#include "casan.h"
 
 #define	PATH1		".well-known"
-#define	PATH2		"sos"
+#define	PATH2		"casan"
 #define	PATH3		"path3"
 
 #define	DEBUGINTERVAL	5

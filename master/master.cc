@@ -29,7 +29,7 @@
 #include "msg.h"
 #include "option.h"
 #include "resource.h"
-#include "sos.h"			// master engine
+#include "casan.h"			// master engine
 #include "cache.h"
 #include "server.hpp"			// http server
 
@@ -39,15 +39,15 @@
  */
 
 /**
- * @brief Start the whole SOS machinery
+ * @brief Start the whole CASAN machinery
  *
  * This method:
- * - creates a sos::l2net object for each network listed in the
+ * - creates a casan::l2net object for each network listed in the
  *	configuration file (which implies a new thread each time)
- * - creates each SOS slave listed in the configuration file
+ * - creates each CASAN slave listed in the configuration file
  * - starts the threads for the HTTP servers
  *
- * Work is next done in the various threads (HTTP or SOS).
+ * Work is next done in the various threads (HTTP or CASAN).
  *
  * @param cf result of the configuration file read (see the conf class)
  * @result true if starting was successfull
@@ -59,7 +59,7 @@ bool master::start (conf &cf)
 
     if (cf.done_)
     {
-	// Start SOS engine machinery
+	// Start CASAN engine machinery
 	engine_.timer_first_hello (cf.timers [conf::I_FIRST_HELLO]) ;
 	engine_.timer_interval_hello (cf.timers [conf::I_INTERVAL_HELLO]) ;
 	engine_.timer_slave_ttl (cf.timers [conf::I_SLAVE_TTL]) ;
@@ -70,15 +70,15 @@ bool master::start (conf &cf)
 	// Start interfaces
 	for (auto &n : cf.netlist_)
 	{
-	    sos::l2net *l ;
+	    casan::l2net *l ;
 
 	    switch (n.type)
 	    {
 		case conf::NET_ETH :
 		    {
 #if defined (USE_PF_PACKET) || defined (USE_PCAP)
-			sos::l2net_eth *le ;
-			le = new sos::l2net_eth ;
+			casan::l2net_eth *le ;
+			le = new casan::l2net_eth ;
 			if (le->init (n.net_eth.iface.c_str (), n.mtu, n.net_eth.ethertype) == -1)
 			{
 			    perror ("init") ;
@@ -93,10 +93,10 @@ bool master::start (conf &cf)
 		    break ;
 		case conf::NET_154 :
 		    {
-			sos::l2net_154 *l8 ;
+			casan::l2net_154 *l8 ;
 			const char *t ;
 
-			l8 = new sos::l2net_154 ;
+			l8 = new casan::l2net_154 ;
 
 			switch (n.net_154.type)
 			{
@@ -128,10 +128,10 @@ bool master::start (conf &cf)
 	// Add registered slaves
 	for (auto &s : cf.slavelist_)
 	{
-	    sos::slave *v ;
-	    sostimer_t ttl ;
+	    casan::slave *v ;
+	    casantimer_t ttl ;
 
-	    v = new sos::slave ;
+	    v = new casan::slave ;
 	    v->slaveid (s.id) ;
 	    if (s.ttl == 0)
 		ttl = engine_.timer_slave_ttl () ;
@@ -162,9 +162,9 @@ bool master::start (conf &cf)
 }
 
 /**
- * @brief Stop the whole SOS machinery
+ * @brief Stop the whole CASAN machinery
  *
- * This method stops the various threads involved in the SOS program.
+ * This method stops the various threads involved in the CASAN program.
  *
  * @return true if stopping was successfull
  */
@@ -207,7 +207,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
     r = true ;				// success, unless exception
     try
     {
-	std::vector <std::string> vp = sos::split_path (path) ;
+	std::vector <std::string> vp = casan::split_path (path) ;
 
 	for (auto &ns : conf_->nslist_)
 	{
@@ -221,7 +221,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 	    // Is prefix found?
 	    if (i == ns.prefix.size ())
 	    {
-		res.base_ = sos::join_path (ns.prefix) ;
+		res.base_ = casan::join_path (ns.prefix) ;
 
 		switch (ns.type)
 		{
@@ -239,7 +239,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 			D (D_HTTP, "HTTP request for admin namespace: " << res.base_ << ", remainder=" << res.str_) ;
 			break ;
 		    }
-		    case conf::NS_SOS :
+		    case conf::NS_CASAN :
 		    {
 			/*
 			 * Find designated slave
@@ -261,7 +261,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 
 			res.slave_ = engine_.find_slave (sid) ;
 			if (res.slave_ == nullptr ||
-				res.slave_->status () != sos::slave::SL_RUNNING)
+				res.slave_->status () != casan::slave::SL_RUNNING)
 			    throw int (42) ;
 
 			/*
@@ -276,7 +276,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
 			if (res.res_ == nullptr)
 			    throw int (42) ;
 
-			D (D_HTTP, "HTTP request for sos namespace: " << res.base_ << ", slave id=" << res.slave_->slaveid ()) ;
+			D (D_HTTP, "HTTP request for casan namespace: " << res.base_ << ", slave id=" << res.slave_->slaveid ()) ;
 
 			break ;
 		    }
@@ -314,7 +314,7 @@ bool master::parse_path (const std::string path, master::parse_result &res)
  * @brief Handle a HTTP request
  *
  * This method is called by an HTTP server thread to handle a request,
- * which may be forwarded to the SOS side or answered directly if it
+ * which may be forwarded to the CASAN side or answered directly if it
  * is a control request.
  *
  * @param request_path requested URL
@@ -337,8 +337,8 @@ void master::handle_http (const std::string request_path, const http::server2::r
 	case conf::NS_ADMIN :
 	    http_admin (res, req, rep) ;
 	    break ;
-	case conf::NS_SOS :
-	    http_sos (res, req, rep) ;
+	case conf::NS_CASAN :
+	    http_casan (res, req, rep) ;
 	    break ;
 	case conf::NS_WELL_KNOWN :
 	    http_well_known (res, req, rep) ;
@@ -401,7 +401,7 @@ void master::http_admin (const parse_result & res, const http::server2::request 
 	// check which slave is concerned
 	if (req.method == "POST")
 	{
-	    enum sos::slave::status_code newstatus = sos::slave::SL_INACTIVE ;
+	    enum casan::slave::status_code newstatus = casan::slave::SL_INACTIVE ;
 	    slaveid_t sid = -1 ;
 
 	    for (auto &a:req.postargs)
@@ -420,9 +420,9 @@ void master::http_admin (const parse_result & res, const http::server2::request 
 		else if (a.name == "status")
 		{
 		    if (a.value == "inactive")
-			newstatus = sos::slave::SL_INACTIVE ;
+			newstatus = casan::slave::SL_INACTIVE ;
 		    else if (a.value == "runnning")
-			newstatus = sos::slave::SL_RUNNING ;
+			newstatus = casan::slave::SL_RUNNING ;
 		}
 	    }
 	    if (sid != -1)
@@ -434,7 +434,7 @@ void master::http_admin (const parse_result & res, const http::server2::request 
 		{
 		    rep.status = http::server2::reply::ok ;
 		    rep.content = "<html><body><pre>set to " ;
-		    rep.content += (newstatus == sos::slave::SL_INACTIVE ?
+		    rep.content += (newstatus == casan::slave::SL_INACTIVE ?
 					"inactive" : "running") ;
 		    rep.content += "(note: not implemented)"
 		    		"</pre></body></html>" ;
@@ -500,38 +500,38 @@ void master::http_well_known (const parse_result & res __attribute__ ((unused)),
 }
 
 /******************************************************************************
- * Handle a HTTP request for sos namespace
+ * Handle a HTTP request for casan namespace
  */
 
 static struct
 {
     const char *text ;
-    const sos::msg::msgcode code ;
+    const casan::msg::msgcode code ;
 } tabmethod[] = {
-    { "GET",    sos::msg::MC_GET },
-    { "HEAD",   sos::msg::MC_GET },
-    { "POST",   sos::msg::MC_POST },
-    { "PUT",    sos::msg::MC_PUT },
-    { "DELETE", sos::msg::MC_DELETE },
+    { "GET",    casan::msg::MC_GET },
+    { "HEAD",   casan::msg::MC_GET },
+    { "POST",   casan::msg::MC_POST },
+    { "PUT",    casan::msg::MC_PUT },
+    { "DELETE", casan::msg::MC_DELETE },
 } ;
 
-void master::http_sos (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
+void master::http_casan (const parse_result &res, const http::server2::request & req, http::server2::reply & rep)
 {
-    std::shared_ptr <sos::msg> m (new sos::msg) ;
-    std::shared_ptr <sos::msg> mc ;	// message found in cache,if any
-    std::shared_ptr <sos::msg> r ;	// reply (received or cached)
-    sos::msg::msgcode_t code ;
-    sos::waiter w ;
+    std::shared_ptr <casan::msg> m (new casan::msg) ;
+    std::shared_ptr <casan::msg> mc ;	// message found in cache,if any
+    std::shared_ptr <casan::msg> r ;	// reply (received or cached)
+    casan::msg::msgcode_t code ;
+    casan::waiter w ;
     timepoint_t timeout ;
-    sostimer_t max ;
+    casantimer_t max ;
 
-    code = sos::msg::MC_GET ;
+    code = casan::msg::MC_GET ;
     for (int i = 0 ; i < NTAB (tabmethod); i++)
 	if (tabmethod[i].text == req.method)
 	    code = tabmethod[i].code ;
 
     m->peer (res.slave_) ;
-    m->type (sos::msg::MT_CON) ;
+    m->type (casan::msg::MT_CON) ;
     m->code (code) ;
     res.res_->add_to_message (*m) ;	// add resource path as msg options
 
@@ -570,7 +570,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	timeout = DATE_TIMEOUT_MS (max) ;
 	D (D_HTTP, "HTTP request, timeout = " << max << " ms") ;
 
-	auto a = std::bind (&sos::sos::add_request, &this->engine_, m) ;
+	auto a = std::bind (&casan::casan::add_request, &this->engine_, m) ;
 	w.do_and_wait (a, timeout) ;
 
 	m->wt (nullptr) ;
@@ -588,7 +588,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
     else
     {
 	int contentformat = 0 ;		// text/plain by default
-	sos::option *o ;
+	casan::option *o ;
 	int paylen ;
 	char *payld ;
 	payld = (char *) r->payload (&paylen) ;
@@ -601,7 +601,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	r->option_reset_iterator () ;
 	while ((o = r->option_next ()) != nullptr)
 	{
-	    if (o->optcode () == sos::option::MO_Content_Format)
+	    if (o->optcode () == casan::option::MO_Content_Format)
 	    {
 		contentformat = o->optval () ;
 		break ;
@@ -612,7 +612,7 @@ void master::http_sos (const parse_result &res, const http::server2::request & r
 	r->option_reset_iterator () ;
 	while ((o = r->option_next ()) != nullptr)
 	{
-	    if (o->optcode () == sos::option::MO_Size1)
+	    if (o->optcode () == casan::option::MO_Size1)
 	    {
 		res.slave_->curmtu (o->optval ()) ;
 		break ;

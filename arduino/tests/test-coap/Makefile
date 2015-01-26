@@ -11,7 +11,7 @@ DBLEVEL			= -DDBLEVEL=1
 BOARD_TAG		= uno
 # no need for ARDUINO_CORE_PATH	for uno
 MONITOR_PORT		= /dev/ttyACM3
-ARDUINO_LIBS		= Sos L2-eth SPI Ethernet
+ARDUINO_LIBS		= Casan L2-eth SPI Ethernet
 
 #### For Zigduino r2 platform and 802.15.4
 # BOARD_TAG		= zigduino_r2

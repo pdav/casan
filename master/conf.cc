@@ -18,7 +18,7 @@
 #include "utils.h"
 
 #include "conf.h"
-#include "sos.h"
+#include "casan.h"
 
 /**
  * @brief Parses the default configuration file
@@ -62,7 +62,7 @@ std::ostream& operator<< (std::ostream &os, const conf &cf)
 	{
 	    os << "namespace "
 		<< (n.type == conf::NS_ADMIN ? "admin" :
-		    (n.type == conf::NS_SOS ? "sos" :
+		    (n.type == conf::NS_CASAN ? "casan" :
 		    (n.type == conf::NS_WELL_KNOWN ?  "well-known" :
 			"(unknown)")))
 		<< " " ;
@@ -156,7 +156,7 @@ static const char *syntax_help [] =
     "http-server, namespace, timer, network, or slave",
 
     "http-server [listen <addr>] [port <num>] [threads <num>]",
-    "namespace <admin|sos|well-known> <path>",
+    "namespace <admin|casan|well-known> <path>",
     "timer <firsthello|hello|slavettl|http> <value in s>",
     "network <ethernet|802.15.4> ...",
     "slave id <id> [ttl <timeout in s>] [mtu <bytes>]",
@@ -298,7 +298,7 @@ bool conf::parse_line (std::string &line)
 
 	    c.type = NS_NONE ;
 
-	    // "namespace <admin|sos> <path>",
+	    // "namespace <admin|casan> <path>",
 
 	    i++ ;
 	    if (i + 2 != asize)
@@ -308,11 +308,11 @@ bool conf::parse_line (std::string &line)
 	    }
 	    else
 	    {
-		c.prefix = sos::split_path (tokens [i+1]) ;
+		c.prefix = casan::split_path (tokens [i+1]) ;
 		if (tokens [i] == "admin")
 		    c.type = NS_ADMIN ;
-		else if (tokens [i] == "sos")
-		    c.type = NS_SOS ;
+		else if (tokens [i] == "casan")
+		    c.type = NS_CASAN ;
 		else if (tokens [i] == "well-known")
 		    c.type = NS_WELL_KNOWN ;
 		else
@@ -643,7 +643,7 @@ bool conf::parse_line (std::string &line)
     for (auto &n : netlist_)
     {
 	if (n.type == NET_ETH && n.net_eth.ethertype == 0)
-	    n.net_eth.ethertype = ETHTYPE_SOS ;
+	    n.net_eth.ethertype = ETHTYPE_CASAN ;
 	if (n.type == NET_154 && n.net_154.channel == 0)
 	    n.net_154.channel = DEFAULT_154_CHANNEL ;
     }

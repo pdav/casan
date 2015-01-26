@@ -1,17 +1,17 @@
-Arduino SOS libraries
+Arduino cASAN libraries
 =====================
 
 Introduction
 ------------
 
 This directory contains various libraries needed for programming
-SOS applications on Arduino:
+cASAN applications on Arduino:
 
-* Sos: core of the SOS engine.
-* L2-eth: Ethernet support library for Sos.
+* Casan: core of the cASAN engine.
+* L2-eth: Ethernet support library for Casan.
     It is designed to work with the Wiznet W5100 chip
     found on the Arduino Ethernet shield.
-* L2-154: IEEE 802.15.4 support library for Sos.
+* L2-154: IEEE 802.15.4 support library for Casan.
     It is designed to work with an ATmega128RFA1
     chip as found on the Zigduino r2 cards.
 * ZigMsg: low-level library to work with ATmega128RFA1 (needed

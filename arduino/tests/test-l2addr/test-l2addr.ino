@@ -2,7 +2,7 @@
  * Test program for the "l2addr_*" class
  */
 
-#include "sos.h"
+#include "casan.h"
 
 #ifdef L2_ETH
     #include "l2-eth.h"

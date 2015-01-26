@@ -1,8 +1,8 @@
 /*
- * Test program for SOS resource management
+ * Test program for CASAN resource management
  */
 
-#include "sos.h"
+#include "casan.h"
 
 #ifdef L2_ETH
     #include "l2-eth.h"
@@ -36,9 +36,9 @@
 #define R2_rt		"°c"
 
 #define PATH_WK		".well-known"
-#define	PATH_SOS	"sos"
+#define	PATH_CASAN	"casan"
 
-Sos *sos ;
+Casan *casan ;
 Debug debug ;
 
 int slaveid = 169 ;
@@ -78,15 +78,15 @@ void setup ()
     l2.start (myaddr, promisc, CHANNEL, PANID) ;
 #endif
 
-    sos = new Sos (&l2, mtu, slaveid) ;
+    casan = new Casan (&l2, mtu, slaveid) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
     r1->handler (COAP_CODE_GET, process_light) ;
-    sos->register_resource (r1) ;
+    casan->register_resource (r1) ;
 
     Resource *r2 = new Resource (R2_name, R2_title, R2_rt) ;
     r2->handler (COAP_CODE_GET, process_temp) ;
-    sos->register_resource (r2) ;
+    casan->register_resource (r2) ;
 }
 
 void test_resource (const char *name)
@@ -108,7 +108,7 @@ void test_resource (const char *name)
     Serial.println (F ("Simulated message IN: ")) ;
     in.print () ;
 
-    sos->request_resource (in, out) ;
+    casan->request_resource (in, out) ;
 
     Serial.println (F ("Simulated message OUT: ")) ;
     out.print () ;
@@ -122,7 +122,7 @@ void loop ()
     if (debug.heartbeat ())
     {
 	if (n % NTAB (resname) == 0)
-	    sos->print_resources () ;
+	    casan->print_resources () ;
 	test_resource (resname [n++ % NTAB (resname)]) ;
     }
 }

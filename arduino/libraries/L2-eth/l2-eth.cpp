@@ -6,7 +6,7 @@
 #include "l2-eth.h"
 
 /*
- * Ethernet classes for SOS
+ * Ethernet classes for CASAN
  *
  * Needs : w5100 functions from standard (i.e. Arduino) Ethernet class
  */
@@ -22,7 +22,7 @@ l2addr_eth l2addr_eth_broadcast ("ff:ff:ff:ff:ff:ff") ;
 #define	ETH_OFFSET_DST_ADDR	0
 #define	ETH_OFFSET_SRC_ADDR	6
 #define	ETH_OFFSET_TYPE		12
-#define	ETH_OFFSET_SIZE		14		// specific to SOS
+#define	ETH_OFFSET_SIZE		14		// specific to CASAN
 #define	ETH_OFFSET_PAYLOAD	16
 
 #define	ETH_SIZE_HEADER		ETH_OFFSET_PAYLOAD
@@ -180,21 +180,21 @@ void l2net_eth::start (l2addr *a, bool promisc, int ethtype)
 
 size_t l2net_eth::maxpayload (void)
 {
-    return mtu_ - (ETH_SIZE_HEADER + ETH_SIZE_FCS) ; // excl. MAC hdr + SOS len
+    return mtu_ - (ETH_SIZE_HEADER + ETH_SIZE_FCS) ; // excl. MAC hdr + CASAN len
 }
 
 /**
  * @brief Send a packet on the Ethernet network
  *
- * This method encapsulates the SOS packet in an Ethernet frame, copy
+ * This method encapsulates the CASAN packet in an Ethernet frame, copy
  * it in the W5100 shared buffer and order the W5100 to send the frame.
  * Since the frame will be sent later, a return value of `true` just
  * indicates that the frame has correctly been sent to the chip, not
  * that the frame has been successfully transmitted on the wire.
  * 
- * This methods adds a two byte length in front of the SOS payload
+ * This methods adds a two byte length in front of the CASAN payload
  * (just after the Ethernet header). This is done specifically for
- * the Ethernet since SOS packets may be shorter than minimal size
+ * the Ethernet since CASAN packets may be shorter than minimal size
  * and some drivers cannot report the "true" frame length.
  *
  * See the l2net::send method for parameters and return value.
@@ -219,7 +219,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	size_t paylen ;		// restricted to mtu, if any
 
 	paylen = len ;		// keep original length
-	sbuflen = len + ETH_SIZE_HEADER ;	// add MAC header + SOS length
+	sbuflen = len + ETH_SIZE_HEADER ;	// add MAC header + CASAN length
 	sbuf = (uint8_t *) malloc (sbuflen) ;
 
 	// Standard Ethernet MAC header (14 bytes)
@@ -228,7 +228,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	sbuf [ETH_OFFSET_TYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
 	sbuf [ETH_OFFSET_TYPE +1] = (char) ((ethtype_     ) & 0xff) ;
 
-	// SOS message size (2 bytes)
+	// CASAN message size (2 bytes)
 	sbuf [ETH_OFFSET_SIZE    ] = BYTE_HIGH (paylen + 2) ;
 	sbuf [ETH_OFFSET_SIZE + 1] = BYTE_LOW  (paylen + 2) ;
 
@@ -259,7 +259,7 @@ bool l2net_eth::send (l2addr &dest, const uint8_t *data, size_t len)
 	hdr [ETH_OFFSET_TYPE   ] = (char) ((ethtype_ >> 8) & 0xff) ;
 	hdr [ETH_OFFSET_TYPE +1] = (char) ((ethtype_     ) & 0xff) ;
 
-	// SOS message size (2 bytes)
+	// CASAN message size (2 bytes)
 	hdr [ETH_OFFSET_SIZE    ] = BYTE_HIGH (len + 2) ;
 	hdr [ETH_OFFSET_SIZE + 1] = BYTE_LOW  (len + 2) ;
 
@@ -352,7 +352,7 @@ l2net::l2_recv_t l2net_eth::recv (void)
 	    remaining -= n ;
 	}
 
-	// Get true packet length (specific length for Ethernet SOS payload)
+	// Get true packet length (specific length for Ethernet CASAN payload)
 	pktlen_ = INT16 (rbuf_ [ETH_OFFSET_SIZE], rbuf_ [ETH_OFFSET_SIZE+1]) ;
 	pktlen_ -= 2 ;
 

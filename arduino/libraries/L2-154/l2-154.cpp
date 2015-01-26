@@ -6,7 +6,7 @@
 #include "l2-154.h"
 
 /*
- * 802.15.4 classes for SOS
+ * 802.15.4 classes for CASAN
  *
  * Needs : ZigMsg functions from associated library
  */

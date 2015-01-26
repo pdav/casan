@@ -105,7 +105,7 @@ void coap_decode (uint8_t msg [], int msglen)
     code =    COAP_CODE (msg) ;
     id =      COAP_ID (msg) ;
 
-    Serial.print ("  SOS Vers=") ;
+    Serial.print ("  CASAN Vers=") ;
     Serial.print (version) ;
 
     Serial.print (", Type=") ;
@@ -278,7 +278,7 @@ uint8_t *padr (int mode, uint8_t *p, int ispan, int disp)
 
 int lastseq = -1 ;
 
-void print_frame (ZigMsg::ZigReceivedFrame *z, bool sos_decode)
+void print_frame (ZigMsg::ZigReceivedFrame *z, bool casan_decode)
 {
     uint8_t *p, *dstp ;
     int intrapan ;
@@ -314,7 +314,7 @@ void print_frame (ZigMsg::ZigReceivedFrame *z, bool sos_decode)
     Serial.print ("] LQI=") ;	Serial.print (z->lqi) ;
     Serial.println () ;
 
-    if (sos_decode && Z_GET_FRAMETYPE (z->fcf) == Z_FT_DATA && lastseq != seq)
+    if (casan_decode && Z_GET_FRAMETYPE (z->fcf) == Z_FT_DATA && lastseq != seq)
 	coap_decode (p, z->paylen) ;
     lastseq = seq ;
 }
@@ -337,7 +337,7 @@ void print_stat (void)
     Serial.println () ;
 }
 
-void snif (bool sos_decode)
+void snif (bool casan_decode)
 {
     static int n = 0 ;
     ZigMsg::ZigReceivedFrame *z ;
@@ -350,7 +350,7 @@ void snif (bool sos_decode)
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
-	print_frame (z, sos_decode) ;
+	print_frame (z, casan_decode) ;
 	zigmsg.skip_received () ;
     }
 }
@@ -382,20 +382,20 @@ void do_snif (void)
 CoAP sniffer
 *******************************************************************************/
 
-void init_sos (char line [])
+void init_casan (char line [])
 {
     zigmsg.channel (channel) ;
     zigmsg.promiscuous (true) ;
     zigmsg.start () ;
-    Serial.println ("Starting SOS sniffer") ;
+    Serial.println ("Starting CASAN sniffer") ;
 }
 
-void stop_sos (void)
+void stop_casan (void)
 {
-    Serial.println ("Stopping SOS sniffer") ;
+    Serial.println ("Stopping CASAN sniffer") ;
 }
 
-void do_sos (void)
+void do_casan (void)
 {
     snif (true) ;
 }
@@ -542,7 +542,7 @@ struct gui
 struct gui gui [] = {
     { 'i', "idle", init_idle, stop_idle, do_idle },
     { 'n', "raw sniffer", init_snif, stop_snif, do_snif },
-    { 'o', "sos sniffer", init_sos, stop_sos, do_sos },
+    { 'o', "casan sniffer", init_casan, stop_casan, do_casan },
     { 's', "sender", init_send, stop_send, do_send },
     { 'r', "receiver", init_recv, stop_recv, do_recv },
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },

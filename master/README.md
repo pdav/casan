@@ -1,22 +1,22 @@
-SOS master control program
-==========================
+CASAN master control program
+============================
 
 This directory contains the source code of the master control program.
 
 It includes the following subdirectories:
-- SOS protocol handling
+- CASAN protocol handling
 - HTTP server
 
 
-SOS program flow
-----------------
+CASAN program flow
+------------------
 
-The SOS master program is made of various threads:
+The CASAN master program is made of various threads:
 - HTTP servers are organized in a pool of threads waiting
     for requests
 - a thread is associated to each network device, waiting for
     incoming L2 frames
-- a thread is dedicated to outgoing SOS messages (whatever
+- a thread is dedicated to outgoing CASAN messages (whatever
     the network device is). This threads also checks if
     retransmission is needed
 - the main thread just waits for a signal to terminate the
@@ -26,7 +26,7 @@ The SOS master program is made of various threads:
 Compilation
 -----------
 
-Prerequisites for the SOS master program are:
+Prerequisites for the CASAN master program are:
 - `g++` version >= 4.7 (see `g++ -v`)
 - ASIO library (Debian package `libasio-dev`)
 
@@ -39,17 +39,17 @@ Compilation options (see `Makefile`):
 Running the master program
 --------------------------
 
-To run the master program, adapt the `sosd.conf` configuration file to
+To run the master program, adapt the `casand.conf` configuration file to
 your needs, and run :
 
-    # ./sosd -d all -c ./sosd.conf
+    # ./casand -d all -c ./casand.conf
 
 You can selectively enable or disable debug options with the "+/-" syntax.
 For example :
 - `-d +all-message-conf`: enable `all` debug messages but `message` and `conf` ones
 - `-d +message+option+cache`: enable `message`, `option` and `cache` debug messages
 - `-d all -d -conf -d conf`: enable `all` debug messages, disable `conf` debug messages and re-enable `conf` debug messages
-To know all debug options, run `./sosd -h`
+To know all debug options, run `./casand -h`
 
 You need root privileges since the master program:
 - access the Ethernet layer directly (without TCP or UDP)

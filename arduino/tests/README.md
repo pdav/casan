@@ -1,7 +1,7 @@
 Example sketches for Arduino slave
 ==================================
 
-* sos: example program for SOS (Ethernet and 802.15.4 versions)
+* casan: example program for CASAN (Ethernet and 802.15.4 versions)
 
 Many of these are low-level test sketches for individual classes:
 * test-l2addr: handle basic operations on Ethernet or 802.15.4 addresses

@@ -5,7 +5,7 @@
  * No packet is sent on the network
  */
 
-#include "sos.h"
+#include "casan.h"
 
 #define PATH1	"/path1"
 #define PATH2	"/path2"

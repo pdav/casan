@@ -32,7 +32,7 @@
 #include "option.h"
 #include "resource.h"
 #include "slave.h"
-#include "sos.h"
+#include "casan.h"
 #include "master.h"
 
 extern conf cf ;
