@@ -1,5 +1,5 @@
 """
-This module contains the SOS class.
+This module contains the CASAN class.
 """
 
 import random
@@ -7,7 +7,7 @@ from io import StringIO
 from threading import Lock, Condition
 from datetime import datetime, timedelta
 
-from sos.msg import Msg
+from casan.msg import Msg
 from util.debug import print_debug, dbg_levels
 from .receiver import Receiver
 from .sender import Sender
@@ -15,20 +15,20 @@ from .slave import Slave
 
 # Seed the RNG
 random.seed()
-SOS_VERSION = 1
+CASAN_VERSION = 1
 
 
-class SOS:
+class CASAN:
     """
-    SOS engine class
+    CASAN engine class
     """
     # Constants
     
     # Methods
     def __init__(self):
         """
-        SOS engine constructor. Initialized the instance with default values, but does not
-        start the SOS system. See 'init' method.
+        CASAN engine constructor. Initialized the instance with default values, but does not
+        start the CASAN system. See 'init' method.
         :return:
         """
         self.timer_first_hello = 0
@@ -37,12 +37,12 @@ class SOS:
         self.tsender = None
         self.rlist, self.slist, self.mlist = [], [], []
         self.httplist = []
-        self.sos_lock = Lock()
+        self.casan_lock = Lock()
         self.condition_var = Condition(Lock())
 
     def __str__(self):
         """
-        Dumps the SOS state into a string.
+        Dumps the CASAN state into a string.
         """
         ss = StringIO()
         ss.write('Delay for first HELLO message = ' + str(self.timer_first_hello) + '\n')
@@ -66,7 +66,7 @@ class SOS:
         """
         Start listening on a new L2 network.
         """
-        with self.sos_lock:
+        with self.casan_lock:
             r = Receiver(self, net, self.slist)
             r.next_hello = datetime.now()
             r.next_hello += timedelta(seconds=self.timer_first_hello)
@@ -88,7 +88,7 @@ class SOS:
         kill the program, or set a timeout.
         """
         # TODO : find a workaround the timeout issue. Maybe feed some data to the L2 or set a timeout on the fly?
-        print_debug(dbg_levels.MESSAGE, 'Stopping SOS. Shutting down HTTP servers...')
+        print_debug(dbg_levels.MESSAGE, 'Stopping CASAN. Shutting down HTTP servers...')
         for h in self.httplist:
             h.stop()
             h.join()
@@ -107,7 +107,7 @@ class SOS:
 
     def find_slave(self, sid):
         """
-        Find a slave managed by the SOS system from it's identification number.
+        Find a slave managed by the CASAN system from it's identification number.
         :param sid: Slave ID number.
         :return: reference to the slave if found, else None.
         """
@@ -124,14 +124,14 @@ class SOS:
         :param req: request to queue
         """
         with self.condition_var:
-            with self.sos_lock:
+            with self.casan_lock:
                 self.mlist.append(req)
                 self.condition_var.notify()
 
     def resource_list(self):
         """
-        Returns aggregated /.well-known/sos for all running slaves.
-        :return: string containing the global /.well-known/sos resource list
+        Returns aggregated /.well-known/casan for all running slaves.
+        :return: string containing the global /.well-known/casan resource list
         """
         ss = StringIO()
         for slave in self.slist:

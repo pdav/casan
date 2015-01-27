@@ -14,10 +14,10 @@ class Receiver(threads.ThreadBase):
     """
     This class reads data from a L2 network interface and processes it by sending replies to the Sender.
     """
-    def __init__(self, sos_instance, net, slavelist):
+    def __init__(self, casan_instance, net, slavelist):
         super().__init__(name='Receiver<{}>'.format(net.iface))
         self.l2net = net
-        self.sos_instance = sos_instance
+        self.casan_instance = casan_instance
         self.slavelist = slavelist
         self.next_hello = datetime.now() + timedelta(seconds=1)
         self.deduplist = []
@@ -55,12 +55,12 @@ class Receiver(threads.ThreadBase):
                 # original request, and wake the emitter.
                 req.stop_retransmit()
                 Msg.link_req_rep(req, m)
-                with self.sos_instance.condition_var:
-                    self.sos_instance.condition_var.notify()
-                # If it is not a SOS message, i.e. it doesn't need processing, keep loopin'
-                if m.sos_type is Msg.SosTypes.SOS_UNKNOWN:
-                    m.find_sos_type()
-                if m.sos_type is m.SosTypes.SOS_NONE:
+                with self.casan_instance.condition_var:
+                    self.casan_instance.condition_var.notify()
+                # If it is not a CASAN message, i.e. it doesn't need processing, keep loopin'
+                if m.casan_type is Msg.CasanTypes.CASAN_UNKNOWN:
+                    m.find_casan_type()
+                if m.casan_type is m.CasanTypes.CASAN_NONE:
                     continue
 
             # Was the message already received? If so, ignore it if we already replied.
@@ -70,9 +70,9 @@ class Receiver(threads.ThreadBase):
                     continue
 
             # Process messages.
-            # Process SOS control messages first.
-            if m.find_sos_type() is not Msg.SosTypes.SOS_NONE:
-                m.peer.process_sos(self.sos_instance, m)
+            # Process CASAN control messages first.
+            if m.find_casan_type() is not Msg.CasanTypes.CASAN_NONE:
+                m.peer.process_casan(self.casan_instance, m)
                 continue
 
             # Orphaned message
@@ -83,11 +83,11 @@ class Receiver(threads.ThreadBase):
 
     def find_peer(self, mess, addr):
         """
-        Check if the sender of a message is an authorized peer. If not, check if it is an SOS slave
+        Check if the sender of a message is an authorized peer. If not, check if it is an CASAN slave
         coming up.
         :param mess: received message
         :param addr: MAC address of the slave to find.
-        :return: True if the sender is an authorized peer or a new SOS slave.
+        :return: True if the sender is an authorized peer or a new CASAN slave.
         """
         # Is the peer already known?
         found = False
@@ -99,9 +99,9 @@ class Receiver(threads.ThreadBase):
 
         # If not found, it may be a new slave coming up.
         if not found:
-            r = mess.is_sos_discover()
+            r = mess.is_casan_discover()
             if r[0]:
-                with self.sos_instance.sos_lock:
+                with self.casan_instance.casan_lock:
                     sid, mtu = r[1], r[2]
                     for s in self.slavelist:
                         if s.id == sid:
@@ -124,9 +124,9 @@ class Receiver(threads.ThreadBase):
         """
         corr_req = None
         if mess.msg_type in (Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST):
-            with self.sos_instance.sos_lock:  # May need to be moved above the if
+            with self.casan_instance.casan_lock:  # May need to be moved above the if
                 id_ = mess.id
-                for mreq in self.sos_instance.mlist:
+                for mreq in self.casan_instance.mlist:
                     if mreq.id == id_:
                         print_debug(dbg_levels.MESSAGE, 'Found original request for ID=' + str(id_))
                         corr_req = mreq

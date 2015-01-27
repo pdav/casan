@@ -1,7 +1,7 @@
-Sensor Operating System (SOS)
-=============================
+Common Architecture for Sensor and Actuator Networks (CASAN)
+============================================================
 
-This is the source code for SOS.
+This is the source code for CASAN.
 
 This directory is structured as follows:
 
@@ -20,10 +20,10 @@ Here are some elements of style for reading the source code:
 - don't modify the tabulation size in your editor configuration: it
     should remain the standard 8 column, as with your printer.
     So, indentation is a combination of tabulations or spaces.
-- SOS master code is documented via Doxygen. To generate the complete
+- CASAN master code is documented via Doxygen. To generate the complete
     documentation, you need `doxygen`, `dot` (part of graphviz) and
     `pdflatex`: just type `make pdf` in `./master` directory.
-- SOS slave code is documented via Doxygen. To generate the complete
+- CASAN slave code is documented via Doxygen. To generate the complete
     documentation, you need `doxygen`, `dot` (part of graphviz) and
     `pdflatex`: just type `make pdf` in `./arduino/libraries` directory.
 

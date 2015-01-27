@@ -1,5 +1,5 @@
 """
-This module contains the SOSRequestHandler class.
+This module contains the CASANRequestHandler class.
 """
 __author__ = 'chavignat'
 
@@ -9,14 +9,14 @@ from sys import stderr
 
 from .reply import HTTPCodes
 
-class SOSRequestHandler:
+class CASANRequestHandler:
     """
     This class is a function object. It is in charge of handling a request received by the HTTP server,
-    and to forward it to SOS if needed.
+    and to forward it to CASAN if needed.
     """
     def __init__(self, master):
         """
-        Constructs a SOSRequestHandler object.
+        Constructs a CASANRequestHandler object.
         :param master: reference to the instance of the Master class.
         """
         self.master = master
