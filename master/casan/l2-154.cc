@@ -232,6 +232,7 @@ int l2net_154::init (const std::string iface, const char *type, const int mtu, c
 	tm.c_lflag = 0 ;
 	for (int i = 0 ; i < NTAB (tm.c_cc) ; i++)
 	    tm.c_cc [i] = _POSIX_VDISABLE ;
+	tm.c_cc [VMIN] = 1 ;		// read() waits for 1 char (at least)
 	if (tcsetattr (fd_, TCSANOW, &tm) == -1)
 	{
 	    close (fd_) ;
@@ -500,7 +501,6 @@ int l2net_154::read_complete_frame (void)
     while (! found_at_least_one &&
 	(n = read (fd_, pbuffer_, BUFLEN - (pbuffer_ - buffer_))) > 0)
     {
-
 	pbuffer_ += n ;
 
 	// we may have read more than one frame:
