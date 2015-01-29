@@ -20,7 +20,7 @@ The CASAN slave program needs:
 On Linux, the needed packages are:
 - arduino
 - screen
-- libdevice-serialport-perl
+- python-serial (libdevice-serialport-perl is no longer needed)
 
 On FreeBSD, the needed ports are:
 - devel/arduino
