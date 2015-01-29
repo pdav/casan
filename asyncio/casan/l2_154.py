@@ -9,7 +9,7 @@ from enum import IntEnum
 
 import serial
 
-from sos import l2
+from casan import l2
 from util.debug import print_debug, dbg_levels
 
 

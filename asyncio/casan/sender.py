@@ -30,14 +30,14 @@ class Sender():
         case, the message will only be deleted if there is no
         thread waiting for this message.
     """
-    def __init__(self, sos_instance, loop):
+    def __init__(self, casan_instance, loop):
         """
         Sender constructor.
-        :param sos_instance: SOS engine instance.
+        :param casan_instance: CASAN engine instance.
         :param loop: event loop to use for asynchronous I/O.
         """
         self.keep_running = True
-        self.sos_instance = sos_instance
+        self.casan_instance = casan_instance
         self.next_timeout = datetime.now() + timedelta(seconds=1)
         self.loop = loop
         self.future_packets = {}
@@ -61,7 +61,7 @@ class Sender():
         :return: reference to the started receiver.
         """
         # Schedule the first hello message.
-        self.loop.call_later(self.sos_instance.timer_first_hello, self.send_hello, r)
+        self.loop.call_later(self.casan_instance.timer_first_hello, self.send_hello, r)
 
         # Schedule receiver execution
         self.future_packets[r] = asyncio.async(self.loop.run_in_executor(None, r.run), loop=self.loop)
@@ -107,8 +107,8 @@ class Sender():
             print_debug(dbg_levels.MESSAGE, 'Error sending hello!')
 
         # Schedule next hello
-        r.next_hello = (datetime.now() + timedelta(seconds=self.sos_instance.timer_interval_hello))
-        r.next_hello_task = self.loop.call_later(self.sos_instance.timer_interval_hello, self.send_hello, r)
+        r.next_hello = (datetime.now() + timedelta(seconds=self.casan_instance.timer_interval_hello))
+        r.next_hello_task = self.loop.call_later(self.casan_instance.timer_interval_hello, self.send_hello, r)
 
     @asyncio.coroutine
     def run(self):
@@ -118,47 +118,47 @@ class Sender():
         """
         now = datetime.now()
         h = None
-        with self.sos_instance.condition_var:
-            with self.sos_instance.sos_lock:
+        with self.casan_instance.condition_var:
+            with self.casan_instance.casan_lock:
                 # First, traverse future list and reschedule
 
                 # Traverse the receiver list and start new receivers
-                for receiver in self.sos_instance.rlist:
+                for receiver in self.casan_instance.rlist:
                     if not receiver.running:
                         print_debug(dbg_levels.MESSAGE, 'Found a receiver to start')
                         self.start_receiver(receiver)
 
                 # Traverse slavelist and check ttl
-                for slave in self.sos_instance.slist:
+                for slave in self.casan_instance.slist:
                     if slave.status is slave.StatusCodes.SL_RUNNING and slave.next_timeout <= now:
                         slave.reset()
 
                 # Traverse message list to send new messages or retransmit old ones.
                 m = None
-                for mess in self.sos_instance.mlist:
+                for mess in self.casan_instance.mlist:
                     if mess.ntrans == 0 or (mess.ntrans < MAX_RETRANSMIT and now >= mess.next_timeout):
                         r = mess.send()
                         if not r:
                             stderr.write('Error : cannot send message.')
-                self.sos_instance.mlist = [m for m in self.sos_instance.mlist if datetime.now() < m.expire]
-                if m is not None and m not in self.sos_instance.mlist:
+                self.casan_instance.mlist = [m for m in self.casan_instance.mlist if datetime.now() < m.expire]
+                if m is not None and m not in self.casan_instance.mlist:
                     pass
 
                 # Determine date of next action.
                 self.next_timeout = datetime.now() + timedelta(seconds=10)  # Temporary
 
-                for s in self.sos_instance.slist:
+                for s in self.casan_instance.slist:
                     # Same here
                     if s.status is s.StatusCodes.SL_RUNNING and self.next_timeout > s.next_timeout:
                         self.next_timeout = s.next_timeout
-                for m in self.sos_instance.mlist:
+                for m in self.casan_instance.mlist:
                     # Is current timeout the time of this message's next retransmission
                     if m.ntrans < MAX_RETRANSMIT and self.next_timeout > m.next_timeout:
                         self.next_timeout = m.next_timeout
             # Lock released
             if self.next_timeout == datetime.max:
                 print_debug(dbg_levels.MESSAGE, 'WAIT INDEFINITELY')
-                self.sos_instance.condition_var.wait()
+                self.casan_instance.condition_var.wait()
             else:
                 delay = (self.next_timeout - datetime.now()).total_seconds()
                 if delay < 0:  # Just to be safe
@@ -166,5 +166,5 @@ class Sender():
                                                      'trying to continue.'.format(delay)))
                 else:
                     print_debug(dbg_levels.MESSAGE, 'WAIT FOR: {} seconds'.format(delay))
-                    self.sos_instance.condition_var.wait(delay)
+                    self.casan_instance.condition_var.wait(delay)
         # Condition var released

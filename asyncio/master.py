@@ -3,31 +3,31 @@ This module contains the Master class.
 """
 import asyncio
 
-from sos import sos
+from casan import casan
 from conf import Conf
-from sos.l2_154 import l2net_154
-from sos.slave import Slave
+from casan.l2_154 import l2net_154
+from casan.slave import Slave
 from util.debug import print_debug, dbg_levels
-from sos_http_server.http_server import HTTPServer
-from sos_http_server.reply import HTTPCodes
-from sos import msg
-from sos.cache import Cache
-from sos.option import Option
+from casan_http_server.http_server import HTTPServer
+from casan_http_server.reply import HTTPCodes
+from casan import msg
+from casan.cache import Cache
+from casan.option import Option
 
 
 class Master:
     """
-    This class drives the SOS system and handles the HTTP servers, acting like a bridge between them.
+    This class drives the CASAN system and handles the HTTP servers, acting like a bridge between them.
     """
 
     def __init__(self, cf):
         self.cf = cf
-        self.engine = sos.SOS()
+        self.engine = casan.CASAN()
         self.cache = Cache()
 
     def start(self):
         """
-        Initialize the SOS engine from the configuration file, but does not start it.
+        Initialize the CASAN engine from the configuration file, but does not start it.
         """
         r = True
         self.engine.timer_first_hello = self.cf.timers[self.cf.CfTimerIndex.I_FIRST_HELLO]
@@ -56,7 +56,7 @@ class Master:
 
     def stop(self):
         """
-        Stops SOS engine.
+        Stops CASAN engine.
         """
         self.engine.stop()
 
@@ -88,7 +88,7 @@ class Master:
                             res.str_ = '/' + '/'.join(path_list[len(ns.prefix):])
                         print_debug(dbg_levels.HTTP, ('HTTP request for admin namespace: {}, '
                                                       'remainder={}'.format(res.base, res.str_)))
-                    elif ns.type is Conf.CfNsType.NS_SOS:
+                    elif ns.type is Conf.CfNsType.NS_CASAN:
                         if len(path_list) <= len(ns.prefix):
                             raise Exception()
                         else:
@@ -101,7 +101,7 @@ class Master:
                             res.resource = res.slave.find_resource(path_list[len(ns.prefix) + 1:])
                             if res.resource is None:
                                 raise Exception()
-                            print_debug(dbg_levels.HTTP, ('HTTP request for SOS namespace : {}, '
+                            print_debug(dbg_levels.HTTP, ('HTTP request for CASAN namespace : {}, '
                                                           'slave id= {}'.format(res.base, res.slave.id)))
                     elif ns.type is Conf.CfNsType.NS_WELL_KNOWN:
                         # No specific handling
@@ -137,11 +137,11 @@ class Master:
         path_res = self.parse_path(request_path)
         if path_res is None:
             rep.code = HTTPCodes.HTTP_NOT_FOUND
-        elif path_res.type in [Conf.CfNsType.NS_ADMIN, Conf.CfNsType.NS_SOS, Conf.CfNsType.NS_WELL_KNOWN]:
+        elif path_res.type in [Conf.CfNsType.NS_ADMIN, Conf.CfNsType.NS_CASAN, Conf.CfNsType.NS_WELL_KNOWN]:
             if path_res.type is Conf.CfNsType.NS_ADMIN:
                 self.http_admin(path_res, req, rep)
-            elif path_res.type is Conf.CfNsType.NS_SOS:
-                yield from self.http_sos(path_res, req, rep)
+            elif path_res.type is Conf.CfNsType.NS_CASAN:
+                yield from self.http_casan(path_res, req, rep)
             elif path_res.type is Conf.CfNsType.NS_WELL_KNOWN:
                 self.http_well_known(path_res, req, rep)
         else:
@@ -209,9 +209,9 @@ class Master:
             rep.code = HTTPCodes.HTTP_NOT_FOUND
 
     @asyncio.coroutine
-    def http_sos(self, res, req, rep):
+    def http_casan(self, res, req, rep):
         """
-        Handle a HTTP request for SOS namespace. This function is a coroutine.
+        Handle a HTTP request for CASAN namespace. This function is a coroutine.
         :param res: RequestPath object returned by parse_path method
         :param req: received Request to process
         :param rep: Reply object

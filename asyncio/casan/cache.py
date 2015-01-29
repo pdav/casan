@@ -1,5 +1,5 @@
 """
-This module contains the cache related functionality of SOS.
+This module contains the cache related functionality of CASAN.
 """
 __author__ = 'chavignat'
 
@@ -12,11 +12,11 @@ from .option import Option
 
 class Cache:
     """
-    This class manages the cache of SOS.
+    This class manages the cache of CASAN.
     """
     class Entry:
         """
-        This class represents an entry in the SOS cache.
+        This class represents an entry in the CASAN cache.
         """
         def __init__(self, req):
             """

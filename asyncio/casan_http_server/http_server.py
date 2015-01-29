@@ -9,10 +9,10 @@ import re
 from urllib.parse import parse_qsl
 from sys import stderr
 
-from sos_http_server.request import Request
+from casan_http_server.request import Request
 from util.threads import ThreadBase
 from util.debug import print_debug, dbg_levels
-from .request_handler import SOSRequestHandler
+from .request_handler import CASANRequestHandler
 from util.exceptions import ServerShutdownRequestException
 from .reply import Reply, HTTPCodes
 
@@ -42,7 +42,7 @@ class HTTPServer(ThreadBase):
         self.host = host
         if connection_timeout is None:
             self.timeout = 10
-        self.request_handler = SOSRequestHandler(master)
+        self.request_handler = CASANRequestHandler(master)
         # TODO : wait for the sender to notify when it's ready and serve HTTP 503 while not ready.
         self.ready = False
 

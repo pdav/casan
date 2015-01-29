@@ -1,4 +1,4 @@
-SOS master in Python
+CASAN master in Python
 ====================
 
 Prerequisites
@@ -29,7 +29,7 @@ Finish porting to asyncio.
 
 - Receivers and sender are not thread objects anymore. There are only 2 managed threads in the program:
     - The main thread deals with the initialization.
-    - The second thread is started by the master and is the SOS control thread. The SOS class IS a thread.
+    - The second thread is started by the master and is the CASAN control thread. The CASAN class IS a thread.
 - Hello messages are sent by a callback which reschedules itself at each iteration. After sending the
 first hello, you can forget they even exist.
 

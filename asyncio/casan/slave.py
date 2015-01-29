@@ -7,13 +7,13 @@ from enum import Enum
 from functools import reduce
 
 from util.debug import print_debug, dbg_levels
-from sos import msg
+from casan import msg
 from .resource import Resource
 
 
 class Slave:
     """
-    This class describes a slave in the SOS system.
+    This class describes a slave in the CASAN system.
     """
     class StatusCodes(Enum):
         """
@@ -96,17 +96,17 @@ class Slave:
         """
         return self.res_list
 
-    def process_sos(self, sos_instance, mess):
+    def process_casan(self, casan_instance, mess):
         """
         This method is called by a receiver thread when the received message
         is a control message originated from this slave.
-        The method implements the SOS control protocol for this slave, 
+        The method implements the CASAN control protocol for this slave, 
         and maintains the state associated to this slave.
-        :param sos_instance: SOS engine instance.
+        :param casan_instance: CASAN engine instance.
         :param mess: message to process.
         """
-        tp = mess.sos_type
-        if tp is msg.Msg.SosTypes.SOS_DISCOVER:
+        tp = mess.casan_type
+        if tp is msg.Msg.CasanTypes.CASAN_DISCOVER:
             print_debug(dbg_levels.STATE, 'Received DISCOVER, sending ASSOCIATE')
             answer = msg.Msg()
             answer.peer = mess.peer
@@ -114,11 +114,11 @@ class Slave:
             answer.msg_code = msg.Msg.MsgCodes.MC_POST
             answer.mk_ctrl_assoc(self.init_ttl, self.curmtu)
 
-            sos_instance.add_request(answer)
+            casan_instance.add_request(answer)
 
-        elif tp is msg.Msg.SosTypes.SOS_ASSOC_REQUEST:
+        elif tp is msg.Msg.CasanTypes.CASAN_ASSOC_REQUEST:
             print_debug(dbg_levels.STATE, 'Received ASSOC_REQUEST from another master')
-        elif tp is msg.Msg.SosTypes.SOS_ASSOC_ANSWER:
+        elif tp is msg.Msg.CasanTypes.CASAN_ASSOC_ANSWER:
             if mess.req_rep is not None:
                 print_debug(dbg_levels.STATE, 'Received ASSOC ANSWER for slave.')
                 print_debug(dbg_levels.STATE, 'payload length=' + str(len(mess.payload)))
@@ -130,7 +130,7 @@ class Slave:
                     self.next_timeout = datetime.now() + timedelta(seconds=self.init_ttl)
                 else:
                     print_debug(dbg_levels.STATE, 'Slave ' + str(self.id) + ' cannot parse resource list.')
-        elif tp is msg.Msg.SosTypes.SOS_HELLO:
+        elif tp is msg.Msg.CasanTypes.CASAN_HELLO:
             print_debug(dbg_levels.STATE, 'Received HELLO from another master')
         else:
             print_debug(dbg_levels.STATE, 'Received an unrecognized message')
@@ -139,7 +139,7 @@ class Slave:
         """
         Parses the resource list for a slave.
         :param rlist: list used to store the parsed resource list.
-        :param payload: payload of a SOS association message.
+        :param payload: payload of a CASAN association message.
         """
         attrname = ''
         cur_res = bytearray()

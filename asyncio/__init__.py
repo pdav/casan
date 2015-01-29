@@ -1,3 +1,3 @@
 """
-Main pySOS Package.
+Main pyCASAN Package.
 """

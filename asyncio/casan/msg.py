@@ -7,18 +7,18 @@ from random import randrange, uniform
 from sys import stderr
 import asyncio
 
-from sos import l2
+from casan import l2
 from util.debug import print_debug, dbg_levels
 from .option import Option
 
 
 glob_msg_id = randrange(0xFFFF)
 
-# SOS related constants
-SOS_VERSION = 1
-SOS_NAMESPACE1 = '.well-known'
-SOS_NAMESPACE2 = 'sos'
-sos_namespace = (SOS_NAMESPACE1, SOS_NAMESPACE2)
+# CASAN related constants
+CASAN_VERSION = 1
+CASAN_NAMESPACE1 = '.well-known'
+CASAN_NAMESPACE2 = 'casan'
+casan_namespace = (CASAN_NAMESPACE1, CASAN_NAMESPACE2)
 
 # CoAP Related constants
 # Note : all times are expressed in seconds unless explicitly specified.
@@ -121,13 +121,13 @@ class Msg:
         MC_PUT = 3
         MC_DELETE = 4
         
-    class SosTypes(Enum):
-        SOS_NONE = 0
-        SOS_DISCOVER = 1
-        SOS_ASSOC_REQUEST = 2
-        SOS_ASSOC_ANSWER = 3
-        SOS_HELLO = 4
-        SOS_UNKNOWN = 5
+    class CasanTypes(Enum):
+        CASAN_NONE = 0
+        CASAN_DISCOVER = 1
+        CASAN_ASSOC_REQUEST = 2
+        CASAN_ASSOC_ANSWER = 3
+        CASAN_HELLO = 4
+        CASAN_UNKNOWN = 5
 
     def __eq__(self, other):
         """
@@ -151,7 +151,7 @@ class Msg:
         """
         self.pk_t = l2.PkTypes.PK_NONE
         self.msg_code = self.MsgCodes.MC_EMPTY
-        self.sos_type = self.SosTypes.SOS_UNKNOWN
+        self.casan_type = self.CasanTypes.CASAN_UNKNOWN
         self.req_rep = None
         self.peer = None
         self.req_rep = None
@@ -193,7 +193,7 @@ class Msg:
         self.next_timeout = datetime.max
         self.expire = datetime.max
         self.pk_t = l2.PkTypes.PK_NONE
-        self.sos_type = self.SosTypes.SOS_UNKNOWN
+        self.casan_type = self.CasanTypes.CASAN_UNKNOWN
         self.msg_type = None
         self.id = 0
 
@@ -239,7 +239,7 @@ class Msg:
         """
         Decode a CoAP message.
         """
-        if coap_ver(self.msg) != SOS_VERSION:
+        if coap_ver(self.msg) != CASAN_VERSION:
             return False
         self.msg_type = coap_type(self.msg)
         self.toklen = coap_toklen(self.msg)
@@ -370,7 +370,7 @@ class Msg:
 
         # Build the message
         self.msg = bytearray(4)
-        self.msg[0] = (SOS_VERSION << 6) | (self.msg_type.value << 4) | self.toklen
+        self.msg[0] = (CASAN_VERSION << 6) | (self.msg_type.value << 4) | self.toklen
         self.msg[1] = self.msg_code.value
         self.msg[2] = (self.id & 0xFF00) >> 8
         self.msg[3] = self.id & 0xFF
@@ -465,32 +465,32 @@ class Msg:
             m1.req_rep = m2
             m2.req_rep = m1
 
-    def is_sos_ctrl_msg(self):
+    def is_casan_ctrl_msg(self):
         r = True
         count = 0
         for i, opt in enumerate(self.optlist):
             if opt.optcode is Option.OptCodes.MO_URI_PATH:
                 r = False
-                if i >= len(sos_namespace): break
-                if len(sos_namespace[i]) != opt.optlen: break
-                if sos_namespace[i] != opt.optval: break
+                if i >= len(casan_namespace): break
+                if len(casan_namespace[i]) != opt.optlen: break
+                if casan_namespace[i] != opt.optval: break
                 r = True
                 count += 1
-        if r and (count != len(sos_namespace)):
+        if r and (count != len(casan_namespace)):
             r = False
         print_debug(dbg_levels.MESSAGE, 'It\'s ' + ('' if r else 'not ') + 'a control message.')
         return r
 
-    def is_sos_discover(self):
+    def is_casan_discover(self):
         """
-        Checks if a message is a SOS discover message.
-        :return: a tuple whose first field is True if the message is a SOS discover message, otherwise it is the
+        Checks if a message is a CASAN discover message.
+        :return: a tuple whose first field is True if the message is a CASAN discover message, otherwise it is the
                  singleton False.
-                 If the message is a SOS discover, then the second field contains the slave id, and the third field
+                 If the message is a CASAN discover, then the second field contains the slave id, and the third field
                  contains the mtu.
         """
         sid, mtu = (0, 0)
-        if self.msg_code is Msg.MsgCodes.MC_POST and self.msg_type is Msg.MsgTypes.MT_NON and self.is_sos_ctrl_msg():
+        if self.msg_code is Msg.MsgCodes.MC_POST and self.msg_type is Msg.MsgTypes.MT_NON and self.is_casan_ctrl_msg():
             for opt in self.optlist:
                 if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                     if opt.optval.startswith('slave='):
@@ -502,44 +502,44 @@ class Msg:
                         sid = 0
                         break
         if sid > 0 and mtu >= 0:
-            self.sos_type = self.SosTypes.SOS_DISCOVER
-        r = (self.sos_type is self.SosTypes.SOS_DISCOVER,)
+            self.casan_type = self.CasanTypes.CASAN_DISCOVER
+        r = (self.casan_type is self.CasanTypes.CASAN_DISCOVER,)
         if r[0]:
             r = (r, sid, mtu)
         return r
 
-    def is_sos_associate(self):
+    def is_casan_associate(self):
         """
-        Checks if a message is a SOS associate message.
-        :return: True if the message is a SOS associate message, False otherwise.
+        Checks if a message is a CASAN associate message.
+        :return: True if the message is a CASAN associate message, False otherwise.
         """
         found = False
-        if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-            if self.msg_type is self.MsgTypes.MT_CON and self.msg_code is self.MsgCodes.MC_POST and self.is_sos_ctrl_msg() == True:
+        if self.casan_type is self.CasanTypes.CASAN_UNKNOWN:
+            if self.msg_type is self.MsgTypes.MT_CON and self.msg_code is self.MsgCodes.MC_POST and self.is_casan_ctrl_msg() == True:
                 for opt in self.optlist:
                     if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                         # TODO: maybe use regular expressions here
                         found = True in (opt.optval.startswith(pattern) for pattern in ['mtu=', 'ttl='])
                 if found:
-                    self.sos_type = self.SosTypes.SOS_ASSOC_REQUEST
-        return self.sos_type is self.SosTypes.SOS_ASSOC_REQUEST
+                    self.casan_type = self.CasanTypes.CASAN_ASSOC_REQUEST
+        return self.casan_type is self.CasanTypes.CASAN_ASSOC_REQUEST
 
-    def find_sos_type(self, check_req_rep=True):
-        if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-            if not self.is_sos_associate() and not self.is_sos_discover()[0]:
+    def find_casan_type(self, check_req_rep=True):
+        if self.casan_type is self.CasanTypes.CASAN_UNKNOWN:
+            if not self.is_casan_associate() and not self.is_casan_discover()[0]:
                 if check_req_rep and self.req_rep is not None:
-                    st = self.req_rep.find_sos_type(False)
-                    if st is self.SosTypes.SOS_ASSOC_REQUEST:
-                        self.sos_type = self.SosTypes.SOS_ASSOC_ANSWER
-            if self.sos_type is self.SosTypes.SOS_UNKNOWN:
-                self.sos_type = self.SosTypes.SOS_NONE
-        return self.sos_type
+                    st = self.req_rep.find_casan_type(False)
+                    if st is self.CasanTypes.CASAN_ASSOC_REQUEST:
+                        self.casan_type = self.CasanTypes.CASAN_ASSOC_ANSWER
+            if self.casan_type is self.CasanTypes.CASAN_UNKNOWN:
+                self.casan_type = self.CasanTypes.CASAN_NONE
+        return self.casan_type
 
     def add_path_ctrl(self):
         """
-        Adds sos_namespace members to message as URI_PATH options.
+        Adds casan_namespace members to message as URI_PATH options.
         """
-        for namespace in sos_namespace:
+        for namespace in casan_namespace:
             self.optlist.append(Option(Option.OptCodes.MO_URI_PATH, namespace, len(namespace)))
 
     def mk_ctrl_assoc(self, ttl, mtu):

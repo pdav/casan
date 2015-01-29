@@ -1,5 +1,5 @@
 """
-This module contains the SOS class.
+This module contains the CASAN class.
 """
 
 import random
@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-from sos.msg import Msg
+from casan.msg import Msg
 from util.debug import print_debug, dbg_levels
 from .receiver import Receiver
 from .sender import Sender
@@ -18,20 +18,20 @@ from util.threads import ThreadBase
 
 # Seed the RNG
 random.seed()
-SOS_VERSION = 1
+CASAN_VERSION = 1
 
 
-class SOS(ThreadBase):
+class CASAN(ThreadBase):
     """
-    SOS engine class
+    CASAN engine class
     """
     # Constants
     
     # Methods
     def __init__(self):
         """
-        SOS engine constructor. Initialized the instance with default values, but does not
-        start the SOS system. See 'init' method.
+        CASAN engine constructor. Initialized the instance with default values, but does not
+        start the CASAN system. See 'init' method.
         :return:
         """
         super().__init__()
@@ -41,14 +41,14 @@ class SOS(ThreadBase):
         self.tsender = None
         self.rlist, self.slist, self.mlist = [], [], []
         self.httplist = []
-        self.sos_lock = Lock()
+        self.casan_lock = Lock()
         self.condition_var = Condition(Lock())
-        self.sos_event_loop = asyncio.get_event_loop()
+        self.casan_event_loop = asyncio.get_event_loop()
         self.executor = None
 
     def __str__(self):
         """
-        Dumps the SOS state into a string.
+        Dumps the CASAN state into a string.
         """
         ss = StringIO()
         ss.write('Delay for first HELLO message = ' + str(self.timer_first_hello) + '\n')
@@ -65,10 +65,10 @@ class SOS(ThreadBase):
         # At this point, the receiver list should be filled, we can safely
         # initialize the executor with a realistic max_workers number.
         self.executor = ThreadPoolExecutor(max_workers=len(self.rlist))
-        self.sos_event_loop.set_default_executor(self.executor)
+        self.casan_event_loop.set_default_executor(self.executor)
 
         if self.tsender is None:
-            self.tsender = Sender(self, self.sos_event_loop)
+            self.tsender = Sender(self, self.casan_event_loop)
         for server in self.httplist:
             # The servers won't actually start until the sender is ready.
             # (actually, that's in the TODO list)
@@ -79,8 +79,8 @@ class SOS(ThreadBase):
         Start listening on a new L2 network.
         :param net: L2 network to start a receiver for.
         """
-        with self.sos_lock:
-            r = Receiver(self, net, self.slist, self.sos_event_loop)
+        with self.casan_lock:
+            r = Receiver(self, net, self.slist, self.casan_event_loop)
             r.next_hello = datetime.now()
             r.next_hello += timedelta(seconds=self.timer_first_hello)
             r.hello_id = r.next_hello.microsecond % 1000
@@ -95,12 +95,12 @@ class SOS(ThreadBase):
 
     def run(self):
         """
-        SOS main loop.
+        CASAN main loop.
         :return:
         """
         self.init()
         while self.keep_running:
-            self.sos_event_loop.run_until_complete(self.tsender.run())
+            self.casan_event_loop.run_until_complete(self.tsender.run())
 
     def stop(self):
         """
@@ -111,7 +111,7 @@ class SOS(ThreadBase):
         """
         # TODO : find a workaround the timeout issue. Maybe feed some data to the L2 or set a timeout on the fly?
         self.keep_running = False
-        print_debug(dbg_levels.MESSAGE, 'Stopping SOS. Shutting down HTTP servers...')
+        print_debug(dbg_levels.MESSAGE, 'Stopping CASAN. Shutting down HTTP servers...')
         for h in self.httplist:
             h.stop()
             h.join()
@@ -119,11 +119,11 @@ class SOS(ThreadBase):
         print_debug(dbg_levels.MESSAGE, 'Stopping executor.')
         self.executor.shutdown(wait=False)
 
-        print_debug(dbg_levels.MESSAGE, 'All done. SOS terminating.')
+        print_debug(dbg_levels.MESSAGE, 'All done. CASAN terminating.')
 
     def find_slave(self, sid):
         """
-        Find a slave managed by the SOS system from it's identification number.
+        Find a slave managed by the CASAN system from it's identification number.
         :param sid: Slave ID number.
         :return: reference to the slave if found, else None.
         """
@@ -140,14 +140,14 @@ class SOS(ThreadBase):
         :param req: request to queue
         """
         with self.condition_var:
-            with self.sos_lock:
+            with self.casan_lock:
                 self.mlist.append(req)
                 self.condition_var.notify()
 
     def resource_list(self):
         """
-        Returns aggregated /.well-known/sos for all running slaves.
-        :return: string containing the global /.well-known/sos resource list
+        Returns aggregated /.well-known/casan for all running slaves.
+        :return: string containing the global /.well-known/casan resource list
         """
         ss = StringIO()
         for slave in self.slist:

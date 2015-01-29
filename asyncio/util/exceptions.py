@@ -1,5 +1,5 @@
 """
-This module contains specific exceptions used by SOS and the HTTP server.
+This module contains specific exceptions used by CASAN and the HTTP server.
 """
 
 class ServerShutdownRequestException(Exception):

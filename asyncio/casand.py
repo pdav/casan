@@ -21,7 +21,7 @@ def run():
     parser.add_argument('-d', type=str, help='Set the level of debugging '
                         'verbosity', default='', metavar='[[+|-]spec]...]')
     parser.add_argument('-c', type=str, help='Specify the configuration file '
-                        'to use with pySos', default='./sosd.conf',
+                        'to use with pyCasan', default='./casand.conf',
                         metavar='file')
 
     args = parser.parse_args()
@@ -38,7 +38,7 @@ def run():
     master.start()
     undo_block_all_signals()
 
-    # Finally, install signal handlers for the main event loop and start SOS.
+    # Finally, install signal handlers for the main event loop and start CASAN.
     master.engine.start()
     wait_for_signal()
 
@@ -62,9 +62,9 @@ def undo_block_all_signals():
     signal.pthread_sigmask(signal.SIG_UNBLOCK, sigmask)
 
 
-def stop_sos(master):
+def stop_casan(master):
     """
-    Stops the SOS engine.
+    Stops the CASAN engine.
     :param master: reference to the instance of the master class.
     """
     print('Caught signal!')

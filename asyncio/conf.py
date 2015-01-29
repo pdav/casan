@@ -20,7 +20,7 @@ class Conf:
     DEFAULT_154_CHANNEL = 12
     syntax_help = {'ALL': 'http-server, namespace, timer, network, or slave',
                    'HTTP': 'http-server [listen <addr>] [port <num>] [threads <num>]',
-                   'NAMESPACE': 'namespace <admin|sos|well-known> <path>',
+                   'NAMESPACE': 'namespace <admin|casan|well-known> <path>',
                    'TIMER': 'timer <firsthello|hello|slavettl|http> <value in s>',
                    'NETWORK': 'network <ethernet|802.15.4> ...',
                    'SLAVE': 'slave id <id> [ttl <timeout in s>] [mtu <bytes>]',
@@ -31,7 +31,7 @@ class Conf:
     class CfNsType(Enum):
         NS_NONE = 0
         NS_ADMIN = 1
-        NS_SOS = 2
+        NS_CASAN = 2
         NS_WELL_KNOWN = 3
 
     class CfTimerIndex(IntEnum):
@@ -88,7 +88,7 @@ class Conf:
         self.lineno = 0
         self.file = None
 
-    def parse(self, file_="./sosd.conf"):
+    def parse(self, file_="./casand.conf"):
         return self.parse_file(file_)
 
     def parse_file(self, file_):
@@ -161,7 +161,7 @@ class Conf:
                     c.prefix = tokens[2].split('/')[1:]  # Remove leading empty string
                     try:
                         c.type = {'admin': self.CfNsType.NS_ADMIN,
-                                  'sos': self.CfNsType.NS_SOS,
+                                  'casan': self.CfNsType.NS_CASAN,
                                   'well-known': self.CfNsType.NS_WELL_KNOWN}[tokens[1]]
                     except KeyError:
                         self.parse_error_unk_token(tokens[1], 'NAMESPACE')
@@ -182,7 +182,7 @@ class Conf:
                         self.parse_error_unk_token(tokens[1], 'TIMER')
                         r = False
             elif tokens[0] == 'network':
-                if a < 3:  # 3 Mandatory arguments according to sample sosd.conf
+                if a < 3:  # 3 Mandatory arguments according to sample casand.conf
                     self.parse_error_mis_token('NETWORK')
                 else:
                     c = self.CfNetwork()
@@ -357,7 +357,7 @@ class Conf:
                 s = ''
                 try:
                     s = {self.CfNsType.NS_ADMIN: 'admin',
-                         self.CfNsType.NS_SOS: 'sos',
+                         self.CfNsType.NS_CASAN: 'casan',
                          self.CfNsType.NS_WELL_KNOWN: 'well-known'}[n.type]
                 except KeyError:
                     s = '(unknown)'

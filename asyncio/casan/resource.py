@@ -8,7 +8,7 @@ from .msg import Msg
 class Resource:
     """
     An object of class Resource represents a resource which
-    is provided by an SOS slave.
+    is provided by an CASAN slave.
   
     This class represents a resource. A resource has:
     - an URL (vector of path components)
