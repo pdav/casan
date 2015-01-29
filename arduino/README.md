@@ -45,6 +45,10 @@ To install it, do the following steps:
     # mv $ADIR/boards.txt $ADIR/boards.txt.old
     # ln -s $ZDIR/boards.txt $ADIR
 
+If you plan to use the SPI module, add the following line:
+    const static uint8_t SS   = 10;
+to $ZDIR/variants/zigduino_r2/pins_arduino.h
+
 On FreeBSD, ADIR must be set to `/usr/local/arduino/hardware/arduino`.
 On MacOS, ADIR must be set to ?
 
