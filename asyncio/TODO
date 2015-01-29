@@ -1,0 +1,5 @@
+Rewrite conf.py and design new configuration file format.
+Continue HTTP server implementation :
+    - Parse HTTP request.
+    - Handle requests : write request handlers for SOS namespaces.
+Port SOS module, mainly sender and receiver threads, to use asyncio. Headaches incoming.
