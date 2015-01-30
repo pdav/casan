@@ -27,6 +27,12 @@ include $(ARDMK_DIR)/Arduino.mk
 
 CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(L2) $(DBLEVEL)
 
+# if you encounter the error
+#   ...relocation truncated to fit: R_AVR_13_PCREL against symbol..."
+# during the link phase for a large program, uncomment this option to
+# prepend the AVR math library
+#OTHER_OBJS		= -lm
+
 test : all upload monitor
 
 retest: reset monitor
