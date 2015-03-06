@@ -15,6 +15,7 @@ Source code style guide
 -----------------------
 
 Here are some elements of style for reading the source code:
+
 - all source files are developped with a classical text editor (vi).
 - indentation is 4 space wide.
 - don't modify the tabulation size in your editor configuration: it
