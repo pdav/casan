@@ -5,18 +5,33 @@
 
 import asyncio
 
+import aiohttp
+import aiohttp.web
+
 from casan import l2
 from casan import l2_154
 from casan import l2_eth
+
+@asyncio.coroutine
+def handle(request):
+    name = request.match_info.get('name', "Anonymous")
+    text = "Hello, " + name
+    return aiohttp.web.Response(body=text.encode('utf-8'))
+
+
+@asyncio.coroutine
+def init(loop):
+    app = aiohttp.web.Application(loop=loop)
+    app.router.add_route('GET', '/{name}', handle)
+    srv = yield from loop.create_server(app.make_handler(), '0.0.0.0', 8080)
+    print("Server started at http://0.0.0.0:8080")
+    return srv
 
 x = l2_154.l2net_154 ()
 x.init ('/dev/digi', 'xbee', 0, '12:34', 'ca:fe', 25, asyncio=True)
 
 e = l2_eth.l2net_eth ()
 e.init ('eth0', 0, 0x0806)
-
-loop = asyncio.get_event_loop()
-print("Starting asyncio ETH + 802.15.4 server")
 
 def rdr (l2n):
     """
@@ -31,8 +46,19 @@ def rdr (l2n):
     except Exception(e):
         print (e)
 
+loop = asyncio.get_event_loop()
+print("Starting asyncio HTTP + ETH + 802.15.4 server")
+
 loop.add_reader (x.handle (), lambda: rdr (x))
 loop.add_reader (e.handle (), lambda: rdr (e))
+
+loop.run_until_complete(init(loop))
+
+try:
+    loop.run_forever()
+except KeyboardInterrupt:
+    pass
+
 
 try:
     loop.run_forever()
