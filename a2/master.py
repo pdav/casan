@@ -89,7 +89,7 @@ class Master:
             # r = "404, c'était une belle voiture"
             raise aiohttp.web.HTTPNotFound ()
 
-        return aiohttp.web.Response (body=r.encode (('utf-8'))
+        return aiohttp.web.Response (body=r.encode ('utf-8'))
 
     def handle_well_known (self, request):
         return aiohttp.web.Response (body=b"WELL")
