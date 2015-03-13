@@ -3,8 +3,7 @@
 # Must be run as root
 # Test Ethernet receive method
 
-from casan import l2
-from casan import l2_eth
+import l2_eth
 
 e = l2_eth.l2net_eth ()
 e.init ('eth0', 0, 0x0806)
@@ -22,4 +21,4 @@ try:
 except KeyboardInterrupt:
     pass
 
-print ('Calls to recv: None = {}, PK_BCAST = {}'.format (n, b))
+print ('Calls to recv: None = {}, dest bcast or me = {}'.format (n, b))

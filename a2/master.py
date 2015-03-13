@@ -4,9 +4,9 @@ import asyncio
 import aiohttp
 import aiohttp.web
 
-from casan import l2
-from casan import l2_eth
-from casan import l2_154
+import l2_eth
+import l2_154
+import msg
 
 
 class Master:
@@ -144,5 +144,8 @@ class Master:
 
         r = l2n.recv ()
         if r is not None:
-            (ptype, saddr, data) = r
-            print (saddr, data)
+            m = msg.Msg ()
+            if m.decode (r):
+                print (str (m))
+            else:
+                print ('DECODING FAILED')

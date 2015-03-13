@@ -1,13 +1,12 @@
 """
-This module contains the subclasses of l2 and l2net for 802.15.4 networking.
+This module contains the l2addr and l2net classes for 802.15.4 networking
 """
+
 import sys
 import os
 import fcntl
 import termios
 import time
-
-from casan import l2
 
 
 class l2addr_154:
@@ -311,8 +310,8 @@ class l2net_154:
     def recv (self):
         """
         Receive a frame.
-        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA) or None
-                 PACKET_TYPE = see l2.PkType
+        :return: tuple (packet-dest, src-addr, data) or None
+                 packet-dest = 'me' or 'bcast'
         """
         r = None
         while r is None:
@@ -337,7 +336,8 @@ class l2net_154:
     def extract_packet (self):
         """
         Extract a packet from the input buffer
-        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA) or None
+        :return: tuple (packet-dest, src-addr, data) or None
+                 packet-dest = 'me' or 'bcast'
         """
         r = None
         while r is None:
@@ -362,9 +362,9 @@ class l2net_154:
                 data = frame [5:]
 
                 if options & self.RX_SHORT_OPT_BROADCAST:
-                    pktype = l2.PkType.PK_BCAST
+                    pktype = 'bcast'
                 else:
-                    pktype = l2.PkType.PK_ME
+                    pktype = 'me'
 
                 r = (pktype, a, data)
 
@@ -413,7 +413,7 @@ class l2net_154:
             # At this point, we have a full valid frame in the buffer.
             # Remove the whole frame from the buffer and return frame
             # data only
-            frame = self._buffer [3:3+framelen]
+            frame = self._buffer [3:3 + framelen]
             del (self._buffer [:pktlen])
 
         return frame

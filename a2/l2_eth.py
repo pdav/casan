@@ -1,10 +1,8 @@
 """
-This module contains the subclasses of l2 and l2net for Ethernet networking.
+This module contains the l2addr and l2net classes for Ethernet networking
 """
-# import sys
-import socket
 
-from casan import l2
+import socket
 
 
 class l2addr_eth:
@@ -165,18 +163,18 @@ class l2net_eth:
     def recv (self):
         """
         Receive a frame.
-        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA) or None
-                 PACKET_TYPE = see l2.PkType
+        :return: tuple (packet-dest, src-addr, data) or None
+                 packet-dest = 'me' or 'bcast'
         """
         (data, addr) = self._fd.recvfrom (self.READ_MAX)
         (iface, ethtype, pktype, hatype, haaddr) = addr
 
         if pktype == socket.PACKET_HOST:
-            p = l2.PkType.PK_ME
+            ptype = 'me'
         elif pktype == socket.PACKET_BROADCAST:
-            p = l2.PkType.PK_BCAST
+            ptype = 'bcast'
         elif pktype == socket.PACKET_MULTICAST:
-            p = l2.PkType.PK_BCAST
+            ptype = 'bcast'
         else:
             return None
 
@@ -184,4 +182,4 @@ class l2net_eth:
         a = l2addr_eth ()
         a.addr = haaddr
 
-        return (p, a, data)
+        return (ptype, a, data)

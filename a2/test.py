@@ -8,9 +8,9 @@ import asyncio
 import aiohttp
 import aiohttp.web
 
-from casan import l2
-from casan import l2_154
-from casan import l2_eth
+import l2_154
+import l2_eth
+
 
 @asyncio.coroutine
 def handle(request):
@@ -38,6 +38,7 @@ l = e.init ('eth0', 0, 0x0806)
 if l is False:
     print ('Error in eth init')
     sys.exit (1)
+
 
 def rdr (l2n):
     """

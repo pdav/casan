@@ -1,7 +1,7 @@
 PEP = pep8 --ignore E211
 
 check:
-	$(PEP) casan/*.py casand.py conf.py master.py
+	$(PEP) *.py
 
 clean:
-	rm -rf __pycache__ casan/__pycache__
+	rm -rf __pycache__
