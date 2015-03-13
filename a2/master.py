@@ -4,6 +4,10 @@ import asyncio
 import aiohttp
 import aiohttp.web
 
+from casan import l2
+from casan import l2_eth
+from casan import l2_154
+
 
 class Master:
     """
@@ -15,7 +19,7 @@ class Master:
         :param conf:parsed configuration
         :type  conf:class conf.Conf
         """
-        self.conf_ = conf
+        self._conf = conf
 
     ######################################################################
     # Initialization
@@ -32,8 +36,8 @@ class Master:
 
         app = aiohttp.web.Application ()
 
-        for ns in self.conf_.namespaces:
-            uri = self.conf_.namespaces [ns]
+        for ns in self._conf.namespaces:
+            uri = self._conf.namespaces [ns]
 
             if ns == 'admin':
                 uri += '/{name}'
@@ -52,15 +56,45 @@ class Master:
         # Start HTTP servers
         #
 
-        for (scheme, addr, port) in self.conf_.http:
+        for (scheme, addr, port) in self._conf.http:
             ############# XXX : we should use the SCHEME
             f = loop.create_server (app.make_handler (), addr, port)
             loop.run_until_complete (f)
+
+        #
+        # Configure L2 networks
+        #
+
+        for (type, dev, mtu, sub) in self._conf.networks:
+            if type == 'ethernet':
+                (ethertype, ) = sub
+                l = l2_eth.l2net_eth ()
+                r = l.init (dev, mtu, ethertype)
+            elif type == '802.15.4':
+                (subtype, addr, panid, channel) = sub
+                l = l2_154.l2net_154 ()
+                r = l.init (dev, subtype, mtu, addr, panid, channel,
+                            asyncio=True)
+            else:
+                raise RuntimeError ('Unknown network type ' + type)
+
+            if r is False:
+                raise RuntimeError ('Error in network ' + type + ' init')
+
+            loop.add_reader (l.handle (), lambda: self.l2reader (l))
+
+        #
+        # Main loop
+        #
 
         try:
             loop.run_forever ()
         except KeyboardInterrupt ():
             pass
+
+    ######################################################################
+    # HTTP handle routines
+    ######################################################################
 
     def handle_admin (self, request):
         name = request.match_info ['name']
@@ -77,16 +111,15 @@ class Master:
                     </body></html>"""
 
         elif name == 'conf':
-            r = '<html><body><pre>' + str(self.conf_) + '</pre></body></html>'
+            r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
 
         elif name == 'run':
-            r = '<html><body><pre>' + str(self.conf_) + '</pre></body></html>'
+            r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
 
         elif name == 'slave':
-            r = '<html><body><pre>' + str(self.conf_) + '</pre></body></html>'
+            r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
 
         else:
-            # r = "404, c'était une belle voiture"
             raise aiohttp.web.HTTPNotFound ()
 
         return aiohttp.web.Response (body=r.encode ('utf-8'))
@@ -97,3 +130,18 @@ class Master:
     @asyncio.coroutine
     def handle_casan (self, request):
         return aiohttp.web.Response (body=b"CASAN")
+
+    ######################################################################
+    # L2 handle routines
+    ######################################################################
+
+    # @asyncio.coroutine
+    def l2reader (self, l2n):
+        """
+        :param l2n: l2net_* objet
+        :type  l2n: l2net_* (l2net_eth or l2net_154)
+        """
+
+        (ptype, saddr, data) = l2n.recv ()
+        if ptype != l2.PkType.PK_NONE:
+            print (saddr, data)

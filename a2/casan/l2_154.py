@@ -88,35 +88,36 @@ class l2net_154:
         Used for debugging purposes.
         """
         s = 'Network type : 802.15.4\n'
-        s += 'Interface : ' + self.iface + '\n'
-        s += 'Interface address : ' + str (self.a) + '\n'
-        s += 'PANID : ' + str (self.pan) + '\n'
-        s += 'MTU : ' + str (self.mtu) + '\n'
+        s += 'Interface : ' + self._iface + '\n'
+        s += 'Interface address : ' + str (self._a) + '\n'
+        s += 'PANID : ' + str (self._pan) + '\n'
+        s += 'MTU : ' + str (self._mtu) + '\n'
+        return s
 
     def __init__ (self):
         """
         Construct a l2net_154 object with some default values.
         """
-        self.max_latency = 5
-        self.fd = -1
-        self.framelist = []
-        self.buffer = bytearray ()
-        self.iface = None
+        self._max_latency = 5             # XXX needed ?
+        self._fd = -1
+        self._framelist = []
+        self._buffer = bytearray ()
+        self._iface = None
+        self._channel = None
+        self._a = None
 
-    def _init_xbee (self, iface, addr, panid, channel):
+    def _init_xbee (self):
         """
         Initialize access to the Digi XBee chip
         """
-        if not (0 < self.mtu <= self.XBEE_MTU):
-            self.mtu = self.XBEE_MTU
-        if not (10 < self.channel < 26):
-            return False
+        if not (0 < self._mtu <= self.XBEE_MTU):
+            self._mtu = self.XBEE_MTU
         try:
             # Open and initialize device
-            if not iface.startswith ('/dev'):
-                iface = '/dev/' + iface
-            self.fd = os.open (iface, os.O_RDWR)
-            attrs = termios.tcgetattr (self.fd)
+            if not self._iface.startswith ('/dev'):
+                self._iface = '/dev/' + self._iface
+            self._fd = os.open (self._iface, os.O_RDWR)
+            attrs = termios.tcgetattr (self._fd)
             attrs [:4] = [termios.IGNBRK | termios.IGNPAR,
                           0,
                           termios.CS8 | termios.CREAD | termios.B9600,
@@ -127,17 +128,17 @@ class l2net_154:
                 # check in python stdlib source code?
                 #attr = termios.POSIX_VDISABLE
                 pass
-            termios.tcsetattr (self.fd, termios.TCSANOW, attrs)
+            termios.tcsetattr (self._fd, termios.TCSANOW, attrs)
 
             def send_AT_command (s):
                 """
                 Sends an AT command over the serial port and checks
                 for the returned value.
                 """
-                os.write (self.fd, s)
+                os.write (self._fd, s)
                 r = bytearray ()
                 while True:
-                    c = os.read (self.fd, self.XBEE_READ_MAX)
+                    c = os.read (self._fd, self.XBEE_READ_MAX)
                     r += c
                     if c == b'\r':
                         if r [-3:] == b'OK\r':
@@ -157,20 +158,20 @@ class l2net_154:
 
             # Short address
             sa = (b'ATMY' +
-                  bytes (hex (self.a.addr [1]) [2:], 'utf-8') +
-                  bytes (hex (self.a.addr [0]) [2:], 'utf-8') +
+                  bytes (hex (self._a.addr [1]) [2:], 'utf-8') +
+                  bytes (hex (self._a.addr [0]) [2:], 'utf-8') +
                   b'\r')
             send_AT_command (sa)
 
             # PANID
             panid = (b'ATID' +
-                     bytes (hex (self.pan.addr [1]) [2:], 'utf-8') +
-                     bytes (hex (self.pan.addr [0]) [2:], 'utf-8') +
+                     bytes (hex (self._pan.addr [1]) [2:], 'utf-8') +
+                     bytes (hex (self._pan.addr [0]) [2:], 'utf-8') +
                      b'\r')
             send_AT_command (panid)
 
             # Channel
-            chan = b'ATCH' + bytes (hex (channel) [2:], 'utf-8') + b'\r'
+            chan = b'ATCH' + bytes (hex (self._channel) [2:], 'utf-8') + b'\r'
             send_AT_command (chan)
 
             # 802.15.4 w/ ACKs
@@ -184,16 +185,16 @@ class l2net_154:
 
         except Exception as e:
             sys.stderr.write (str (e) + '\n')
-            sys.stderr.write ('Error : cannot open interface ' + iface)
+            sys.stderr.write ('Error : cannot open interface ' + self._iface)
             return False
 
         # configure the device to non-blocking mode for asyncio
-        if self.asyncio:
-            fcntl.fcntl (self.fd, fcntl.F_SETFL, os.O_NDELAY)
+        if self._asyncio:
+            fcntl.fcntl (self._fd, fcntl.F_SETFL, os.O_NDELAY)
 
         return True
 
-    def init (self, iface, type_, mtu, addr, panid, channel, asyncio=False):
+    def init (self, iface, type, mtu, addr, panid, channel, asyncio=False):
         """
         Initialize a l2net_154 object, opens and sets up the network interface
         :param iface: interface to start. Full path (eg: '/dev/ttyUSB0') or
@@ -208,38 +209,42 @@ class l2net_154:
         :type  addr: string
         :param panid: PANID
         :type  panid: string
-        :param channel: channel
+        :param channel: channel number (11..26)
         :type  channel: integer
         :param asyncio: True if this object is used by asyncio
         :type  asyncio: boolean
         :return: True if ok, False if error.
         """
 
-        self.a = l2addr_154 (addr)
-        self.pan = l2addr_154 (panid)
-        self.channel = channel
-        self.mtu = mtu
-        self.asyncio = asyncio
+        if not (11 <= channel <= 26):
+            raise RuntimeError ('Invalid 802.15.4 channel ' + str (channel))
 
-        if type_ == 'xbee':
-            r = self._init_xbee (iface, addr, panid, channel)
+        self._a = l2addr_154 (addr)
+        self._iface = iface
+        self._pan = l2addr_154 (panid)
+        self._channel = channel
+        self._mtu = mtu
+        self._asyncio = asyncio
+
+        if type == 'xbee':
+            r = self._init_xbee ()
         else:
-            raise RuntimeError ('Unknown type ' + str (type_))
+            raise RuntimeError ('Unknown 802.15.4 subtype ' + str (type))
         return r
 
     def term (self):
         """
         Close the connection.
         """
-        os.close (self.fd)
-        self.fd = -1
+        os.close (self._fd)
+        self._fd = -1
 
     def handle (self):
         """
         Return file handle, needed for asyncio
         :return: file handle
         """
-        return self.fd
+        return self._fd
 
     def encode_transmit (self, destAddr, data):
         """
@@ -287,7 +292,7 @@ class l2net_154:
             clen = len (cmd)
             try:
                 while clen > 0:
-                    r = os.write (self.fd, cmd [:clen])
+                    r = os.write (self._fd, cmd [:clen])
                     if r == 0:
                         return False
                     else:
@@ -325,8 +330,8 @@ class l2net_154:
         """
         r = l2.PkType.PK_NONE
         a, data, = None, None
-        for frame in self.framelist:
-            self.framelist.remove (frame)
+        for frame in self._framelist:
+            self._framelist.remove (frame)
             if frame.type == self.XBEE_FT_RX_SHORT:
                 a = l2addr_154 ()
                 a.addr = bytes ([frame.rx_short.saddr & 0x00ff,
@@ -348,14 +353,14 @@ class l2net_154:
         found = False
         while not found:
             try:
-                buf = os.read (self.fd, self.XBEE_READ_MAX)
+                buf = os.read (self._fd, self.XBEE_READ_MAX)
             except BlockingIOError:
                 # Exception raised when data is not available and
                 # read set in non-blocking mode (i.e. asyncio mode)
                 break
             if not buf:
                 break
-            self.buffer = self.buffer + buf
+            self._buffer = self._buffer + buf
             while self.is_frame_complete ():
                 self.extract_frame_to_list ()
                 found = True
@@ -369,20 +374,20 @@ class l2net_154:
         """
         complete = False
         while not complete:
-            if self.XBEE_START not in self.buffer:
+            if self.XBEE_START not in self._buffer:
                 # No start byte found
                 break
             # Align start byte to buffer start
-            self.buffer = self.buffer [self.buffer.index (self.XBEE_START):]
+            self._buffer = self._buffer [self._buffer.index (self.XBEE_START):]
 
             # Is buffer long enough to extract a frame?
-            buflen = len (self.buffer)
+            buflen = len (self._buffer)
             if buflen < self.XBEE_MIN_FRAME_SIZE:
                 break
 
-            framelen = (self.buffer [1] << 8) | self.buffer [2]
+            framelen = (self._buffer [1] << 8) | self._buffer [2]
             if framelen > self.XBEE_MAX_FRAME_SIZE:
-                self.buffer = self.buffer [1:]
+                self._buffer = self._buffer [1:]
                 continue
 
             # Got checksum?
@@ -390,9 +395,9 @@ class l2net_154:
             if pktlen > buflen:
                 break
 
-            cksum = self.compute_checksum (self.buffer)
-            if cksum != self.buffer [pktlen - 1]:
-                self.buffer = self.buffer [1:]
+            cksum = self.compute_checksum (self._buffer)
+            if cksum != self._buffer [pktlen - 1]:
+                self._buffer = self._buffer [1:]
                 continue
 
             # At this point, we have a full valid frame in the buffer
@@ -407,26 +412,26 @@ class l2net_154:
         """
         class Frame:
             pass
-        framelen = (self.buffer [1] << 8) | self.buffer [2]
+        framelen = (self._buffer [1] << 8) | self._buffer [2]
         pktlen = framelen + 4
         f = Frame ()
-        f.type = self.buffer [3]
+        f.type = self._buffer [3]
         if f.type == self.XBEE_FT_TX_STATUS:
             f.tx_status = Frame ()
-            f.tx_status.frame_id = self.buffer [4]
-            f.tx_status.status = self.buffer [5]
+            f.tx_status.frame_id = self._buffer [4]
+            f.tx_status.status = self._buffer [5]
         elif f.type == self.XBEE_FT_RX_SHORT:
             f.rx_short = Frame ()
-            f.rx_short.saddr = (self.buffer [4] << 8) | self.buffer [5]
+            f.rx_short.saddr = (self._buffer [4] << 8) | self._buffer [5]
             f.rx_short.len = framelen - 5
-            f.rx_short.data = bytes (self.buffer [8: f.rx_short.len + 8])
-            f.rx_short.rssi = self.buffer [6]
-            f.rx_short.options = self.buffer [7]
+            f.rx_short.data = bytes (self._buffer [8: f.rx_short.len + 8])
+            f.rx_short.rssi = self._buffer [6]
+            f.rx_short.options = self._buffer [7]
         else:
             sys.stderr.write ('PKT API ' + str (f.type) + ' unrecognized\n')
             # Return to avoid appending unknown frame
             return
-        self.framelist.append (f)
-        self.buffer = (bytearray ()
-                       if len (self.buffer) == pktlen
-                       else self.buffer [pktlen:])
+        self._framelist.append (f)
+        self._buffer = (bytearray ()
+                        if len (self._buffer) == pktlen
+                        else self._buffer [pktlen:])

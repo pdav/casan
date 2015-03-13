@@ -16,35 +16,37 @@ class Conf:
     #
 
     defval_ = {
-        'firsthello': 3,
-        'hello': 10,
-        'slavettl': 3600,
-        'port:http': 80,
-        'port:https': 443,
-        '802154:channel': 12,
+        'firsthello': '3',
+        'hello': '10',
+        'slavettl': '3600',
+        'port:http': '80',
+        'port:https': '443',
+        '802154:channel': '12',
+        'ethertype': '0x88b5',
+        'mtu': '0',
     }
 
-    #
-    # Object attributes
-    #
-    # timers: dictionnary indexed by timer name
-    # namespaces: dictionnary indexed by namespace type
-    # http: list of tuples (scheme, addr, port)
-    #
+    def __init__ (self):
+        """
+        Initialize instance variables for the newly created object
+        Public variables
+        - timers: dictionnary indexed by timer name
+        - namespaces: dictionnary indexed by namespace type
+        - networks: list of tuples (type, dev, mtu, net-specific-subinfo)
+        - http: list of tuples (scheme, addr, port)
+        Private variables:
+        - _config: configparser.ConfigParser object
+        """
+        self.timers = {}
+        self.namespaces = {}
+        self.networks = []
+        self.http = []
 
-    timers = {}
-    namespaces = {}
-    http = []
-
-    #
-    # Internal variables
-    #
-
-    config_ = {}
+        self._config = {}
 
     def __str__ (self):
         output = io.StringIO ()
-        self.config_.write (output)
+        self._config.write (output)
         return output.getvalue ()
 
     def parse (self, file):
@@ -52,28 +54,28 @@ class Conf:
         Parse a configuration file and store information in object
         """
 
-        self.config_ = configparser.ConfigParser ()
-        if not self.config_.read (file):
+        self._config = configparser.ConfigParser ()
+        if not self._config.read (file):
             raise RuntimeError ('Cannot read ' + file)
 
-        for sect in self.config_.sections ():
+        for sect in self._config.sections ():
             w = sect.split ()
             l = len (w)
             if sect == 'timers':
-                self.parse_timers (self.config_ [sect])
+                self._parse_timers (self._config [sect])
             elif w [0] == 'namespace' and l == 2:
-                self.parse_namespace (self.config_ [sect], w [1])
+                self._parse_namespace (self._config [sect], w [1])
             elif w [0] == 'http' and l == 2:
-                self.parse_http (self.config_ [sect], w [1])
+                self._parse_http (self._config [sect], w [1])
             elif w [0] == 'network' and l == 2:
-                self.parse_network (self.config_ [sect], w [1])
+                self._parse_network (self._config [sect], w [1])
             elif w [0] == 'slave' and l == 2:
-                self.parse_slave (self.config_ [sect], w [1])
+                self._parse_slave (self._config [sect], w [1])
             else:
                 raise RuntimeError ("Unknown section '" + sect + "' in "
                                     + file)
 
-    def parse_timers (self, sectab):
+    def _parse_timers (self, sectab):
         """
         Parse a "timers" section.
         Section contents are:
@@ -83,9 +85,10 @@ class Conf:
         """
 
         for k in ['firsthello', 'hello', 'slavettl']:
-            self.timers [k] = sectab [k] if k in sectab else self.defval [k]
+            v = self._getdefault (sectab, k, k, None)
+            self.timers [k] = int (v, 0)
 
-    def parse_namespace (self, sectab, name):
+    def _parse_namespace (self, sectab, name):
         """
         Parse a "namespace" section.
         'name' is the namespace type ('admin', 'casan', or 'well-known')
@@ -93,17 +96,16 @@ class Conf:
         - uri: URI of namespace
         """
 
+        e = "namespace " + name
         if name not in ['admin', 'casan', 'well-known']:
             raise RuntimeError ("Unknown namespace type '" + name + "'")
 
-        if 'uri' not in sectab:
-            raise RuntimeError ("No URI for namespace " + name)
-        uri = sectab ['uri']
+        uri = self._getdefault (sectab, 'uri', None, e)
         if uri in self.namespaces:
-            raise RuntimeError ("Duplicate URI '" + uri + '"')
+            raise RuntimeError ("Duplicate URI '" + uri + "' for " + e)
         self.namespaces [name] = uri
 
-    def parse_http (self, sectab, name):
+    def _parse_http (self, sectab, name):
         """
         Parse a "http" section to specify an HTTP server instance
         'name' is just an (unused) name
@@ -111,23 +113,64 @@ class Conf:
         - url: base URL of HTTP server
         """
 
-        if 'url' not in sectab:
-            raise RuntimeError ("No URL for http " + name)
-
-        url = sectab ['url']
+        e = "http " + name
+        url = self._getdefault (sectab, 'url', None, e)
         p = urllib.parse.urlparse (url)
         if p.scheme not in ['http', 'https']:
-            raise RuntimeError ("Invalid URL scheme for http " + name)
+            raise RuntimeError ("Invalid URL scheme for " + e)
 
         port = p.port
         if p.port is None:
-            port = self.defval ['port:' + p.scheme]
-        port = int (port)
+            port = int (self.defval ['port:' + p.scheme], 0)
         spec = (p.scheme, p.hostname, port)
         self.http.append (spec)
 
-    def parse_network (self, sectab, name):
+    def _parse_network (self, sectab, name):
+        """
+        Parse a "network" section to specify a CASAN network
+        'name' is just an (unused) name
+        Section contents are:
+        - type: '802.15.4' or 'ethernet'
+        - subtype: 'xbee' (only for 802.15.4 type)
+        - dev: device name
+        - mtu: desired MTU or 0 for default MTU
+        - addr: only for 802.15.4 / xbee
+        - panid: only for 802.15.4
+        - channel: only for 802.15.4
+        - ethertype: only for ethernet
+        """
+
+        e = "network " + name
+
+        type = self._getdefault (sectab, 'type', None, e)
+        dev = self._getdefault (sectab, 'dev', None, e)
+        mtu = int (self._getdefault (sectab, 'mtu', 'mtu', e), 0)
+
+        if type == 'ethernet':
+            ethertype = self._getdefault (sectab, 'ethertype', 'ethertype', e)
+            ethertype = int (ethertype, 0)
+            sub = (ethertype, )
+        elif type == '802.15.4':
+            subtype = self._getdefault (sectab, 'subtype', None, e)
+            addr = self._getdefault (sectab, 'addr', None, e)
+            panid = self._getdefault (sectab, 'panid', None, e)
+            channel = self._getdefault (sectab, 'channel', '802154:channel', e)
+            channel = int (channel, 0)
+            sub = (subtype, addr, panid, channel)
+        else:
+            raise RuntimeError ("Invalid type" + e)
+        spec = (type, dev, mtu, sub)
+        self.networks.append (spec)
+
+    def _parse_slave (self, sectab, name):
         pass
 
-    def parse_slave (self, sectab, name):
-        pass
+    def _getdefault (self, sectab, key, defkey, emsg):
+        if key in sectab:
+            v = sectab [key]
+        elif defkey is None:
+            raise RuntimeError ("No '{}' value for {}".format (key, emsg))
+        else:
+            v = self.defval_ [defkey]
+
+        return v

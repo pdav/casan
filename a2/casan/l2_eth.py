@@ -75,16 +75,18 @@ class l2net_eth:
         Used for debugging purposes.
         """
         s = 'Network type : Ethernet\n'
-        s += 'Interface : ' + self.iface + '\n'
-        s += 'Ethertype : ' + hex (self.ethtype) + '\n'
-        s += 'MTU : ' + str (self.mtu) + '\n'
+        s += 'Interface : ' + self._iface + '\n'
+        s += 'Ethertype : ' + hex (self._ethtype) + '\n'
+        s += 'MTU : ' + str (self._mtu) + '\n'
 
     def __init__ (self):
         """
         Construct a l2net_eth object with some default values.
         """
-        self.iface = None
-        self.fd = -1
+        self._iface = None
+        self._ethtype = None
+        self._mtu = None
+        self._fd = -1
 
     def init (self, iface, mtu, ethtype):
         """
@@ -99,34 +101,34 @@ class l2net_eth:
         :return: True if ok, False if error.
         """
 
-        self.iface = iface
+        self._iface = iface
 
         if mtu == 0:
             mtu = self.MTU
-        self.mtu = mtu
+        self._mtu = mtu
 
         if ethtype == 0:
             ethtype = self.ETHTYPE
-        self.ethtype = ethtype
+        self._ethtype = ethtype
 
         e = socket.ntohs (ethtype)
 
-        self.fd = socket.socket (socket.AF_PACKET, socket.SOCK_DGRAM, e)
-        self.fd.bind ((iface, ethtype))
+        self._fd = socket.socket (socket.AF_PACKET, socket.SOCK_DGRAM, e)
+        self._fd.bind ((iface, ethtype))
 
     def term (self):
         """
         Close the connection
         """
-        socket.close (self.fd)
-        self.fd = -1
+        socket.close (self._fd)
+        self._fd = -1
 
     def handle (self):
         """
         Return file handle, needed for asyncio
         :return: file handle
         """
-        return self.fd
+        return self._fd
 
     def send (self, dest, data):
         """
@@ -139,7 +141,7 @@ class l2net_eth:
         """
         r = False
         dlen = len (data)
-        if dlen <= self.mtu:
+        if dlen <= self._mtu:
             #
             # Ethernet specific: add message length at the beginning of
             # the payload
@@ -147,8 +149,8 @@ class l2net_eth:
             dlen += 2
             b = bytes ((dlen & 0xff00) >> 8, dlen & 0x00ff)
             data = b + data
-            addr = (self.iface, self.ethtype, 0, dest.addr)
-            nbytes = self.fd.sendto (data, addr)
+            addr = (self._iface, self._ethtype, 0, dest.addr)
+            nbytes = self._fd.sendto (data, addr)
             if nbytes > 0:
                 r = True
 
@@ -166,7 +168,7 @@ class l2net_eth:
         :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA)
                  PACKET_TYPE = see l2.PkType
         """
-        (data, addr) = self.fd.recvfrom (self.READ_MAX)
+        (data, addr) = self._fd.recvfrom (self.READ_MAX)
         (iface, ethtype, pktype, hatype, haaddr) = addr
 
         if pktype == socket.PACKET_HOST:
