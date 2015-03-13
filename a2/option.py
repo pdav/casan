@@ -5,8 +5,8 @@ This module contains the Option class
 
 class Option:
     """
-    Represents an option in a CoAP message
-    Option attributes are accessed by the friend Msg class.
+    Represent an individual option in a CoAP message
+    Option attributes are accessed by the friend Msg class
     """
 
     class OptCodes:
@@ -29,13 +29,6 @@ class Option:
         MO_IF_NONE_MATCH = 5
         MO_IF_MATCH = 1
         MO_SIZE1 = 60
-
-    class OptTypes:
-        """
-        Types of option values
-        """
-        OF_OPAQUE = 1
-        OF_EMPTY = 3
 
     # Option descriptions: optdesc [optcode] = (type, minlen, maxlen)
     # type in ['none', 'opaque', 'string', 'uint', 'empty']
