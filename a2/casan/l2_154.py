@@ -100,7 +100,7 @@ class l2net_154:
         """
         self._max_latency = 5             # XXX needed ?
         self._fd = -1
-        self._framelist = []
+        #######################self._framelist = []
         self._buffer = bytearray ()
         self._iface = None
         self._channel = None
@@ -311,69 +311,76 @@ class l2net_154:
     def recv (self):
         """
         Receive a frame.
-        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA)
+        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA) or None
                  PACKET_TYPE = see l2.PkType
         """
-        r = (l2.PkType.PK_NONE, None, None)
-        while r [0] is l2.PkType.PK_NONE:
-            r = self.extract_received_packet ()
-            if r [0] is l2.PkType.PK_NONE:
-                x = self.read_complete_frame ()
-                if not x:
+        r = None
+        while r is None:
+            # Get a received 802.15.4 message from the buffer
+            r = self.extract_packet ()
+            if r is None:
+                try:
+                    buf = os.read (self._fd, self.XBEE_READ_MAX)
+                except BlockingIOError:
+                    # Exception raised when data is not available and
+                    # read set in non-blocking mode (i.e. asyncio mode)
                     break
+
+                if buf is None:
+                    # EOF on the device?
+                    break
+
+                self._buffer += buf
+
         return r
 
-    def extract_received_packet (self):
+    def extract_packet (self):
         """
-        Extract a packet from the frame list.
-        :return: tuple (PACKET_TYPE, (SOURCE_ADDRESS, DATA, LENGTH))
+        Extract a packet from the input buffer
+        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA) or None
         """
-        r = l2.PkType.PK_NONE
-        a, data, = None, None
-        for frame in self._framelist:
-            self._framelist.remove (frame)
-            if frame.type == self.XBEE_FT_RX_SHORT:
+        r = None
+        while r is None:
+            # Extract a complete XBee frame (frame data only, type bytearray)
+            frame = self.get_frame ()
+            if frame is None:
+                # No frame found. Stop.
+                break
+
+            type = frame [0]
+            if type == self.XBEE_FT_TX_STATUS:
+                frame_id = frame [1]
+                status = frame [2]
+                # XXX we should check if the last packet was successfully
+                # transmitted
+
+            elif type == self.XBEE_FT_RX_SHORT:
                 a = l2addr_154 ()
-                a.addr = bytes ([frame.rx_short.saddr & 0x00ff,
-                                 (frame.rx_short.saddr & 0xff00) >> 8])
-                data = frame.rx_short.data
-                if frame.rx_short.options & self.RX_SHORT_OPT_BROADCAST:
-                    r = l2.PkType.PK_BCAST
+                a.addr = bytes ([frame [2], frame [1]])
+                rssi = frame [3]
+                options = frame [4]
+                data = frame [5:]
+
+                if options & self.RX_SHORT_OPT_BROADCAST:
+                    pktype = l2.PkType.PK_BCAST
                 else:
-                    r = l2.PkType.PK_ME
-                    break
-        return (r, a, data)
+                    pktype = l2.PkType.PK_ME
 
-    def read_complete_frame (self):
-        """
-        Read a full frame from the input buffer and adds it to the frame list.
-        This function blocks until a complete frame is received or
-        returns False when no input is available (in asyncio case)
-        """
-        found = False
-        while not found:
-            try:
-                buf = os.read (self._fd, self.XBEE_READ_MAX)
-            except BlockingIOError:
-                # Exception raised when data is not available and
-                # read set in non-blocking mode (i.e. asyncio mode)
-                break
-            if not buf:
-                break
-            self._buffer = self._buffer + buf
-            while self.is_frame_complete ():
-                self.extract_frame_to_list ()
-                found = True
+                r = (pktype, a, data)
 
-        return found
+            else:
+                sys.stderr.write ('PKT API ' + str (type) + ' unrecognized\n')
 
-    def is_frame_complete (self):
+        return r
+
+    def get_frame (self):
         """
-        Checks if there is a complete frame available for extraction from
-        the input buffer.
+        Check if a complete XBee frame is available for extraction from
+        the input buffer, and return frame data.
+        :return: XBee frame data (bytearray) or None
         """
-        complete = False
-        while not complete:
+        frame = None
+        while frame is None:
             if self.XBEE_START not in self._buffer:
                 # No start byte found
                 break
@@ -385,6 +392,7 @@ class l2net_154:
             if buflen < self.XBEE_MIN_FRAME_SIZE:
                 break
 
+            # Is the decoded framelen a valid frame length?
             framelen = (self._buffer [1] << 8) | self._buffer [2]
             if framelen > self.XBEE_MAX_FRAME_SIZE:
                 self._buffer = self._buffer [1:]
@@ -393,45 +401,19 @@ class l2net_154:
             # Got checksum?
             pktlen = framelen + 4
             if pktlen > buflen:
+                # Not yet: we don't have a complete frame in the buffer
                 break
 
+            # Is the checksum valid?
             cksum = self.compute_checksum (self._buffer)
             if cksum != self._buffer [pktlen - 1]:
                 self._buffer = self._buffer [1:]
                 continue
 
-            # At this point, we have a full valid frame in the buffer
-            complete = True
+            # At this point, we have a full valid frame in the buffer.
+            # Remove the whole frame from the buffer and return frame
+            # data only
+            frame = self._buffer [3:3+framelen]
+            del (self._buffer [:pktlen])
 
-        return complete
-
-    def extract_frame_to_list (self):
-        """
-        Extract a complete frame from the input buffer and adds it to the
-        list of received frames
-        """
-        class Frame:
-            pass
-        framelen = (self._buffer [1] << 8) | self._buffer [2]
-        pktlen = framelen + 4
-        f = Frame ()
-        f.type = self._buffer [3]
-        if f.type == self.XBEE_FT_TX_STATUS:
-            f.tx_status = Frame ()
-            f.tx_status.frame_id = self._buffer [4]
-            f.tx_status.status = self._buffer [5]
-        elif f.type == self.XBEE_FT_RX_SHORT:
-            f.rx_short = Frame ()
-            f.rx_short.saddr = (self._buffer [4] << 8) | self._buffer [5]
-            f.rx_short.len = framelen - 5
-            f.rx_short.data = bytes (self._buffer [8: f.rx_short.len + 8])
-            f.rx_short.rssi = self._buffer [6]
-            f.rx_short.options = self._buffer [7]
-        else:
-            sys.stderr.write ('PKT API ' + str (f.type) + ' unrecognized\n')
-            # Return to avoid appending unknown frame
-            return
-        self._framelist.append (f)
-        self._buffer = (bytearray ()
-                        if len (self._buffer) == pktlen
-                        else self._buffer [pktlen:])
+        return frame

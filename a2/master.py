@@ -142,6 +142,7 @@ class Master:
         :type  l2n: l2net_* (l2net_eth or l2net_154)
         """
 
-        (ptype, saddr, data) = l2n.recv ()
-        if ptype != l2.PkType.PK_NONE:
+        r = l2n.recv ()
+        if r is not None:
+            (ptype, saddr, data) = r
             print (saddr, data)

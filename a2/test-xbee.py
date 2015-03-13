@@ -12,13 +12,14 @@ n = 0
 b = 0
 try:
     while True:
-        (ptype, addr, data) = x.recv ()
-        if ptype == l2.PkType.PK_NONE:
+        r = x.recv2 ()
+        if r is None:
             n += 1
         else:
+            (ptype, addr, data) = r
             print (ptype, addr, data)
             b += 1
 except KeyboardInterrupt:
     pass
 
-print ('Calls to recv: PK_NONE = {}, PK_BCAST = {}'.format (n, b))
+print ('Calls to recv: None = {}, PK_BCAST = {}'.format (n, b))

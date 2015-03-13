@@ -165,7 +165,7 @@ class l2net_eth:
     def recv (self):
         """
         Receive a frame.
-        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA)
+        :return: tuple (PACKET_TYPE, SOURCE_ADDRESS, DATA) or None
                  PACKET_TYPE = see l2.PkType
         """
         (data, addr) = self._fd.recvfrom (self.READ_MAX)
@@ -178,12 +178,10 @@ class l2net_eth:
         elif pktype == socket.PACKET_MULTICAST:
             p = l2.PkType.PK_BCAST
         else:
-            p = l2.PkType.PK_NONE
-            a = None
+            return None
 
-        if p != l2.PkType.PK_NONE:
-            # get source address: haaddr is a byte array
-            a = l2addr_eth ()
-            a.addr = haaddr
+        # get source address: haaddr is a byte array
+        a = l2addr_eth ()
+        a.addr = haaddr
 
         return (p, a, data)
