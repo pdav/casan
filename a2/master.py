@@ -147,5 +147,7 @@ class Master:
             m = msg.Msg ()
             if m.decode (r):
                 print (str (m))
+                if m.is_casan_ctrl_msg ():
+                    print ('CTRL')
             else:
                 print ('DECODING FAILED')

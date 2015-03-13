@@ -405,18 +405,20 @@ class Msg:
 
     def is_casan_ctrl_msg (self):
         r = True
-        count = 0
-        for i, opt in enumerate (self.optlist):
-            if opt.optcode is Option.OptCodes.MO_URI_PATH:
+        i = 0
+        nslen = len (casan_namespace)
+        for o in self.optlist:
+            if o.optcode == option.Option.OptCodes.MO_URI_PATH:
                 r = False
-                if i >= len (casan_namespace): break
-                if len (casan_namespace [i]) != opt.optlen: break
-                if casan_namespace [i] != opt.optval: break
+                if i >= nslen:
+                    break
+                if casan_namespace [i] != o.optval:
+                    break
                 r = True
-                count += 1
-        if r and (count != len (casan_namespace)):
+                i += 1
+        if r and (i != nslen):
             r = False
-        print_debug (dbg_levels.MESSAGE, 'It\'s ' + ('' if r else 'not ') + 'a control message.')
+        print ('It\'s ' + ('' if r else 'not ') + 'a control message.')
         return r
 
     def is_casan_discover (self):
