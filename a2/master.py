@@ -91,7 +91,7 @@ class Master:
 
         try:
             loop.run_forever ()
-        except KeyboardInterrupt ():
+        except KeyboardInterrupt:
             pass
 
     ######################################################################
