@@ -20,6 +20,7 @@ class Master:
         :type  conf:class conf.Conf
         """
         self._conf = conf
+        self._waiters = []
 
     ######################################################################
     # Initialization
@@ -81,8 +82,8 @@ class Master:
             if r is False:
                 raise RuntimeError ('Error in network ' + type + ' init')
 
-            loop.call_later (self._conf.timers ['firsthello'],
-                             lambda: self.send_hello (loop, l2n))
+#            loop.call_later (self._conf.timers ['firsthello'],
+#                             lambda: self.send_hello (loop, l2n))
             loop.add_reader (l2n.handle (), lambda: self.l2reader (l2n))
 
         print ('Server ready')
@@ -148,7 +149,7 @@ class Master:
     @asyncio.coroutine
     def handle_casan (self, request):
         try:
-            r = yield from asyncio.shield (asyncio.wait_for (self.machin (), 5))
+            r = yield from asyncio.shield (asyncio.wait_for (self.machin (), 3))
         except asyncio.TimeoutError:
             print ('Got exception')
             r = aiohttp.web.Response (body=b"TIMEOUT")
@@ -156,7 +157,10 @@ class Master:
 
     @asyncio.coroutine
     def machin (self):
-        yield from asyncio.sleep (2.0)
+        ev = asyncio.Event ()
+        self._waiters.append (ev)
+        yield from ev.wait ()
+        print ('Awaken')
         return aiohttp.web.Response (body=b"CASAN")
 
     ######################################################################
@@ -174,8 +178,14 @@ class Master:
         if r is not None:
             m = msg.Msg ()
             if m.decode (r):
-                print (str (m))
+                print ('Received ', str (m))
                 if m.is_casan_ctrl_msg ():
                     print ('CTRL')
+
+                # wake-up all waiters
+                for e in self._waiters:
+                    e.set ()
+                self._waiters = []
+
             else:
                 print ('DECODING FAILED')
