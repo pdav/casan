@@ -83,6 +83,8 @@ class Master:
 
             loop.add_reader (l.handle (), lambda: self.l2reader (l))
 
+        print ('Server ready')
+
         #
         # Main loop
         #
@@ -129,6 +131,16 @@ class Master:
 
     @asyncio.coroutine
     def handle_casan (self, request):
+        try:
+            r = yield from asyncio.shield (asyncio.wait_for (self.machin (), 5))
+        except asyncio.TimeoutError:
+            print ('Got exception')
+            r = aiohttp.web.Response (body=b"TIMEOUT")
+        return r
+
+    @asyncio.coroutine
+    def machin (self):
+        yield from asyncio.sleep (2.0)
         return aiohttp.web.Response (body=b"CASAN")
 
     ######################################################################
