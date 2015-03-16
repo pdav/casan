@@ -118,7 +118,7 @@ class Option:
         sorting an option list.
         Options are sorted by option code.
         """
-        return self.optcode.value < other.optcode.value
+        return self.optcode < other.optcode
 
     def __eq__(self, other):
         """
@@ -133,7 +133,7 @@ class Option:
         """
         Difference test operator
         """
-        return (self.optcode.value != other.optcode.value
+        return (self.optcode != other.optcode
                 or self.optlen != other.optlen
                 or self.optval != other.optval)
 
@@ -141,19 +141,19 @@ class Option:
         """
         Returns True if the option is critical (see CoAP draft 5.4.1)
         """
-        return self.optcode.value & 0x01
+        return self.optcode & 0x01
 
     def is_unsafe (self):
         """
         Returns True if the option is unsafe to forward (see CoAP draft 5.4.2)
         """
-        return self.optcode.value & 0x02
+        return self.optcode & 0x02
 
     def is_nocachekey (self):
         """
         Returns True if the option is nocachekey (see CoAP draft 5.4.2)
         """
-        return (self.optcode.value & 0x1e) == 0x1c
+        return (self.optcode & 0x1e) == 0x1c
 
     @staticmethod
     def int_to_bytes (n):

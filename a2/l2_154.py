@@ -287,7 +287,7 @@ class l2net_154:
         :return: True if success, False either.
         """
         if len (data) <= self.MTU:
-            cmd = self.encode_transmit (dest_slave.addr, data)
+            cmd = self.encode_transmit (dest_slave, data)
             clen = len (cmd)
             try:
                 while clen > 0:

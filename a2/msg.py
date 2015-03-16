@@ -87,27 +87,25 @@ class Msg:
         CASAN_HELLO = 4
         CASAN_UNKNOWN = 5
 
+    # XXX
     def __init__(self):
         """
         Initialize instance attributes
         """
         self.pktype = None
-        self.msg_code = self.MsgCodes.MC_EMPTY
+        self.msgcode = self.MsgCodes.MC_EMPTY
+        self.msgtype = None
         self.casan_type = self.CasanTypes.CASAN_UNKNOWN
         self.req_rep = None
         self.peer = None
-        self.req_rep = None
-        self.msg = None
-        self.payload, self.paylen = None, 0
-        self.toklen = 0
+        self.bmsg = b''
+        self.token = b''
+        self.payload = b''
         self.ntrans = 0
         self.timeout = timedelta ()
         self.next_timeout = datetime.max
         self.expire = datetime.max
-        self.msg_type = None
         self.id = 0
-        self.msg = None
-        self.payload, self.paylen = None, 0
         if self.req_rep is not None:
             self.req_rep.req_rep = None
             self.req_rep = None
@@ -117,7 +115,7 @@ class Msg:
         """
         Equality test operator. Valid for received messages only.
         """
-        return self.msg == other.msg
+        return self.bmsg == other.bmsg
 
     def __str__(self):
         """
@@ -126,13 +124,14 @@ class Msg:
         expstr = str (self.expire - datetime.now ())
         ntostr = str (self.next_timeout - datetime.now ())
         return ('msg <id=' + str (self.id)
-                + ', toklen=' + str (self.toklen)
-                + ', paylen=' + str (self.paylen)
+                + ', toklen=' + str (len (self.token))
+                + ', paylen=' + str (len (self.payload))
                 + ', ntrans=' + str (self.ntrans)
                 + ', expire=' + expstr
                 + ', next_timeout=' + str (ntostr)
                 )
 
+    # XXX
     def _reset (self):
         """
         Resets all the values of the class to their defaults, but keeps
@@ -143,16 +142,16 @@ class Msg:
         if self.req_rep is not None:
             self.req_rep.req_rep = None
             self.req_rep = None
-        self.msg = None
-        self.payload, self.paylen = None, 0
-        self.toklen = 0
+        self.bmsg = b''
+        self.payload = b''
+        self.token = b''
         self.ntrans = 0
         self.timeout = timedelta ()
         self.next_timeout = datetime.max
         self.expire = datetime.max
         self.pktype = None
         #### self.casan_type = self.CasanTypes.CASAN_UNKNOWN
-        self.msg_type = None
+        self.msgtype = None
         self.id = 0
         self.optlist = []
 
@@ -164,98 +163,99 @@ class Msg:
         :return: True if the message has been successfuly decoded
         """
         self._reset ()
-        (self.pktype, self.peer, self.msg) = tp
+        (self.pktype, self.peer, self.bmsg) = tp
 
-        if ((self.msg [0] >> 6) & 0x03) != CASAN_VERSION:
+        if ((self.bmsg [0] >> 6) & 0x03) != CASAN_VERSION:
             return False
 
-        self.msg_type = (self.msg [0] >> 4) & 0x03
-        self.toklen = self.msg [0] & 0x0f
-        self.msg_code = self.msg [1]
-        self.id = (self.msg [2] << 8) | self.msg [3]
+        self.msgtype = (self.bmsg [0] >> 4) & 0x03
+        toklen = self.bmsg [0] & 0x0f
+        self.msgcode = self.bmsg [1]
+        self.id = (self.bmsg [2] << 8) | self.bmsg [3]
 
-        i = 4 + self.toklen
-        if self.toklen > 0:
-            self.token = self.msg [4:i]
+        i = 4 + toklen
+        if toklen > 0:
+            self.token = self.bmsg [4:i]
 
         #
         # Option analysis
         #
 
         success = True
-        opt_nb = 0
-        msglen = len (self.msg)
+        optnb = 0
+        msglen = len (self.bmsg)
 
-        while i < msglen and success and self.msg [i] != 0xff:
-            opt_delta = self.msg [i] >> 4
-            opt_len = self.msg [i] & 0x0f
+        while i < msglen and success and self.bmsg [i] != 0xff:
+            delta = self.bmsg [i] >> 4
+            optlen = self.bmsg [i] & 0x0f
             i += 1
 
             # Handle special values for optdelta/optlen
-            if opt_delta == 13:
-                opt_delta = self.msg [i] + 13
+            if delta == 13:
+                delta = self.bmsg [i] + 13
                 i += 1
-            elif opt_delta == 14:
-                opt_delta = ((self.msg [i] << 8) | self.msg [i+1]) + 269
+            elif delta == 14:
+                delta = ((self.bmsg [i] << 8) | self.bmsg [i+1]) + 269
                 i += 2
-            elif opt_delta == 15:
+            elif delta == 15:
                 success = False
-            opt_nb += opt_delta
+            optnb += delta
 
-            if opt_len == 13:
-                opt_len = self.msg [i] + 13
+            if optlen == 13:
+                optlen = self.bmsg [i] + 13
                 i += 1
-            elif opt_len == 14:
-                opt_len = ((self.msg [i] << 8) | self.msg [i+1]) + 269
+            elif optlen == 14:
+                optlen = ((self.bmsg [i] << 8) | self.bmsg [i+1]) + 269
                 i += 2
-            elif opt_len == 15:
+            elif optlen == 15:
                 success = False
 
             if success:
-                if opt_nb in option.Option.optdesc:
-                    # print ('OPT opt=' + str (opt_nb) + ', len=' + str (opt_len))
-                    (otype, minlen, maxlen) = option.Option.optdesc [opt_nb]
+                if optnb in option.Option.optdesc:
+                    # print ('OPT opt=' + str (optnb) + ', len=' + str (optlen))
+                    (otype, minlen, maxlen) = option.Option.optdesc [optnb]
                     o = None
-                    if opt_len == 0 or otype == 'empty':
-                        o = option.Option (opt_nb)
+                    if optlen == 0 or otype == 'empty':
+                        o = option.Option (optnb)
                     elif otype == 'opaque':
-                        o = option.Option (opt_nb, self.msg [i:i+opt_len], opt_len)
+                        o = option.Option (optnb, self.bmsg [i:i+optlen], optlen)
                     elif otype == 'string':
-                        o = option.Option (opt_nb, self.msg [i:i+opt_len].decode (encoding='utf-8'))
+                        o = option.Option (optnb, self.bmsg [i:i+optlen].decode (encoding='utf-8'))
                     elif otype == 'uint':
-                        o = option.Option (opt_nb, Option.int_from_bytes (self.msg [i:i+opt_len]))
+                        o = option.Option (optnb, Option.int_from_bytes (self.bmsg [i:i+optlen]))
 
                     self.optlist.append (o)
                 else:
-                    print ('Unknown option code: ' + str (opt_nb))
+                    print ('Unknown option code: ' + str (optnb))
                     # we continue decoding, through
 
-            i += opt_len
+            i += optlen
 
-        self.paylen = msglen - i - 1  # Mind the 0xff marker
-        if success and self.paylen > 0:
-            if self.msg [i] != 0xff:  # Oops
+        paylen = msglen - i - 1  # Mind the 0xff marker
+        if success and paylen > 0:
+            if self.bmsg [i] != 0xff:  # Oops
                 success = False
             else:
-                self.payload = self.msg [i+1:]
+                self.payload = self.bmsg [i+1:]
         else:
-            self.paylen = 0
+            self.payload = b''
 
         return success
 
+    # XXX
     def send (self):
         """
         Sends a CoAP message on the network.
         """
         r = True
-        if self.msg is None:
+        if self.bmsg is None:
             self.coap_encode ()
         print_debug (dbg_levels.MESSAGE, 'TRANSMIT id={}, ntrans={}'.format (self.id, self.ntrans))
-        if not self.peer.l2_net.send (self.peer, self.msg):
+        if not self.peer.l2_net.send (self.peer, self.bmsg):
             sys.stderr.write ('Error during packet transmission.\n')
             r = False
         else:
-            if self.msg_type is Msg.MsgTypes.MT_CON:
+            if self.msgtype is Msg.MsgTypes.MT_CON:
                 if self.ntrans == 0:
                     rand_timeout = random.uniform (0, ACK_RANDOM_FACTOR - 1)
                     n_sec = ACK_TIMEOUT * (rand_timeout + 1)
@@ -265,8 +265,8 @@ class Msg:
                     self.timeout *= 2
                 self.next_timeout = datetime.now () + self.timeout
                 self.ntrans += 1
-            elif self.msg_type is Msg.MsgTypes.MT_NON: self.ntrans = MAX_RETRANSMIT
-            elif self.msg_type in [Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST]:
+            elif self.msgtype is Msg.MsgTypes.MT_NON: self.ntrans = MAX_RETRANSMIT
+            elif self.msgtype in [Msg.MsgTypes.MT_ACK, Msg.MsgTypes.MT_RST]:
                 self.ntrans = MAX_RETRANSMIT
                 self.expire = datetime.now () + timedelta (seconds=max_rtt (self.peer.l2_net.max_latency))
             else:
@@ -276,77 +276,95 @@ class Msg:
 
     def coap_encode (self):
         """
-        Encodes a message according to CoAP spec. Revision used at the time of this writing is number 18.
+        Encode a message according to CoAP spec
         """
         # Compute message size
-        self.msg_len = 4 + self.toklen
+        toklen = len (self.token)
+        msglen = 4 + toklen
         self.optlist.sort ()
-        opt_code = 0
-        for opt in self.optlist:
-            opt_delta = opt.optcode.value - opt_code
-            self.msg_len = opt.optlen + 1
-            if opt_delta > 12:
-                self.msg_len += 1
-            elif opt_delta > 268:
-                self.msg_len += 2
-            opt_code = opt.optcode.value
+        optnb = 0
+        for o in self.optlist:
+            msglen += 1
+            delta = o.optcode - optnb
+            if delta >= 269:
+                msglen += 2
+            elif delta >= 13:
+                msglen += 1
+            msglen += o.optlen
 
-            opt_len = opt.optlen
-            if opt_len > 12:
-                self.msg_len += 1
-            elif opt_len > 268:
-                self.msg_len += 2
-            self.msg_len = self.msg_len + opt_len
-            if opt_len > 0:
-                self.msg_len = self.msg_len + opt_len + 1
+            optlen = o.optlen
+            if optlen >= 269:
+                msglen += 2
+            elif optlen >= 13:
+                msglen += 1
+
+            optnb = o.optcode
+            msglen += o.optlen
+
+        paylen = len (self.payload)
+        if paylen > 0:
+            msglen += 1 + paylen
 
         # Compute an ID
         global glob_msg_id
         if self.id == 0:
             self.id = glob_msg_id
-            glob_msg_id = glob_msg_id + 1 if glob_msg_id < 0xFFFF else 1
+            glob_msg_id = glob_msg_id + 1 if glob_msg_id < 0xffff else 1
 
-        # Build the message
-        self.msg = bytearray (4)
-        self.msg [0] = (CASAN_VERSION << 6) | (self.msg_type.value << 4) | self.toklen
-        self.msg [1] = self.msg_code.value
-        self.msg [2] = (self.id & 0xFF00) >> 8
-        self.msg [3] = self.id & 0xFF
-        if self.toklen > 0:
-            self.msg.append (self.token.to_bytes (self.toklen, 'big'))
-        opt_nb = 0
-        for opt in self.optlist:
-            opt_header = 0
-            opt_delta = opt.optcode.value - opt_nb
-            opt_nb = opt.optcode.value
-            opt_len = opt.optlen
-            opt_header = (opt_header | (opt_delta << 4) if opt_delta < 13
-                          else opt_header | (13 << 4) if opt_delta < 269
-                          else opt_header | (14 << 4))
-            opt_header = (opt_header | opt_len if opt_len < 13
-                          else opt_header | 13 if opt_len < 269
-                          else opt_header | 14)
-            self.msg.append (opt_header)
-            if 13 <= opt_delta < 269:
-                self.msg += (opt_delta - 13).to_bytes (1, 'big')
-            elif opt_delta >= 269:
-                self.msg += (opt_delta - 269).to_bytes (2, 'big')
-            if 13 <= opt_len < 269:
-                self.msg += (opt_len - 13).to_bytes (1, 'big')
-            elif opt_len >= 269:
-                self.msg += (opt_len - 269).to_bytes (2, 'big')
-            self.msg += opt.optval.encode ()
-        if self.paylen > 0:
-            self.msg.append (b'\xFF')
-            self.msg += self.payload
+        # Build message header and token
+        self.bmsg = bytearray (4)
+        self.bmsg [0] = (CASAN_VERSION << 6) | (self.msgtype << 4) | toklen
+        self.bmsg [1] = self.msgcode
+        self.bmsg [2] = (self.id & 0xff00) >> 8
+        self.bmsg [3] = self.id & 0xff
+        if toklen > 0:
+            self.bmsg += self.token
+
+        # Build options
+        optnb = 0
+        for o in self.optlist:
+            opthdr = bytearray (1)
+
+            delta = o.optcode - optnb
+            if delta >= 269:
+                opthdr [0] |= 0xe0
+                opthdr += (delta - 269).to_bytes (2, 'big')
+            elif delta >= 13:
+                opthdr [0] |= 0xd0
+                opthdr += (delta - 13).to_bytes (1, 'big')
+            else:
+                opthdr [0] |= delta << 4
+            optnb = o.optcode
+
+            optlen = o.optlen
+            if optlen >= 269:
+                opthdr [0] |= 0x0e
+                opthdr += (optlen - 269).to_bytes (2, 'big')
+            elif optlen >= 13:
+                opthdr [0] |= 0x0d
+                opthdr += (optlen - 13).to_bytes (1, 'big')
+            else:
+                opthdr [0] |= optlen
+
+            self.bmsg += opthdr
+
+            self.bmsg += o.optval.encode ()
+
+        # Append payload-marker and payload if any
+        if len (self.payload) > 0:
+            self.bmsg.append (b'\xff')
+            self.bmsg += self.payload
+
         self.ntrans = 0
 
+    # XXX
     def stop_retransmit (self):
         """
         Prevents the message from being retransmitted.
         """
         self.ntrans = MAX_RETRANSMIT
 
+    # XXX
     def max_age (self):
         """
         Looks for the option Max-Age in the option list and returns it's value
@@ -357,12 +375,13 @@ class Msg:
                 return opt.optval
         return None
 
+    # XXX
     def cache_match (self, other):
         """
         Checks whether two messages match for caching.
         See CoAP spec (5.6)
         """
-        if self.msg_type is not other.msg_type:
+        if self.msgtype is not other.msgtype:
             return False
         else:
             # Sort both option lists
@@ -383,6 +402,7 @@ class Msg:
                 else:  # No match : failure
                     return False
 
+    # XXX
     @staticmethod
     def link_req_rep (m1, m2):
         """
@@ -421,6 +441,7 @@ class Msg:
         print ('It\'s ' + ('' if r else 'not ') + 'a control message.')
         return r
 
+    # XXX
     def is_casan_discover (self):
         """
         Checks if a message is a CASAN discover message.
@@ -430,7 +451,7 @@ class Msg:
                  contains the mtu.
         """
         sid, mtu = (0, 0)
-        if self.msg_code is Msg.MsgCodes.MC_POST and self.msg_type is Msg.MsgTypes.MT_NON and self.is_casan_ctrl_msg ():
+        if self.msgcode is Msg.MsgCodes.MC_POST and self.msgtype is Msg.MsgTypes.MT_NON and self.is_casan_ctrl_msg ():
             for opt in self.optlist:
                 if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                     if opt.optval.startswith ('slave='):
@@ -455,7 +476,7 @@ class Msg:
         """
         found = False
         if self.casan_type is self.CasanTypes.CASAN_UNKNOWN:
-            if self.msg_type is self.MsgTypes.MT_CON and self.msg_code is self.MsgCodes.MC_POST and self.is_casan_ctrl_msg () == True:
+            if self.msgtype is self.MsgTypes.MT_CON and self.msgcode is self.MsgCodes.MC_POST and self.is_casan_ctrl_msg () == True:
                 for opt in self.optlist:
                     if opt.optcode is Option.OptCodes.MO_URI_QUERY:
                         # TODO: maybe use regular expressions here
@@ -479,16 +500,18 @@ class Msg:
         """
         Adds casan_namespace members to message as URI_PATH options.
         """
-        for namespace in casan_namespace:
-            self.optlist.append (Option (Option.OptCodes.MO_URI_PATH, namespace, len (namespace)))
+        for ns in casan_namespace:
+            self.optlist.append (option.Option (option.Option.OptCodes.MO_URI_PATH, ns))
 
+    # XXX
     def mk_ctrl_assoc (self, ttl, mtu):
         self.add_path_ctrl ()
         s = 'ttl=' + str (ttl)
-        self.optlist.append (Option (Option.OptCodes.MO_URI_QUERY, s, len (s)))
+        self.optlist.append (option.Option (option.Option.OptCodes.MO_URI_QUERY, s, len (s)))
         s = 'mtu=' + str (mtu)
-        self.optlist.append (Option (Option.OptCodes.MO_URI_QUERY, s, len (s)))
+        self.optlist.append (option.Option (option.Option.OptCodes.MO_URI_QUERY, s, len (s)))
 
+    # XXX
     def mk_ctrl_hello (self, hello_id):
         """
         Builds a hello message.
@@ -496,4 +519,4 @@ class Msg:
         """
         self.add_path_ctrl ()
         s = 'hello={}'.format (hello_id)
-        self.optlist.append (Option (Option.OptCodes.MO_URI_QUERY, s, len (s)))
+        self.optlist.append (option.Option (option.Option.OptCodes.MO_URI_QUERY, s, len (s)))

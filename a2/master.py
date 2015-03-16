@@ -68,12 +68,12 @@ class Master:
         for (type, dev, mtu, sub) in self._conf.networks:
             if type == 'ethernet':
                 (ethertype, ) = sub
-                l = l2_eth.l2net_eth ()
-                r = l.init (dev, mtu, ethertype)
+                l2n = l2_eth.l2net_eth ()
+                r = l2n.init (dev, mtu, ethertype)
             elif type == '802.15.4':
                 (subtype, addr, panid, channel) = sub
-                l = l2_154.l2net_154 ()
-                r = l.init (dev, subtype, mtu, addr, panid, channel,
+                l2n = l2_154.l2net_154 ()
+                r = l2n.init (dev, subtype, mtu, addr, panid, channel,
                             asyncio=True)
             else:
                 raise RuntimeError ('Unknown network type ' + type)
@@ -81,7 +81,9 @@ class Master:
             if r is False:
                 raise RuntimeError ('Error in network ' + type + ' init')
 
-            loop.add_reader (l.handle (), lambda: self.l2reader (l))
+            loop.call_later (self._conf.timers ['firsthello'],
+                             lambda: self.send_hello (loop, l2n))
+            loop.add_reader (l2n.handle (), lambda: self.l2reader (l2n))
 
         print ('Server ready')
 
@@ -93,6 +95,20 @@ class Master:
             loop.run_forever ()
         except KeyboardInterrupt:
             pass
+
+    def send_hello (self, loop, l2n):
+        m = msg.Msg ()
+        m.peer = l2n.broadcast
+        m.msgtype = msg.Msg.MsgTypes.MT_NON
+        m.msgcode = msg.Msg.MsgCodes.MC_POST
+        # XXX : set a better id
+        m.mk_ctrl_hello (0)
+        m.coap_encode ()
+        l2n.send (m.peer, m.bmsg)
+        print ('Sent Hello')
+        loop.call_later (self._conf.timers ['hello'],
+                         lambda: self.send_hello (loop, l2n))
+
 
     ######################################################################
     # HTTP handle routines
