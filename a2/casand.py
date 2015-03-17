@@ -16,14 +16,10 @@ def run ():
     #
 
     parser = argparse.ArgumentParser (description='CASAN master')
-    parser.add_argument ('-d', '--debug',
-                         default=None,
-                         help='Set debugging level',
-                         metavar='[[+|-]spec]...]')
-    parser.add_argument ('-c', '--config',
-                         default='./casand.conf',
-                         help='Set debugging level',
-                         metavar='file')
+    parser.add_argument ('-d', '--debug', default=None,
+                         help='Set debugging level', metavar='[[+|-]spec]...]')
+    parser.add_argument ('-c', '--config', default='./casand.conf',
+                         help='Set debugging level', metavar='file')
     args = parser.parse_args()
 
     #
@@ -34,7 +30,7 @@ def run ():
     cf.parse (args.config)
 
     #
-    # Run the master with the (just parsed) configuration
+    # Run the master with the just parsed configuration
     #
 
     m = master.Master (cf)
