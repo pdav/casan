@@ -251,11 +251,23 @@ class Engine (object):
             r = m.is_casan_discover ()
             if r is not None:
                 (sid, mtu) = r
-                for sl in self._slaves:
-                    if sl.sid == sid:
-                        s = sl
-                        break
+                s = self.find_slave (sid)
 
+        return s
+
+    def find_slave (self, sid):
+        """
+        Find a slave by its id
+        :param sid: sid
+        :type  sid: int
+        :return: found slave (class Slave) or None
+        """
+
+        s = None
+        for sl in self._slaves:
+            if sl.sid == sid:
+                s = sl
+                break
         return s
 
     ######################################################################

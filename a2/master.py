@@ -14,6 +14,7 @@ import aiohttp
 import aiohttp.web
 
 import engine
+import slave
 
 
 class Master (object):
@@ -52,7 +53,7 @@ class Master (object):
                 uri += '/{name}'
                 app.router.add_route ('GET', uri, self.handle_admin)
             elif ns == 'casan':
-                uri += '/{name}'
+                uri += '/{name:[^{}]+}'
                 app.router.add_route ('GET', uri, self.handle_casan)
             elif ns == 'well-known':
                 app.router.add_route ('GET', uri, self.handle_well_known)
@@ -106,6 +107,7 @@ class Master (object):
         :return: a HTTP response
         :rtype: aiohttp.web.Response object
         """
+
         name = request.match_info ['name']
 
         if name == 'index':
@@ -159,6 +161,27 @@ class Master (object):
         :return: a HTTP response
         :rtype: aiohttp.web.Response object
         """
+
+        name = request.match_info ['name']
+        vpath = name.split ('/')
+
+        try:
+            sid = int (vpath [0])
+        except:
+            raise aiohttp.web.HTTPNotFound ()
+
+        sl = self._engine.find_slave (sid)
+        if sl is None or sl.status != slave.Slave.Status.RUNNING:
+            raise aiohttp.web.HTTPNotFound ()
+
+        del (vpath [0])
+        res = sl.find_resource (vpath)
+        if res is None:
+            raise aiohttp.web.HTTPNotFound ()
+
+
+        # XXX
+
         try:
             r = yield from asyncio.shield (asyncio.wait_for (self.machin(), 3))
         except asyncio.TimeoutError:

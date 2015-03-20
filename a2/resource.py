@@ -68,18 +68,8 @@ class Resource (object):
 
         if isinstance (something, str):
             return self._path == something
-        if isinstance (something, list):
-            # XXX
-            raise TypeError
-#            if len (something) == 0:
-#                raise RuntimeError ("""Cannot perform comparison with an empty
-#                                    list.""")
-#            if type (something [0]) == str:
-#                return something == self.vpath
-#            elif type (something [0]) == option.Option:
-#                return something == self.pathopt
-#            else:
-#                raise TypeError
+        elif isinstance (something, list):
+            return self._path.split ('/') == something
         elif something is None:
             return False
         else:
