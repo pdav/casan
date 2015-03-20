@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import sys
 import argparse
+
+assert sys.version >= '3.4', 'Please use Python 3.4 or higher.'
 
 import conf
 import master
-
 
 def run ():
     """
@@ -38,4 +40,9 @@ def run ():
 
 
 if __name__ == '__main__':
-    run ()
+    try:
+        run ()
+    except RuntimeError as e:
+        print (e)
+    except KeyboardInterrupt:
+        pass

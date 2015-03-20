@@ -25,6 +25,8 @@ class Conf (object):
         'slavettl': '3600',
         'port:http': '80',
         'port:https': '443',
+        'sslcert': '',
+        'sslkey': '',
         '802154:channel': '12',
         'ethertype': '0x88b5',
         'mtu': '0',
@@ -37,7 +39,7 @@ class Conf (object):
         - timers: dictionnary indexed by timer name
         - namespaces: dictionnary indexed by namespace type
         - networks: list of tuples (type, dev, mtu, net-specific-subinfo)
-        - http: list of tuples (scheme, addr, port)
+        - http: list of tuples (scheme, addr, port, sslcert, sslkey)
         Private variables:
         - _config: configparser.ConfigParser object
         """
@@ -118,6 +120,8 @@ class Conf (object):
         'name' is just an (unused) name
         Section contents are:
         - url: base URL of HTTP server
+        - sslcert: cert file name
+        - sslkey: key file name
         """
 
         e = "http " + name
@@ -126,10 +130,15 @@ class Conf (object):
         if p.scheme not in ['http', 'https']:
             raise RuntimeError ("Invalid URL scheme for " + e)
 
+        sslcert = self._getdefault (sectab, 'sslcert', 'sslcert', e)
+        sslkey = self._getdefault (sectab, 'sslkey', 'sslkey', e)
+        if p.scheme == 'https' and not (sslcert and sslkey):
+            raise RuntimeError ("https needs sslcert and sslkey" + e)
+
         port = p.port
         if p.port is None:
             port = int (self._defval ['port:' + p.scheme], 0)
-        spec = (p.scheme, p.hostname, port)
+        spec = (p.scheme, p.hostname, port, sslcert, sslkey)
         self.http.append (spec)
 
     def _parse_network (self, sectab, name):

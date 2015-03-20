@@ -4,6 +4,11 @@ This module contains the Casan master class
 
 import html
 
+try:
+    import ssl
+except ImportError:
+    ssl = None
+
 import asyncio
 import aiohttp
 import aiohttp.web
@@ -60,9 +65,15 @@ class Master (object):
         # Start HTTP servers
         #
 
-        for (scheme, addr, port) in self._conf.http:
-            ############# XXX : we should use the SCHEME
-            f = loop.create_server (app.make_handler (), addr, port)
+        for (scheme, addr, port, sslcert, sslkey) in self._conf.http:
+            sct = None
+            if scheme == 'https':
+                if not ssl:
+                    raise RuntimeError ('ssl module not available for https')
+                sct = ssl.SSLContext (ssl.PROTOCOL_SSLv23)
+                sct.load_cert_chain (sslcert, sslkey)
+
+            f = loop.create_server (app.make_handler (), addr, port, ssl=sct)
             loop.run_until_complete (f)
 
         #
@@ -81,7 +92,7 @@ class Master (object):
         try:
             loop.run_forever ()
         except KeyboardInterrupt:
-            pass
+            raise
 
     ######################################################################
     # HTTP handle routines

@@ -221,8 +221,8 @@ class Msg (object):
         if self.msgtype == Msg.Types.CON:
             if self._ntrans == 0:
                 rand_timeout = random.uniform (0, ACK_RANDOM_FACTOR - 1)
-                n_sec = ACK_TIMEOUT * (rand_timeout + 1)
-                self.timeout = datetime.timedelta (seconds=n_sec)
+                nsec = ACK_TIMEOUT * (rand_timeout + 1)
+                self.timeout = datetime.timedelta (seconds=nsec)
                 self.expire = datetime.datetime.now () + datetime.timedelta (seconds=exchange_lifetime (self.l2n.max_latency))
             else:
                 self.timeout *= 2
