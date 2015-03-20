@@ -17,7 +17,8 @@
 
     l2addr *myaddr = new l2addr_154 ("45:67") ;
     l2net_154 l2 ;
-    #define	CHANNEL		25
+    // #define	CHANNEL		25
+    #define	CHANNEL		26
     #define	PANID		CONST16 (0xca, 0xfe)
     #define	MTU		0
 #endif

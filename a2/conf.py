@@ -41,6 +41,7 @@ class Conf:
         self.namespaces = {}
         self.networks = []
         self.http = []
+        self.slaves = []
 
         self._config = {}
 
@@ -163,13 +164,45 @@ class Conf:
         self.networks.append (spec)
 
     def _parse_slave (self, sectab, name):
-        pass
+        """
+        Parse a "slave" section to specify a CASAN slave
+        'name' is just an (unused) name
+        Section contents are:
+        - sid = 169
+        - ttl = 600 (optional)
+        - mtu = 0 (optional)
+        """
 
-    def _getdefault (self, sectab, key, defkey, emsg):
+        e = "slave " + name
+
+        sid = int (self._getdefault (sectab, 'id', None, e), 0)
+        ttl = int (self._getdefault (sectab, 'ttl', 'slavettl', e), 0)
+        mtu = int (self._getdefault (sectab, 'mtu', 'mtu', e), 0)
+
+        spec = (sid, ttl, mtu)
+        self.slaves.append (spec)
+
+    def _getdefault (self, sectab, key, defkey, ectx):
+        """
+        Get a configuration parameter value from the current section
+        or a default value if none is given. Raise an exception if
+        not found.
+        :param sectab: current section dictionnary
+        :type  sectab: dictionnary
+        :param key: key to look for in sectab[]
+        :type  key: str
+        :param defkey: key to look for in _defval[]
+        :type  defkey: str
+        :param ectx: error context for error message
+        :type  ectx: str
+        :return: value or exception
+        :rtype: str
+        """
+
         if key in sectab:
             v = sectab [key]
         elif defkey is None:
-            raise RuntimeError ("No '{}' value for {}".format (key, emsg))
+            raise RuntimeError ("No '{}' value for {}".format (key, ectx))
         else:
             v = self.defval_ [defkey]
 

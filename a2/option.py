@@ -6,111 +6,112 @@ This module contains the Option class
 class Option:
     """
     Represent an individual option in a CoAP message
-    Option attributes are accessed by the friend Msg class
+    Option attributes are accessed by the friend classes (Msg).
+    They are:
+    - optcode: option code
+    - optbin: option value, binary encoded (type bytearray)
+    - optval: option value, decoded (type int, string or bytes)
     """
 
-    class OptCodes:
+    class Codes:
         """
-        All valid option codes.
+        All valid option codes (see RFC 7252, sec 12.2)
         """
-        MO_NONE = 0
-        MO_CONTENT_FORMAT = 12
-        MO_ETAG = 4
-        MO_LOCATION_PATH = 8
-        MO_LOCATION_QUERY = 20
-        MO_MAX_AGE = 14
-        MO_PROXY_URI = 35
-        MO_PROXY_SCHEME = 39
-        MO_URI_HOST = 3
-        MO_URI_PATH = 11
-        MO_URI_PORT = 7
-        MO_URI_QUERY = 15
-        MO_ACCEPT = 16
-        MO_IF_NONE_MATCH = 5
-        MO_IF_MATCH = 1
-        MO_SIZE1 = 60
+        CONTENT_FORMAT = 12
+        ETAG = 4
+        LOCATION_PATH = 8
+        LOCATION_QUERY = 20
+        MAX_AGE = 14
+        PROXY_URI = 35
+        PROXY_SCHEME = 39
+        URI_HOST = 3
+        URI_PATH = 11
+        URI_PORT = 7
+        URI_QUERY = 15
+        ACCEPT = 16
+        IF_NONE_MATCH = 5
+        IF_MATCH = 1
+        SIZE1 = 60
 
     # Option descriptions: optdesc [optcode] = (type, minlen, maxlen)
-    # type in ['none', 'opaque', 'string', 'uint', 'empty']
+    # type in ['opaque', 'string', 'uint', 'empty']
     optdesc = {
-        OptCodes.MO_NONE: ('none', 0, 0),
-        OptCodes.MO_CONTENT_FORMAT: ('opaque', 0, 8),
-        OptCodes.MO_ETAG: ('opaque', 1, 8),
-        OptCodes.MO_LOCATION_PATH: ('string', 0, 255),
-        OptCodes.MO_LOCATION_QUERY: ('string', 0, 255),
-        OptCodes.MO_MAX_AGE: ('uint', 0, 4),
-        OptCodes.MO_PROXY_URI: ('string', 1, 1034),
-        OptCodes.MO_PROXY_SCHEME: ('string', 1, 255),
-        OptCodes.MO_URI_HOST: ('string', 1, 255),
-        OptCodes.MO_URI_PATH: ('string', 1, 255),
-        OptCodes.MO_URI_PORT: ('uint', 0, 2),
-        OptCodes.MO_URI_QUERY: ('string', 0, 255),
-        OptCodes.MO_ACCEPT: ('uint', 0, 2),
-        OptCodes.MO_IF_NONE_MATCH: ('empty', 0, 0),
-        OptCodes.MO_IF_MATCH: ('opaque', 0, 8),
-        OptCodes.MO_SIZE1: ('uint', 0, 4),
+        Codes.CONTENT_FORMAT: ('opaque', 0, 8),
+        Codes.ETAG: ('opaque', 1, 8),
+        Codes.LOCATION_PATH: ('string', 0, 255),
+        Codes.LOCATION_QUERY: ('string', 0, 255),
+        Codes.MAX_AGE: ('uint', 0, 4),
+        Codes.PROXY_URI: ('string', 1, 1034),
+        Codes.PROXY_SCHEME: ('string', 1, 255),
+        Codes.URI_HOST: ('string', 1, 255),
+        Codes.URI_PATH: ('string', 1, 255),
+        Codes.URI_PORT: ('uint', 0, 2),
+        Codes.URI_QUERY: ('string', 0, 255),
+        Codes.ACCEPT: ('uint', 0, 2),
+        Codes.IF_NONE_MATCH: ('empty', 0, 0),
+        Codes.IF_MATCH: ('opaque', 0, 8),
+        Codes.SIZE1: ('uint', 0, 4),
     }
 
-    def __init__(self, code=None, optval=None, optlen=None):
+    def __init__(self, optcode, optval=None, optbin=None):
         """
         Default constructor for the option class.
-        If you specify both optval and optlen, constructs an option with
-        opaque value.
-        If you specify optval but omit optlen, it is assumed that optval is an
-        unsigned integer or a string. If not, TypeError is raised.
-
-        Raises : ValueError if code is invalid or optlen is specified and
-                 optval is a negative integer.
-                 TypeError if optlen if specified and optval is not
-                 an integer.
-                 RuntimeError is the parameter combination is invalid
-
-        :param code: option code
-        :type  code: integer (see Option.OptCodes values)
-        :param optval: option value
-        :type  optval: int or str
-        :param optlen: option length
-        :type  optlen: int
+        This method works for encoding or decoding:
+        - when a message is received, the optbin parameter is given
+        - when a message is being built, the optval parameter is given
+        :param optcode: option code
+        :type  optcode: integer (see Option.Codes values)
+        :param optval: option value or None
+        :type  optval: int or str or bytes/bytearray
+        :param optbin: option value encoded or None
+        :type  optbin: bytearray
         """
 
-        self.code = None
-        self.optval = None
-        self.optval = None
-
         # Sanity checks
-        if optval is None and optlen is not None:
-            raise RuntimeError ('Invalid parameters: optlen without optval')
-        if code is None and not (optval is None and optlen is None):
-            raise RuntimeError ('Invalid parameters: optval/len without code')
-        if optlen is None and optval is not None:
-            if type (optval) not in [int, str]:
-                raise TypeError ('Unexpected type ' + type (optval).__name__)
-            elif type (optval) == int and optval < 0:
-                raise ValueError ('Invalid option value')
-
-        if code is None:
-            code = self.OptCodes.MO_NONE
-        if code not in Option.optdesc:
+        if optcode not in Option.optdesc:
             raise ValueError ('Invalid option code')
-        self.optcode = code
 
-        if optval is None:
-            self.optlen = 0
+        self.optcode = optcode
+        (otype, minlen, maxlen) = Option.optdesc [optcode]
+
+        if otype == 'empty':
+            if optval is not None or optbin is not None:
+                raise RuntimeError ('Option value given for an empty option')
             self.optval = None
+            self.optbin = bytearray ()
+            return
 
-        elif optlen is None:    # Integer/String value
-            if type (optval) == int:
-                self.optval = self.int_to_bytes (optval)
-            else:
-                self.optval = optval
-            self.optlen = len (self.optval)
+        if optval is not None and optbin is not None:
+            raise RuntimeError ('Duplicate option value and option bin')
 
-        else:                    # Opaque value
-            od = Option.optdesc [self.optcode]
-            if not od [1] <= optlen <= od [2]:
-                raise ValueError ('Invalid option length')
+        if optval is not None or otype == 'empty':
             self.optval = optval
-            self.optlen = optlen
+            if otype == 'uint':
+                self.optbin = self.int_to_bytes (optval)
+            elif otype == 'string':
+                self.optbin = optval.encode (encoding='utf-8')
+            elif otype == 'opaque':
+                self.optbin = optval
+            else:
+                raise RuntimeError ('Unrecognized option type ' + otype)
+
+        elif optbin is not None:
+            self.optbin = optbin
+            if otype == 'uint':
+                self.optval = self.bytes_to_int (optval)
+            elif otype == 'string':
+                self.optval = optbin.decode (encoding='utf-8')
+            elif otype == 'opaque':
+                self.optval = optval
+            else:
+                raise RuntimeError ('Unrecognized option type ' + otype)
+
+        else:
+            # No optval and no optbin
+            raise RuntimeError ('No option value')
+
+        if not (minlen <= len (self.optbin) <= maxlen):
+            raise RuntimeError ('Invalid option length')
 
     def __lt__(self, other):
         """
@@ -126,7 +127,6 @@ class Option:
 
         """
         return (self.optcode == other.optcode
-                and self.optlen == other.optlen
                 and self.optval == other.optval)
 
     def __ne__(self, other):
@@ -134,8 +134,13 @@ class Option:
         Difference test operator
         """
         return (self.optcode != other.optcode
-                or self.optlen != other.optlen
-                or self.optval != other.optval)
+                or self.optbin != other.optbin)
+
+    def len (self):
+        """
+        Length of option
+        """
+        return len (self.optbin)
 
     def is_critical (self):
         """

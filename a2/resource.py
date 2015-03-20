@@ -2,6 +2,8 @@
 This module contains the Resource class.
 """
 
+import html
+
 import option
 import msg
 
@@ -30,9 +32,21 @@ class Resource:
         Return the string representation of a resource.
         """
 
+        s = '<' + self._path + '>'
         for (key, vallist) in self._attr:
             for val in vallist:
-                s = s + ';' + key + '="' + val + '"'
+                s += ';' + key + '="' + val + '"'
+        return s
+
+    def html (self):
+        """
+        Return the string representation of a resource.
+        """
+
+        s = html.escape ('<' + self._path + '>')
+        for (key, vallist) in self._attr:
+            for val in vallist:
+                s += ';' + html.escape (key) + '="' + html.escape (val) + '"'
         return s
 
     # XXX

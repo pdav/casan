@@ -1,26 +1,25 @@
-# import conf
+import html
 
 import asyncio
 import aiohttp
 import aiohttp.web
 
-import l2_eth
-import l2_154
-import msg
+import engine
 
 
 class Master:
     """
+    Main casand class
     """
 
     def __init__ (self, conf):
         """
         Initialize a master object with a parsed configuration file
-        :param conf:parsed configuration
-        :type  conf:class conf.Conf
+        :param conf: parsed configuration
+        :type  conf: class conf.Conf
         """
         self._conf = conf
-        self._waiters = []
+        self._engine = None
 
     ######################################################################
     # Initialization
@@ -63,28 +62,11 @@ class Master:
             loop.run_until_complete (f)
 
         #
-        # Configure L2 networks
+        # Start CASAN engine (i.e. initialize events for the event loop)
         #
 
-        for (type, dev, mtu, sub) in self._conf.networks:
-            if type == 'ethernet':
-                (ethertype, ) = sub
-                l2n = l2_eth.l2net_eth ()
-                r = l2n.init (dev, mtu, ethertype)
-            elif type == '802.15.4':
-                (subtype, addr, panid, channel) = sub
-                l2n = l2_154.l2net_154 ()
-                r = l2n.init (dev, subtype, mtu, addr, panid, channel,
-                            asyncio=True)
-            else:
-                raise RuntimeError ('Unknown network type ' + type)
-
-            if r is False:
-                raise RuntimeError ('Error in network ' + type + ' init')
-
-#            loop.call_later (self._conf.timers ['firsthello'],
-#                             lambda: self.send_hello (loop, l2n))
-            loop.add_reader (l2n.handle (), lambda: self.l2reader (l2n))
+        self._engine = engine.Engine ()
+        self._engine.start (self._conf, loop)
 
         print ('Server ready')
 
@@ -96,20 +78,6 @@ class Master:
             loop.run_forever ()
         except KeyboardInterrupt:
             pass
-
-    def send_hello (self, loop, l2n):
-        m = msg.Msg ()
-        m.peer = l2n.broadcast
-        m.msgtype = msg.Msg.MsgTypes.MT_NON
-        m.msgcode = msg.Msg.MsgCodes.MC_POST
-        # XXX : set a better id
-        m.mk_ctrl_hello (0)
-        m.coap_encode ()
-        l2n.send (m.peer, m.bmsg)
-        print ('Sent Hello')
-        loop.call_later (self._conf.timers ['hello'],
-                         lambda: self.send_hello (loop, l2n))
-
 
     ######################################################################
     # HTTP handle routines
@@ -130,10 +98,17 @@ class Master:
                     </body></html>"""
 
         elif name == 'conf':
-            r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
+            r = '<html><body><pre>'
+            r += html.escape (str (self._conf))
+            r += '</pre></body></html>'
 
         elif name == 'run':
-            r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
+            r = """<html><title>Current status</title>
+                    <body>
+                        <h1>Current CASAN status</h1>
+                        """
+            r += self._engine.html ()
+            r += '</pre></body></html>'
 
         elif name == 'slave':
             r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
@@ -149,7 +124,7 @@ class Master:
     @asyncio.coroutine
     def handle_casan (self, request):
         try:
-            r = yield from asyncio.shield (asyncio.wait_for (self.machin (), 3))
+            r = yield from asyncio.shield (asyncio.wait_for (self.machin(), 3))
         except asyncio.TimeoutError:
             print ('Got exception')
             r = aiohttp.web.Response (body=b"TIMEOUT")
@@ -162,30 +137,3 @@ class Master:
         yield from ev.wait ()
         print ('Awaken')
         return aiohttp.web.Response (body=b"CASAN")
-
-    ######################################################################
-    # L2 handle routines
-    ######################################################################
-
-    # @asyncio.coroutine
-    def l2reader (self, l2n):
-        """
-        :param l2n: l2net_* objet
-        :type  l2n: l2net_* (l2net_eth or l2net_154)
-        """
-
-        r = l2n.recv ()
-        if r is not None:
-            m = msg.Msg ()
-            if m.decode (r):
-                print ('Received ', str (m))
-                if m.is_casan_ctrl_msg ():
-                    print ('CTRL')
-
-                # wake-up all waiters
-                for e in self._waiters:
-                    e.set ()
-                self._waiters = []
-
-            else:
-                print ('DECODING FAILED')

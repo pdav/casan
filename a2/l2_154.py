@@ -90,16 +90,20 @@ class l2net_154:
         s += 'Interface : ' + self._iface + '\n'
         s += 'Interface address : ' + str (self._a) + '\n'
         s += 'PANID : ' + str (self._pan) + '\n'
-        s += 'MTU : ' + str (self._mtu) + '\n'
+        s += 'MTU : ' + str (self.mtu) + '\n'
         return s
 
     def __init__ (self):
         """
         Construct a l2net_154 object with some default values.
         """
-        self._max_latency = 5             # XXX needed ?
+
+        # public interface
+        self.max_latency = 5
+        self.mtu = self.MTU
+
+        # private attributes
         self._fd = -1
-        #######################self._framelist = []
         self._buffer = bytearray ()
         self._iface = None
         self._channel = None
@@ -109,8 +113,8 @@ class l2net_154:
         """
         Initialize access to the Digi XBee chip
         """
-        if not (0 < self._mtu <= self.XBEE_MTU):
-            self._mtu = self.XBEE_MTU
+        if not (0 < self.mtu <= self.XBEE_MTU):
+            self.mtu = self.XBEE_MTU
         try:
             # Open and initialize device
             if not self._iface.startswith ('/dev'):
@@ -222,7 +226,7 @@ class l2net_154:
         self._iface = iface
         self._pan = l2addr_154 (panid)
         self._channel = channel
-        self._mtu = mtu
+        self.mtu = mtu
         self._asyncio = asyncio
 
         if type == 'xbee':

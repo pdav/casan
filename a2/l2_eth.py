@@ -81,6 +81,11 @@ class l2net_eth:
         """
         Construct a l2net_eth object with some default values.
         """
+
+        # public interface
+        self.max_latency = 50
+
+        # private attributes
         self._iface = None
         self._ethtype = None
         self._mtu = None
