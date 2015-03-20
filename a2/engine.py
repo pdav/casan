@@ -250,7 +250,7 @@ class Engine (object):
             # If not found, it may be a new slave coming up
             r = m.is_casan_discover ()
             if r is not None:
-                (sid, ) = r
+                (sid, mtu) = r
                 for sl in self._slaves:
                     if sl.sid == sid:
                         s = sl
@@ -294,7 +294,7 @@ class Engine (object):
             m.refresh_expiration ()
             self._deduplist.append (m)
         else:
-            print ('Duplicate message : id=' + omsg.id)
+            print ('Duplicate message : id=' + omsg.mid)
             if omsg.req_rep is not None:
                 # XXX HOW TO RESEND A MSG?
                 omsg.req_rep.send ()
@@ -311,9 +311,9 @@ class Engine (object):
 
         r = None
         if m.msgtype in (msg.Msg.Types.ACK, msg.Msg.Types.RST):
-            i = m.id
+            i = m.mid
             for mreq in m.l2n.sentlist:
-                if mreq.id == i:
+                if mreq.mid == i:
                     print ('Found original request for ID=' + str (i))
                     r = mreq
                     break
