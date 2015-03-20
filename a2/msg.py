@@ -28,14 +28,20 @@ PROCESSING_DELAY = ACK_TIMEOUT
 
 # Some helper functions that don't really belong to the msg class
 def exchange_lifetime (maxlat):
+    """
+    Return the maximum exchange lifetime
+    """
     return MAX_TRANSMIT_SPAN + (2 * maxlat) + PROCESSING_DELAY
 
 
 def max_rtt (maxlat):
+    """
+    Return the maximum RTT
+    """
     return 2 * maxlat + PROCESSING_DELAY
 
 
-class Msg:
+class Msg (object):
     """
     An object of class Msg represents a message,
     either received or to be sent
@@ -115,7 +121,7 @@ class Msg:
         self.timeout = datetime.timedelta ()
         self.next_timeout = datetime.datetime.max
         self.expire = datetime.datetime.max
-        self.id = 0
+        self.mid = 0
         self.l2n = None
         self.req_rep = None
         self.optlist = []
@@ -137,13 +143,13 @@ class Msg:
         """
         expstr = str (self.expire - datetime.datetime.now ())
         ntostr = str (self.next_timeout - datetime.datetime.now ())
-        return ('msg <id=' + str (self.id)
+        return ('msg <mid=' + str (self.mid)
                 + ', toklen=' + str (len (self.token))
                 + ', paylen=' + str (len (self.payload))
                 + ', ntrans=' + str (self._ntrans)
                 + ', expire=' + expstr
                 + ', next_timeout=' + str (ntostr)
-                )
+               )
 
     # XXX
     def _reset (self):
@@ -166,7 +172,7 @@ class Msg:
         self.pktype = None
         self._msgcateg = self.Categories.UNKNOWN
         self.msgtype = None
-        self.id = 0
+        self.mid = 0
         self.optlist = []
 
     ##########################################################################
@@ -207,7 +213,7 @@ class Msg:
         if self.bmsg is None:
             self.coap_encode ()
 
-        print ('TRANSMIT id={}, ntrans={}'.format (self.id, self._ntrans))
+        print ('TRANSMIT id={}, ntrans={}'.format (self.mid, self._ntrans))
         if not self.l2n.send (self.peer, self.bmsg):
             sys.stderr.write ('Error during packet transmission.\n')
             return False
@@ -246,7 +252,7 @@ class Msg:
         self.msgtype = (self.bmsg [0] >> 4) & 0x03
         toklen = self.bmsg [0] & 0x0f
         self.msgcode = self.bmsg [1]
-        self.id = (self.bmsg [2] << 8) | self.bmsg [3]
+        self.mid = (self.bmsg [2] << 8) | self.bmsg [3]
 
         i = 4 + toklen
         if toklen == 0:
@@ -346,13 +352,17 @@ class Msg:
         if paylen > 0:
             msglen += 1 + paylen
 
+        # XXX it is not the correct MTU: we should use the slave MTU
+        if msglen > self.l2n.mtu:
+            raise RuntimeError ('PACKET TOO LARGE')
+
         #
         # get a suitable ID
         #
 
         global glob_msg_id
-        if self.id == 0:
-            self.id = glob_msg_id
+        if self.mid == 0:
+            self.mid = glob_msg_id
             glob_msg_id = glob_msg_id + 1 if glob_msg_id < 0xffff else 1
 
         #
@@ -362,8 +372,8 @@ class Msg:
         self.bmsg = bytearray (4)
         self.bmsg [0] = (CASAN_VERSION << 6) | (self.msgtype << 4) | toklen
         self.bmsg [1] = self.msgcode
-        self.bmsg [2] = (self.id & 0xff00) >> 8
-        self.bmsg [3] = self.id & 0xff
+        self.bmsg [2] = (self.mid & 0xff00) >> 8
+        self.bmsg [3] = self.mid & 0xff
         if toklen > 0:
             self.bmsg += self.token
 
@@ -407,7 +417,7 @@ class Msg:
             self.bmsg.append (b'\xff')
             self.bmsg += self.payload
 
-        self.ntrans = 0
+        self._ntrans = 0
 
     def stop_retransmit (self):
         """
@@ -623,7 +633,9 @@ class Msg:
     ##########################################################################
 
     def refresh_expiration (self):
-        # Set maximum message lifetime
+        """
+        Set maximum message lifetime
+        """
         now = datetime.datetime.now ()
         lt = exchange_lifetime (self.l2n.max_latency)
         self.expire = now + datetime.timedelta (milliseconds=lt)
@@ -641,7 +653,7 @@ class Msg:
         if self._event is None:
             self._event = asyncio.Event ()
         yield from self._event.wait ()
-        print ('Got answer for message id=', self.id)
+        print ('Got answer for message id=', self.mid)
 
     def wakeup (self):
         """

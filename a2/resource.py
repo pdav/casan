@@ -8,7 +8,7 @@ import option
 import msg
 
 
-class Resource:
+class Resource (object):
     """
     An object of class Resource represents a resource provided
     by an CASAN slave. A resource has:
@@ -66,9 +66,9 @@ class Resource:
         Exception safety : strong
         """
 
-        if type (something) == str:
+        if isinstance (something, str):
             return self._path == something
-        if type (something) == list:
+        if isinstance (something, list):
             # XXX
             raise TypeError
 #            if len (something) == 0:
@@ -110,10 +110,12 @@ class Resource:
     def add_to_message (self, m):
         """
         Add the resource path to a message
+        :param m: message
+        :type  m: class Msg
         """
 
         up = option.Option.Codes.URI_PATH
-        for comp in path.split ('/'):
+        for comp in self._path.split ('/'):
             o = option.Option (up, optval=comp)
             m.optlist.append (o)
 

@@ -17,7 +17,7 @@ random.seed ()
 CASAN_VERSION = 1
 
 
-class Engine:
+class Engine (object):
     """
     CASAN engine class
     """
@@ -52,6 +52,9 @@ class Engine:
         return s
 
     def html (self):
+        """
+        Dump the current engine state into an HTML string
+        """
         s = ''
         #### s += 'Default TTL = ' + str (self.timer_slave_ttl) + '\n'
         s += 'Slaves: <ul>'
@@ -86,21 +89,21 @@ class Engine:
         # Configure L2 networks
         #
 
-        for (type, dev, mtu, sub) in self._conf.networks:
-            if type == 'ethernet':
+        for (nettype, dev, mtu, sub) in self._conf.networks:
+            if nettype == 'ethernet':
                 (ethertype, ) = sub
                 l2n = l2_eth.l2net_eth ()
                 r = l2n.init (dev, mtu, ethertype)
-            elif type == '802.15.4':
+            elif nettype == '802.15.4':
                 (subtype, addr, panid, channel) = sub
                 l2n = l2_154.l2net_154 ()
                 r = l2n.init (dev, subtype, mtu, addr, panid, channel,
                               asyncio=True)
             else:
-                raise RuntimeError ('Unknown network type ' + type)
+                raise RuntimeError ('Unknown network type ' + nettype)
 
             if r is False:
-                raise RuntimeError ('Error in network ' + type + ' init')
+                raise RuntimeError ('Error in network ' + nettype + ' init')
 
             l2n.sentlist = []
 
@@ -122,6 +125,11 @@ class Engine:
     ######################################################################
 
     def send_hello (self, l2n):
+        """
+        Build and send a Casan Hello message
+        :param l2n: network to send the message on
+        :type  l2n: l2net_*
+        """
         mhello = msg.Msg ()
         mhello.mk_hello (l2n, self._hid)
         mhello.coap_encode ()
@@ -242,7 +250,7 @@ class Engine:
             # If not found, it may be a new slave coming up
             r = m.is_casan_discover ()
             if r is not None:
-                (sid, mtu) = r
+                (sid, ) = r
                 for sl in self._slaves:
                     if sl.sid == sid:
                         s = sl
@@ -324,7 +332,7 @@ class Engine:
 
         s = ''
         for sl in self._slaves:
-            if sl.status == Slave.Status.RUNNING:
+            if sl.status == slave.Slave.Status.RUNNING:
                 for res in sl.res_list:
                     s += str (res)
         return s

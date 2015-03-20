@@ -9,7 +9,7 @@ import msg
 import resource
 
 
-class Slave:
+class Slave (object):
     """
     This class describes a slave in the CASAN system.
     """

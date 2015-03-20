@@ -1,3 +1,7 @@
+"""
+This module contains the Casan master class
+"""
+
 import html
 
 import asyncio
@@ -7,7 +11,7 @@ import aiohttp.web
 import engine
 
 
-class Master:
+class Master (object):
     """
     Main casand class
     """
@@ -84,6 +88,13 @@ class Master:
     ######################################################################
 
     def handle_admin (self, request):
+        """
+        Handle HTTP requests for the admin namespace
+        :param request: an HTTP request
+        :type  request: aiohttp.web.Request object
+        :return: a HTTP response
+        :rtype: aiohttp.web.Response object
+        """
         name = request.match_info ['name']
 
         if name == 'index':
@@ -119,10 +130,24 @@ class Master:
         return aiohttp.web.Response (body=r.encode ('utf-8'))
 
     def handle_well_known (self, request):
+        """
+        Handle HTTP requests for the well-known namespace
+        :param request: an HTTP request
+        :type  request: aiohttp.web.Request object
+        :return: a HTTP response
+        :rtype: aiohttp.web.Response object
+        """
         return aiohttp.web.Response (body=b"WELL")
 
     @asyncio.coroutine
     def handle_casan (self, request):
+        """
+        Handle HTTP requests for a slave (casan namespace)
+        :param request: an HTTP request
+        :type  request: aiohttp.web.Request object
+        :return: a HTTP response
+        :rtype: aiohttp.web.Response object
+        """
         try:
             r = yield from asyncio.shield (asyncio.wait_for (self.machin(), 3))
         except asyncio.TimeoutError:

@@ -5,7 +5,7 @@ This module contains the l2addr and l2net classes for Ethernet networking
 import socket
 
 
-class l2addr_eth:
+class l2addr_eth (object):
     """
     This class represents an Ethernet network address.
     """
@@ -54,7 +54,7 @@ class l2addr_eth:
         return ':'.join (rep)
 
 
-class l2net_eth:
+class l2net_eth (object):
     """
     This class represents a L2 Ethernet network connection.
     """

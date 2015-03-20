@@ -1,9 +1,13 @@
+"""
+This module contains the configuration file handling
+"""
+
 import configparser
 import urllib.parse
 import io
 
 
-class Conf:
+class Conf (object):
     """
     Configuration file handling
     The conf class is used to read the configuration file and
@@ -15,7 +19,7 @@ class Conf:
     # Default values
     #
 
-    defval_ = {
+    _defval = {
         'firsthello': '3',
         'hello': '10',
         'slavettl': '3600',
@@ -50,14 +54,16 @@ class Conf:
         self._config.write (output)
         return output.getvalue ()
 
-    def parse (self, file):
+    def parse (self, filename):
         """
         Parse a configuration file and store information in object
+        :param filename: name of file to read
+        :type  filename: str
         """
 
         self._config = configparser.ConfigParser ()
-        if not self._config.read (file):
-            raise RuntimeError ('Cannot read ' + file)
+        if not self._config.read (filename):
+            raise RuntimeError ('Cannot read ' + filename)
 
         for sect in self._config.sections ():
             w = sect.split ()
@@ -74,7 +80,7 @@ class Conf:
                 self._parse_slave (self._config [sect], w [1])
             else:
                 raise RuntimeError ("Unknown section '" + sect + "' in "
-                                    + file)
+                                    + filename)
 
     def _parse_timers (self, sectab):
         """
@@ -122,7 +128,7 @@ class Conf:
 
         port = p.port
         if p.port is None:
-            port = int (self.defval ['port:' + p.scheme], 0)
+            port = int (self._defval ['port:' + p.scheme], 0)
         spec = (p.scheme, p.hostname, port)
         self.http.append (spec)
 
@@ -143,15 +149,15 @@ class Conf:
 
         e = "network " + name
 
-        type = self._getdefault (sectab, 'type', None, e)
+        nettype = self._getdefault (sectab, 'type', None, e)
         dev = self._getdefault (sectab, 'dev', None, e)
         mtu = int (self._getdefault (sectab, 'mtu', 'mtu', e), 0)
 
-        if type == 'ethernet':
+        if nettype == 'ethernet':
             ethertype = self._getdefault (sectab, 'ethertype', 'ethertype', e)
             ethertype = int (ethertype, 0)
             sub = (ethertype, )
-        elif type == '802.15.4':
+        elif nettype == '802.15.4':
             subtype = self._getdefault (sectab, 'subtype', None, e)
             addr = self._getdefault (sectab, 'addr', None, e)
             panid = self._getdefault (sectab, 'panid', None, e)
@@ -160,7 +166,7 @@ class Conf:
             sub = (subtype, addr, panid, channel)
         else:
             raise RuntimeError ("Invalid type" + e)
-        spec = (type, dev, mtu, sub)
+        spec = (nettype, dev, mtu, sub)
         self.networks.append (spec)
 
     def _parse_slave (self, sectab, name):
@@ -204,6 +210,6 @@ class Conf:
         elif defkey is None:
             raise RuntimeError ("No '{}' value for {}".format (key, ectx))
         else:
-            v = self.defval_ [defkey]
+            v = self._defval [defkey]
 
         return v

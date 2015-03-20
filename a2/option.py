@@ -3,7 +3,7 @@ This module contains the Option class
 """
 
 
-class Option:
+class Option (object):
     """
     Represent an individual option in a CoAP message
     Option attributes are accessed by the friend classes (Msg).
@@ -110,7 +110,7 @@ class Option:
             # No optval and no optbin
             raise RuntimeError ('No option value')
 
-        if not (minlen <= len (self.optbin) <= maxlen):
+        if not minlen <= len (self.optbin) <= maxlen:
             raise RuntimeError ('Invalid option length')
 
     def __lt__(self, other):
@@ -180,7 +180,7 @@ class Option:
         return bytes_
 
     @staticmethod
-    def int_from_bytes (b):
+    def bytes_to_int (b):
         """
         Convert a sequence of bytes in network byte order into an
         unsigned integer.

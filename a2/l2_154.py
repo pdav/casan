@@ -9,7 +9,7 @@ import termios
 import time
 
 
-class l2addr_154:
+class l2addr_154 (object):
     """
     This class represents a 802.15.4 network address.
     """
@@ -57,7 +57,7 @@ class l2addr_154:
         return ':'.join (rep)
 
 
-class l2net_154:
+class l2net_154 (object):
     """
     This class represents a L2 802.15.4 network connection.
     """
