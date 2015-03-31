@@ -19,7 +19,6 @@ In addition, the engine is able to send messages to CASAN slaves:
 
 import random
 import datetime
-import asyncio
 
 import l2_eth
 import l2_154
@@ -44,8 +43,8 @@ class Engine (object):
         start the CASAN system. See 'start' method.
         """
 
-        self._conf = None
-        self._loop = None
+        self._conf = None           # current configuration
+        self._loop = None           # our asyncio eventloop
 
         now = datetime.datetime.now ()
         self._hid = int (datetime.datetime.timestamp (now)) % 1000
@@ -107,11 +106,11 @@ class Engine (object):
         for (nettype, dev, mtu, sub) in self._conf.networks:
             if nettype == 'ethernet':
                 (ethertype, ) = sub
-                l2n = l2_eth.l2net_eth ()
+                l2n = l2_eth.L2net_eth ()
                 r = l2n.init (dev, mtu, ethertype)
             elif nettype == '802.15.4':
                 (subtype, addr, panid, channel) = sub
-                l2n = l2_154.l2net_154 ()
+                l2n = l2_154.L2net_154 ()
                 r = l2n.init (dev, subtype, mtu, addr, panid, channel,
                               asyncio=True)
             else:
@@ -126,14 +125,15 @@ class Engine (object):
             # Packet reception
             #
 
-            self._loop.add_reader (l2n.handle (), lambda: self._l2reader (l2n))
+            self._loop.add_reader (l2n.handle (),
+                                   lambda l=l2n: self._l2reader (l))
 
             #
             # Send the periodic hello on this network
             #
 
             self._loop.call_later (self._conf.timers ['firsthello'],
-                                   lambda: self._send_hello (l2n))
+                                   lambda l=l2n: self._send_hello (l))
 
     ######################################################################
     # Hello timer handle: send the periodic Hello packet
@@ -144,7 +144,7 @@ class Engine (object):
         Build and send a Casan Hello message.
         While we are here, remove expired messages for this l2 network.
         :param l2n: network to send the message on
-        :type  l2n: l2net_*
+        :type  l2n: L2net_*
         """
 
         #
@@ -179,7 +179,7 @@ class Engine (object):
     def _l2reader (self, l2n):
         """
         :param l2n: network to read on
-        :type  l2n: l2net_* (l2net_eth or l2net_154)
+        :type  l2n: L2net_* (L2net_eth or L2net_154)
         :return: nothing
         """
 
@@ -272,7 +272,7 @@ class Engine (object):
             # If not found, it may be a new slave coming up
             r = m.is_casan_discover ()
             if r is not None:
-                (sid, mtu) = r
+                sid = r [0]
                 s = self.find_slave (sid)
 
         return s

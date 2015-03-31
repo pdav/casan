@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+"""
+Main CASAN program
+"""
+
 import sys
 import argparse
 
@@ -11,7 +15,8 @@ import master
 
 def run ():
     """
-    Main CASAN program
+    Parse arguments, read the configuration file, and run the
+    CASAN master
     """
 
     #

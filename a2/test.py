@@ -27,13 +27,13 @@ def init(loop):
     print("Server started at http://0.0.0.0:8080")
     return srv
 
-x = l2_154.l2net_154 ()
+x = l2_154.L2net_154 ()
 l = x.init ('/dev/digi', 'xbee', 0, '12:34', 'ca:fe', 25, asyncio=True)
 if l is False:
     print ('Error in 154 init')
     sys.exit (1)
 
-e = l2_eth.l2net_eth ()
+e = l2_eth.L2net_eth ()
 l = e.init ('eth0', 0, 0x0806)
 if l is False:
     print ('Error in eth init')
@@ -42,8 +42,8 @@ if l is False:
 
 def rdr (l2n):
     """
-    :param l2n: l2net_* objet
-    :type  l2n: l2net_* (l2net_eth or l2net_154)
+    :param l2n: L2net_* objet
+    :type  l2n: L2net_* (L2net_eth or L2net_154)
     """
     try:
         r = l2n.recv ()

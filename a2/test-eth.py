@@ -5,7 +5,7 @@
 
 import l2_eth
 
-e = l2_eth.l2net_eth ()
+e = l2_eth.L2net_eth ()
 e.init ('eth0', 0, 0x0806)
 n = 0
 b = 0

@@ -5,7 +5,7 @@
 
 import l2_154
 
-x = l2_154.l2net_154 ()
+x = l2_154.L2net_154 ()
 x.init ('/dev/digi', 'xbee', 0, '12:34', 'ca:fe', 25, asyncio=True)
 n = 0
 b = 0

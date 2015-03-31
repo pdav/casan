@@ -1,11 +1,11 @@
 """
-This module contains the l2addr and l2net classes for Ethernet networking
+This module contains the L2addr and L2net classes for Ethernet networking
 """
 
 import socket
 
 
-class l2addr_eth (object):
+class L2addr_eth (object):
     """
     This class represents an Ethernet network address.
     """
@@ -22,19 +22,19 @@ class l2addr_eth (object):
 
     def __eq__ (self, other):
         """
-        Test for equality between 2 l2addr_eth objects.
+        Test for equality between 2 L2addr_eth objects.
         """
         return False if other is None else self.addr == other.addr
 
     def __ne__ (self, other):
         """
-        Test for difference between 2 l2addr_eth objects.
+        Test for difference between 2 L2addr_eth objects.
         """
         return not self.__eq__ (other)
 
     def __repr__ (self):
         """
-        Return a printable representation of a l2addr_eth object.
+        Return a printable representation of a L2addr_eth object.
         """
         rep = ''
         for b in self.addr:
@@ -43,7 +43,7 @@ class l2addr_eth (object):
 
     def __str__ (self):
         """
-        Return a human readable string representation of a l2addr_eth.
+        Return a human readable string representation of a L2addr_eth.
         """
         rep = []
         for b in self.addr:
@@ -54,7 +54,7 @@ class l2addr_eth (object):
         return ':'.join (rep)
 
 
-class l2net_eth (object):
+class L2net_eth (object):
     """
     This class represents a L2 Ethernet network connection.
     """
@@ -65,7 +65,7 @@ class l2net_eth (object):
     ETHTYPE = 0x88b5
     READ_MAX = 2000
 
-    broadcast = l2addr_eth ('ff:ff:ff:ff:ff:ff')
+    broadcast = L2addr_eth ('ff:ff:ff:ff:ff:ff')
 
     def __str__ (self):
         """
@@ -75,25 +75,26 @@ class l2net_eth (object):
         s = 'Network type : Ethernet\n'
         s += 'Interface : ' + self._iface + '\n'
         s += 'Ethertype : ' + hex (self._ethtype) + '\n'
-        s += 'MTU : ' + str (self._mtu) + '\n'
+        s += 'MTU : ' + str (self.mtu) + '\n'
+        return s
 
     def __init__ (self):
         """
-        Construct a l2net_eth object with some default values.
+        Construct a L2net_eth object with some default values.
         """
 
         # public interface
         self.max_latency = 50
+        self.mtu = self.MTU
 
         # private attributes
-        self._iface = None
-        self._ethtype = None
-        self._mtu = None
-        self._fd = -1
+        self._iface = None              # Interface name (see netstat -i)
+        self._ethtype = None            # Ethernet frame type
+        self._fd = None                 # Socket descriptor
 
     def init (self, iface, mtu, ethtype):
         """
-        Initialize a l2net_eth object, opens and sets up the network interface
+        Initialize a L2net_eth object, opens and sets up the network interface
         :param iface: interface to start (e.g. 'eth0').
         :type  iface: string
         :param mtu: MTU for interface iface. If not valid, will be set to a
@@ -108,7 +109,7 @@ class l2net_eth (object):
 
         if mtu == 0:
             mtu = self.MTU
-        self._mtu = mtu
+        self.mtu = mtu
 
         if ethtype == 0:
             ethtype = self.ETHTYPE
@@ -123,8 +124,8 @@ class l2net_eth (object):
         """
         Close the connection
         """
-        socket.close (self._fd)
-        self._fd = -1
+        self._fd.close ()
+        self._fd = None
 
     def handle (self):
         """
@@ -137,14 +138,14 @@ class l2net_eth (object):
         """
         Send a frame on the network.
         :param dest: destination address
-        :type  dest: l2eth_addr
+        :type  dest: L2eth_addr
         :param data: Ethernet payload
         :type  data: bytes
         :return: True if success, False either.
         """
         r = False
         dlen = len (data)
-        if dlen <= self._mtu:
+        if dlen <= self.mtu:
             #
             # Ethernet specific: add message length at the beginning of
             # the payload
@@ -184,7 +185,7 @@ class l2net_eth (object):
             return None
 
         # get source address: haaddr is a byte array
-        a = l2addr_eth ()
+        a = L2addr_eth ()
         a.addr = haaddr
 
         return (ptype, a, data)

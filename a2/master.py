@@ -150,7 +150,7 @@ class Master (object):
         Handle HTTP requests for the well-known namespace
         :param request: an HTTP request
         :type  request: aiohttp.web.Request object
-        :return: a HTTP response
+        :return: HTTP response
         :rtype: aiohttp.web.Response object
         """
         rl = self._engine.resource_list ().encode ()
@@ -182,7 +182,7 @@ class Master (object):
         if sl is None or sl.status != slave.Slave.Status.RUNNING:
             raise aiohttp.web.HTTPNotFound ()
 
-        del (vpath [0])
+        del vpath [0]
         res = sl.find_resource (vpath)
         if res is None:
             raise aiohttp.web.HTTPNotFound ()

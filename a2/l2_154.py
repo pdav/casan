@@ -1,5 +1,5 @@
 """
-This module contains the l2addr and l2net classes for 802.15.4 networking
+This module contains the L2addr and L2net classes for 802.15.4 networking
 """
 
 import sys
@@ -9,7 +9,7 @@ import termios
 import time
 
 
-class l2addr_154 (object):
+class L2addr_154 (object):
     """
     This class represents a 802.15.4 network address.
     """
@@ -25,19 +25,19 @@ class l2addr_154 (object):
 
     def __eq__ (self, other):
         """
-        Test for equality between 2 l2addr_154 objects.
+        Test for equality between 2 L2addr_154 objects.
         """
         return False if other is None else self.addr == other.addr
 
     def __ne__ (self, other):
         """
-        Test for difference between 2 l2addr_154 objects.
+        Test for difference between 2 L2addr_154 objects.
         """
         return not self.__eq__ (other)
 
     def __repr__ (self):
         """
-        Return a printable representation of a l2addr_154 object.
+        Return a printable representation of a L2addr_154 object.
         """
         rep = ''
         for b in self.addr:
@@ -46,7 +46,7 @@ class l2addr_154 (object):
 
     def __str__ (self):
         """
-        Return a human readable string representation of a l2addr_154.
+        Return a human readable string representation of a L2addr_154.
         """
         rep = []
         for b in self.addr:
@@ -57,7 +57,7 @@ class l2addr_154 (object):
         return ':'.join (rep)
 
 
-class l2net_154 (object):
+class L2net_154 (object):
     """
     This class represents a L2 802.15.4 network connection.
     """
@@ -79,7 +79,7 @@ class l2net_154 (object):
     XBEE_FT_RX_LONG = 0x80
     XBEE_FT_RX_SHORT = 0x81
 
-    broadcast = l2addr_154 ('ff:ff:ff:ff:ff:ff:ff:ff')
+    broadcast = L2addr_154 ('ff:ff:ff:ff:ff:ff:ff:ff')
 
     def __str__ (self):
         """
@@ -88,32 +88,34 @@ class l2net_154 (object):
         """
         s = 'Network type : 802.15.4\n'
         s += 'Interface : ' + self._iface + '\n'
-        s += 'Interface address : ' + str (self._a) + '\n'
+        s += 'Interface address : ' + str (self._myaddr) + '\n'
         s += 'PANID : ' + str (self._pan) + '\n'
         s += 'MTU : ' + str (self.mtu) + '\n'
         return s
 
     def __init__ (self):
         """
-        Construct a l2net_154 object with some default values.
+        Construct a L2net_154 object with some default values.
         """
 
         # public interface
         self.max_latency = 5
         self.mtu = self.MTU
 
-        # private attributes
-        self._fd = -1
-        self._buffer = bytearray ()
-        self._iface = None
-        self._channel = None
-        self._a = None
+        # private attributes (some are specific to xbee subtype)
+        self._fd = -1                   # Access to the XBee USB dongle
+        self._buffer = bytearray ()     # Received bytes
+        self._iface = None              # Interface name in /dev
+        self._channel = None            # 11..26
+        self._myaddr = None             # My address
+        self._pan = None                # PAN id
+        self._asyncio = False           # True if asyncio mode
 
     def _init_xbee (self):
         """
         Initialize access to the Digi XBee chip
         """
-        if not (0 < self.mtu <= self.XBEE_MTU):
+        if not 0 < self.mtu <= self.XBEE_MTU:
             self.mtu = self.XBEE_MTU
         try:
             # Open and initialize device
@@ -133,7 +135,7 @@ class l2net_154 (object):
                 pass
             termios.tcsetattr (self._fd, termios.TCSANOW, attrs)
 
-            def send_AT_command (s):
+            def send_at_command (s):
                 """
                 Sends an AT command over the serial port and checks
                 for the returned value.
@@ -155,36 +157,36 @@ class l2net_154 (object):
 
             # Initialize API mode
             time.sleep (0.2)
-            send_AT_command (b'+++')
+            send_at_command (b'+++')
             time.sleep (0.2)
-            send_AT_command (b'ATRE\r')
+            send_at_command (b'ATRE\r')
 
             # Short address
             sa = (b'ATMY' +
-                  bytes (hex (self._a.addr [1]) [2:], 'utf-8') +
-                  bytes (hex (self._a.addr [0]) [2:], 'utf-8') +
+                  bytes (hex (self._myaddr.addr [1]) [2:], 'utf-8') +
+                  bytes (hex (self._myaddr.addr [0]) [2:], 'utf-8') +
                   b'\r')
-            send_AT_command (sa)
+            send_at_command (sa)
 
             # PANID
             panid = (b'ATID' +
                      bytes (hex (self._pan.addr [1]) [2:], 'utf-8') +
                      bytes (hex (self._pan.addr [0]) [2:], 'utf-8') +
                      b'\r')
-            send_AT_command (panid)
+            send_at_command (panid)
 
             # Channel
             chan = b'ATCH' + bytes (hex (self._channel) [2:], 'utf-8') + b'\r'
-            send_AT_command (chan)
+            send_at_command (chan)
 
             # 802.15.4 w/ ACKs
-            send_AT_command (b'ATMM2\r')
+            send_at_command (b'ATMM2\r')
 
             # Enter API mode
-            send_AT_command (b'ATAP1\r')
+            send_at_command (b'ATAP1\r')
 
             # Quit AT command mode
-            send_AT_command (b'ATCN\r')
+            send_at_command (b'ATCN\r')
 
         except Exception as e:
             sys.stderr.write (str (e) + '\n')
@@ -197,14 +199,14 @@ class l2net_154 (object):
 
         return True
 
-    def init (self, iface, type, mtu, addr, panid, channel, asyncio=False):
+    def init (self, iface, stype, mtu, addr, panid, channel, asyncio=False):
         """
-        Initialize a l2net_154 object, opens and sets up the network interface
+        Initialize a L2net_154 object, opens and sets up the network interface
         :param iface: interface to start. Full path (eg: '/dev/ttyUSB0') or
                     just device name (eg: 'ttyUSB0').
         :type  iface: string
-        :param type_: type of the interface. Use 'xbee' here.
-        :type  type_: string
+        :param stype_: subtype of the interface. Use 'xbee' here.
+        :type  stype_: string
         :param mtu: MTU for interface iface. If not valid, will be set to a
                     default value. 0 means default value.
         :type  mtu: integer
@@ -219,20 +221,20 @@ class l2net_154 (object):
         :return: True if ok, False if error.
         """
 
-        if not (11 <= channel <= 26):
+        if not 11 <= channel <= 26:
             raise RuntimeError ('Invalid 802.15.4 channel ' + str (channel))
 
-        self._a = l2addr_154 (addr)
+        self._myaddr = L2addr_154 (addr)
         self._iface = iface
-        self._pan = l2addr_154 (panid)
+        self._pan = L2addr_154 (panid)
         self._channel = channel
         self.mtu = mtu
         self._asyncio = asyncio
 
-        if type == 'xbee':
+        if stype == 'xbee':
             r = self._init_xbee ()
         else:
-            raise RuntimeError ('Unknown 802.15.4 subtype ' + str (type))
+            raise RuntimeError ('Unknown 802.15.4 subtype ' + str (stype))
         return r
 
     def term (self):
@@ -249,20 +251,19 @@ class l2net_154 (object):
         """
         return self._fd
 
-    def encode_transmit (self, destAddr, data):
+    def encode_transmit (self, daddr, data):
         """
         Encode data into a valid 802.15.4 frame
         """
         dlen = 5 + len (data)
-        cmdlen = 4 + dlen
         b = bytearray ()
         b.append (self.XBEE_START)
         b.append ((dlen & 0xff00) >> 8)
         b.append (dlen & 0x00ff)
         b.append (self.XBEE_TX_SHORT)
         b.append (0x41)
-        b.append (destAddr.addr [1])
-        b.append (destAddr.addr [0])
+        b.append (daddr.addr [1])
+        b.append (daddr.addr [0])
         b.append (0)
         b += data
         b.append (self.compute_checksum (b))
@@ -345,23 +346,24 @@ class l2net_154 (object):
         """
         r = None
         while r is None:
-            # Extract a complete XBee frame (frame data only, type bytearray)
+            # Extract a complete XBee frame (frame data only, ftype bytearray)
             frame = self.get_frame ()
             if frame is None:
                 # No frame found. Stop.
                 break
 
-            type = frame [0]
-            if type == self.XBEE_FT_TX_STATUS:
-                frame_id = frame [1]
-                status = frame [2]
+            ftype = frame [0]
+            if ftype == self.XBEE_FT_TX_STATUS:
+                # frame_id = frame [1]
+                # status = frame [2]
                 # XXX we should check if the last packet was successfully
                 # transmitted
+                pass
 
-            elif type == self.XBEE_FT_RX_SHORT:
-                a = l2addr_154 ()
+            elif ftype == self.XBEE_FT_RX_SHORT:
+                a = L2addr_154 ()
                 a.addr = bytes ([frame [2], frame [1]])
-                rssi = frame [3]
+                # rssi = frame [3]
                 options = frame [4]
                 data = frame [5:]
 
@@ -373,7 +375,7 @@ class l2net_154 (object):
                 r = (pktype, a, data)
 
             else:
-                sys.stderr.write ('PKT API ' + str (type) + ' unrecognized\n')
+                sys.stderr.write ('PKT API ' + str (ftype) + ' unrecognized\n')
 
         return r
 
@@ -418,6 +420,6 @@ class l2net_154 (object):
             # Remove the whole frame from the buffer and return frame
             # data only
             frame = self._buffer [3:3 + framelen]
-            del (self._buffer [:pktlen])
+            del self._buffer [:pktlen]
 
         return frame

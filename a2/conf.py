@@ -5,6 +5,7 @@ This module contains the configuration file handling
 import configparser
 import urllib.parse
 import io
+import html
 
 
 class Conf (object):
@@ -55,6 +56,12 @@ class Conf (object):
         output = io.StringIO ()
         self._config.write (output)
         return output.getvalue ()
+
+    def html (self):
+        """
+        Return the HTML representation of a resource.
+        """
+        return html.escape (str (self))
 
     def parse (self, filename):
         """

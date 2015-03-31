@@ -5,7 +5,6 @@ This module contains the Resource class.
 import html
 
 import option
-import msg
 
 
 class Resource (object):

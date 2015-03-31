@@ -26,19 +26,20 @@ class Slave (object):
         Default constructor
         """
 
-        self.sid = sid
-        self.ttl = ttl
-        self.defmtu = mtu
+        # Public attributes
+        self.sid = sid                      # Slave id
+        self.ttl = ttl                      # Slave TTL
+        self.defmtu = mtu                   # Slave default MTU
 
-        self.curmtu = 0
-        self.l2n = None
-        self.addr = None
-        self.status = self.Status.INACTIVE
-        self.reslist = []
+        self.curmtu = 0                     # Negociated MTU
+        self.l2n = None                     # L2 network
+        self.addr = None                    # Address
+        self.status = self.Status.INACTIVE  # Current status
+        self.reslist = []                   # Resource list
         self.next_timeout = datetime.datetime.now ()
 
-        # Value obtained from the last Discover message
-        self._disc_curmtu = 0
+        # Private attributes
+        self._disc_curmtu = 0               # Advertised by slave (Discov msg)
 
     def __str__(self):
         """
@@ -150,6 +151,8 @@ class Slave (object):
                     self.l2n = m.l2n
                     self.curmtu = self._disc_curmtu
                     self.status = self.Status.RUNNING
+
+                    # XXX TIMEOUT
                     self.next_timeout = datetime.datetime.now () + datetime.timedelta (seconds=self.ttl)
                     print ('Slave ' + str (self.sid) + ' status set to RUNNING')
                 else:

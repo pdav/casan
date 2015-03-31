@@ -132,7 +132,7 @@ class Msg (object):
                 + ', timeout=' + str (self._timeout)
                 + ', expire=' + str (self.expire - datetime.datetime.now ())
                 + '>'
-                )
+               )
 
     ##########################################################################
     # Send and receive messages
@@ -142,7 +142,7 @@ class Msg (object):
         """
         Receive a message on the given network
         :param l2n: network (default: network already associated with the msg)
-        :type  l2n: class l2net_*
+        :type  l2n: class L2net_*
         :return: True (message received) or False (not received or not decoded)
         """
 
@@ -626,9 +626,9 @@ class Msg (object):
         """
         Configure options for an Assoc Request message
         :param l2n: l2 network
-        :type  l2n: class l2net_*
+        :type  l2n: class L2net_*
         :param addr: address of slave
-        :type  addr: class l2addr_*
+        :type  addr: class L2addr_*
         :param ttl: ttl
         :type  ttl: int
         :param mtu: negociated mtu
@@ -651,7 +651,7 @@ class Msg (object):
         """
         Builds a hello message.
         :param l2n: the network
-        :type  l2n: class l2net_*
+        :type  l2n: class L2net_*
         :param hid: hello id
         :type  hid: int
         """
