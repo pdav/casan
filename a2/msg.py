@@ -27,21 +27,6 @@ MAX_XMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
 PROCESSING_DELAY = ACK_TIMEOUT
 
 
-# Some helper functions that don't really belong to the msg class
-def exchange_lifetime (maxlat):
-    """
-    Return the maximum exchange lifetime
-    """
-    return MAX_XMIT_SPAN + (2 * maxlat) + PROCESSING_DELAY
-
-
-def max_rtt (maxlat):
-    """
-    Return the maximum RTT
-    """
-    return 2 * maxlat + PROCESSING_DELAY
-
-
 class Msg (object):
     """
     An object of class Msg represents a message,
@@ -111,26 +96,24 @@ class Msg (object):
         """
 
         # Public attributes
-        self.pktype = None              # Received msg sent to 'bcast' or 'me'
-        self.msgcode = self.Codes.EMPTY # See Codes above
-        self.msgtype = None             # See Types above
-        self.peer = None                # L2 address
-        self.bmsg = None                # Binary encoded message
-        self.token = b''                # Token
-        self.payload = b''              # Payload
-        self.XXXtimeout = datetime.timedelta ()
-        self.XXXnext_timeout = datetime.datetime.max
-        self.expire = datetime.datetime.max
-        self.mid = 0                    # Message ID
-        self.l2n = None                 # L2 network
-        self.req_rep = None             # Reply for this request
-        self.optlist = []               # List of options
+        self.pktype = None                  # Recvd msg sent to 'bcast' or 'me'
+        self.msgcode = self.Codes.EMPTY     # See Codes above
+        self.msgtype = None                 # See Types above
+        self.peer = None                    # L2 address
+        self.bmsg = None                    # Binary encoded message
+        self.token = b''                    # Token
+        self.payload = b''                  # Payload
+        self.expire = datetime.datetime.max  # Expiration date in l2n.sentlist
+        self.mid = 0                        # Message ID
+        self.l2n = None                     # L2 network
+        self.req_rep = None                 # Reply for this request
+        self.optlist = []                   # List of options
 
         # Private attributes
         self._msgcateg = self.Categories.UNKNOWN    # See Categories above
-        self._event = None              # asyncio.Event for synchronisation
-        self._ntrans = 0                # Number of retransmissions
-        self._timeout = None            # Duration to next retransmission
+        self._event = None                  # asyncio.Event for synchronisation
+        self._ntrans = 0                    # Number of retransmissions
+        self._timeout = None                # Time to next retransmission
 
     def __eq__(self, other):
         """
@@ -142,14 +125,13 @@ class Msg (object):
         """
         Cast to string, allows printing of packet data.
         """
-        expstr = str (self.expire - datetime.datetime.now ())
-        ntostr = str (self.XXXnext_timeout - datetime.datetime.now ())
         return ('msg <mid=' + str (self.mid)
-                + ', toklen=' + str (len (self.token))
-                + ', paylen=' + str (len (self.payload))
+                + ', token=' + str (len (self.token))
+                + ', payload=' + str (len (self.payload))
                 + ', ntrans=' + str (self._ntrans)
-                + ', expire=' + expstr
-                + ', XXXnext_timeout=' + str (ntostr)
+                + ', timeout=' + str (self._timeout)
+                + ', expire=' + str (self.expire - datetime.datetime.now ())
+                + '>'
                 )
 
     ##########################################################################
@@ -191,24 +173,7 @@ class Msg (object):
             sys.stderr.write ('Error during packet transmission.\n')
             return False
 
-#        if self.msgtype == Msg.Types.CON:
-#            if self._ntrans == 0:
-#                rand_timeout = random.uniform (0, ACK_RANDOM_FACTOR - 1)
-#                nsec = ACK_TIMEOUT * (rand_timeout + 1)
-#                self.XXXtimeout = datetime.timedelta (seconds=nsec)
-#                self.expire = datetime.datetime.now () + datetime.timedelta (seconds=exchange_lifetime (self.l2n.max_latency))
-#            else:
-#                self.XXXtimeout *= 2
-#            self.XXXnext_timeout = datetime.datetime.now () + self.XXXtimeout
-#            self._ntrans += 1
-#        elif self.msgtype == Msg.Types.NON:
-#            self._ntrans = MAX_RETRANSMIT
-#        elif self.msgtype in [Msg.Types.ACK, Msg.Types.RST]:
-#            self._ntrans = MAX_RETRANSMIT
-#            self.expire = datetime.datetime.now () + datetime.timedelta (seconds=max_rtt (self.l2n.max_latency))
-#        else:
-#            raise RuntimeError ('Internal error: unknown message type')
-
+        self.refresh_expiration ()
         self.l2n.sentlist.append (self)
 
         return True
@@ -456,7 +421,7 @@ class Msg (object):
     # CoAP timers for retransmission control
     ##########################################################################
 
-    def initial_timeout (self):
+    def _initial_timeout (self):
         """
         Set the initial timeout for message retransmission
         and return the current value
@@ -468,7 +433,7 @@ class Msg (object):
         self._timeout = ACK_TIMEOUT * (random.uniform (1, ACK_RANDOM_FACTOR))
         return self._timeout
 
-    def next_timeout (self):
+    def _next_timeout (self):
         """
         Set the next timeout value, and return the current value.
         Return None if there is no need for further retransmission
@@ -486,7 +451,7 @@ class Msg (object):
 
         return self._timeout
 
-    def stop_retransmit (self):
+    def _stop_retransmit (self):
         """
         Prevent further message retransmissions by setting the
         retransmission count to the maximum value
@@ -518,18 +483,18 @@ class Msg (object):
         self.send ()
 
         if self.msgtype == Msg.Types.CON:
-            t = self.initial_timeout ()
+            t = self._initial_timeout ()
             self._event = asyncio.Event ()
 
             while t is not None:
                 try:
-                    yield from asyncio.shield ( \
+                    yield from asyncio.shield (
                         asyncio.wait_for (self._wait_for_reply (), t))
                     t = None
                 except asyncio.TimeoutError:
                     print ('Resend msgid=', self.mid)
                     self.send ()
-                    t = self.next_timeout ()
+                    t = self._next_timeout ()
                     print ('TIMEOUT=', t)
 
         return self.req_rep
@@ -544,12 +509,15 @@ class Msg (object):
         yield from self._event.wait ()
         #D print ('Awaken, msgid =', self.mid)
 
-    def wakeup (self):
+    def got_reply (self, rep):
         """
-        Wake-up the co-routines which are waiting for an answer to
-        the message
+        The original request got a reply.
+        Stop further retransmissions, link the reply to the request
+        and wake-up the co-routines which are waiting for the reply
         """
 
+        self._stop_retransmit ()
+        self.link_req_rep (rep)
         if self._event is not None:
             self._event.set ()
 
@@ -704,8 +672,32 @@ class Msg (object):
 
     def refresh_expiration (self):
         """
-        Set maximum message lifetime
+        Set maximum message lifetime for the list of messages sent
+        (l2n.sentlist) or the list of messages received
+        (engine._deduplist)
         """
+
         now = datetime.datetime.now ()
-        lt = exchange_lifetime (self.l2n.max_latency)
-        self.expire = now + datetime.timedelta (milliseconds=lt)
+        if self.msgtype == Msg.Types.CON:
+            d = self._exchange_lifetime ()
+            self.expire = now + datetime.timedelta (seconds=d)
+        elif self.msgtype == Msg.Types.NON:
+            self.expire = now
+        elif self.msgtype in [Msg.Types.ACK, Msg.Types.RST]:
+            d = self._max_rtt ()
+            self.expire = now + datetime.timedelta (seconds=d)
+        else:
+            self.expire = now
+
+    def _exchange_lifetime (self):
+        """
+        Return the maximum exchange lifetime (function of l2 network
+        maximum latency)
+        """
+        return MAX_XMIT_SPAN + (2 * self.l2n.max_latency) + PROCESSING_DELAY
+
+    def _max_rtt (self):
+        """
+        Return the maximum RTT (function of l2 network latency)
+        """
+        return 2 * self.l2n.max_latency + PROCESSING_DELAY

@@ -141,16 +141,33 @@ class Engine (object):
 
     def _send_hello (self, l2n):
         """
-        Build and send a Casan Hello message
+        Build and send a Casan Hello message.
+        While we are here, remove expired messages for this l2 network.
         :param l2n: network to send the message on
         :type  l2n: l2net_*
         """
+
+        #
+        # Send a new hello message
+        #
+
         mhello = msg.Msg ()
         mhello.mk_hello (l2n, self._hid)
         mhello.l2n = l2n
         mhello.coap_encode ()
         mhello.send ()
-        print ('Sent Hello')
+
+        #
+        # Periodically remove expired messages from sentlist
+        #
+
+        now = datetime.datetime.now ()
+        l2n.sentlist = [m for m in l2n.sentlist if m.expire < now]
+
+        #
+        # Schedule next call
+        #
+
         self._loop.call_later (self._conf.timers ['hello'],
                                lambda: self._send_hello (l2n))
 
@@ -200,9 +217,7 @@ class Engine (object):
             # retransmissions, link this reply to the original
             # request, and wake-up the coroutines waiting for
             # this answer to the original request
-            req.stop_retransmit ()
-            req.link_req_rep (m)
-            req.wakeup ()
+            req.got_reply (m)
 
             # Check category of received message.
             # If it is an AssocAnswer response, process it
