@@ -16,6 +16,9 @@ import aiohttp.web
 import engine
 import slave
 
+import msg
+import option
+
 
 class Master (object):
     """
@@ -150,7 +153,8 @@ class Master (object):
         :return: a HTTP response
         :rtype: aiohttp.web.Response object
         """
-        return aiohttp.web.Response (body=b"WELL")
+        rl = self._engine.resource_list ().encode ()
+        return aiohttp.web.Response (body=rl)
 
     @asyncio.coroutine
     def handle_casan (self, request):
@@ -164,6 +168,10 @@ class Master (object):
 
         name = request.match_info ['name']
         vpath = name.split ('/')
+
+        #
+        # Find slave and resource
+        #
 
         try:
             sid = int (vpath [0])
@@ -179,20 +187,30 @@ class Master (object):
         if res is None:
             raise aiohttp.web.HTTPNotFound ()
 
+        #
+        # Build request
+        #
 
-        # XXX
+        mreq = msg.Msg ()
+        mreq.peer = sl.addr
+        mreq.l2n = sl.l2n
+        mreq.msgtype = msg.Msg.Types.CON
+        mreq.msgcode = msg.Msg.Codes.GET
+        up = option.Option.Codes.URI_PATH
+        for p in vpath:
+            mreq.optlist.append (option.Option (up, optval=p))
 
-        try:
-            r = yield from asyncio.shield (asyncio.wait_for (self.machin(), 3))
-        except asyncio.TimeoutError:
-            print ('Got exception')
+        #
+        # Send request and wait for a result
+        #
+
+        mrep = yield from mreq.send_request ()
+
+        if mrep is not None:
+            # Python black magic: aiohttp.web.Response expects a
+            # bytes argument, but mrep.payload is a bytearray
+            pl = mrep.payload.decode ().encode ()
+            r = aiohttp.web.Response (body=pl)
+        else:
             r = aiohttp.web.Response (body=b"TIMEOUT")
         return r
-
-    @asyncio.coroutine
-    def machin (self):
-        ev = asyncio.Event ()
-        self._waiters.append (ev)
-        yield from ev.wait ()
-        print ('Awaken')
-        return aiohttp.web.Response (body=b"CASAN")

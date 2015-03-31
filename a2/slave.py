@@ -133,8 +133,8 @@ class Slave (object):
             (sid, mtu) = m.is_casan_discover ()
             self.reset_discover (m.l2n, m.peer, mtu)
             massoc = msg.Msg ()
-            massoc.mk_assoc (m.peer, self.ttl, self._disc_curmtu)
-            r = massoc.send (m.l2n)
+            massoc.mk_assoc (m.l2n, m.peer, self.ttl, self._disc_curmtu)
+            r = massoc.send ()
             if not r:
                 print ('Error while sending AssocRequest message')
 

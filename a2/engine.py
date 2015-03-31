@@ -1,5 +1,20 @@
 """
-This module contains the Engine class.
+This module contains the CASAN Engine class.
+
+The CASAN engine is responsible for slave maintenance (status, resource
+list) and CASAN message handling.
+
+It is the primary recipient of CASAN messages:
+- CASAN control messages are received (Discover and Assoc Answer) and
+    slave status is set accordingly
+- CASAN normal (data) messages are received, deduplicated, and
+    rerouted to consumers (which are normally HTTP handlers)
+
+In addition, the engine is able to send messages to CASAN slaves:
+- CASAN Hello messages
+- CASAN control messages (Assoc Request), when a CASAN Discover
+    message is received
+- normal messages on behalf of HTTP handlers
 """
 
 import random
@@ -35,7 +50,7 @@ class Engine (object):
         now = datetime.datetime.now ()
         self._hid = int (datetime.datetime.timestamp (now)) % 1000
 
-        self._slaves = []
+        self._slaves = []           # slave list
         self._deduplist = []        # list of received messages
 
 #        self.timer_slave_ttl = 0
@@ -111,20 +126,20 @@ class Engine (object):
             # Packet reception
             #
 
-            self._loop.add_reader (l2n.handle (), lambda: self.l2reader (l2n))
+            self._loop.add_reader (l2n.handle (), lambda: self._l2reader (l2n))
 
             #
             # Send the periodic hello on this network
             #
 
             self._loop.call_later (self._conf.timers ['firsthello'],
-                                   lambda: self.send_hello (l2n))
+                                   lambda: self._send_hello (l2n))
 
     ######################################################################
     # Hello timer handle: send the periodic Hello packet
     ######################################################################
 
-    def send_hello (self, l2n):
+    def _send_hello (self, l2n):
         """
         Build and send a Casan Hello message
         :param l2n: network to send the message on
@@ -132,18 +147,19 @@ class Engine (object):
         """
         mhello = msg.Msg ()
         mhello.mk_hello (l2n, self._hid)
+        mhello.l2n = l2n
         mhello.coap_encode ()
-        mhello.send (l2n)
+        mhello.send ()
         print ('Sent Hello')
         self._loop.call_later (self._conf.timers ['hello'],
-                               lambda: self.send_hello (l2n))
+                               lambda: self._send_hello (l2n))
 
     ######################################################################
     # L2 handle routines: receive a packet on the given network interface
     ######################################################################
 
     # @asyncio.coroutine
-    def l2reader (self, l2n):
+    def _l2reader (self, l2n):
         """
         :param l2n: network to read on
         :type  l2n: l2net_* (l2net_eth or l2net_154)
@@ -159,11 +175,11 @@ class Engine (object):
         m.refresh_expiration ()
 
         # Remove obsolete messages from the deduplication list
-        self.clean_deduplist ()
+        self._clean_deduplist ()
 
         # Is the slave a valid peer? Either an already associated slave
         # or a slave, cited in the configuration file, trying to associate
-        sl = self.find_peer (m)
+        sl = self._find_peer (m)
         if not sl:
             print ('Warning : sender ' + str (m.peer) + ' not authorized')
             return
@@ -174,7 +190,7 @@ class Engine (object):
         # Is the received message a reply to pending request?
         #
 
-        req = self.correlate (m)
+        req = self._correlate (m)
         if req is not None:
             # Ignore the message if a reply was already received
             if req.req_rep is not None:
@@ -201,7 +217,7 @@ class Engine (object):
         # Was the message already received?
         #
 
-        mdup = self.deduplicate (m)
+        mdup = self._deduplicate (m)
         if mdup is not None:
             # If already received and already replied, ignore it
             if mdup.req_rep is not None:
@@ -221,16 +237,7 @@ class Engine (object):
     # Slave utilities
     ######################################################################
 
-    def init_slaves (self):
-        """
-        Initialize the slave list from the configuration file
-        """
-
-        for (sid, ttl, mtu) in self._conf.slaves:
-            sl = slave.Slave (sid, ttl, mtu)
-            self._slaves.append (sl)
-
-    def find_peer (self, m):
+    def _find_peer (self, m):
         """
         Check if the sender of a message is an authorized peer.
         If not, check if it is an CASAN slave coming up.
@@ -274,7 +281,7 @@ class Engine (object):
     # Utilities
     ######################################################################
 
-    def clean_deduplist (self):
+    def _clean_deduplist (self):
         """
         Remove expired messages from deduplication list
         :return: None
@@ -283,7 +290,7 @@ class Engine (object):
         now = datetime.datetime.now ()
         self._deduplist = [m for m in self._deduplist if m.expire < now]
 
-    def deduplicate (self, m):
+    def _deduplicate (self, m):
         """
         Check if a message is a duplicate and if so, return the
         original message.  If a reply was already sent (marked
@@ -313,7 +320,7 @@ class Engine (object):
 
         return omsg
 
-    def correlate (self, m):
+    def _correlate (self, m):
         """
         Check if a received message is an answer to a sent request
         :param m: received message to check
@@ -345,6 +352,6 @@ class Engine (object):
         s = ''
         for sl in self._slaves:
             if sl.status == slave.Slave.Status.RUNNING:
-                for res in sl.res_list:
+                for res in sl.reslist:
                     s += str (res)
         return s

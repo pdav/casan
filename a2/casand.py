@@ -8,6 +8,7 @@ assert sys.version >= '3.4', 'Please use Python 3.4 or higher.'
 import conf
 import master
 
+
 def run ():
     """
     Main CASAN program

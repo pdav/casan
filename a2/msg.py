@@ -10,6 +10,7 @@ import asyncio
 
 import option
 
+# Choose an initial message-id value
 glob_msg_id = random.randrange (0xffff)
 
 # CASAN related constants
@@ -22,7 +23,7 @@ ACK_RANDOM_FACTOR = 1.5
 ACK_TIMEOUT = 1
 COAP_MAX_TOKLEN = 8
 MAX_RETRANSMIT = 4
-MAX_TRANSMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
+MAX_XMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
 PROCESSING_DELAY = ACK_TIMEOUT
 
 
@@ -31,7 +32,7 @@ def exchange_lifetime (maxlat):
     """
     Return the maximum exchange lifetime
     """
-    return MAX_TRANSMIT_SPAN + (2 * maxlat) + PROCESSING_DELAY
+    return MAX_XMIT_SPAN + (2 * maxlat) + PROCESSING_DELAY
 
 
 def max_rtt (maxlat):
@@ -110,26 +111,26 @@ class Msg (object):
         """
 
         # Public attributes
-        self.pktype = None
-        self.msgcode = self.Codes.EMPTY
-        self.msgtype = None
-        self.req_rep = None
-        self.peer = None
-        self.bmsg = None
-        self.token = b''
-        self.payload = b''
-        self.timeout = datetime.timedelta ()
-        self.next_timeout = datetime.datetime.max
+        self.pktype = None              # Received msg sent to 'bcast' or 'me'
+        self.msgcode = self.Codes.EMPTY # See Codes above
+        self.msgtype = None             # See Types above
+        self.peer = None                # L2 address
+        self.bmsg = None                # Binary encoded message
+        self.token = b''                # Token
+        self.payload = b''              # Payload
+        self.XXXtimeout = datetime.timedelta ()
+        self.XXXnext_timeout = datetime.datetime.max
         self.expire = datetime.datetime.max
-        self.mid = 0
-        self.l2n = None
-        self.req_rep = None
-        self.optlist = []
+        self.mid = 0                    # Message ID
+        self.l2n = None                 # L2 network
+        self.req_rep = None             # Reply for this request
+        self.optlist = []               # List of options
 
         # Private attributes
-        self._msgcateg = self.Categories.UNKNOWN
-        self._event = None
-        self._ntrans = 0
+        self._msgcateg = self.Categories.UNKNOWN    # See Categories above
+        self._event = None              # asyncio.Event for synchronisation
+        self._ntrans = 0                # Number of retransmissions
+        self._timeout = None            # Duration to next retransmission
 
     def __eq__(self, other):
         """
@@ -142,38 +143,14 @@ class Msg (object):
         Cast to string, allows printing of packet data.
         """
         expstr = str (self.expire - datetime.datetime.now ())
-        ntostr = str (self.next_timeout - datetime.datetime.now ())
+        ntostr = str (self.XXXnext_timeout - datetime.datetime.now ())
         return ('msg <mid=' + str (self.mid)
                 + ', toklen=' + str (len (self.token))
                 + ', paylen=' + str (len (self.payload))
                 + ', ntrans=' + str (self._ntrans)
                 + ', expire=' + expstr
-                + ', next_timeout=' + str (ntostr)
-               )
-
-    # XXX
-    def _reset (self):
-        """
-        Resets all the values of the class to their defaults, but keeps
-        the message binary data, the payload and the options list.
-        """
-        self.pktype = None
-        self.peer = None
-        if self.req_rep is not None:
-            self.req_rep.req_rep = None
-            self.req_rep = None
-        self.bmsg = None
-        self.payload = b''
-        self.token = b''
-        self._ntrans = 0
-        self.timeout = datetime.timedelta ()
-        self.next_timeout = datetime.datetime.max
-        self.expire = datetime.datetime.max
-        self.pktype = None
-        self._msgcateg = self.Categories.UNKNOWN
-        self.msgtype = None
-        self.mid = 0
-        self.optlist = []
+                + ', XXXnext_timeout=' + str (ntostr)
+                )
 
     ##########################################################################
     # Send and receive messages
@@ -199,16 +176,12 @@ class Msg (object):
 
         return r
 
-    def send (self, l2n=None):
+    def send (self):
         """
-        Send a CoAP message on the given network
-        :param l2n: network (default: network already associated with the msg)
-        :type  l2n: class l2net_*
+        Send an individual CoAP message (destination address and
+        destination networks are specified in the message)
         :return: True (message sent) or False (error)
         """
-
-        if l2n is not None:
-            self.l2n = l2n
 
         if self.bmsg is None:
             self.coap_encode ()
@@ -218,23 +191,23 @@ class Msg (object):
             sys.stderr.write ('Error during packet transmission.\n')
             return False
 
-        if self.msgtype == Msg.Types.CON:
-            if self._ntrans == 0:
-                rand_timeout = random.uniform (0, ACK_RANDOM_FACTOR - 1)
-                nsec = ACK_TIMEOUT * (rand_timeout + 1)
-                self.timeout = datetime.timedelta (seconds=nsec)
-                self.expire = datetime.datetime.now () + datetime.timedelta (seconds=exchange_lifetime (self.l2n.max_latency))
-            else:
-                self.timeout *= 2
-            self.next_timeout = datetime.datetime.now () + self.timeout
-            self._ntrans += 1
-        elif self.msgtype == Msg.Types.NON:
-            self._ntrans = MAX_RETRANSMIT
-        elif self.msgtype in [Msg.Types.ACK, Msg.Types.RST]:
-            self._ntrans = MAX_RETRANSMIT
-            self.expire = datetime.datetime.now () + datetime.timedelta (seconds=max_rtt (self.l2n.max_latency))
-        else:
-            raise RuntimeError ('Internal error: unknown message type')
+#        if self.msgtype == Msg.Types.CON:
+#            if self._ntrans == 0:
+#                rand_timeout = random.uniform (0, ACK_RANDOM_FACTOR - 1)
+#                nsec = ACK_TIMEOUT * (rand_timeout + 1)
+#                self.XXXtimeout = datetime.timedelta (seconds=nsec)
+#                self.expire = datetime.datetime.now () + datetime.timedelta (seconds=exchange_lifetime (self.l2n.max_latency))
+#            else:
+#                self.XXXtimeout *= 2
+#            self.XXXnext_timeout = datetime.datetime.now () + self.XXXtimeout
+#            self._ntrans += 1
+#        elif self.msgtype == Msg.Types.NON:
+#            self._ntrans = MAX_RETRANSMIT
+#        elif self.msgtype in [Msg.Types.ACK, Msg.Types.RST]:
+#            self._ntrans = MAX_RETRANSMIT
+#            self.expire = datetime.datetime.now () + datetime.timedelta (seconds=max_rtt (self.l2n.max_latency))
+#        else:
+#            raise RuntimeError ('Internal error: unknown message type')
 
         self.l2n.sentlist.append (self)
 
@@ -419,13 +392,6 @@ class Msg (object):
 
         self._ntrans = 0
 
-    def stop_retransmit (self):
-        """
-        Prevent further message retransmissions by setting the
-        retransmission count to the maximum value
-        """
-        self._ntrans = MAX_RETRANSMIT
-
     def max_age (self):
         """
         Look for the option Max-Age in the option list and
@@ -460,13 +426,13 @@ class Msg (object):
         while other.optlist [j].is_nocachekey () and j <= jmax:
             j += 1
         while True:
-            if j == jmax and i == imax:   # Both at the end: success!
+            if j == jmax and i == imax:   # Both at the end => success!
                 return True
-            elif j == jmax or i == imax:  # One at the end: failure
+            elif j == jmax or i == imax:  # One at the end => failure
                 return False
             elif self.optlist [i] == other.optlist [j]:
                 i, j = i + 1, j + 1
-            else:                         # No match : failure
+            else:                         # No match => failure
                 return False
 
     def link_req_rep (self, m):
@@ -485,6 +451,107 @@ class Msg (object):
         else:
             self.req_rep = m
             m.req_rep = self
+
+    ##########################################################################
+    # CoAP timers for retransmission control
+    ##########################################################################
+
+    def initial_timeout (self):
+        """
+        Set the initial timeout for message retransmission
+        and return the current value
+        :return: timeout value (in seconds, not integral)
+        :rtype: float
+        """
+
+        self._ntrans = 0
+        self._timeout = ACK_TIMEOUT * (random.uniform (1, ACK_RANDOM_FACTOR))
+        return self._timeout
+
+    def next_timeout (self):
+        """
+        Set the next timeout value, and return the current value.
+        Return None if there is no need for further retransmission
+        (reasons: answer received, or max number of retransmission
+        was reached)
+        :return: timeout value (in seconds, not integral) or None
+        :rtype: float
+        """
+
+        if self._ntrans < MAX_RETRANSMIT:
+            self._ntrans += 1
+            self._timeout *= 2
+        else:
+            self._timeout = None
+
+        return self._timeout
+
+    def stop_retransmit (self):
+        """
+        Prevent further message retransmissions by setting the
+        retransmission count to the maximum value
+        """
+
+        self._ntrans = MAX_RETRANSMIT
+
+    ##########################################################################
+    # Message retransmission and synchronisation
+    ##########################################################################
+
+    @asyncio.coroutine
+    def send_request (self):
+        """
+        Send a request (which should be a CON message) to a CASAN
+        slave and wait for an answer or a timeout.
+        The request may be retransmitted if needed.
+        In order to known if an answer has been received, caller
+        may test m.req_rep is not None
+        :param m: message to send
+        :type  m: class msg
+        :return: reply message or None
+        :rtype: class Msg
+        """
+
+        if self.peer is None:
+            raise RuntimeError ('Unknown destination address')
+        self.req_rep = None
+        self.send ()
+
+        if self.msgtype == Msg.Types.CON:
+            t = self.initial_timeout ()
+            self._event = asyncio.Event ()
+
+            while t is not None:
+                try:
+                    yield from asyncio.shield ( \
+                        asyncio.wait_for (self._wait_for_reply (), t))
+                    t = None
+                except asyncio.TimeoutError:
+                    print ('Resend msgid=', self.mid)
+                    self.send ()
+                    t = self.next_timeout ()
+                    print ('TIMEOUT=', t)
+
+        return self.req_rep
+
+    @asyncio.coroutine
+    def _wait_for_reply (self):
+        """
+        Wait until the message gets a reply (via the Engine._l2reader
+        method) in which case our "wakeup" method is called.
+        """
+
+        yield from self._event.wait ()
+        #D print ('Awaken, msgid =', self.mid)
+
+    def wakeup (self):
+        """
+        Wake-up the co-routines which are waiting for an answer to
+        the message
+        """
+
+        if self._event is not None:
+            self._event.set ()
 
     ##########################################################################
     # Control message analysis
@@ -587,9 +654,11 @@ class Msg (object):
         for n in casan_namespace:
             self.optlist.append (option.Option (up, optval=n))
 
-    def mk_assoc (self, addr, ttl, mtu):
+    def mk_assoc (self, l2n, addr, ttl, mtu):
         """
         Configure options for an Assoc Request message
+        :param l2n: l2 network
+        :type  l2n: class l2net_*
         :param addr: address of slave
         :type  addr: class l2addr_*
         :param ttl: ttl
@@ -601,6 +670,7 @@ class Msg (object):
         self._msgcateg = self.Categories.ASSOC_REQUEST
         self.msgtype = self.Types.CON
         self.msgcode = self.Codes.POST
+        self.l2n = l2n
         self.peer = addr
         self.add_path_ctrl ()
         uq = option.Option.Codes.URI_QUERY
@@ -639,26 +709,3 @@ class Msg (object):
         now = datetime.datetime.now ()
         lt = exchange_lifetime (self.l2n.max_latency)
         self.expire = now + datetime.timedelta (milliseconds=lt)
-
-    ##########################################################################
-    # Synchronisation
-    ##########################################################################
-
-    # XXX : handle timeout?
-
-    def wait (self):
-        """
-        Wait for an answer to the current request
-        """
-        if self._event is None:
-            self._event = asyncio.Event ()
-        yield from self._event.wait ()
-        print ('Got answer for message id=', self.mid)
-
-    def wakeup (self):
-        """
-        Wake-up the co-routines which are waiting for an answer to
-        the message
-        """
-        if self._event is not None:
-            self._event.set ()

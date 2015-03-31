@@ -98,11 +98,11 @@ class Option (object):
         elif optbin is not None:
             self.optbin = optbin
             if otype == 'uint':
-                self.optval = self.bytes_to_int (optval)
+                self.optval = self.bytes_to_int (optbin)
             elif otype == 'string':
                 self.optval = optbin.decode (encoding='utf-8')
             elif otype == 'opaque':
-                self.optval = optval
+                self.optval = optbin
             else:
                 raise RuntimeError ('Unrecognized option type ' + otype)
 
