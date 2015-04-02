@@ -1463,7 +1463,7 @@ show_boards:
 
 monitor:
 ifneq ($(MONITOR_CMD), 'putty')
-	$(MONITOR_CMD) $(call get_monitor_port) $(MONITOR_BAUDRATE)
+	$(MONITOR_CMD) $(SCREEN_OPT) $(call get_monitor_port) $(MONITOR_BAUDRATE)
 else
     ifneq ($(strip $(MONITOR_PARMS)),)
 		$(MONITOR_CMD) -serial -sercfg $(MONITOR_BAUDRATE),$(MONITOR_PARMS) $(call get_monitor_port)

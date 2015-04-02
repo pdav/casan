@@ -17,9 +17,11 @@ DBLEVEL			= -DDBLEVEL=1
 BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 MONITOR_PORT		?= /dev/ttyUSB0
-ARDUINO_LIBS		= ZigMsg
+ARDUINO_LIBS		= ZigMsg # Dtls
 
 USER_LIB_PATH		= $(realpath ../../libraries)
+
+# SCREEN_OPT
 
 include $(ARDMK_DIR)/Arduino.mk
 

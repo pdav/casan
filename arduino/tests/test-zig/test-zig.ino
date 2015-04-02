@@ -1,4 +1,5 @@
 #include <ZigMsg.h>
+//#include <Dtls.h>
 
 #define	CHANNEL	25		// use "c" to change it while running
 
@@ -422,24 +423,10 @@ void stop_send (void)
 void do_send (void)
 {
     static int n = 0 ;
-    ZigMsg::ZigStat *zs ;
 
     if (++n % PERIODIC == 0)
     {
-	zs = zigmsg.getstat () ;
-	Serial.print ("RX overrun=") ;
-	Serial.print (zs->rx_overrun) ;
-	Serial.print (", crcfail=") ;
-	Serial.print (zs->rx_crcfail) ;
-	Serial.print (", TX sent=") ;
-	Serial.print (zs->tx_sent) ;
-	Serial.print (", e_cca=") ;
-	Serial.print (zs->tx_error_cca) ;
-	Serial.print (", e_noack=") ;
-	Serial.print (zs->tx_error_noack) ;
-	Serial.print (", e_fail=") ;
-	Serial.print (zs->tx_error_fail) ;
-	Serial.println () ;
+        print_stat ();
 	n = 0 ;
 
 	uint32_t time ;
@@ -463,6 +450,10 @@ void init_dtls_server (char line [])
     zigmsg.promiscuous (false) ;
     zigmsg.start () ;
     Serial.println("Starting DTLS server") ;
+#ifdef __DTLS__
+    Serial.println("DTLS ROCK & ROLL") ;
+#endif
+
 }
 
 void stop_dtls_server (void)
@@ -511,24 +502,10 @@ void stop_dtls_client (void)
 void do_dtls_client (void)
 {
     static int n = 0 ;
-    ZigMsg::ZigStat *zs ;
 
     if (++n % PERIODIC == 0)
     {
-	zs = zigmsg.getstat () ;
-	Serial.print ("RX overrun=") ;
-	Serial.print (zs->rx_overrun) ;
-	Serial.print (", crcfail=") ;
-	Serial.print (zs->rx_crcfail) ;
-	Serial.print (", TX sent=") ;
-	Serial.print (zs->tx_sent) ;
-	Serial.print (", e_cca=") ;
-	Serial.print (zs->tx_error_cca) ;
-	Serial.print (", e_noack=") ;
-	Serial.print (zs->tx_error_noack) ;
-	Serial.print (", e_fail=") ;
-	Serial.print (zs->tx_error_fail) ;
-	Serial.println () ;
+        print_stat ();
 	n = 0 ;
 
 	uint32_t time ;
@@ -538,27 +515,6 @@ void do_dtls_client (void)
 	else
 	    Serial.println ("Sent error") ;
     }
-}
-
-void print_stats (void)
-{
-
-    ZigMsg::ZigStat *zs ;
-
-    zs = zigmsg.getstat () ;
-    Serial.print ("RX overrun=") ;
-    Serial.print (zs->rx_overrun) ;
-    Serial.print (", crcfail=") ;
-    Serial.print (zs->rx_crcfail) ;
-    Serial.print (", TX sent=") ;
-    Serial.print (zs->tx_sent) ;
-    Serial.print (", e_cca=") ;
-    Serial.print (zs->tx_error_cca) ;
-    Serial.print (", e_noack=") ;
-    Serial.print (zs->tx_error_noack) ;
-    Serial.print (", e_fail=") ;
-    Serial.print (zs->tx_error_fail) ;
-    Serial.println () ;
 }
 
 
@@ -589,13 +545,15 @@ void do_pingpong_ping (void)
 
     if (++n % PERIODIC == 0)
     {
-        print_stats ();
+        print_stat ();
         n = 0;
     }
 
     bool found = false;
     // send
     uint32_t time ;
+    uint32_t duration;
+
     time = millis () ;
 
     Serial.println();
@@ -620,12 +578,10 @@ void do_pingpong_ping (void)
         }
 
     }
-
  
-    uint32_t duration;
     duration = millis () - time ;
 
-    Serial.print("duration : ");
+    Serial.print("duration: ");
     Serial.println(duration);
     delay(500);
 
@@ -683,8 +639,6 @@ void stop_pingpong_pong (void)
 void do_pingpong_pong (void)
 {
     ZigMsg::ZigReceivedFrame *z ;
-
-    static int n = 0 ;
 
     uint32_t time = 0;
     bool found = false;
