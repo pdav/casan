@@ -28,8 +28,6 @@
  * @brief Clock Handling
  */
 
-#include "tinydtls.h"
-#include "dtls_config.h"
 #include "dtls_time.h"
 
 #ifdef WITH_CONTIKI

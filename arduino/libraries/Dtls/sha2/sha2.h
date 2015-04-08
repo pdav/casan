@@ -45,7 +45,22 @@ extern "C" {
  * may need to change this, or define these things yourself in this
  * file.
  */
+
+// FIXME TODO sys/types n'existe pas
 //#include <sys/types.h>
+#include "types.h"
+
+#include "tinydtls.h"
+#include "dtls_config.h"
+#include <string.h>	/* memcpy()/memset() or bcopy()/bzero() */
+#ifdef HAVE_ASSERT_H
+#include <assert.h>	/* assert() */
+#else
+#ifndef assert
+#warning "assertions are disabled"
+#  define assert(x)
+#endif
+#endif
 
 #ifdef SHA2_USE_INTTYPES_H
 

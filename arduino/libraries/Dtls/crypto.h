@@ -29,6 +29,7 @@
 
 #include <stdlib.h>		/* for rand() and srand() */
 #include <stdint.h>
+#include <stdio.h>
 
 #include "t_list.h"
 
@@ -39,6 +40,25 @@
 #include "numeric.h"
 #include "hmac.h"
 #include "ccm.h"
+#include "Dtls.h"
+#include "debug.h"
+#include "ecc/ecc.h"
+#include "prng.h"
+#include "netq.h"
+
+#include "tinydtls.h"
+#include "dtls_config.h"
+
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#else
+#define assert(x)
+#endif
+
+//#ifndef WITH_CONTIKI
+//#include <pthread.h>
+//#endif
+
 
 /* TLS_PSK_WITH_AES_128_CCM_8 */
 #define DTLS_MAC_KEY_LENGTH    0

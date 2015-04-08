@@ -32,9 +32,9 @@
 #define _DTLS_DTLS_TIME_H_
 
 #include <stdint.h>
-#include <sys/time.h>
-
+//#include <sys/time.h>
 #include "tinydtls.h"
+#include "dtls_config.h"
 
 /**
  * @defgroup clock Clock Handling
@@ -46,7 +46,7 @@
 #ifdef WITH_CONTIKI
 #include "clock.h"
 #else /* WITH_CONTIKI */
-#include <time.h>
+//#include <time.h>
 
 #ifndef CLOCK_SECOND
 # define CLOCK_SECOND 1000

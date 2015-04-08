@@ -1,6 +1,4 @@
 #include <ZigMsg.h>
-//#include <Dtls.h>
-#include <Test.h>
 
 #define	CHANNEL	25		// use "c" to change it while running
 
@@ -500,16 +498,6 @@ void stop_dtls_client (void)
     Serial.println("Stopping DTLS client") ;
 }
 
-size_t cb_send (void * mysocket, void *data, int len)
-{
-    return 0;
-}
-
-size_t cb_recv (void * mysocket, void *data, int * len)
-{
-    return 0;
-}
-
 void do_dtls_client (void)
 {
     static int n = 0 ;
@@ -526,6 +514,148 @@ void do_dtls_client (void)
 	else
 	    Serial.println ("Sent error") ;
     }
+}
+
+
+/******************************************************************************
+Ping pong ping
+*******************************************************************************/
+
+void init_pingpong_ping (char line [])
+{
+    zigmsg.channel (channel) ;
+    zigmsg.panid (PANID) ;
+    zigmsg.addr2 (SENDADDR) ;
+    zigmsg.promiscuous (false) ;
+    zigmsg.start () ;
+    Serial.println("Starting PING PONG") ;
+}
+
+void stop_pingpong_ping (void)
+{
+    Serial.println("Stopping PING PONG PING") ;
+}
+
+void do_pingpong_ping (void)
+{
+    ZigMsg::ZigReceivedFrame *z ;
+
+    static int n = 0 ;
+
+    if (++n % PERIODIC == 0)
+    {
+        print_stat ();
+        n = 0;
+    }
+
+    bool found = false;
+    // send
+    uint32_t time ;
+    uint32_t duration;
+
+    time = millis () ;
+
+    Serial.println();
+    Serial.print(time, HEX);
+    Serial.print(' ');
+
+    if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
+    {
+        //Serial.println ("Sent") ;
+    }
+    else
+        Serial.println ("Sent error") ;
+
+    while(! found && ++n % PERIODIC != 0)
+    {
+        // recv
+        while ((z = zigmsg.get_received ()) != NULL)
+        {
+            //print_frame (z, false) ;
+            zigmsg.skip_received () ;
+            found = true;
+        }
+
+    }
+ 
+    duration = millis () - time ;
+
+    Serial.print("duration: ");
+    Serial.println(duration);
+    delay(500);
+
+    if (n % PERIODIC == 0)
+        n = 0;
+}
+
+/******************************************************************************
+Ping pong pong
+*******************************************************************************/
+
+uint32_t get_time ( ZigMsg::ZigReceivedFrame *z) 
+{
+    //time = (uint32_t) (z->rawframe + z->rawlen - 4);
+
+    union uint32_to_uint8 {
+        uint32_t x;
+        uint8_t  y[4];
+    } myunion;
+
+    myunion.y[0] = z->payload[z->paylen-4];
+    myunion.y[1] = z->payload[z->paylen-3];
+    myunion.y[2] = z->payload[z->paylen-2];
+    myunion.y[3] = z->payload[z->paylen-1];
+
+    Serial.println();
+    Serial.print("payload len : ");
+    Serial.println(z->paylen);
+
+    Serial.print(myunion.y[0], HEX);
+    Serial.print(myunion.y[1], HEX);
+    Serial.print(myunion.y[2], HEX);
+    Serial.print(myunion.y[3], HEX);
+    Serial.print(' ');
+
+    return myunion.x;
+
+}
+
+void init_pingpong_pong (char line [])
+{
+    zigmsg.channel (channel) ;
+    zigmsg.panid (PANID) ;
+    zigmsg.addr2 (RECVADDR) ;
+    zigmsg.promiscuous (false) ;
+    zigmsg.start () ;
+    Serial.println("Starting PING PONG PONG") ;
+}
+
+void stop_pingpong_pong (void)
+{
+    Serial.println("Stopping PING PONG PONG") ;
+}
+
+void do_pingpong_pong (void)
+{
+    ZigMsg::ZigReceivedFrame *z ;
+
+    uint32_t time = 0;
+    bool found = false;
+    while(! found)
+    {
+        // recv
+        while ((z = zigmsg.get_received ()) != NULL)
+        {
+            //print_frame (z, false) ;
+            zigmsg.skip_received () ;
+            found = true;
+        }
+    }
+
+    if (zigmsg.sendto (SENDADDR, 0, (uint8_t *) &time))
+        Serial.println ("Sent") ;
+    else
+        Serial.println ("Sent error") ;
 }
 
 /******************************************************************************
@@ -625,6 +755,8 @@ struct gui gui [] = {
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
     { 'd', "dtls server", init_dtls_server, stop_dtls_server, do_dtls_server },
     { 't', "dtls client", init_dtls_client, stop_dtls_client, do_dtls_client },
+    { 'p', "ping pong ping", init_pingpong_ping, stop_pingpong_ping, do_pingpong_ping },
+    { 'P', "ping pong pong", init_pingpong_pong, stop_pingpong_pong, do_pingpong_pong },
 } ;
 #define	IDLE_MODE (& gui [0])
 

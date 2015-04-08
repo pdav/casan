@@ -116,7 +116,7 @@ list_push(list_t list, void *item) {
 static inline void *
 list_pop(list_t list) {
     struct list *l;
-    l = *list;
+    l = (struct list*) *list;
     if(l)
         list_remove(list, l);
     return l;
@@ -128,7 +128,7 @@ list_insert(list_t list, void *previtem, void *newitem) {
         list_push(list, newitem);
     } else {
         ((struct list *)newitem)->next = ((struct list *)previtem)->next;
-        ((struct list *)previtem)->next = newitem;
+        ((struct list *)previtem)->next = (struct list* ) newitem;
     } 
 }
 

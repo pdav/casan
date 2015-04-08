@@ -11,7 +11,7 @@
 #define DTLS_PSK 1
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
-#define HAVE_ARPA_INET_H 1
+//#define HAVE_ARPA_INET_H 1
 
 /* Define to 1 if you have the <assert.h> header file. */
 #define HAVE_ASSERT_H 1
@@ -23,7 +23,7 @@
 /* #undef HAVE_FLS */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
-#define HAVE_INTTYPES_H 1
+//#define HAVE_INTTYPES_H 1
 
 /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
    to 0 otherwise. */
@@ -36,19 +36,19 @@
 #define HAVE_MEMSET 1
 
 /* Define to 1 if you have the <netdb.h> header file. */
-#define HAVE_NETDB_H 1
+//#define HAVE_NETDB_H 1
 
 /* Define to 1 if you have the <netinet/in.h> header file. */
-#define HAVE_NETINET_IN_H 1
+//#define HAVE_NETINET_IN_H 1
 
 /* Define to 1 if you have the `select' function. */
-#define HAVE_SELECT 1
+//#define HAVE_SELECT 1
 
 /* Define to 1 if struct sockaddr_in6 has a member sin6_len. */
 /* #undef HAVE_SOCKADDR_IN6_SIN6_LEN */
 
 /* Define to 1 if you have the `socket' function. */
-#define HAVE_SOCKET 1
+//#define HAVE_SOCKET 1
 
 /* Define to 1 if you have the <stddef.h> header file. */
 #define HAVE_STDDEF_H 1
@@ -75,28 +75,28 @@
 #define HAVE_STRNLEN 1
 
 /* Define to 1 if you have the <sys/param.h> header file. */
-#define HAVE_SYS_PARAM_H 1
+//#define HAVE_SYS_PARAM_H 1
 
 /* Define to 1 if you have the <sys/socket.h> header file. */
-#define HAVE_SYS_SOCKET_H 1
+//#define HAVE_SYS_SOCKET_H 1
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
-#define HAVE_SYS_STAT_H 1
+//#define HAVE_SYS_STAT_H 1
 
 /* Define to 1 if you have the <sys/time.h> header file. */
-#define HAVE_SYS_TIME_H 1
+//#define HAVE_SYS_TIME_H 1
 
 /* Define to 1 if you have the <sys/types.h> header file. */
-#define HAVE_SYS_TYPES_H 1
+//#define HAVE_SYS_TYPES_H 1
 
 /* Define to 1 if you have the <time.h> header file. */
-#define HAVE_TIME_H 1
+//#define HAVE_TIME_H 1
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H 1
+//#define HAVE_UNISTD_H 1
 
 /* Define to 1 if you have the `vprintf' function. */
-#define HAVE_VPRINTF 1
+//#define HAVE_VPRINTF 1
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT ""
@@ -120,7 +120,7 @@
 #define STDC_HEADERS 1
 
 /* Define to 1 if building for Contiki. */
-#define WITH_CONTIKI 1
+//#define WITH_CONTIKI 1
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
