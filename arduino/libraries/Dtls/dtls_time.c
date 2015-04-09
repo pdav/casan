@@ -46,6 +46,10 @@ dtls_ticks(dtls_tick_t *t) {
   *t = clock_time();
 }
 
+#elif WITH_ARDUINO
+
+// TODO clock with arduino FIXME
+
 #else /* WITH_CONTIKI */
 
 time_t dtls_clock_offset;

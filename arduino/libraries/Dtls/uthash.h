@@ -59,10 +59,8 @@ do {                                                                            
 /* a number of the hash function use uint32_t which isn't defined on win32 */
 #ifdef _MSC_VER
 typedef unsigned int uint32_t;
-#elif WITH_ARDUINO
-typedef unsigned int uint32_t;
 #else
-//#include <inttypes.h>   /* uint32_t */
+//#include <inttypes.h>   /* u_int32_t */
 #endif
 
 #define UTHASH_VERSION 1.9.3
@@ -116,10 +114,10 @@ do {                                                                            
 #define HASH_BLOOM_BITTEST(bv,idx) (bv[(idx)/8] & (1U << ((idx)%8)))
 
 #define HASH_BLOOM_ADD(tbl,hashv)                                                \
-  HASH_BLOOM_BITSET((tbl)->bloom_bv, (hashv & (uint32_t)((1ULL << (tbl)->bloom_nbits) - 1)))
+  HASH_BLOOM_BITSET((tbl)->bloom_bv, (hashv & (u_int32_t)((1ULL << (tbl)->bloom_nbits) - 1)))
 
 #define HASH_BLOOM_TEST(tbl,hashv)                                               \
-  HASH_BLOOM_BITTEST((tbl)->bloom_bv, (hashv & (uint32_t)((1ULL << (tbl)->bloom_nbits) - 1)))
+  HASH_BLOOM_BITTEST((tbl)->bloom_bv, (hashv & (u_int32_t)((1ULL << (tbl)->bloom_nbits) - 1)))
 
 #else
 #define HASH_BLOOM_MAKE(tbl) 
@@ -436,13 +434,13 @@ do {                                                                            
 #endif
 
 #if !defined (get16bits)
-#define get16bits(d) ((((uint32_t)(((const uint8_t *)(d))[1])) << 8)             \
-                       +(uint32_t)(((const uint8_t *)(d))[0]) )
+#define get16bits(d) ((((u_int32_t)(((const uint8_t *)(d))[1])) << 8)             \
+                       +(u_int32_t)(((const uint8_t *)(d))[0]) )
 #endif
 #define HASH_SFH(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
   char *_sfh_key=(char*)(key);                                                   \
-  uint32_t _sfh_tmp, _sfh_len = keylen;                                          \
+  u_int32_t _sfh_tmp, _sfh_len = keylen;                                          \
                                                                                  \
   int _sfh_rem = _sfh_len & 3;                                                   \
   _sfh_len >>= 2;                                                                \
@@ -507,10 +505,10 @@ do {                                                                            
   const int _mur_r = 24;                                                         \
   hashv = 0xcafebabe ^ keylen;                                                   \
   char *_mur_key = (char *)(key);                                                \
-  uint32_t _mur_tmp, _mur_len = keylen;                                          \
+  u_int32_t _mur_tmp, _mur_len = keylen;                                          \
                                                                                  \
   for (;_mur_len >= 4; _mur_len-=4) {                                            \
-    _mur_tmp = *(uint32_t *)_mur_key;                                            \
+    _mur_tmp = *(u_int32_t *)_mur_key;                                            \
     _mur_tmp *= _mur_m;                                                          \
     _mur_tmp ^= _mur_tmp >> _mur_r;                                              \
     _mur_tmp *= _mur_m;                                                          \
@@ -541,7 +539,7 @@ do {                                                                            
   const int _mur_r = 24;                                                         \
   hashv = 0xcafebabe ^ (keylen);                                                 \
   char *_mur_key = (char *)(key);                                                \
-  uint32_t _mur_len = keylen;                                                    \
+  u_int32_t _mur_len = keylen;                                                    \
   int _mur_align = (int)_mur_key & 3;                                            \
                                                                                  \
   if (_mur_align && (_mur_len >= 4)) {                                           \
@@ -952,9 +950,9 @@ typedef struct UT_hash_table {
     * the hash will still work, albeit no longer in constant time. */
    unsigned ineff_expands, noexpand;
 
-   uint32_t signature; /* used only to find hash tables in external analysis */
+   u_int32_t signature; /* used only to find hash tables in external analysis */
 #ifdef HASH_BLOOM
-   uint32_t bloom_sig; /* used only to test bloom exists in external analysis */
+   u_int32_t bloom_sig; /* used only to test bloom exists in external analysis */
    uint8_t *bloom_bv;
    char bloom_nbits;
 #endif

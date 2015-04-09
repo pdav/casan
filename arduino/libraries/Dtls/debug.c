@@ -203,7 +203,31 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len) {
 #endif
 }
 
-#ifndef WITH_CONTIKI
+#ifdef WITH_CONTIKI
+
+#elif WITH_ARDUINO
+
+#elif defined (HAVE_VPRINTF) /* WITH_CONTIKI */
+void 
+dsrv_log(log_t level, char *format, ...) {
+  static char timebuf[32];
+  va_list ap;
+
+  if (maxlog < level)
+    return;
+
+  if (print_timestamp(timebuf,sizeof(timebuf), clock_time()))
+    PRINTF("%s ", timebuf);
+
+  if (level <= DTLS_LOG_DEBUG) 
+    PRINTF("%s ", loglevels[level]);
+
+  va_start(ap, format);
+  vprintf(format, ap);
+  va_end(ap);
+}
+
+#else
 void 
 dsrv_log(log_t level, char *format, ...) {
   static char timebuf[32];
@@ -225,25 +249,6 @@ dsrv_log(log_t level, char *format, ...) {
   vfprintf(log_fd, format, ap);
   va_end(ap);
   fflush(log_fd);
-}
-#elif defined (HAVE_VPRINTF) /* WITH_CONTIKI */
-void 
-dsrv_log(log_t level, char *format, ...) {
-  static char timebuf[32];
-  va_list ap;
-
-  if (maxlog < level)
-    return;
-
-  if (print_timestamp(timebuf,sizeof(timebuf), clock_time()))
-    PRINTF("%s ", timebuf);
-
-  if (level <= DTLS_LOG_DEBUG) 
-    PRINTF("%s ", loglevels[level]);
-
-  va_start(ap, format);
-  vprintf(format, ap);
-  va_end(ap);
 }
 #endif /* WITH_CONTIKI */
 

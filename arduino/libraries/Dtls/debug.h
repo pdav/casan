@@ -29,6 +29,7 @@
 #include <stdlib.h>
 
 #include "dtls_config.h"
+#include "dtls_time.h"
 #include "global.h"
 #include "session.h"
 
