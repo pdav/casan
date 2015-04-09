@@ -17,7 +17,9 @@ DBLEVEL			= -DDBLEVEL=1
 BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 MONITOR_PORT		?= /dev/ttyUSB0
-ARDUINO_LIBS		= ZigMsg Test #Dtls
+ARDUINO_LIBS		= ZigMsg Dtls
+#ARDUINO_LIBS		= ZigMsg Test
+#ARDUINO_LIBS		= ZigMsg TinyDtls
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 

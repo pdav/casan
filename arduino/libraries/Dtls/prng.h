@@ -31,15 +31,16 @@
  */
 static inline int
 dtls_prng(unsigned char *buf, size_t len) {
-  while (len--)
-    *buf++ = rand() & 0xFF;
-  return 1;
+    while (len--)
+        *buf++ = rand() & 0xFF;
+    return 1;
 }
 
 static inline void
 dtls_prng_init(unsigned short seed) {
-	srand(seed);
+    srand(seed);
 }
+
 #else /* WITH_CONTIKI */
 #include <string.h>
 #include "random.h"
@@ -48,9 +49,11 @@ dtls_prng_init(unsigned short seed) {
 static inline int
 dtls_prng(unsigned char *buf, size_t len)
 {
-	return contiki_prng_impl(buf, len);
+    return contiki_prng_impl(buf, len);
 }
+
 #else
+
 /**
  * Fills \p buf with \p len random bytes. This is the default
  * implementation for prng().  You might want to change prng() to use
@@ -58,22 +61,22 @@ dtls_prng(unsigned char *buf, size_t len)
  */
 static inline int
 dtls_prng(unsigned char *buf, size_t len) {
-  unsigned short v = random_rand();
-  while (len > sizeof(v)) {
-    memcpy(buf, &v, sizeof(v));
-    len -= sizeof(v);
-    buf += sizeof(v);
-    v = random_rand();
-  }
+    unsigned short v = random_rand();
+    while (len > sizeof(v)) {
+        memcpy(buf, &v, sizeof(v));
+        len -= sizeof(v);
+        buf += sizeof(v);
+        v = random_rand();
+    }
 
-  memcpy(buf, &v, len);
-  return 1;
+    memcpy(buf, &v, len);
+    return 1;
 }
 #endif /* HAVE_PRNG */
 
 static inline void
 dtls_prng_init(unsigned short seed) {
-	random_init(seed);
+    random_init(seed);
 }
 #endif /* WITH_CONTIKI */
 

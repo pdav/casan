@@ -23,9 +23,10 @@
  * SOFTWARE.
  */
 
+ 
 #include "dtls_config.h"
 #include "session.h"
-
+ 
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #else
@@ -35,6 +36,7 @@
 #endif
 #endif
 
+
 #ifdef WITH_CONTIKI
 #define _dtls_address_equals_impl(A,B)				\
   ((A)->size == (B)->size					\
@@ -42,7 +44,21 @@
    && uip_ipaddr_cmp(&((A)->addr),&((B)->addr))			\
    && (A)->ifindex == (B)->ifindex)
 
+#elif WITH_ARDUINO
+
+// TODO FIXME pouvoir faire un comparatif des sessions
+
+static inline int 
+_dtls_address_equals_impl(const session_t *a, const session_t *b) {
+    return a->addr == b->addr;
+}
+
 #else /* WITH_CONTIKI */
+
+
+// TODO FIXME pouvoir faire un comparatif des sessions
+// test index d'interface // taille // type de socket // port // adresse
+// on veut savoir si deux sessions sont en fait la même
 
 static inline int 
 _dtls_address_equals_impl(const session_t *a,

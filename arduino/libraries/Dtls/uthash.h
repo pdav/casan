@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _DTLS_UTHASH_H
 #define _DTLS_UTHASH_H 
 
+#include "types.h"
 #include <string.h>   /* memcmp,strlen */
 #include <stddef.h>   /* ptrdiff_t */
 
@@ -57,6 +58,8 @@ do {                                                                            
 
 /* a number of the hash function use uint32_t which isn't defined on win32 */
 #ifdef _MSC_VER
+typedef unsigned int uint32_t;
+#elif WITH_ARDUINO
 typedef unsigned int uint32_t;
 #else
 //#include <inttypes.h>   /* uint32_t */

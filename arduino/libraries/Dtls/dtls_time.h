@@ -33,8 +33,8 @@
 
 #include <stdint.h>
 //#include <sys/time.h>
+
 #include "tinydtls.h"
-#include "dtls_config.h"
 
 /**
  * @defgroup clock Clock Handling

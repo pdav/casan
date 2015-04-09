@@ -32,38 +32,25 @@
 #ifndef _DTLS_DTLS_H_
 #define _DTLS_DTLS_H_
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+//#include <stdint.h>
 
 #include "t_list.h"
 #include "state.h"
 #include "peer.h"
 
-#ifndef WITH_CONTIKI
+#ifdef WITH_CONTIKI
+#elif  WITH_ARDUINO
+#else
 #include <stdlib.h>
 #include "uthash.h"
-#include "uthash.h"
-#include "t_list.h"
 #endif /* WITH_CONTIKI */
 
 #include "alert.h"
 #include "crypto.h"
 #include "hmac.h"
 
-#include "tinydtls.h"
-#include "dtls_config.h"
-#include "dtls_time.h"
-
 #include "global.h"
 #include "dtls_time.h"
-
-#include "debug.h"
-#include "numeric.h"
-#include "netq.h"
-
-#include "session.h"
-#include "prng.h"
 
 #ifndef DTLSv12
 #define DTLS_VERSION 0xfeff	/* DTLS v1.1 */
@@ -71,13 +58,23 @@
 #define DTLS_VERSION 0xfefd	/* DTLS v1.2 */
 #endif
 
-#ifdef HAVE_ASSERT_H
-#include <assert.h>
-#endif
+// TODO
 
-#ifdef WITH_SHA256
-#  include "sha2/sha2.h"
-#endif
+struct mysocket {
+    size_t (*cb_send)(void * data, size_t len);
+    size_t (*cb_recv)(void * data, size_t *len);
+};
+
+size_t send_smth(struct mysocket msock) {
+    return msock.cb_send((void*)"coucou", 6);
+}
+
+size_t recv_smth(struct mysocket msock) {
+    size_t len;
+    void *data;;
+    msock.cb_recv(data, &len);
+    return len;
+}
 
 typedef enum dtls_credentials_type_t {
   DTLS_PSK_HINT, DTLS_PSK_IDENTITY, DTLS_PSK_KEY

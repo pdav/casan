@@ -24,7 +24,32 @@
  * SOFTWARE.
  */
 
-#include "Dtls.h"
+#include "tinydtls.h"
+#include "dtls_config.h"
+#include "dtls_time.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#endif
+#ifndef WITH_CONTIKI
+#include <stdlib.h>
+#include "uthash.h"
+#endif /* WITH_CONTIKI */
+
+#include "debug.h"
+#include "numeric.h"
+#include "netq.h"
+#include "dtls.h"
+
+#include "alert.h"
+#include "session.h"
+#include "prng.h"
+
+#ifdef WITH_SHA256
+#  include "sha2/sha2.h"
+#endif
 
 #define dtls_set_version(H,V) dtls_int_to_uint16((H)->version, (V))
 #define dtls_set_content_type(H,V) ((H)->content_type = (V) & 0xff)

@@ -48,10 +48,10 @@ extern "C" {
 
 // FIXME TODO sys/types n'existe pas
 //#include <sys/types.h>
-#include "types.h"
+#include "../types.h"
 
-#include "tinydtls.h"
-#include "dtls_config.h"
+#include "../tinydtls.h"
+#include "../dtls_config.h"
 #include <string.h>	/* memcpy()/memset() or bcopy()/bzero() */
 #ifdef HAVE_ASSERT_H
 #include <assert.h>	/* assert() */

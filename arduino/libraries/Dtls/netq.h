@@ -11,23 +11,8 @@
 
 #include "tinydtls.h"
 #include "global.h"
-#include "peer.h"
-#include "Dtls.h"
+#include "dtls.h"
 #include "dtls_time.h"
-#include "dtls_config.h"
-#include "debug.h"
-
-#ifdef HAVE_ASSERT_H
-#include <assert.h>
-#else
-#ifndef assert
-#warning "assertions are disabled"
-#  define assert(x)
-#endif
-#endif
-
-#include "t_list.h"
-
 
 /**
  * \defgroup netq Network Packet Queue

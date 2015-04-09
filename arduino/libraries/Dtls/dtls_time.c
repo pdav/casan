@@ -29,6 +29,8 @@
  */
 
 #include "dtls_time.h"
+#include "dtls_config.h"
+#include "dtls_time.h"
 
 #ifdef WITH_CONTIKI
 clock_time_t dtls_clock_offset;

@@ -30,6 +30,8 @@
 
 #include "tinydtls.h"
 #include "global.h"
+#include "dtls_config.h"
+#include "types.h"
 
 #ifdef WITH_CONTIKI
 #include "ip/uip.h"
@@ -40,14 +42,20 @@ typedef struct {
   int ifindex;
 } session_t;
 
+#elif WITH_ARDUINO
+
+typedef struct {
+  size_t size;
+  u_int8_t addr;
+  u_int8_t ifindex;
+} session_t;
+
 #else /* WITH_CONTIKI */
 
-#include <ZigMsg.h>
-
 // TODO : remplacer ça
-//#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 typedef struct {
   socklen_t size;		/**< size of addr */
@@ -59,6 +67,7 @@ typedef struct {
   } addr;
   uint8_t ifindex;
 } session_t;
+
 #endif /* WITH_CONTIKI */
 
 /** 

@@ -24,32 +24,64 @@
  * SOFTWARE.
  */
 
+//#include <stdio.h>
+
+#include "tinydtls.h"
+#include "dtls_config.h"
+
+#ifdef HAVE_ASSERT_H
+#include <assert.h>
+#else
+#define assert(x)
+#endif
+
+#include "global.h"
+#include "debug.h"
+#include "numeric.h"
+#include "dtls.h"
 #include "crypto.h"
+#include "ccm.h"
+#include "ecc/ecc.h"
+#include "prng.h"
+#include "netq.h"
+
+#ifdef WITH_CONTIKI
+#elif WITH_ARDUINO
+// TODO pthread ?
+#else
+#include <pthread.h>
+#endif
 
 #define HMAC_UPDATE_SEED(Context,Seed,Length)		\
     if (Seed) dtls_hmac_update(Context, (Seed), (Length))
 
 static struct dtls_cipher_context_t cipher_context;
 // pthreads -- TODO FIXME
-//#ifndef WITH_CONTIKI
-//static pthread_mutex_t cipher_context_mutex = PTHREAD_MUTEX_INITIALIZER;
-//#endif
+#ifdef WITH_CONTIKI
+#elif WITH_ARDUINO
+#else
+static pthread_mutex_t cipher_context_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 static struct dtls_cipher_context_t *dtls_cipher_context_get(void)
 {
-    //#ifndef WITH_CONTIKI
-    // pthread -- TODO FIXME
-    //pthread_mutex_lock(&cipher_context_mutex);
-    //#endif
+    #ifndef WITH_CONTIKI
+    #elif   WITH_ARDUINO
+    #else
+     // pthread -- TODO FIXME
+    pthread_mutex_lock(&cipher_context_mutex);
+    #endif
     return &cipher_context;
 }
 
 static void dtls_cipher_context_release(void)
 {
-    //#ifndef WITH_CONTIKI
-    // pthread -- TODO FIXME
-    //pthread_mutex_unlock(&cipher_context_mutex);
-    //#endif
+    #ifndef WITH_CONTIKI
+    #elif   WITH_ARDUINO
+    #else
+     // pthread -- TODO FIXME
+    pthread_mutex_unlock(&cipher_context_mutex);
+    #endif
 }
 
 #ifndef WITH_CONTIKI

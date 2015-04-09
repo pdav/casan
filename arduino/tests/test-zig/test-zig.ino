@@ -1,6 +1,7 @@
 #include <ZigMsg.h>
 //#include <Dtls.h>
-#include <Test.h>
+//#include <Test.h>
+#include <dtls.h>
 
 #define	CHANNEL	25		// use "c" to change it while running
 
@@ -443,6 +444,34 @@ void do_send (void)
 DTLS server
 *******************************************************************************/
 
+size_t cb_send (void *data, size_t len)
+{
+    Serial.println((char*)data);
+    //ZigMsg * zm = &zigmsg;
+
+    //if (zm->sendto (RECVADDR, len, (uint8_t *) data))
+    if (zigmsg.sendto (RECVADDR, len, (uint8_t *) data))
+        Serial.println ("Sent") ;
+    else
+        Serial.println ("Sent error") ;
+
+    return 0;
+}
+
+size_t cb_recv (void *data, size_t * len)
+{
+    Serial.println("On passe par là");
+    ZigMsg::ZigReceivedFrame *z ;
+
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+	print_frame (z, false) ;
+	zigmsg.skip_received () ;
+    }
+
+    return 0;
+}
+
 void init_dtls_server (char line [])
 {
     zigmsg.channel (channel) ;
@@ -464,21 +493,10 @@ void stop_dtls_server (void)
 
 void do_dtls_server (void)
 {
-    // snif
-    static int n = 0 ;
-    ZigMsg::ZigReceivedFrame *z ;
-
-    if (++n % PERIODIC == 0)
-    {
-	print_stat () ;
-	n = 0 ;
-    }
-
-    while ((z = zigmsg.get_received ()) != NULL)
-    {
-	print_frame (z, false) ;
-	zigmsg.skip_received () ;
-    }
+    struct mysocket msock;
+    msock.cb_send = cb_send;
+    msock.cb_recv = cb_recv;
+    recv_smth(msock);
 }
 
 /******************************************************************************
@@ -500,37 +518,18 @@ void stop_dtls_client (void)
     Serial.println("Stopping DTLS client") ;
 }
 
-size_t cb_send (void * mysocket, void *data, int len)
-{
-    return 0;
-}
-
-size_t cb_recv (void * mysocket, void *data, int * len)
-{
-    return 0;
-}
 
 void do_dtls_client (void)
 {
-    static int n = 0 ;
-
-    if (++n % PERIODIC == 0)
-    {
-        print_stat ();
-	n = 0 ;
-
-	uint32_t time ;
-	time = millis () ;
-	if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
-	    Serial.println ("Sent") ;
-	else
-	    Serial.println ("Sent error") ;
-    }
+    struct mysocket msock;
+    msock.cb_send = cb_send;
+    msock.cb_recv = cb_recv;
+    send_smth(msock);
 }
 
 /******************************************************************************
-Receiver
-*******************************************************************************/
+  Receiver
+ *******************************************************************************/
 
 void init_recv (char line [])
 {
@@ -553,8 +552,8 @@ void do_recv (void)
 }
 
 /******************************************************************************
-Channel
-*******************************************************************************/
+  Channel
+ *******************************************************************************/
 
 void init_chan (char line [])
 {
@@ -563,21 +562,21 @@ void init_chan (char line [])
 
     p = line ;
     while (*p == ' ' || *p == '\t')
-	p++ ;
+        p++ ;
 
     while (*p >= '0' && *p <= '9')
     {
-	ch = ch * 10 + (*p - '0') ;
-	p++ ;
+        ch = ch * 10 + (*p - '0') ;
+        p++ ;
     }
 
     if (ch < 11 || ch > 26)
-	Serial.println ("Invalid channel") ;
+        Serial.println ("Invalid channel") ;
     else
     {
-	channel = ch ;
-	Serial.print ("Channel set to ") ;
-	Serial.println (channel) ;
+        channel = ch ;
+        Serial.print ("Channel set to ") ;
+        Serial.println (channel) ;
     }
 
     Serial.println ("Entering idle mode") ;
@@ -592,8 +591,8 @@ void do_chan (void)
 }
 
 /******************************************************************************
-GUI ;-)
-*******************************************************************************/
+  GUI ;-)
+ *******************************************************************************/
 
 void init_idle (char line [])
 {
@@ -634,22 +633,22 @@ struct gui *parse_and_init_or_stop (char line [], struct gui *oldmode)
     struct gui *newmode ;
 
     while (*p == ' ' || *p == '\t')
-	p++ ;
+        p++ ;
 
     newmode = oldmode ;
     for (int i = 0 ; i < NTAB (gui) ; i++)
     {
-	if (*p == gui [i].start_key)
-	{
-	    newmode = &gui [i] ;
-	    break ;
-	}
+        if (*p == gui [i].start_key)
+        {
+            newmode = &gui [i] ;
+            break ;
+        }
     }
 
     if (newmode != oldmode)
     {
-	(* oldmode->f_stop) () ;
-	(* newmode->f_init) (p + 1) ;
+        (* oldmode->f_stop) () ;
+        (* newmode->f_init) (p + 1) ;
     }
 
     return newmode ;
@@ -659,18 +658,18 @@ void help (void)
 {
     for (int i = 0 ; i < NTAB (gui) ; i++)
     {
-	if (i > 0)
-	    Serial.print (", ") ;
-	Serial.print (gui [i].start_key) ;
-	Serial.print (':') ;
-	Serial.print (gui [i].desc) ;
+        if (i > 0)
+            Serial.print (", ") ;
+        Serial.print (gui [i].start_key) ;
+        Serial.print (':') ;
+        Serial.print (gui [i].desc) ;
     }
     Serial.println () ;
 }
 
 /******************************************************************************
-Classic Arduino functions
-*******************************************************************************/
+  Classic Arduino functions
+ *******************************************************************************/
 
 void setup ()
 {
@@ -689,24 +688,24 @@ void loop()
     n = Serial.available () ;
     if (n > 0)
     {
-	for (int i = 0 ; i < n ; i++)
-	{
-	    *p = Serial.read () ;
-	    Serial.print (*p) ;
-	    if (*p == '\r')
-	    {
-		struct gui *oldmode ;
+        for (int i = 0 ; i < n ; i++)
+        {
+            *p = Serial.read () ;
+            Serial.print (*p) ;
+            if (*p == '\r')
+            {
+                struct gui *oldmode ;
 
-		Serial.print ('\n') ;
-		p = '\0' ;
-		oldmode = curmode ;
-		curmode = parse_and_init_or_stop (line, curmode) ;
-		p = line ;
-		if (curmode == oldmode)
-		    help () ;
-	    }
-	    else p++ ;
-	}
+                Serial.print ('\n') ;
+                p = '\0' ;
+                oldmode = curmode ;
+                curmode = parse_and_init_or_stop (line, curmode) ;
+                p = line ;
+                if (curmode == oldmode)
+                    help () ;
+            }
+            else p++ ;
+        }
     }
 
     (*curmode->f_do) () ;
