@@ -1,6 +1,6 @@
 #include <ZigMsg.h>
 
-#define	CHANNEL	25		// use "c" to change it while running
+#define	CHANNEL	MYCHANNEL	// sed & make
 
 #define	PANID		CONST16 (0xbe, 0xef)
 #define	SENDADDR	CONST16 (0x12, 0x34)
@@ -14,8 +14,8 @@
 int channel = CHANNEL ;
 
 /******************************************************************************
-Utilities
-*******************************************************************************/
+  Utilities
+ *******************************************************************************/
 
 #define	HEXCHAR(c)	((c) < 10 ? (c) + '0' : (c) - 10 + 'a')
 
@@ -39,8 +39,8 @@ void pdec (int c, int ndigits, char fill)
     n = 1 ;
     while (c2 > 0)
     {
-	n++ ;
-	c2 /= 10 ;
+        n++ ;
+        c2 /= 10 ;
     }
 
     /*
@@ -48,7 +48,7 @@ void pdec (int c, int ndigits, char fill)
      */
 
     for ( ; n <= ndigits ; n++)
-	Serial.print (fill) ;
+        Serial.print (fill) ;
     Serial.print (c) ;
 }
 
@@ -58,9 +58,9 @@ void phexn (uint8_t *c, int len, char sep)
 
     for (i = 0 ; i < len ; i++)
     {
-	if (i > 0 && sep != '\0')
-	    Serial.print (sep) ;
-	phex (c [i]) ;
+        if (i > 0 && sep != '\0')
+            Serial.print (sep) ;
+        phex (c [i]) ;
     }
 }
 
@@ -71,14 +71,14 @@ void phexascii (uint8_t buf [], int len, int flen)
 
     phexn (buf, len, ' ') ;
     for (i = 0 ; i < (flen - len) * 3 + 4 ; i++)
-	Serial.print (' ') ;
+        Serial.print (' ') ;
     for (i = 0 ; i < len ; i++)
-	Serial.print ((char) (buf [i] >= ' ' && buf [i] < 127 ? buf [i] : '.')) ;
+        Serial.print ((char) (buf [i] >= ' ' && buf [i] < 127 ? buf [i] : '.')) ;
 }
 
 /******************************************************************************
-CoAP decoding
-*******************************************************************************/
+  CoAP decoding
+ *******************************************************************************/
 
 #define	COAP_VERSION(b)	(((b) [0] >> 6) & 0x3)
 #define	COAP_TYPE(b)	(((b) [0] >> 4) & 0x3)
@@ -117,13 +117,13 @@ void coap_decode (uint8_t msg [], int msglen)
     Serial.print (c) ;
     Serial.print ('.') ;
     if (dd < 10)
-	Serial.print ('0') ;
+        Serial.print ('0') ;
     Serial.print (dd) ;
     if (c == 0 && dd < (int) NTAB (code_string))
     {
-	Serial.print ('(') ;
-	Serial.print (code_string [dd]) ;
-	Serial.print (')') ;
+        Serial.print ('(') ;
+        Serial.print (code_string [dd]) ;
+        Serial.print (')') ;
     }
 
     Serial.print (", Id=") ;
@@ -134,10 +134,10 @@ void coap_decode (uint8_t msg [], int msglen)
 
     if (toklen > 0)
     {
-	Serial.print ("    Token=") ;
-	phexascii (msg + i, toklen, 8) ;
-	Serial.println () ;
-	i += toklen ;
+        Serial.print ("    Token=") ;
+        phexascii (msg + i, toklen, 8) ;
+        Serial.println () ;
+        i += toklen ;
     }
 
     /*
@@ -149,87 +149,87 @@ void coap_decode (uint8_t msg [], int msglen)
 
     while (success && i < msglen && msg [i] != 0xff)
     {
-	int opt_delta, opt_len ;
+        int opt_delta, opt_len ;
 
-	opt_delta = (msg [i] >> 4) & 0x0f ;
-	opt_len   = (msg [i]     ) & 0x0f ;
-	i++ ;
-	switch (opt_delta)
-	{
-	    case 13 :
-		opt_delta = msg [i] + 13 ;
-		i += 1 ;
-		break ;
-	    case 14 :
-		opt_delta = (msg [i] << 8) + msg [i+1] + 269 ;
-		i += 2 ;
-		break ;
-	    case 15 :
-		success = 0 ;			// recv failed
-		break ;
-	}
-	opt_nb += opt_delta ;
+        opt_delta = (msg [i] >> 4) & 0x0f ;
+        opt_len   = (msg [i]     ) & 0x0f ;
+        i++ ;
+        switch (opt_delta)
+        {
+            case 13 :
+                opt_delta = msg [i] + 13 ;
+                i += 1 ;
+                break ;
+            case 14 :
+                opt_delta = (msg [i] << 8) + msg [i+1] + 269 ;
+                i += 2 ;
+                break ;
+            case 15 :
+                success = 0 ;			// recv failed
+                break ;
+        }
+        opt_nb += opt_delta ;
 
-	switch (opt_len)
-	{
-	    case 13 :
-		opt_len = msg [i] + 13 ;
-		i += 1 ;
-		break ;
-	    case 14 :
-		opt_len = (msg [i] << 8) + msg [i+1] + 269 ;
-		i += 2 ;
-		break ;
-	    case 15 :
-		success = 0 ;			// recv failed
-		break ;
-	}
+        switch (opt_len)
+        {
+            case 13 :
+                opt_len = msg [i] + 13 ;
+                i += 1 ;
+                break ;
+            case 14 :
+                opt_len = (msg [i] << 8) + msg [i+1] + 269 ;
+                i += 2 ;
+                break ;
+            case 15 :
+                success = 0 ;			// recv failed
+                break ;
+        }
 
-	/* option found */
-	if (success)
-	{
-	    Serial.print ("    opt ") ;
-	    pdec (opt_nb, 3, ' ') ;
-	    Serial.print (" (len=") ;
-	    pdec (opt_len, 2, ' ') ;
-	    Serial.print (")  ") ;
-	    phexascii (msg + i, opt_len, 14) ;
-	    Serial.println () ;
-	    i += opt_len ;
-	}
-	else printf ("    option unrecognized\n") ;
+        /* option found */
+        if (success)
+        {
+            Serial.print ("    opt ") ;
+            pdec (opt_nb, 3, ' ') ;
+            Serial.print (" (len=") ;
+            pdec (opt_len, 2, ' ') ;
+            Serial.print (")  ") ;
+            phexascii (msg + i, opt_len, 14) ;
+            Serial.println () ;
+            i += opt_len ;
+        }
+        else printf ("    option unrecognized\n") ;
     }
 
     paylen = msglen - i - 1 ;
     if (success && paylen > 0)
     {
-	if (msg [i] != 0xff)
-	{
-	    Serial.println ("  no FF marker") ;
-	    success = 0 ;
-	}
-	else
-	{
-	    Serial.print ("    Payload (len=") ;
-	    Serial.print (paylen) ;
-	    Serial.println (")") ;
+        if (msg [i] != 0xff)
+        {
+            Serial.println ("  no FF marker") ;
+            success = 0 ;
+        }
+        else
+        {
+            Serial.print ("    Payload (len=") ;
+            Serial.print (paylen) ;
+            Serial.println (")") ;
 
-	    i++ ;
-	    while (i < msglen)
-	    {
-		Serial.print ("      ") ;
-		phexascii (msg + i, paylen > 16 ? 16 : paylen, 16) ;
-		Serial.println () ;
-		paylen -= 16 ;
-		i += 16 ;
-	    }
-	}
+            i++ ;
+            while (i < msglen)
+            {
+                Serial.print ("      ") ;
+                phexascii (msg + i, paylen > 16 ? 16 : paylen, 16) ;
+                Serial.println () ;
+                paylen -= 16 ;
+                i += 16 ;
+            }
+        }
     }
 }
 
 /******************************************************************************
-Raw Sniffer
-*******************************************************************************/
+  Raw Sniffer
+ *******************************************************************************/
 
 const char *desc_frametype [] =
 {
@@ -242,14 +242,14 @@ uint8_t *padrpan (uint8_t *p, int len, int ispan, int disp)
     uint8_t *adr = p ;
 
     if (ispan)
-	adr += 2 ;
+        adr += 2 ;
     if (disp)
-	phexn (adr, len, ':') ;
+        phexn (adr, len, ':') ;
     adr += len ;
     if (disp && ispan)
     {
-	Serial.print ('/') ;
-	phexn (p, 2, ':') ;
+        Serial.print ('/') ;
+        phexn (p, 2, ':') ;
     }
     return adr ;
 }
@@ -258,20 +258,20 @@ uint8_t *padr (int mode, uint8_t *p, int ispan, int disp)
 {
     switch (mode)
     {
-	case Z_ADDRMODE_NOADDR :
-	    if (disp)
-		Serial.print ("()") ;
-	    break ;
-	case Z_ADDRMODE_RESERVED :
-	    if (disp)
-		Serial.print ("?reserved") ;
-	    break ;
-	case Z_ADDRMODE_ADDR2 :
-	    p = padrpan (p, 2, ispan, disp) ;
-	    break ;
-	case Z_ADDRMODE_ADDR8 :
-	    p = padrpan (p, 6, ispan, disp) ;
-	    break ;
+        case Z_ADDRMODE_NOADDR :
+            if (disp)
+                Serial.print ("()") ;
+            break ;
+        case Z_ADDRMODE_RESERVED :
+            if (disp)
+                Serial.print ("?reserved") ;
+            break ;
+        case Z_ADDRMODE_ADDR2 :
+            p = padrpan (p, 2, ispan, disp) ;
+            break ;
+        case Z_ADDRMODE_ADDR8 :
+            p = padrpan (p, 6, ispan, disp) ;
+            break ;
     }
     return p ;
 }
@@ -293,7 +293,7 @@ void print_frame (ZigMsg::ZigReceivedFrame *z, bool casan_decode)
     p = padr (dstmode, dstp, 1, 0) ;		// do not print dst addr
     p = padr (srcmode, p, ! intrapan, 1) ;	// p points past addresses
     Serial.print ("->") ;
-	(void) padr (dstmode, dstp, 1, 1) ;
+    (void) padr (dstmode, dstp, 1, 1) ;
 
     Serial.print (" ") ;
     Serial.print (desc_frametype [Z_GET_FRAMETYPE (z->fcf)]) ;
@@ -315,7 +315,7 @@ void print_frame (ZigMsg::ZigReceivedFrame *z, bool casan_decode)
     Serial.println () ;
 
     if (casan_decode && Z_GET_FRAMETYPE (z->fcf) == Z_FT_DATA && lastseq != seq)
-	coap_decode (p, z->paylen) ;
+        coap_decode (p, z->paylen) ;
     lastseq = seq ;
 }
 
@@ -344,21 +344,21 @@ void snif (bool casan_decode)
 
     if (++n % PERIODIC == 0)
     {
-	print_stat () ;
-	n = 0 ;
+        print_stat () ;
+        n = 0 ;
     }
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
-	print_frame (z, casan_decode) ;
-	zigmsg.skip_received () ;
+        print_frame (z, casan_decode) ;
+        zigmsg.skip_received () ;
     }
 }
 
 
 /******************************************************************************
-CoAP and raw sniffer
-*******************************************************************************/
+  CoAP and raw sniffer
+ *******************************************************************************/
 
 void init_snif (char line [])
 {
@@ -379,8 +379,8 @@ void do_snif (void)
 }
 
 /******************************************************************************
-CoAP sniffer
-*******************************************************************************/
+  CoAP sniffer
+ *******************************************************************************/
 
 void init_casan (char line [])
 {
@@ -401,8 +401,8 @@ void do_casan (void)
 }
 
 /******************************************************************************
-Sender
-*******************************************************************************/
+  Sender
+ *******************************************************************************/
 
 void init_send (char line [])
 {
@@ -426,20 +426,20 @@ void do_send (void)
     if (++n % PERIODIC == 0)
     {
         print_stat ();
-	n = 0 ;
+        n = 0 ;
 
-	uint32_t time ;
-	time = millis () ;
-	if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
-	    Serial.println ("Sent") ;
-	else
-	    Serial.println ("Sent error") ;
+        uint32_t time ;
+        time = millis () ;
+        if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
+            Serial.println ("Sent") ;
+        else
+            Serial.println ("Sent error") ;
     }
 }
 
 /******************************************************************************
-DTLS server
-*******************************************************************************/
+  DTLS server
+ *******************************************************************************/
 
 void init_dtls_server (char line [])
 {
@@ -468,20 +468,20 @@ void do_dtls_server (void)
 
     if (++n % PERIODIC == 0)
     {
-	print_stat () ;
-	n = 0 ;
+        print_stat () ;
+        n = 0 ;
     }
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
-	print_frame (z, false) ;
-	zigmsg.skip_received () ;
+        print_frame (z, false) ;
+        zigmsg.skip_received () ;
     }
 }
 
 /******************************************************************************
-DTLS client
-*******************************************************************************/
+  DTLS client
+ *******************************************************************************/
 
 void init_dtls_client (char line [])
 {
@@ -505,21 +505,21 @@ void do_dtls_client (void)
     if (++n % PERIODIC == 0)
     {
         print_stat ();
-	n = 0 ;
+        n = 0 ;
 
-	uint32_t time ;
-	time = millis () ;
-	if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
-	    Serial.println ("Sent") ;
-	else
-	    Serial.println ("Sent error") ;
+        uint32_t time ;
+        time = millis () ;
+        if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
+            Serial.println ("Sent") ;
+        else
+            Serial.println ("Sent error") ;
     }
 }
 
 
 /******************************************************************************
-Ping pong ping
-*******************************************************************************/
+  Ping pong ping
+ *******************************************************************************/
 
 void init_pingpong_ping (char line [])
 {
@@ -577,7 +577,7 @@ void do_pingpong_ping (void)
         }
 
     }
- 
+
     duration = millis () - time ;
 
     Serial.print("duration: ");
@@ -589,8 +589,8 @@ void do_pingpong_ping (void)
 }
 
 /******************************************************************************
-Ping pong pong
-*******************************************************************************/
+  Ping pong pong
+ *******************************************************************************/
 
 uint32_t get_time ( ZigMsg::ZigReceivedFrame *z) 
 {
@@ -659,8 +659,8 @@ void do_pingpong_pong (void)
 }
 
 /******************************************************************************
-Receiver
-*******************************************************************************/
+  Receiver
+ *******************************************************************************/
 
 void init_recv (char line [])
 {
@@ -683,8 +683,8 @@ void do_recv (void)
 }
 
 /******************************************************************************
-Channel
-*******************************************************************************/
+  Channel
+ *******************************************************************************/
 
 void init_chan (char line [])
 {
@@ -693,21 +693,21 @@ void init_chan (char line [])
 
     p = line ;
     while (*p == ' ' || *p == '\t')
-	p++ ;
+        p++ ;
 
     while (*p >= '0' && *p <= '9')
     {
-	ch = ch * 10 + (*p - '0') ;
-	p++ ;
+        ch = ch * 10 + (*p - '0') ;
+        p++ ;
     }
 
     if (ch < 11 || ch > 26)
-	Serial.println ("Invalid channel") ;
+        Serial.println ("Invalid channel") ;
     else
     {
-	channel = ch ;
-	Serial.print ("Channel set to ") ;
-	Serial.println (channel) ;
+        channel = ch ;
+        Serial.print ("Channel set to ") ;
+        Serial.println (channel) ;
     }
 
     Serial.println ("Entering idle mode") ;
@@ -722,8 +722,8 @@ void do_chan (void)
 }
 
 /******************************************************************************
-GUI ;-)
-*******************************************************************************/
+  GUI ;-)
+ *******************************************************************************/
 
 void init_idle (char line [])
 {
@@ -747,14 +747,7 @@ struct gui
 } ;
 
 struct gui gui [] = {
-    { 'i', "idle", init_idle, stop_idle, do_idle },
-    { 'n', "raw sniffer", init_snif, stop_snif, do_snif },
-    { 'o', "casan sniffer", init_casan, stop_casan, do_casan },
-    { 's', "sender", init_send, stop_send, do_send },
-    { 'r', "receiver", init_recv, stop_recv, do_recv },
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
-    { 'd', "dtls server", init_dtls_server, stop_dtls_server, do_dtls_server },
-    { 't', "dtls client", init_dtls_client, stop_dtls_client, do_dtls_client },
     { 'p', "ping pong ping", init_pingpong_ping, stop_pingpong_ping, do_pingpong_ping },
     { 'P', "ping pong pong", init_pingpong_pong, stop_pingpong_pong, do_pingpong_pong },
 } ;
@@ -766,22 +759,22 @@ struct gui *parse_and_init_or_stop (char line [], struct gui *oldmode)
     struct gui *newmode ;
 
     while (*p == ' ' || *p == '\t')
-	p++ ;
+        p++ ;
 
     newmode = oldmode ;
     for (int i = 0 ; i < NTAB (gui) ; i++)
     {
-	if (*p == gui [i].start_key)
-	{
-	    newmode = &gui [i] ;
-	    break ;
-	}
+        if (*p == gui [i].start_key)
+        {
+            newmode = &gui [i] ;
+            break ;
+        }
     }
 
     if (newmode != oldmode)
     {
-	(* oldmode->f_stop) () ;
-	(* newmode->f_init) (p + 1) ;
+        (* oldmode->f_stop) () ;
+        (* newmode->f_init) (p + 1) ;
     }
 
     return newmode ;
@@ -791,18 +784,18 @@ void help (void)
 {
     for (int i = 0 ; i < NTAB (gui) ; i++)
     {
-	if (i > 0)
-	    Serial.print (", ") ;
-	Serial.print (gui [i].start_key) ;
-	Serial.print (':') ;
-	Serial.print (gui [i].desc) ;
+        if (i > 0)
+            Serial.print (", ") ;
+        Serial.print (gui [i].start_key) ;
+        Serial.print (':') ;
+        Serial.print (gui [i].desc) ;
     }
     Serial.println () ;
 }
 
 /******************************************************************************
-Classic Arduino functions
-*******************************************************************************/
+  Classic Arduino functions
+ *******************************************************************************/
 
 void setup ()
 {
@@ -818,27 +811,23 @@ void loop()
     static struct gui *curmode = IDLE_MODE ;
     int n ;
 
-    n = Serial.available () ;
-    if (n > 0)
-    {
-	for (int i = 0 ; i < n ; i++)
-	{
-	    *p = Serial.read () ;
-	    Serial.print (*p) ;
-	    if (*p == '\r')
-	    {
-		struct gui *oldmode ;
+    p[0] = 'CARACTERE';
+    p[1] = '\r';
 
-		Serial.print ('\n') ;
-		p = '\0' ;
-		oldmode = curmode ;
-		curmode = parse_and_init_or_stop (line, curmode) ;
-		p = line ;
-		if (curmode == oldmode)
-		    help () ;
-	    }
-	    else p++ ;
-	}
+    for (int i = 0 ; i < 2 ; i++)
+    {
+        if (*p == '\r')
+        {
+            struct gui *oldmode ;
+
+            p = '\0' ;
+            oldmode = curmode ;
+            curmode = parse_and_init_or_stop (line, curmode) ;
+            p = line ;
+            if (curmode == oldmode)
+                help () ;
+        }
+        else p++ ;
     }
 
     (*curmode->f_do) () ;

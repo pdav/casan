@@ -1,18 +1,37 @@
 #!/bin/bash
 
-# 
+# listener
+function write_file {
+    cat pp.tmpl | sed "s/CARACTERE/$CARACTERE/" | sed "s/MYCHANNEL/$c/" \
+        > test-zig.ino
+}
 
-export PRECMD='echo p'
-SCREEN_OPT=-L make autoretest
-PID1=$!
+function screen_listener {
+    MONITOR_PORT=/dev/ttyUSB1 make test
+}
 
-export PRECMD='echo P'
-MONITOR_PORT=/dev/ttyUSB1 make autoretest
-PID2=$!
+function screen_prod {
+    SCREEN_OPT=-L make test
+}
 
-echo ${PID1} ${PID2}
+function kill_screens {
+    killall -9 screen
+}
 
-sleep 10
+mkdir logs
 
-pkill ${PID1}
-pkill ${PID2}
+for c in `seq 11 25`
+do
+
+    export CARACTERE=P
+    write_file
+    screen_listener
+
+    export CARACTERE=p
+    write_file
+    screen_prod
+
+    sleep $((15*60)) # 15 minutes
+    kill_screens
+    mv screenlog.0 logs/canal_$c
+done
