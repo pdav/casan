@@ -5,8 +5,6 @@ This module contains the Slave class
 import datetime
 import re
 
-import asyncio
-
 import msg
 import resource
 
@@ -22,7 +20,6 @@ class Slave (object):
         INACTIVE = 0
         RUNNING = 1
 
-    # XXX
     def __init__(self, loop, sid, ttl, mtu):
         """
         Default constructor
@@ -102,8 +99,11 @@ class Slave (object):
 
     def reset_discover (self, l2n, addr, mtu):
         """
-        Prepare
-        :
+        When we receive the Discover message, prepare the slave status
+        for further negociation
+        :param l2n: the network we received the message on
+        :param addr: source address of the message (future slave address)
+        :param mtu: mtu advertised by the slave
         """
 
         if self.addr is not None and self.addr != addr:

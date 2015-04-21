@@ -10,12 +10,9 @@ import asyncio
 
 import option
 
-# Choose an initial message-id value
-glob_msg_id = random.randrange (0xffff)
-
 # CASAN related constants
 CASAN_VERSION = 1
-casan_namespace = ('.well-known', 'casan')
+NAMESPACE = ('.well-known', 'casan')
 
 # CoAP Related constants
 # Note : all times are expressed in seconds unless explicitly specified.
@@ -29,25 +26,26 @@ PROCESSING_DELAY = ACK_TIMEOUT
 
 class Msg (object):
     """
-    An object of class Msg represents a message,
-    either received or to be sent
-
-    This class represents messages to be sent to the network, or
-    received from the network.
+    An object of class Msg represents a message, either received
+    or to be sent
 
     Message attributes are tied to CoAP specification: a message has
-    a type (CON, NON, ACK, RST), a code (GET, POST, PUT, DELETE, or a numeric
-    value for an answer in an ACK), an Id, a token, some options and
-    a payload.
+      * a type (CON, NON, ACK, RST)
+      * a code (GET, POST, PUT, DELETE, or a numeric value for an
+        answer in an ACK)
+      * an Id
+      * a token
+      * some options
+      * and a payload
 
     In order to be sent to the network, a message is transparently
     encoded (by the `send` method) according to CoAP specification.
     Similarly, a message is transparently decoded (by the `recv`
     method) upon reception according to the CoAP specification.
 
-    The binary (encoded) form is kept in the message private variable.
-    However, each modification of an attribute will squeeze the
-    binary form, which will be automatically re-created if needed.
+    The binary (encoded) form is kept in a message private attribute.
+    However, the binary form must be recreated (via coap_encode) if any
+    attribute is modified.
 
     Each request sent has a "waiter" which represents a thread to
     awake when the answer will be received.
@@ -88,6 +86,9 @@ class Msg (object):
         ASSOC_REQUEST = 3
         ASSOC_ANSWER = 4
         HELLO = 5
+
+    # Class variable: choose an initial message-id value
+    gmid = random.randrange (0xffff)
 
     # XXX
     def __init__(self):
@@ -290,7 +291,6 @@ class Msg (object):
         if paylen > 0:
             msglen += 1 + paylen
 
-        # XXX it is not the correct MTU: we should use the slave MTU
         if msglen > self.l2n.mtu:
             raise RuntimeError ('PACKET TOO LARGE')
 
@@ -298,10 +298,9 @@ class Msg (object):
         # get a suitable ID
         #
 
-        global glob_msg_id
         if self.mid == 0:
-            self.mid = glob_msg_id
-            glob_msg_id = glob_msg_id + 1 if glob_msg_id < 0xffff else 1
+            self.mid = Msg.gmid
+            Msg.gmid = Msg.gmid + 1 if Msg.gmid < 0xffff else 1
 
         #
         # Build message header and token
@@ -533,13 +532,13 @@ class Msg (object):
 
         r = True
         i = 0
-        nslen = len (casan_namespace)
+        nslen = len (NAMESPACE)
         for o in self.optlist:
             if o.optcode == option.Option.Codes.URI_PATH:
                 r = False
                 if i >= nslen:
                     break
-                if casan_namespace [i] != o.optval:
+                if NAMESPACE [i] != o.optval:
                     break
                 r = True
                 i += 1
@@ -565,15 +564,21 @@ class Msg (object):
         (sid, mtu) = (0, 0)
         for o in self.optlist:
             if o.optcode == option.Option.Codes.URI_QUERY:
-                if o.optval.startswith ('slave='):
-                    # Expected value : 'slave=<slave ID>'
-                    # XXX check malformed incoming values
-                    sid = int (o.optval.partition ('=') [2])
+                (qname, sep, qval) = o.optval.partition ('=')
+                if qname == 'slave':
+                    try:
+                        sid = int (qval)
+                    except ValueError:
+                        r = False
                 elif o.optval.startswith ('mtu='):
-                    mtu = int (o.optval.partition ('=') [2])
+                    try:
+                        mtu = int (qval)
+                    except ValueError:
+                        r = False
                 else:
                     # Unrecognized query string ('???=')
                     r = False
+                if r == False:
                     break
         if not r or sid == 0 or mtu == 0:
             return None
@@ -581,7 +586,6 @@ class Msg (object):
         self._msgcateg = self.Categories.DISCOVER
         return (sid, mtu)
 
-    # XXX
     def is_casan_associate (self):
         """
         Check if a message is a CASAN AssocRequest message (and
@@ -606,7 +610,6 @@ class Msg (object):
                     reqcat = self.req_rep.category (False)
                     if reqcat == self.Categories.ASSOC_REQUEST:
                         self._msgcateg = self.Categories.ASSOC_ANSWER
-            # XXX should we check the Hello case? Not sure it is useful
 
         # If we get here without finding a category, it is a regular message
         if self._msgcateg == self.Categories.UNKNOWN:
@@ -616,10 +619,10 @@ class Msg (object):
 
     def add_path_ctrl (self):
         """
-        Adds casan_namespace members to message as URI_PATH options.
+        Adds namespace members to message as URI_PATH options.
         """
         up = option.Option.Codes.URI_PATH
-        for n in casan_namespace:
+        for n in NAMESPACE:
             self.optlist.append (option.Option (up, optval=n))
 
     def mk_assoc (self, l2n, addr, ttl, mtu):

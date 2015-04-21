@@ -52,15 +52,11 @@ class Engine (object):
         self._slaves = []           # slave list
         self._deduplist = []        # list of received messages
 
-#        self.timer_slave_ttl = 0
-
     def __str__(self):
         """
         Dump the current engine state into a string
         """
-        s = ''
-        #### s += 'Default TTL = ' + str (self.timer_slave_ttl) + '\n'
-        s += 'Slaves:\n'
+        s = 'Slaves:\n'
         for sl in self._slaves:
             s += '\t' + str (sl) + '\n'
         return s
@@ -69,9 +65,7 @@ class Engine (object):
         """
         Dump the current engine state into an HTML string
         """
-        s = ''
-        #### s += 'Default TTL = ' + str (self.timer_slave_ttl) + '\n'
-        s += 'Slaves: <ul>'
+        s = 'Slaves: <ul>'
         for sl in self._slaves:
             s += '<li>' + sl.html () + '</li>'
         s += '</ul>'
@@ -330,7 +324,6 @@ class Engine (object):
         else:
             print ('Duplicate message : id=' + str (omsg.mid))
             if omsg.req_rep is not None:
-                # XXX HOW TO RESEND A MSG?
                 omsg.req_rep.send ()
 
         return omsg
