@@ -5,6 +5,8 @@ This module contains the Slave class
 import datetime
 import re
 
+import asyncio
+
 import msg
 import resource
 
@@ -21,7 +23,7 @@ class Slave (object):
         RUNNING = 1
 
     # XXX
-    def __init__(self, sid, ttl, mtu):
+    def __init__(self, loop, sid, ttl, mtu):
         """
         Default constructor
         """
@@ -36,10 +38,11 @@ class Slave (object):
         self.addr = None                    # Address
         self.status = self.Status.INACTIVE  # Current status
         self.reslist = []                   # Resource list
-        self.next_timeout = datetime.datetime.now ()
 
         # Private attributes
         self._disc_curmtu = 0               # Advertised by slave (Discov msg)
+        self._loop = loop                   # Asyncio loop
+        self._timeout = None                # Association timeout
 
     def __str__(self):
         """
@@ -51,7 +54,7 @@ class Slave (object):
             l2 = 'INACTIVE'
         elif self.status == self.Status.RUNNING:
             l2 = 'RUNNING (curmtu=' + str (self.curmtu)
-            l2 += ', ttl= ' + self.next_timeout.isoformat () + ')'
+            l2 += ', ttl= ' + self._timeout.isoformat () + ')'
         else:
             l2 = '(unknown state)'
         l3 = ' mac=' + str (self.addr) + '\n'
@@ -70,7 +73,7 @@ class Slave (object):
             l2 = '<b>inactive</b>'
         elif self.status == self.Status.RUNNING:
             l2 = '<b>running</b> (curmtu=' + str (self.curmtu)
-            l2 += ', ttl= ' + self.next_timeout.isoformat () + ')'
+            l2 += ', ttl= ' + self._timeout.isoformat () + ')'
         else:
             l2 = '<b>(unknown state)</>'
         l3 = ' mac=' + str (self.addr) + '\n'
@@ -90,7 +93,7 @@ class Slave (object):
         self.reslist.clear ()
         self.curmtu = 0
         self.status = self.Status.INACTIVE
-        self.next_timeout = datetime.datetime.now ()
+        self._timeout = None
         print ('Slave' + str (self.sid) + ' status set to INACTIVE.')
 
     ##########################################################################
@@ -152,9 +155,15 @@ class Slave (object):
                     self.curmtu = self._disc_curmtu
                     self.status = self.Status.RUNNING
 
-                    # XXX TIMEOUT
-                    self.next_timeout = datetime.datetime.now () + datetime.timedelta (seconds=self.ttl)
+                    #
+                    # Association timer: arrange for _slave_timeout ()
+                    # to be called when the timer will expire
+                    #
+                    now = datetime.datetime.now ()
+                    self._timeout = now + datetime.timedelta (seconds=self.ttl)
+                    self._loop.call_later (self.ttl, self._slave_timeout)
                     print ('Slave ' + str (self.sid) + ' status set to RUNNING')
+
                 else:
                     print ('Slave ' + str (self.sid) + ' cannot parse resource list.')
 
@@ -163,6 +172,22 @@ class Slave (object):
 
         else:
             print ('Received an unrecognized message')
+
+    ##########################################################################
+    # Association timeout
+    ##########################################################################
+
+    def _slave_timeout (self):
+        """
+        Process the association timeout for the slave. Called by
+        asyncio loop when the timer expires. If the slave has
+        re-associated more recently, the current timeout value
+        is updated, and this call will be ignored.
+        """
+        if self.status == self.Status.RUNNING and self._timeout is not None:
+            now = datetime.datetime.now ()
+            if now >= self._timeout:
+                self.reset ()
 
     ##########################################################################
     # Management of resources advertised by the slave

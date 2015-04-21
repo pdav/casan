@@ -97,7 +97,7 @@ class Engine (object):
         #
 
         for (sid, ttl, mtu) in self._conf.slaves:
-            self._slaves.append (slave.Slave (sid, ttl, mtu))
+            self._slaves.append (slave.Slave (loop, sid, ttl, mtu))
 
         #
         # Configure L2 networks
@@ -328,7 +328,7 @@ class Engine (object):
             m.refresh_expiration ()
             self._deduplist.append (m)
         else:
-            print ('Duplicate message : id=' + omsg.mid)
+            print ('Duplicate message : id=' + str (omsg.mid))
             if omsg.req_rep is not None:
                 # XXX HOW TO RESEND A MSG?
                 omsg.req_rep.send ()
