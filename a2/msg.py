@@ -91,7 +91,7 @@ class Msg (object):
     gmid = random.randrange (0xffff)
 
     # XXX
-    def __init__(self):
+    def __init__ (self):
         """
         Initialize instance attributes.
         """
@@ -116,13 +116,13 @@ class Msg (object):
         self._ntrans = 0                    # Number of retransmissions
         self._timeout = None                # Time to next retransmission
 
-    def __eq__(self, other):
+    def __eq__ (self, other):
         """
         Equality test operator. Valid for received messages only.
         """
         return self.bmsg == other.bmsg
 
-    def __str__(self):
+    def __str__ (self):
         """
         Cast to string, allows printing of packet data.
         """
@@ -133,6 +133,19 @@ class Msg (object):
                 + ', timeout=' + str (self._timeout)
                 + ', expire=' + str (self.expire - datetime.datetime.now ())
                 + '>'
+               )
+
+    def html (self):
+        """
+        Make an HTML string
+        """
+        return ('mid=' + str (self.mid)
+                + ', token=' + str (len (self.token))
+                + ', payload=' + str (len (self.payload))
+                + ', ntrans=' + str (self._ntrans)
+                + ', timeout=' + str (self._timeout)
+                + ', expire=' + str (self.expire - datetime.datetime.now ())
+                + ''
                )
 
     ##########################################################################
@@ -356,6 +369,11 @@ class Msg (object):
 
         self._ntrans = 0
 
+
+    ##########################################################################
+    # Cache control
+    ##########################################################################
+
     def max_age (self):
         """
         Look for the option Max-Age in the option list and
@@ -367,37 +385,56 @@ class Msg (object):
                 return o.optval
         return None
 
-    def cache_match (self, other):
+    def cache_match (self, m):
         """
-        Checs if two messages match for caching.
+        Check if two messages match for caching.
         See CoAP spec (5.6)
-        :param other: the other message
-        :type  other: class Msg
+        :param m: the other message
+        :type  m: class Msg
         :return: True or False
         """
 
-        if self.msgtype != other.msgtype:
+        if self.msgtype != m.msgtype:
             return False
 
         # Sort both option lists
         self.optlist.sort ()
-        other.optlist.sort ()
+        m.optlist.sort ()
 
         i, j = 0, 0
-        imax, jmax = len (self.optlist) - 1, len (other.optlist) - 1
-        while self.optlist [i].is_nocachekey () and i <= imax:
-            i += 1
-        while other.optlist [j].is_nocachekey () and j <= jmax:
-            j += 1
-        while True:
-            if j == jmax and i == imax:   # Both at the end => success!
-                return True
-            elif j == jmax or i == imax:  # One at the end => failure
-                return False
-            elif self.optlist [i] == other.optlist [j]:
-                i, j = i + 1, j + 1
-            else:                         # No match => failure
-                return False
+        imax, jmax = len (self.optlist) - 1, len (m.optlist) - 1
+        r = True
+        finished = False
+        while not finished:
+            # Skip the NoCacheKey options
+            while self.optlist [i].is_nocachekey () and i <= imax:
+                i += 1
+            while m.optlist [j].is_nocachekey () and j <= jmax:
+                j += 1
+
+            # Stop if end of an optlist has been found
+            if j == jmax and i == imax:
+                # Both at the end: success!
+                r = True
+                finished = True
+            elif j == jmax or i == imax:
+                # Only one at the end: failure
+                r = False
+                finished = True
+            elif self.optlist [i] == m.optlist [j]:
+                # Match: continue
+                i += 1
+                j += 1
+            else:
+                # No match: failure
+                r = False
+                finished = True
+
+        return r
+
+    ##########################################################################
+    # Link between requests and replies
+    ##########################################################################
 
     def link_req_rep (self, m):
         """

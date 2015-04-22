@@ -76,7 +76,7 @@ class Engine (object):
         Initialize the engine
         :param conf: parsed configuration
         :type  conf: class conf.Conf
-        :param loop: main event loop (as returned by asyncio.get_evnt_loop)
+        :param loop: main event loop (as returned by asyncio.get_event_loop)
         :type  loop: class asyncio.EventLoop XXX
         """
 

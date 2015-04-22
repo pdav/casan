@@ -14,8 +14,8 @@ import aiohttp
 import aiohttp.web
 
 import engine
+import cache
 import slave
-
 import msg
 import option
 
@@ -64,6 +64,12 @@ class Master (object):
                 raise RuntimeError ('Unknown configured namespace ' + ns)
 
         loop = asyncio.get_event_loop ()
+
+        #
+        # Initialize cache
+        #
+
+        self._cache = cache.Cache (loop, self._conf.timers ['cacheclean'])
 
         #
         # Start HTTP servers
@@ -121,6 +127,7 @@ class Master (object):
                             <li><a href="conf">configuration</a></li>
                             <li><a href="run">running status</a></li>
                             <li><a href="slave">slave status</a></li>
+                            <li><a href="cache">message cache contents</a></li>
                         </ul>
                     </body></html>"""
 
@@ -135,7 +142,15 @@ class Master (object):
                         <h1>Current CASAN status</h1>
                         """
             r += self._engine.html ()
-            r += '</pre></body></html>'
+            r += '</body></html>'
+
+        elif name == 'cache':
+            r = """<html><title>Cache contents</title>
+                    <body>
+                        <h1>CASAN cache contents</h1>
+                        """
+            r += self._cache.html ()
+            r += '</body></html>'
 
         elif name == 'slave':
             r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
@@ -201,16 +216,28 @@ class Master (object):
             mreq.optlist.append (option.Option (up, optval=p))
 
         #
-        # Send request and wait for a result
+        # Is the request already present in the cache?
         #
 
-        mrep = yield from mreq.send_request ()
+        mc = self._cache.get (mreq)
+        if mc is not None:
+            # Request found in the cache
+            mreq = mc
+            mrep = mc.req_rep
 
-        if mrep is not None:
-            # Python black magic: aiohttp.web.Response expects a
-            # bytes argument, but mrep.payload is a bytearray
-            pl = mrep.payload.decode ().encode ()
-            r = aiohttp.web.Response (body=pl)
         else:
-            r = aiohttp.web.Response (body=b"TIMEOUT")
+            # Request not found in the cache: send it and wait for a result
+            mrep = yield from mreq.send_request ()
+
+            if mrep is not None:
+                # Add the request (and the linked answer) to the cache
+                self._cache.add (mreq)
+            else:
+                return aiohttp.web.Response (body=b"TIMEOUT")
+
+        # Python black magic: aiohttp.web.Response expects a
+        # bytes argument, but mrep.payload is a bytearray
+        pl = mrep.payload.decode ().encode ()
+        r = aiohttp.web.Response (body=pl)
+
         return r

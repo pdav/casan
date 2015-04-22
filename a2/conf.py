@@ -24,6 +24,7 @@ class Conf (object):
         'firsthello': '3',
         'hello': '10',
         'slavettl': '3600',
+        'cacheclean': '3600',
         'port:http': '80',
         'port:https': '443',
         'sslcert': '',
@@ -98,9 +99,10 @@ class Conf (object):
         - firsthello: time before first hello is sent (in sec)
         - hello: time between hello packets (in sec)
         - slavettl: default slave TTL (in sec)
+        - cacheclean: default cache cleanup interval (in sec)
         """
 
-        for k in ['firsthello', 'hello', 'slavettl']:
+        for k in ['firsthello', 'hello', 'slavettl', 'cacheclean']:
             v = self._getdefault (sectab, k, k, None)
             self.timers [k] = int (v, 0)
 
