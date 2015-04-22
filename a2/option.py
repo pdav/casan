@@ -53,6 +53,7 @@ class Option (object):
         Codes.SIZE1: ('uint', 0, 4),
     }
 
+    # pylint: disable=too-many-branches
     def __init__(self, optcode, optval=None, optbin=None):
         """
         Default constructor for the option class.
@@ -126,13 +127,13 @@ class Option (object):
         Equality test operator
 
         """
-        return (self.optcode == other.optcode and self.optval == other.optval)
+        return self.optcode == other.optcode and self.optval == other.optval
 
     def __ne__(self, other):
         """
         Difference test operator
         """
-        return (self.optcode != other.optcode or self.optbin != other.optbin)
+        return self.optcode != other.optcode or self.optbin != other.optbin
 
     def len (self):
         """

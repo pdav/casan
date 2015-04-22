@@ -5,6 +5,7 @@ This module contains the L2addr and L2net classes for Ethernet networking
 import socket
 
 
+# pylint: disable=invalid-name, too-few-public-methods
 class L2addr_eth (object):
     """
     This class represents an Ethernet network address.
@@ -54,6 +55,7 @@ class L2addr_eth (object):
         return ':'.join (rep)
 
 
+# pylint: disable=invalid-name, too-few-public-methods
 class L2net_eth (object):
     """
     This class represents a L2 Ethernet network connection.

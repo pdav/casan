@@ -24,6 +24,7 @@ MAX_XMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
 PROCESSING_DELAY = ACK_TIMEOUT
 
 
+# pylint: too-many-instance-attributes
 class Msg (object):
     """
     An object of class Msg represents a message, either received
@@ -192,6 +193,7 @@ class Msg (object):
 
         return True
 
+    # pylint: disable=too-many-branches
     def coap_decode (self):
         """
         Decode a received message according to the CoAP spec
@@ -267,6 +269,7 @@ class Msg (object):
 
         return success
 
+    # pylint: disable=too-many-statements,too-many-branches
     def coap_encode (self):
         """
         Encode a message according to CoAP spec

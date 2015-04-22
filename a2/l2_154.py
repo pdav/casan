@@ -9,6 +9,7 @@ import termios
 import time
 
 
+# pylint: disable=invalid-name, too-few-public-methods
 class L2addr_154 (object):
     """
     This class represents a 802.15.4 network address.
@@ -57,6 +58,7 @@ class L2addr_154 (object):
         return ':'.join (rep)
 
 
+# pylint: disable=invalid-name, too-many-instance-attributes
 class L2net_154 (object):
     """
     This class represents a L2 802.15.4 network connection.
@@ -199,6 +201,7 @@ class L2net_154 (object):
 
         return True
 
+    # pylint: disable=too-many-arguments
     def init (self, iface, stype, mtu, addr, panid, channel, asyncio=False):
         """
         Initialize a L2net_154 object, opens and sets up the network interface

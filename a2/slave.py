@@ -9,6 +9,7 @@ import msg
 import resource
 
 
+# pylint: disable=too-many-instance-attributes
 class Slave (object):
     """
     This class describes a slave in the CASAN system.

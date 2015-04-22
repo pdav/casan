@@ -71,6 +71,7 @@ class Engine (object):
         s += '</ul>'
         return s
 
+    # pylint: disable=too-many-locals
     def start (self, conf, loop):
         """
         Initialize the engine
@@ -328,6 +329,7 @@ class Engine (object):
 
         return omsg
 
+    # pylint: disable=no-self-use
     def _correlate (self, m):
         """
         Check if a received message is an answer to a sent request
