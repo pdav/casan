@@ -33,6 +33,7 @@ class Master (object):
         """
         self._conf = conf
         self._engine = None
+        self._cache = None
 
     ######################################################################
     # Initialization

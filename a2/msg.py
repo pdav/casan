@@ -369,7 +369,6 @@ class Msg (object):
 
         self._ntrans = 0
 
-
     ##########################################################################
     # Cache control
     ##########################################################################
@@ -607,7 +606,7 @@ class Msg (object):
                         sid = int (qval)
                     except ValueError:
                         r = False
-                elif o.optval.startswith ('mtu='):
+                elif qname == 'mtu':
                     try:
                         mtu = int (qval)
                     except ValueError:
@@ -615,7 +614,7 @@ class Msg (object):
                 else:
                     # Unrecognized query string ('???=')
                     r = False
-                if r == False:
+                if r is False:
                     break
         if not r or sid == 0 or mtu == 0:
             return None

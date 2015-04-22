@@ -4,8 +4,6 @@ This module contains the cache related functionality of CASAN.
 
 import datetime
 
-import option
-
 
 class Cache (object):
     """
@@ -29,7 +27,7 @@ class Cache (object):
         """
 
         return '\n'.join (['<' + str (e) + ', ' + str (m) + '>'
-                                      for (e, m) in self._entries])
+                           for (e, m) in self._entries])
 
     def html (self):
         """
