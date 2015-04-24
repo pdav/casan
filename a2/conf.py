@@ -7,6 +7,8 @@ import urllib.parse
 import io
 import html
 
+from debug import d
+
 
 class Conf (object):
     """
@@ -71,6 +73,7 @@ class Conf (object):
         :type  filename: str
         """
 
+        d.m ('conf', 'Parsing configuration file {}'.format (filename))
         self._config = configparser.ConfigParser ()
         if not self._config.read (filename):
             raise RuntimeError ('Cannot read ' + filename)

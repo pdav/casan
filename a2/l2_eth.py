@@ -175,7 +175,8 @@ class L2net_eth (object):
                  packet-dest = 'me' or 'bcast'
         """
         (data, addr) = self._fd.recvfrom (self.READ_MAX)
-        (iface, ethtype, pktype, hatype, haaddr) = addr
+        # (iface, ethtype, pktype, hatype, haaddr) = addr
+        (_, _, pktype, _, haaddr) = addr
 
         if pktype == socket.PACKET_HOST:
             ptype = 'me'

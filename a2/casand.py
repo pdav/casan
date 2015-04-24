@@ -11,6 +11,7 @@ assert sys.version >= '3.4', 'Please use Python 3.4 or higher.'
 
 import conf
 import master
+from debug import d
 
 
 def run ():
@@ -23,12 +24,25 @@ def run ():
     # Parse arguments
     #
 
+    mcat = '|'.join (d.all_categories ())
     parser = argparse.ArgumentParser (description='CASAN master')
-    parser.add_argument ('-d', '--debug', default=None,
-                         help='Set debugging level', metavar='[[+|-]spec]...]')
+    parser.add_argument ('-l', '--log-file', action='store',
+                         help='Log file or -', metavar='logfile')
+    parser.add_argument ('-d', '--debug', action='append', default=[],
+                         help='Set debug modules', metavar=mcat)
     parser.add_argument ('-c', '--config', default='./casand.conf',
-                         help='Set debugging level', metavar='file')
+                         help='Set config file', metavar='file')
     args = parser.parse_args()
+
+    #
+    # Set debug level
+    #
+
+    d.set_file (args.log_file)
+    if args.debug is not []:
+        for c in args.debug:
+            d.add_category (c)
+    d.start ()
 
     #
     # Parse the configuration file

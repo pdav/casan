@@ -24,6 +24,7 @@ import l2_eth
 import l2_154
 import msg
 import slave
+from debug import d
 
 
 # Seed the RNG
@@ -182,7 +183,7 @@ class Engine (object):
         if not m.recv (l2n):
             return
 
-        # print (str(msg))
+        d.m ('msg', 'Received message {}'.format (m))
 
         m.refresh_expiration ()
 
@@ -193,10 +194,10 @@ class Engine (object):
         # or a slave, cited in the configuration file, trying to associate
         sl = self._find_peer (m)
         if not sl:
-            print ('Warning : sender ' + str (m.peer) + ' not authorized')
+            d.m ('slave', 'Sender {} not authorized'.format (m.peer))
             return
 
-        #D print ('SL found = ', str (sl))
+        d.m ('msg', 'Message is for slave {}'.format (sl))
 
         #
         # Is the received message a reply to pending request?
@@ -236,10 +237,10 @@ class Engine (object):
         # Process the received message
         cat = m.category ()
         if cat != m.Categories.NONE:
-            #D print ('cat=', cat, ', SL=', str (sl))
+            d.m ('msg', 'Control message ({})'.format (cat))
             sl.process_casan (m)
         else:
-            print ('Ignored message ' + str (m))
+            d.m ('msg', 'Message ignored')
 
         return
 
@@ -314,16 +315,16 @@ class Engine (object):
             return None
 
         omsg = None
-        for d in self._deduplist:
-            if m == d:
-                omsg = d
+        for dm in self._deduplist:
+            if m == dm:
+                omsg = dm
                 break
 
         if omsg is None:
             m.refresh_expiration ()
             self._deduplist.append (m)
         else:
-            print ('Duplicate message : id=' + str (omsg.mid))
+            d.m ('msg', 'Duplicate message: {}'.format (omsg))
             if omsg.req_rep is not None:
                 omsg.req_rep.send ()
 
@@ -343,7 +344,7 @@ class Engine (object):
             i = m.mid
             for mreq in m.l2n.sentlist:
                 if mreq.mid == i:
-                    print ('Found original request for ID=' + str (i))
+                    d.m ('msg', 'Found original request for {}'.format (mreq))
                     r = mreq
                     break
         return r

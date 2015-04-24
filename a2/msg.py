@@ -9,6 +9,7 @@ import sys
 import asyncio
 
 import option
+from debug import d
 
 # CASAN related constants
 CASAN_VERSION = 1
@@ -24,7 +25,7 @@ MAX_XMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
 PROCESSING_DELAY = ACK_TIMEOUT
 
 
-# pylint: too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes
 class Msg (object):
     """
     An object of class Msg represents a message, either received
@@ -183,7 +184,7 @@ class Msg (object):
         if self.bmsg is None:
             self.coap_encode ()
 
-        print ('TRANSMIT id={}, ntrans={}'.format (self.mid, self._ntrans))
+        d.m ('msg', 'Send {}'.format (self))
         if not self.l2n.send (self.peer, self.bmsg):
             sys.stderr.write ('Error during packet transmission.\n')
             return False
@@ -249,11 +250,12 @@ class Msg (object):
 
             if success:
                 if optnb in option.Option.optdesc:
-                    #D print ('OPT o=' + str (optnb) + ', len=' + str (optlen))
+                    d.m ('opt', 'Decoding opt o={}, len={}'.format (optnb,
+                                                                    optlen))
                     o = option.Option (optnb, optbin=self.bmsg [i:i + optlen])
                     self.optlist.append (o)
                 else:
-                    print ('Unknown option code: ' + str (optnb))
+                    print ('Unknown option code: {}'.format (optnb))
                     # we continue decoding, through
 
             i += optlen
@@ -530,10 +532,9 @@ class Msg (object):
                         asyncio.wait_for (self._wait_for_reply (), t))
                     t = None
                 except asyncio.TimeoutError:
-                    print ('Resend msgid=', self.mid)
                     self.send ()
                     t = self._next_timeout ()
-                    print ('TIMEOUT=', t)
+                    d.m ('msg', 'Resend message {}, next={}'.format (self, t))
 
         return self.req_rep
 
@@ -545,7 +546,7 @@ class Msg (object):
         """
 
         yield from self._event.wait ()
-        #D print ('Awaken, msgid =', self.mid)
+        d.m ('msg', 'Awaken msgid={}'.format (self.mid))
 
     def got_reply (self, rep):
         """
@@ -583,7 +584,6 @@ class Msg (object):
                 i += 1
         if r and (i != nslen):
             r = False
-        #D print ('It\'s ' + ('' if r else 'not ') + 'a control message.')
         return r
 
     def is_casan_discover (self):
@@ -603,7 +603,7 @@ class Msg (object):
         (sid, mtu) = (0, 0)
         for o in self.optlist:
             if o.optcode == option.Option.Codes.URI_QUERY:
-                (qname, sep, qval) = o.optval.partition ('=')
+                (qname, _, qval) = o.optval.partition ('=')
                 if qname == 'slave':
                     try:
                         sid = int (qval)
@@ -721,13 +721,13 @@ class Msg (object):
 
         now = datetime.datetime.now ()
         if self.msgtype == Msg.Types.CON:
-            d = self._exchange_lifetime ()
-            self.expire = now + datetime.timedelta (seconds=d)
+            s = self._exchange_lifetime ()
+            self.expire = now + datetime.timedelta (seconds=s)
         elif self.msgtype == Msg.Types.NON:
             self.expire = now
         elif self.msgtype in [Msg.Types.ACK, Msg.Types.RST]:
-            d = self._max_rtt ()
-            self.expire = now + datetime.timedelta (seconds=d)
+            s = self._max_rtt ()
+            self.expire = now + datetime.timedelta (seconds=s)
         else:
             self.expire = now
 

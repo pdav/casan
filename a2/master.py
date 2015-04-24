@@ -19,6 +19,8 @@ import slave
 import msg
 import option
 
+from debug import d
+
 
 class Master (object):
     """
@@ -94,7 +96,7 @@ class Master (object):
         self._engine = engine.Engine ()
         self._engine.start (self._conf, loop)
 
-        print ('Server ready')
+        d.m ('master', 'Server ready')
 
         #
         # Main loop
@@ -103,6 +105,7 @@ class Master (object):
         try:
             loop.run_forever ()
         except KeyboardInterrupt:
+            d.m ('master', 'Interrupt')
             raise
 
     ######################################################################
@@ -118,6 +121,7 @@ class Master (object):
         :rtype: aiohttp.web.Response object
         """
 
+        d.m ('http', 'HTTP admin request {}'.format (request))
         name = request.match_info ['name']
 
         if name == 'index':
@@ -169,6 +173,7 @@ class Master (object):
         :return: HTTP response
         :rtype: aiohttp.web.Response object
         """
+        d.m ('http', 'HTTP well-known request {}'.format (request))
         rl = self._engine.resource_list ().encode ()
         return aiohttp.web.Response (body=rl)
 
@@ -182,6 +187,7 @@ class Master (object):
         :rtype: aiohttp.web.Response object
         """
 
+        d.m ('http', 'HTTP casan request {}'.format (request))
         name = request.match_info ['name']
         vpath = name.split ('/')
 

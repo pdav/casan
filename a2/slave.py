@@ -7,6 +7,7 @@ import re
 
 import msg
 import resource
+from debug import d
 
 
 # pylint: disable=too-many-instance-attributes
@@ -92,7 +93,7 @@ class Slave (object):
         self.curmtu = 0
         self.status = self.Status.INACTIVE
         self._timeout = None
-        print ('Slave' + str (self.sid) + ' status set to INACTIVE.')
+        d.m ('slave', 'Slave {}: status set to INACTIVE'.format (self.sid))
 
     ##########################################################################
     # Initialize values from a Discover message
@@ -108,9 +109,8 @@ class Slave (object):
         """
 
         if self.addr is not None and self.addr != addr:
-            print ('Discover from slave ' + str (self.sid)
-                   + ': address move from ' + str (self.addr)
-                   + ' to ' + str (addr))
+            d.m ('slave', 'Discover from slave {}: address move from '
+                          '{} to {}'.format (self.sid, self.addr, addr))
 
         if self.addr is None:
             self.addr = addr
@@ -135,20 +135,20 @@ class Slave (object):
         cat = m.category ()
         if cat == msg.Msg.Categories.DISCOVER:
             # XXX one more call to is_casan_discover
-            (sid, mtu) = m.is_casan_discover ()
+            (_, mtu) = m.is_casan_discover ()
             self.reset_discover (m.l2n, m.peer, mtu)
             massoc = msg.Msg ()
             massoc.mk_assoc (m.l2n, m.peer, self.ttl, self._disc_curmtu)
             r = massoc.send ()
             if not r:
-                print ('Error while sending AssocRequest message')
+                d.m ('slave', 'Error while sending AssocRequest message')
 
         elif cat == msg.Msg.Categories.ASSOC_REQUEST:
-            print ('Received AssocRequest from another master')
+            d.m ('slave', 'Received AssocRequest from another master')
 
         elif cat == msg.Msg.Categories.ASSOC_ANSWER:
             if m.req_rep is not None:
-                print ('Received AssocAnswer for slave.')
+                d.m ('slave', 'Received AssocAnswer for slave.')
                 if self.parse_resource_list (m.payload):
                     # XXX check address or L2 move
                     self.addr = m.peer
@@ -163,16 +163,18 @@ class Slave (object):
                     now = datetime.datetime.now ()
                     self._timeout = now + datetime.timedelta (seconds=self.ttl)
                     self._loop.call_later (self.ttl, self._slave_timeout)
-                    print ('Slave ' + str (self.sid) + ' status set to RUNNING')
+                    d.m ('slave', 'Slave {}: status set to '
+                                  'RUNNING'.format (self.sid))
 
                 else:
-                    print ('Slave ' + str (self.sid) + ' cannot parse resource list.')
+                    d.m ('slave', 'Slave {}: cannot parse '
+                                  'resource list'.format (self.sid))
 
         elif cat == msg.Msg.Categories.HELLO:
-            print ('Received HELLO from another master')
+            d.m ('slave', 'Received Hello from another master')
 
         else:
-            print ('Received an unrecognized message')
+            d.m ('slave', 'Received an unrecognized message')
 
     ##########################################################################
     # Association timeout
