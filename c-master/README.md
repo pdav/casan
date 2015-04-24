@@ -1,5 +1,5 @@
-CASAN master control program
-============================
+CASAN master control program (C++ version)
+==========================================
 
 This directory contains the source code of the master control program.
 
