@@ -3740,13 +3740,19 @@ dtls_context_t *
 dtls_new_context(void *app_data) {
     dtls_context_t *c;
     dtls_tick_t now;
-#ifndef WITH_CONTIKI
+
+#ifdef WITH_CONTIKI
+#elif defined WITH_ARDUINO
+#else
     FILE *urandom = fopen("/dev/urandom", "r");
     unsigned char buf[sizeof(unsigned long)];
 #endif /* WITH_CONTIKI */
 
     dtls_ticks(&now);
 #ifdef WITH_CONTIKI
+    /* FIXME: need something better to init PRNG here */
+    dtls_prng_init(now);
+#elif defined WITH_ARDUINO
     /* FIXME: need something better to init PRNG here */
     dtls_prng_init(now);
 #else /* WITH_CONTIKI */
@@ -3806,7 +3812,12 @@ dtls_free_context(dtls_context_t *ctx) {
         return;
     }
 
-#ifndef WITH_CONTIKI
+#ifdef WITH_CONTIKI
+    for (p = list_head(ctx->peers); p; p = list_item_next(p))
+        dtls_destroy_peer(ctx, p, 1);
+#elif defined WITH_ARDUINO
+    // TODO vérifier que nous devons bien se baser sur ce bout de code-ci
+    // et pas sur le code de CONTIKI
     dtls_peer_t *tmp;
 
     if (ctx->peers) {
@@ -3815,8 +3826,13 @@ dtls_free_context(dtls_context_t *ctx) {
         }
     }
 #else /* WITH_CONTIKI */
-    for (p = list_head(ctx->peers); p; p = list_item_next(p))
-        dtls_destroy_peer(ctx, p, 1);
+    dtls_peer_t *tmp;
+
+    if (ctx->peers) {
+        HASH_ITER(hh, ctx->peers, p, tmp) {
+            dtls_destroy_peer(ctx, p, 1);
+        }
+    }
 #endif /* WITH_CONTIKI */
 
     free_context(ctx);
