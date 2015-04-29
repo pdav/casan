@@ -27,7 +27,7 @@ USER_LIB_PATH		= $(realpath ../../libraries)
 
 include $(ARDMK_DIR)/Arduino.mk
 
-CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DBLEVEL)
+CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DBLEVEL) -Wall
 
 test : all upload monitor
 
