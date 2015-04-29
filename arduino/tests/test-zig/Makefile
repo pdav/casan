@@ -18,8 +18,6 @@ BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 MONITOR_PORT		?= /dev/ttyUSB0
 ARDUINO_LIBS		= ZigMsg Dtls
-#ARDUINO_LIBS		= ZigMsg Test
-#ARDUINO_LIBS		= ZigMsg TinyDtls
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 
@@ -27,7 +25,7 @@ USER_LIB_PATH		= $(realpath ../../libraries)
 
 include $(ARDMK_DIR)/Arduino.mk
 
-CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DBLEVEL) -Wall
+CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DBLEVEL)
 
 test : all upload monitor
 
