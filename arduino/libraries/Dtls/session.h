@@ -34,6 +34,7 @@
 #include "types.h"
 
 #ifdef WITH_CONTIKI
+#error "Can't be compiled for our purpose with this"
 #include "ip/uip.h"
 typedef struct {
   unsigned char size;
@@ -46,11 +47,12 @@ typedef struct {
 
 typedef struct {
   size_t size;
-  u_int8_t addr;
+  u_int16_t addr;
   u_int8_t ifindex;
 } session_t;
 
 #else /* WITH_CONTIKI */
+#error "Can't be compiled for our purpose with this"
 
 // TODO : remplacer ça
 #include <sys/socket.h>
