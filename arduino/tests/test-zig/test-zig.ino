@@ -9,202 +9,20 @@
 #define	SENDADDR	CONST16 (0x12, 0x34)
 #define	RECVADDR	CONST16 (0x45, 0x67)
 
+#define	CURRENT_ADDRESS SENDADDR
+
+#if CURRENT_ADDRESS == SENDADDR
+#define	OTHER_ADDRESS RECVADDR
+#else
+#define	OTHER_ADDRESS SENDADDR
+#endif
+
 #define	MSGBUF_SIZE	100
 
 
 #define	PERIODIC	100000
 
 int channel = CHANNEL ;
-
-/* This function is the "key store" for tinyDTLS. It is called to
- * retrieve a key for the given identity within this particular
- * session. */
-static int
-get_psk_info(struct dtls_context_t *ctx, const session_t *session,
-        dtls_credentials_type_t type,
-        const unsigned char *id, size_t id_len,
-        unsigned char *result, size_t result_length) {
-
-    struct keymap_t {
-        unsigned char *id;
-        size_t id_length;
-        unsigned char *key;
-        size_t key_length;
-    } psk[3] = {
-        { (unsigned char *)"Client_identity", 15,
-            (unsigned char *)"secretPSK", 9 },
-        { (unsigned char *)"default identity", 16,
-            (unsigned char *)"\x11\x22\x33", 3 },
-        { (unsigned char *)"\0", 2,
-            (unsigned char *)"", 1 }
-    };
-
-    if (type != DTLS_PSK_KEY) {
-        return 0;
-    }
-
-    if (id) {
-        unsigned int i;
-        for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
-            if (id_len == psk[i].id_length && 
-                    memcmp(id, psk[i].id, id_len) == 0) {
-                if (result_length < psk[i].key_length) {
-                    //dtls_warn("buffer too small for PSK");
-                    Serial.println("buffer too small for PSK");
-                    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-                }
-
-                memcpy(result, psk[i].key, psk[i].key_length);
-                return psk[i].key_length;
-            }
-        }
-    }
-
-    return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
-}
-
-#define DTLS_SERVER_CMD_CLOSE "server:close"
-#define DTLS_SERVER_CMD_RENEGOTIATE "server:renegotiate"
-
-static int
-read_from_peer_server(struct dtls_context_t *ctx, 
-        session_t *session, uint8 *data, size_t len) {
-
-    //bool casan_decode(0);
-
-    ZigMsg::ZigReceivedFrame *z ;
-
-    while ((z = zigmsg.get_received ()) != NULL)
-    {
-        Serial.println("Message received !");
-        //print_frame (z, casan_decode) ;
-        zigmsg.skip_received () ;
-    }
-
-    size_t i;
-    for (i = 0; i < len; i++)
-        Serial.print(data[i]);
-
-    if (len >= strlen(DTLS_SERVER_CMD_CLOSE) &&
-            !memcmp(data
-                , DTLS_SERVER_CMD_CLOSE
-                , strlen(DTLS_SERVER_CMD_CLOSE))) {
-        Serial.println("server: closing connection");
-        dtls_close(ctx, session);
-        return len;
-
-    } else if (len >= strlen(DTLS_SERVER_CMD_RENEGOTIATE) &&
-            !memcmp(data, DTLS_SERVER_CMD_RENEGOTIATE, strlen(DTLS_SERVER_CMD_RENEGOTIATE))) {
-        Serial.println("server: renegotiate connection");
-        dtls_renegotiate(ctx, session);
-        return len;
-    }
-
-    return dtls_write(ctx, session, data, len);
-}
-
-// TODO : faire en sorte d'envoyer des messages à session->addr qui 
-// indiquera l'adresse
-static int
-send_to_peer_client(struct dtls_context_t *ctx, 
-        session_t *session, uint8 *data, size_t len) {
-
-//    int fd = *(int *)dtls_get_app_data(ctx);
-//        zigmsg.sendto(fd, data, len, MSG_DONTWAIT,
-//                &session->addr.sa, session->size);
-
-    return zigmsg.sendto(RECVADDR, len, data);
-}
-
-static int
-send_to_peer_server(struct dtls_context_t *ctx, 
-        session_t *session, uint8 *data, size_t len) {
-
-    return zigmsg.sendto(SENDADDR, len, data);
-}
-
-static int
-dtls_handle_read(struct dtls_context_t *ctx) {
-
-    int *fd;
-    session_t session;
-    static uint8 buf[DTLS_MAX_BUF];
-    ZigMsg::ZigReceivedFrame *z ;
-
-    fd = (int *) dtls_get_app_data(ctx);
-
-    assert(fd);
-
-    //memset(&session, 0, sizeof(session_t));
-    //session.size = sizeof(session.addr);
-
-    while ((z = zigmsg.get_received ()) != NULL)
-    {
-        Serial.println("recv !");
-        //print_frame (z, casan_decode) ;
-        zigmsg.skip_received () ;
-    }
-
-    //len = recvfrom(*fd, buf, sizeof(buf), MSG_TRUNC,
-    //        &session.addr.sa, &session.size);
-
-    // TODO vérifier que le paquet est arrivé en bon état
-
-    //if (len < 0) {
-    //    Serial.print("errror:recvfrom");
-    //    return -1;
-    //} else {
-    //    dtls_debug("got %d bytes from port %d\n", len, 
-    //            ntohs(session.addr.sin6.sin6_port));
-    //    if (sizeof(buf) < len) {
-    //        //dtls_warn("packet was truncated (%d bytes lost)\n", len - sizeof(buf));
-    //        Serial.print("packet was truncated (");
-    //        Serial.print(len - sizeof(buf));
-    //        Serial.println("bytes lost)");
-    //    }
-    //}
-
-    int len = 0;
-
-    // TODO récupérer le buffer avec le contenu du paquet
-    return dtls_handle_message(ctx, &session, buf, len);
-}    
-
-static dtls_handler_t cb_server = {
-    .write = send_to_peer_server,
-    .read  = read_from_peer_server,
-    .event = NULL,
-    .get_psk_info = get_psk_info,
-};
-
-int 
-dtls_server_main(int argc, char **argv) {
-    dtls_context_t *the_context = NULL;
-    //log_t log_level = DTLS_LOG_WARN;
-    //fd_set rfds, wfds;
-    //struct timeval timeout;
-
-    int fd;
-
-    //dtls_set_log_level(log_level);
-
-    dtls_init();
-
-    the_context = dtls_new_context(&fd);
-
-    dtls_set_handler(the_context, &cb_server);
-
-    // lorsqu'on reçoit un message
-    dtls_handle_read(the_context);
-
-// if error:
-    dtls_free_context(the_context);
-    // exit
-
-    return 1;
-}
-
-// TODO check the code above
 
 /******************************************************************************
   Utilities
@@ -634,33 +452,151 @@ void do_send (void)
   DTLS server
  *******************************************************************************/
 
-size_t cb_send (void *data, size_t len)
-{
-    Serial.println((char*)data);
-    //ZigMsg * zm = &zigmsg;
+/* This function is the "key store" for tinyDTLS. It is called to
+ * retrieve a key for the given identity within this particular
+ * session. */
+static int
+get_psk_info(struct dtls_context_t *ctx, const session_t *session,
+        dtls_credentials_type_t type,
+        const unsigned char *id, size_t id_len,
+        unsigned char *result, size_t result_length) {
 
-    //if (zm->sendto (RECVADDR, len, (uint8_t *) data))
-    if (zigmsg.sendto (RECVADDR, len, (uint8_t *) data))
-        Serial.println ("Sent") ;
-    else
-        Serial.println ("Sent error") ;
+    struct keymap_t {
+        unsigned char *id;
+        size_t id_length;
+        unsigned char *key;
+        size_t key_length;
+    } psk[3] = {
+        { (unsigned char *)"Client_identity", 15,
+            (unsigned char *)"secretPSK", 9 },
+        { (unsigned char *)"default identity", 16,
+            (unsigned char *)"\x11\x22\x33", 3 },
+        { (unsigned char *)"\0", 2,
+            (unsigned char *)"", 1 }
+    };
 
-    return 0;
+    if (type != DTLS_PSK_KEY) {
+        return 0;
+    }
+
+    if (id) {
+        unsigned int i;
+        for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
+            if (id_len == psk[i].id_length && 
+                    memcmp(id, psk[i].id, id_len) == 0) {
+                if (result_length < psk[i].key_length) {
+                    //dtls_warn("buffer too small for PSK");
+                    Serial.println("buffer too small for PSK");
+                    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+                }
+
+                memcpy(result, psk[i].key, psk[i].key_length);
+                return psk[i].key_length;
+            }
+        }
+    }
+
+    return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
 }
 
-size_t cb_recv (void *data, size_t * len)
-{
-    Serial.println("On passe par là");
+#define DTLS_SERVER_CMD_CLOSE "server:close"
+#define DTLS_SERVER_CMD_RENEGOTIATE "server:renegotiate"
+
+dtls_context_t *the_context = NULL;
+
+static int
+read_from_peer_server(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len) {
+
+    //bool casan_decode(0);
+
     ZigMsg::ZigReceivedFrame *z ;
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
-        print_frame (z, false) ;
+        Serial.println("Message received !");
+        //print_frame (z, casan_decode) ;
         zigmsg.skip_received () ;
     }
 
-    return 0;
+    size_t i;
+    for (i = 0; i < len; i++)
+        Serial.print(data[i]);
+
+    if (len >= strlen(DTLS_SERVER_CMD_CLOSE) &&
+            !memcmp(data
+                , DTLS_SERVER_CMD_CLOSE
+                , strlen(DTLS_SERVER_CMD_CLOSE))) {
+        Serial.println("server: closing connection");
+        dtls_close(ctx, session);
+        return len;
+
+    } else if (len >= strlen(DTLS_SERVER_CMD_RENEGOTIATE) &&
+            !memcmp(data, DTLS_SERVER_CMD_RENEGOTIATE, strlen(DTLS_SERVER_CMD_RENEGOTIATE))) {
+        Serial.println("server: renegotiate connection");
+        dtls_renegotiate(ctx, session);
+        return len;
+    }
+
+    return dtls_write(ctx, session, data, len);
 }
+
+// TODO : faire en sorte d'envoyer des messages à session->addr qui 
+// indiquera l'adresse
+static int
+send_to_peer_client(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len) {
+
+//    int fd = *(int *)dtls_get_app_data(ctx);
+//        zigmsg.sendto(fd, data, len, MSG_DONTWAIT,
+//                &session->addr.sa, session->size);
+
+    return zigmsg.sendto(RECVADDR, len, data);
+}
+
+static int
+send_to_peer_server(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len) {
+
+    return zigmsg.sendto(SENDADDR, len, data);
+}
+
+static int
+dtls_handle_read(void) {
+    int *fd;
+    session_t session;
+    static uint8 buf[DTLS_MAX_BUF];
+    ZigMsg::ZigReceivedFrame *z ;
+
+    fd = (int *) dtls_get_app_data(the_context);
+
+    assert(fd);
+
+    memset(&session, 0, sizeof(session_t));
+    session.size = sizeof(session.addr);
+    session.addr = CURRENT_ADDRESS;
+
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        Serial.println("recv !");
+        //print_frame (z, casan_decode) ;
+        zigmsg.skip_received () ;
+    }
+
+    // TODO vérifier que le paquet est arrivé en bon état
+
+    int len = 0;
+
+    // TODO récupérer le buffer avec le contenu du paquet
+    return dtls_handle_message(the_context, &session, buf, len);
+}
+
+static dtls_handler_t cb_server = {
+    .write = send_to_peer_server,
+    .read  = read_from_peer_server,
+    .event = NULL,
+    .get_psk_info = get_psk_info,
+};
 
 void init_dtls_server (char line [])
 {
@@ -670,6 +606,17 @@ void init_dtls_server (char line [])
     zigmsg.promiscuous (false) ;
     zigmsg.start () ;
     Serial.println("Starting DTLS server") ;
+
+    //log_t log_level = DTLS_LOG_WARN;
+    //dtls_set_log_level(log_level);
+
+    int fd;
+
+    dtls_init();
+
+    the_context = dtls_new_context(&fd);
+
+    dtls_set_handler(the_context, &cb_server);
 }
 
 void stop_dtls_server (void)
@@ -679,10 +626,22 @@ void stop_dtls_server (void)
 
 void do_dtls_server (void)
 {
-//    struct mysocket msock;
-//    msock.cb_send = cb_send;
-//    msock.cb_recv = cb_recv;
-//    recv_smth(msock);
+    ZigMsg::ZigReceivedFrame *z ;
+
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        Serial.println("Message received !");
+
+        // à chaque réception de message
+        dtls_handle_read();
+
+        //print_frame (z, casan_decode) ;
+        zigmsg.skip_received () ;
+    }
+
+    // if error:
+    //dtls_free_context(the_context);
+    // then exit
 }
 
 /******************************************************************************
@@ -904,3 +863,35 @@ void errHandle(radio_error_t err)
     Serial.print((uint8_t)err, 10);
     Serial.println();
 }
+
+
+
+/* code de test
+//size_t cb_send (void *data, size_t len)
+//{
+//    Serial.println((char*)data);
+//    //ZigMsg * zm = &zigmsg;
+//
+//    //if (zm->sendto (RECVADDR, len, (uint8_t *) data))
+//    if (zigmsg.sendto (RECVADDR, len, (uint8_t *) data))
+//        Serial.println ("Sent") ;
+//    else
+//        Serial.println ("Sent error") ;
+//
+//    return 0;
+//}
+//
+//size_t cb_recv (void *data, size_t * len)
+//{
+//    Serial.println("On passe par là");
+//    ZigMsg::ZigReceivedFrame *z ;
+//
+//    while ((z = zigmsg.get_received ()) != NULL)
+//    {
+//        print_frame (z, false) ;
+//        zigmsg.skip_received () ;
+//    }
+//
+//    return 0;
+//}
+*/
