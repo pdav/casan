@@ -247,12 +247,14 @@ typedef struct dtls_context_t {
   unsigned char cookie_secret[DTLS_COOKIE_SECRET_LENGTH];
   clock_time_t cookie_secret_age; /**< the time the secret has been generated */
 
-#ifndef WITH_CONTIKI
+#ifdef WITH_ARDUINO
   dtls_peer_t *peers;		/**< peer hash map */
-#else /* WITH_CONTIKI */
+#elif defined WITH_CONTIKI
   LIST_STRUCT(peers);
 
   struct etimer retransmit_timer; /**< fires when the next packet must be sent */
+#else
+  dtls_peer_t *peers;		/**< peer hash map */
 #endif /* WITH_CONTIKI */
 
   LIST_STRUCT(sendqueue);	/**< the packets to send */
