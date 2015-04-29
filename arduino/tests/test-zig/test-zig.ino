@@ -543,16 +543,16 @@ read_from_peer_server(struct dtls_context_t *ctx,
 
 // TODO : faire en sorte d'envoyer des messages à session->addr qui 
 // indiquera l'adresse
-static int
-send_to_peer_client(struct dtls_context_t *ctx, 
-        session_t *session, uint8 *data, size_t len) {
-
-//    int fd = *(int *)dtls_get_app_data(ctx);
-//        zigmsg.sendto(fd, data, len, MSG_DONTWAIT,
-//                &session->addr.sa, session->size);
-
-    return zigmsg.sendto(RECVADDR, len, data);
-}
+//static int
+//send_to_peer_client(struct dtls_context_t *ctx, 
+//        session_t *session, uint8 *data, size_t len) {
+//
+////    int fd = *(int *)dtls_get_app_data(ctx);
+////        zigmsg.sendto(fd, data, len, MSG_DONTWAIT,
+////                &session->addr.sa, session->size);
+//
+//    return zigmsg.sendto(RECVADDR, len, data);
+//}
 
 static int
 send_to_peer_server(struct dtls_context_t *ctx, 
