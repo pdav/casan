@@ -212,12 +212,15 @@ dtls_peer_t *
 dtls_get_peer(const dtls_context_t *ctx, const session_t *session) {
     dtls_peer_t *p = NULL;
 
-#ifndef WITH_CONTIKI
+#ifdef WITH_ARDUINO
+    // TODO est-ce qu'on veut faire ça avec arduino ?
     HASH_FIND_PEER(ctx->peers, session, p);
-#else /* WITH_CONTIKI */
+#elif defined WITH_CONTIKI
     for (p = list_head(ctx->peers); p; p = list_item_next(p))
         if (dtls_session_equals(&p->session, session))
             return p;
+#else
+    HASH_FIND_PEER(ctx->peers, session, p);
 #endif /* WITH_CONTIKI */
 
     return p;
@@ -225,10 +228,13 @@ dtls_get_peer(const dtls_context_t *ctx, const session_t *session) {
 
 static void
 dtls_add_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
-#ifndef WITH_CONTIKI
+#ifdef WITH_ARDUINO
+    // TODO est-ce qu'on veut faire ça avec arduino ?
     HASH_ADD_PEER(ctx->peers, session, peer);
-#else /* WITH_CONTIKI */
+#elif defined WITH_CONTIKI
     list_add(ctx->peers, peer);
+#else
+    HASH_ADD_PEER(ctx->peers, session, peer);
 #endif /* WITH_CONTIKI */
 }
 
@@ -1457,7 +1463,10 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
             if (!netq_insert_node(ctx->sendqueue, n)) {
                 dtls_warn("cannot add packet to retransmit buffer\n");
                 netq_node_free(n);
-#ifdef WITH_CONTIKI
+#ifdef WITH_ARDUINO
+                // TODO est-ce qu'on veut faire ça avec arduino ?
+                dtls_debug("copied to sendqueue\n");
+#elif defined WITH_CONTIKI
             } else {
                 /* must set timer within the context of the retransmit process */
                 PROCESS_CONTEXT_BEGIN(&dtls_retransmit_process);
@@ -3744,18 +3753,21 @@ dtls_new_context(void *app_data) {
 #ifdef WITH_CONTIKI
 #elif defined WITH_ARDUINO
 #else
+#error "Can't be compiled for our purpose with this"
     FILE *urandom = fopen("/dev/urandom", "r");
     unsigned char buf[sizeof(unsigned long)];
 #endif /* WITH_CONTIKI */
 
     dtls_ticks(&now);
 #ifdef WITH_CONTIKI
+#error "Can't be compiled for our purpose with this"
     /* FIXME: need something better to init PRNG here */
     dtls_prng_init(now);
 #elif defined WITH_ARDUINO
     /* FIXME: need something better to init PRNG here */
     dtls_prng_init(now);
 #else /* WITH_CONTIKI */
+#error "Can't be compiled for our purpose with this"
     if (!urandom) {
         dtls_emerg("cannot initialize PRNG\n");
         return NULL;
@@ -3780,6 +3792,7 @@ dtls_new_context(void *app_data) {
     LIST_STRUCT_INIT(c, sendqueue);
 
 #ifdef WITH_CONTIKI
+#error "Can't be compiled for our purpose with this"
     LIST_STRUCT_INIT(c, peers);
     /* LIST_STRUCT_INIT(c, key_store); */
 
