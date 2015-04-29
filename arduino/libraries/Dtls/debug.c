@@ -197,7 +197,8 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len) {
   return p - buf;
 # else /* WITH_CONTIKI */
   /* TODO: output addresses manually */
-#   warning "inet_ntop() not available, network addresses will not be included in debug output"
+//#   warning "inet_ntop() not available, network addresses will not be included in debug output"
+
 # endif /* WITH_CONTIKI */
   return 0;
 #endif
@@ -290,7 +291,56 @@ void dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr)
   dsrv_log(level, "%s: %s\n", name, addrbuf);
 }
 
-#ifndef WITH_CONTIKI
+#ifdef ARDUINO
+void 
+dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
+        , size_t length, int extend) {
+}
+
+#elif defined WITH_CONTIKI
+#error "Can't be compiled for our purpose with this"
+void 
+dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {
+  static char timebuf[32];
+  int n = 0;
+
+  if (maxlog < level)
+    return;
+
+  if (print_timestamp(timebuf,sizeof(timebuf), clock_time()))
+    PRINTF("%s ", timebuf);
+
+  if (level >= 0 && level <= DTLS_LOG_DEBUG) 
+    PRINTF("%s ", loglevels[level]);
+
+  if (extend) {
+    PRINTF("%s: (%zu bytes):\n", name, length);
+
+    while (length--) {
+      if (n % 16 == 0)
+	PRINTF("%08X ", n);
+
+      PRINTF("%02X ", *buf++);
+
+      n++;
+      if (n % 8 == 0) {
+	if (n % 16 == 0)
+	  PRINTF("\n");
+	else
+	  PRINTF(" ");
+      }
+    }
+  } else {
+    PRINTF("%s: (%zu bytes): ", name, length);
+    while (length--) 
+      PRINTF("%02X", *buf++);
+  }
+  PRINTF("\n");
+}
+
+#else
+#error "Can't be compiled for our purpose with this"
+
 void 
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {
   static char timebuf[32];
@@ -334,45 +384,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, s
 
   fflush(log_fd);
 }
-#else /* WITH_CONTIKI */
-void 
-dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {
-  static char timebuf[32];
-  int n = 0;
 
-  if (maxlog < level)
-    return;
-
-  if (print_timestamp(timebuf,sizeof(timebuf), clock_time()))
-    PRINTF("%s ", timebuf);
-
-  if (level >= 0 && level <= DTLS_LOG_DEBUG) 
-    PRINTF("%s ", loglevels[level]);
-
-  if (extend) {
-    PRINTF("%s: (%zu bytes):\n", name, length);
-
-    while (length--) {
-      if (n % 16 == 0)
-	PRINTF("%08X ", n);
-
-      PRINTF("%02X ", *buf++);
-
-      n++;
-      if (n % 8 == 0) {
-	if (n % 16 == 0)
-	  PRINTF("\n");
-	else
-	  PRINTF(" ");
-      }
-    }
-  } else {
-    PRINTF("%s: (%zu bytes): ", name, length);
-    while (length--) 
-      PRINTF("%02X", *buf++);
-  }
-  PRINTF("\n");
-}
 #endif /* WITH_CONTIKI */
 
 #endif /* NDEBUG */
