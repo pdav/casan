@@ -4037,4 +4037,5 @@ PROCESS_THREAD(dtls_retransmit_process, ev, data)
 
     PROCESS_END();
 }
+
 #endif /* WITH_CONTIKI */

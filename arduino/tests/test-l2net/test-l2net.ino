@@ -2,6 +2,10 @@
  * Test program for the "l2net_*" class
  */
 
+extern "C" {
+#include <test.h>
+};
+
 #include "casan.h"
 
 #ifdef L2_ETH
@@ -116,6 +120,8 @@ void send_l2 (void)
 
 void loop ()
 {
+    int x = 50;
+    x = get_value(x);
     if (debug.heartbeat ())
 	send_l2 () ;
     recv_l2 () ;

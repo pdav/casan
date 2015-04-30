@@ -39,6 +39,9 @@
 /** Defined to 1 if tinydtls is built with support for PSK */
 #define DTLS_PSK 1
 
+// TODO because we need it
+#define WITH_SHA256 1
+
 /** Defined to 1 if tinydtls is built for Contiki OS */
 //#define WITH_CONTIKI 1
 

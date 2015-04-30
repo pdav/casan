@@ -17,7 +17,7 @@ DBLEVEL			= -DDBLEVEL=1
 BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 MONITOR_PORT		?= /dev/ttyUSB0
-ARDUINO_LIBS		= ZigMsg Dtls
+ARDUINO_LIBS		= ZigMsg Dtls Dtls/aes Dtls/sha2 #Test
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 
@@ -30,3 +30,5 @@ CPPFLAGS		+= -U__PROG_TYPES_COMPAT__ $(DBLEVEL)
 test : all upload monitor
 
 retest: reset monitor
+
+redo: clean all

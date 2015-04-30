@@ -28,6 +28,7 @@
  * @brief Clock Handling
  */
 
+#include "types.h"
 #include "dtls_time.h"
 #include "dtls_config.h"
 #include "dtls_time.h"
@@ -48,6 +49,30 @@ dtls_ticks(dtls_tick_t *t) {
 
 #elif WITH_ARDUINO
 
+
+time_t dtls_clock_offset;
+
+void
+dtls_clock_init(void) {
+#ifdef WITH_ARDUINO
+#   warning "cannot initialize clock on the arduino"
+#endif
+
+#  ifdef __GNUC__
+  /* Issue a warning when using gcc. Other prepropressors do 
+   *  not seem to have a similar feature. */ 
+#   warning "cannot initialize clock"
+#  endif
+  dtls_clock_offset = 0;
+
+}
+
+void dtls_ticks(dtls_tick_t *t) {
+#ifdef WITH_ARDUINO
+#warning "clock not implemented"
+#endif
+}
+
 // TODO clock with arduino FIXME
 
 #else /* WITH_CONTIKI */
@@ -56,7 +81,9 @@ time_t dtls_clock_offset;
 
 void
 dtls_clock_init(void) {
-#ifdef HAVE_TIME_H
+#ifdef WITH_ARDUINO
+#   warning "cannot initialize clock on the arduino"
+#elif defined HAVE_TIME_H
   dtls_clock_offset = time(NULL);
 #else
 #  ifdef __GNUC__
@@ -69,7 +96,9 @@ dtls_clock_init(void) {
 }
 
 void dtls_ticks(dtls_tick_t *t) {
-#ifdef HAVE_SYS_TIME_H
+#ifdef WITH_ARDUINO
+#warning "clock not implemented"
+#elif defined HAVE_SYS_TIME_H
   struct timeval tv;
   gettimeofday(&tv, NULL);
   *t = (tv.tv_sec - dtls_clock_offset) * DTLS_TICKS_PER_SECOND 
@@ -80,5 +109,3 @@ void dtls_ticks(dtls_tick_t *t) {
 }
 
 #endif /* WITH_CONTIKI */
-
-

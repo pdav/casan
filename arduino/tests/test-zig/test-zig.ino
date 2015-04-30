@@ -1,7 +1,11 @@
 #include <ZigMsg.h>
 //#include <Test.h>
+
+extern "C" {
 #include <tinydtls.h>
 #include <dtls.h>
+//#include <test.h>
+}
 
 #define	CHANNEL	25		// use "c" to change it while running
 
@@ -366,7 +370,6 @@ void snif (bool casan_decode)
     }
 }
 
-
 /******************************************************************************
   CoAP and raw sniffer
  *******************************************************************************/
@@ -543,16 +546,6 @@ read_from_peer_server(struct dtls_context_t *ctx,
 
 // TODO : faire en sorte d'envoyer des messages à session->addr qui 
 // indiquera l'adresse
-//static int
-//send_to_peer_client(struct dtls_context_t *ctx, 
-//        session_t *session, uint8 *data, size_t len) {
-//
-////    int fd = *(int *)dtls_get_app_data(ctx);
-////        zigmsg.sendto(fd, data, len, MSG_DONTWAIT,
-////                &session->addr.sa, session->size);
-//
-//    return zigmsg.sendto(RECVADDR, len, data);
-//}
 
 static int
 send_to_peer_server(struct dtls_context_t *ctx, 
@@ -829,6 +822,9 @@ void loop()
     static char line [100], *p = line ;
     static struct gui *curmode = IDLE_MODE ;
     int n ;
+
+    //size_t x = 50;
+    //get_value(x);
 
     n = Serial.available () ;
     if (n > 0)
