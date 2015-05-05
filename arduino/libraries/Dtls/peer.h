@@ -50,7 +50,7 @@ typedef enum { DTLS_CLIENT=0, DTLS_SERVER } dtls_peer_type;
 typedef struct dtls_peer_t {
 #ifdef WITH_CONTIKI
     struct dtls_peer_t *next;
-#elif WITH_ARDUINO
+#elif defined WITH_ARDUINO
     UT_hash_handle hh;
 #else /* WITH_CONTIKI */
     UT_hash_handle hh;

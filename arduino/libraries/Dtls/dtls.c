@@ -159,6 +159,16 @@ free_context(dtls_context_t *context) {
 }
 #endif
 
+#ifdef WITH_ARDUINO
+void
+dtls_init(unsigned long (*get_cur_time)(void)) {
+    dtls_clock_init(get_cur_time);
+    crypto_init();
+    netq_init();
+    peer_init();
+}
+#else
+
 void
 dtls_init() {
     dtls_clock_init();
@@ -166,6 +176,7 @@ dtls_init() {
     netq_init();
     peer_init();
 }
+#endif
 
 /* Calls cb_alert() with given arguments if defined, otherwise an
  * error message is logged and the result is -1. This is just an
@@ -3899,8 +3910,15 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst) {
 
     if (!peer) {
         dtls_crit("cannot create new peer\n");
+#ifdef WITH_ARDUINO && defined MSG_DEBUG
+        ctx->say("cannot create new peer\n");
+#endif
         return -1;
     }
+
+#ifdef WITH_ARDUINO && defined MSG_DEBUG
+    ctx->say("dtls_connect !\n");
+#endif
 
     res = dtls_connect_peer(ctx, peer);
 

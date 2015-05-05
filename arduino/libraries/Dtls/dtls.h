@@ -249,6 +249,7 @@ typedef struct dtls_context_t {
 
 #ifdef WITH_ARDUINO
   dtls_peer_t *peers;		/**< peer hash map */
+  void (*say)(char * txt_to_say);
 #elif defined WITH_CONTIKI
   LIST_STRUCT(peers);
 

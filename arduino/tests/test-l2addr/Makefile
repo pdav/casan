@@ -18,6 +18,7 @@ L2			= -DL2_ETH
 BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 MONITOR_PORT		= /dev/zig0		# /dev/ttyUSB0
+MONITOR_PORT		= /dev/ttyUSB0
 ARDUINO_LIBS		= Casan L2-154 ZigMsg
 L2			= -DL2_154
 

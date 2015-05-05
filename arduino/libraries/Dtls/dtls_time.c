@@ -29,15 +29,14 @@
  */
 
 #include "types.h"
-#include "dtls_time.h"
 #include "dtls_config.h"
+#include "dtls_time.h"
 #include "dtls_time.h"
 
 #ifdef WITH_CONTIKI
 clock_time_t dtls_clock_offset;
 
-void
-dtls_clock_init(void) {
+void dtls_clock_init(void) {
   clock_init();
   dtls_clock_offset = clock_time();
 }
@@ -47,30 +46,19 @@ dtls_ticks(dtls_tick_t *t) {
   *t = clock_time();
 }
 
-#elif WITH_ARDUINO
+#elif defined WITH_ARDUINO
 
-
+unsigned long (*get_current_time)();
 time_t dtls_clock_offset;
 
-void
-dtls_clock_init(void) {
-#ifdef WITH_ARDUINO
-#   warning "cannot initialize clock on the arduino"
-#endif
-
-#  ifdef __GNUC__
-  /* Issue a warning when using gcc. Other prepropressors do 
-   *  not seem to have a similar feature. */ 
-#   warning "cannot initialize clock"
-#  endif
-  dtls_clock_offset = 0;
-
+void dtls_clock_init(unsigned long (*get_cur_time)(void)) {
+  get_current_time = get_cur_time;
+  dtls_clock_offset = (*get_current_time)();
 }
 
 void dtls_ticks(dtls_tick_t *t) {
-#ifdef WITH_ARDUINO
-#warning "clock not implemented"
-#endif
+    unsigned long x = (*get_current_time)();
+    *t = x * DTLS_TICKS_PER_SECOND / 1000000;
 }
 
 // TODO clock with arduino FIXME
@@ -81,31 +69,21 @@ time_t dtls_clock_offset;
 
 void
 dtls_clock_init(void) {
-#ifdef WITH_ARDUINO
-#   warning "cannot initialize clock on the arduino"
-#elif defined HAVE_TIME_H
   dtls_clock_offset = time(NULL);
-#else
+
 #  ifdef __GNUC__
   /* Issue a warning when using gcc. Other prepropressors do 
    *  not seem to have a similar feature. */ 
 #   warning "cannot initialize clock"
 #  endif
   dtls_clock_offset = 0;
-#endif
 }
 
 void dtls_ticks(dtls_tick_t *t) {
-#ifdef WITH_ARDUINO
-#warning "clock not implemented"
-#elif defined HAVE_SYS_TIME_H
   struct timeval tv;
   gettimeofday(&tv, NULL);
   *t = (tv.tv_sec - dtls_clock_offset) * DTLS_TICKS_PER_SECOND 
     + (tv.tv_usec * DTLS_TICKS_PER_SECOND / 1000000);
-#else
-#error "clock not implemented"
-#endif
 }
 
 #endif /* WITH_CONTIKI */
