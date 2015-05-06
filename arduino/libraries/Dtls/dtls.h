@@ -271,7 +271,11 @@ typedef struct dtls_context_t {
  * This function initializes the tinyDTLS memory management and must
  * be called first.
  */
+#ifdef WITH_ARDUINO
+void dtls_init(unsigned long (*get_cur_time)(void));
+#else
 void dtls_init();
+#endif
 
 /** 
  * Creates a new context object. The storage allocated for the new

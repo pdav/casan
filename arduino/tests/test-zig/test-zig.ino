@@ -42,6 +42,9 @@ session_t dst;
 // TODO : envoyer les messages d'erreur DTLS au lieu de simplement
 // afficher une erreur et boucler
 
+// TODO les messages reçus doivent être via do_dtls_x puis remontés
+// à la lib via 
+
 static char buf[200];
 static size_t len = 0;
 
@@ -517,6 +520,7 @@ read_from_peer_server(struct dtls_context_t *ctx,
     {
         Serial.println("msg recv");
         //print_frame (z, casan_decode) ;
+        print_frame (z, false) ;
         zigmsg.skip_received () ;
     }
 
@@ -533,7 +537,8 @@ read_from_peer_server(struct dtls_context_t *ctx,
         return len;
 
     } else if (len >= strlen(DTLS_SERVER_CMD_RENEGOTIATE) &&
-            !memcmp(data, DTLS_SERVER_CMD_RENEGOTIATE, strlen(DTLS_SERVER_CMD_RENEGOTIATE))) {
+            !memcmp(data, DTLS_SERVER_CMD_RENEGOTIATE
+                , strlen(DTLS_SERVER_CMD_RENEGOTIATE))) {
         Serial.println("serv: reneg co");
         dtls_renegotiate(ctx, session);
         return len;
@@ -550,6 +555,11 @@ send_to_peer_server(struct dtls_context_t *ctx,
         session_t *session, uint8 *data, size_t len)
 {
 
+#ifdef MSG_DEBUG
+    Serial.println("send2peer_server");
+#endif
+
+    phexascii (data, len, 80);
     //return zigmsg.sendto(SENDADDR, len, data);
     return zigmsg.sendto(session->addr, len, data);
 }
@@ -557,7 +567,6 @@ send_to_peer_server(struct dtls_context_t *ctx,
 static int
 dtls_handle_read(void)
 {
-    int *fd;
     session_t session;
     static uint8 buf[DTLS_MAX_BUF];
     ZigMsg::ZigReceivedFrame *z ;
@@ -565,10 +574,6 @@ dtls_handle_read(void)
 #ifdef MSG_DEBUG
     Serial.println("d_hdl_read");
 #endif
-
-    fd = (int *) dtls_get_app_data(the_context);
-
-    assert(fd);
 
     memset(&session, 0, sizeof(session_t));
     session.size = sizeof(session.addr);
@@ -578,6 +583,8 @@ dtls_handle_read(void)
     {
         Serial.println("recv");
         print_frame (z, false) ;
+        Serial.println("raw : ");
+        phexascii (z->payload, z->paylen, 80);
         zigmsg.skip_received () ;
     }
 
@@ -601,6 +608,10 @@ static dtls_handler_t cb_server = {
     .get_psk_info = get_psk_info,
 };
 
+unsigned long get_the_time (void) {
+    return millis();
+}
+
 void init_dtls_server (char line [])
 {
     zigmsg.channel (channel) ;
@@ -621,10 +632,9 @@ void init_dtls_server (char line [])
     //log_t log_level = DTLS_LOG_WARN;
     //dtls_set_log_level(log_level);
 
+    dtls_init(get_the_time);
+
     int fd;
-
-    dtls_init();
-
     the_context = dtls_new_context(&fd);
 
     the_context->say = say;
@@ -639,22 +649,16 @@ void stop_dtls_server (void)
 
 void do_dtls_server (void)
 {
-    ZigMsg::ZigReceivedFrame *z ;
 
 #ifdef MSG_DEBUG
     Serial.println("do_dtls_server");
 #endif
 
-    while ((z = zigmsg.get_received ()) != NULL)
-    {
-        Serial.println("msg recv");
+    // on verrifie qu'on n'a pas reçu de message
+    dtls_handle_read();
 
-        // à chaque réception de message
-        dtls_handle_read();
-
-        //print_frame (z, casan_decode) ;
-        zigmsg.skip_received () ;
-    }
+    //print_frame (z, casan_decode) ;
+    //zigmsg.skip_received () ;
 
     // if error:
     //dtls_free_context(the_context);
@@ -725,7 +729,7 @@ get_psk_info_cli(struct dtls_context_t *ctx UNUSED_PARAM,
             memcpy(result, psk_key, psk_key_length);
             return psk_key_length;
         default:
-            Serial.print("unsup req type: ");
+            Serial.print("unsupported req type: ");
             Serial.println(type);
     }
 
@@ -762,9 +766,7 @@ read_from_peer(struct dtls_context_t *ctx,
         delay(500);
     }
 
-    size_t i;
-    for (i = 0; i < len; i++)
-        printf("%c", data[i]);
+    phexascii (data, len, 80);
     return 0;
 }
 
@@ -784,6 +786,7 @@ send_to_peer(struct dtls_context_t *ctx,
     //return sendto(fd, data, len, MSG_DONTWAIT,
     //        &session->addr.sa, session->size);
 
+    phexascii (data, len, 80);
     delay(500);
     return zigmsg.sendto(session->addr, len, data);
 }
@@ -796,16 +799,15 @@ dtls_handle_read(struct dtls_context_t *ctx)
     Serial.println("d_hdl_read") ;
 #endif
 
-    int fd;
     session_t session;
 #define MAX_READ_BUF 2000
     static uint8 buf[MAX_READ_BUF];
     int len;
 
-    fd = *(int *)dtls_get_app_data(ctx);
-
-    if (!fd)
-        return -1;
+    //int fd;
+    //fd = *(int *)dtls_get_app_data(ctx);
+    //if (!fd)
+    //    return -1;
 
     memset(&session, 0, sizeof(session_t));
     session.size = sizeof(session.addr);
@@ -840,6 +842,41 @@ dtls_handle_read(struct dtls_context_t *ctx)
 
 /*---------------------------------------------------------------------------*/
 
+static int
+on_event(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("on_event") ;
+#endif
+
+    ZigMsg::ZigReceivedFrame *z ;
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        //print_frame (z, casan_decode) ;
+
+        len = z->paylen;
+
+        if (len < 0) {
+            //perror("recvfrom");
+            print_frame (z, false) ;
+            Serial.println("err: recv, len < 0");
+            return -1;
+        } else {
+            //dtls_dsrv_log_addr(DTLS_LOG_DEBUG, "peer", &session);
+            //dtls_debug_dump("bytes from peer", buf, len);
+            Serial.print("recv : TODO");
+            print_frame (z, false) ;
+            //Serial.println(buf, HEX);
+        }
+
+        zigmsg.skip_received () ;
+    }
+
+    return 0;
+}
+
 static dtls_handler_t cb = {
     .write = send_to_peer,
     .read  = read_from_peer,
@@ -870,7 +907,7 @@ void init_dtls_client (char line [])
     //log_t log_level = DTLS_LOG_WARN;
     //dtls_set_log_level(log_level);
 
-    dtls_init();
+    dtls_init(get_the_time);
 
     // PSK IDENTITY & KEY
     psk_id_length = strlen(PSK_DEFAULT_IDENTITY);
@@ -923,7 +960,6 @@ void do_dtls_client (void)
             !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
                 , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
     {
-
         Serial.println("cli: reneg co");
         dtls_renegotiate(d_ctxt_cli, &dst);
         len = 0;
@@ -937,6 +973,7 @@ void do_dtls_client (void)
     //    send_smth(msock);
 }
 
+/*
 ////////////////////////////////////////////////////////////////////
 // gestion des signaux, non dispo sous zigduino
 //static void dtls_handle_signal(int sig)
@@ -946,7 +983,7 @@ void do_dtls_client (void)
 //    kill(getpid(), sig);
 //}
 //
-/* stolen from libcoap: */
+// stolen from libcoap:
 //static int
 //resolve_address(const char *server, struct sockaddr *dst) {
 //
@@ -989,6 +1026,7 @@ void do_dtls_client (void)
 //    return -1;
 //}
 ////////////////////////////////////////////////////////////////////
+*/
 
 /******************************************************************************
   Channel

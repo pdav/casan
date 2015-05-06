@@ -187,6 +187,8 @@ dtls_init() {
      ? (Context)->h->which((Context), ##__VA_ARGS__)			\
      : -1)
 
+//(void)CALL(context, write, &node->peer->session, sendbuf, len);
+
 static int
 dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
         dtls_security_parameters_t *security , session_t *session,
