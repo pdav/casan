@@ -1,5 +1,6 @@
 #include <ZigMsg.h>
 //#include <Test.h>
+#include "free_memory.h"
 
 extern "C" {
 #include <tinydtls.h>
@@ -40,13 +41,19 @@ extern "C" {
 session_t dst;
 session_t session;
 
-// TODO : envoyer les messages d'erreur DTLS au lieu de simplement
-// afficher une erreur et boucler
+/*
+   TODO
+ * envoyer les messages d'erreur DTLS au lieu de simplement
+   afficher une erreur et boucler
 
-// TODO les messages reçus doivent être via do_dtls_x puis remontés
-// à la lib via 
+ * les messages reçus doivent être via do_dtls_x puis remontés
+   à la lib via dtls_handle_message
 
-static char buf[200];
+*/
+
+#define DTLS_MAX_BUF 200
+static char buf[DTLS_MAX_BUF];
+
 static size_t len = 0;
 
 int channel = CHANNEL ;
@@ -56,6 +63,13 @@ int channel = CHANNEL ;
  *******************************************************************************/
 
 #define	HEXCHAR(c)	((c) < 10 ? (c) + '0' : (c) - 10 + 'a')
+
+void print_free_mem()
+{
+    int memory = freeMemory();
+    Serial.print("mémoire disponible : ");
+    Serial.println(memory);
+}
 
 unsigned long get_random (int max) {
     return random(max);
@@ -523,6 +537,7 @@ read_from_peer_server(struct dtls_context_t *ctx,
 
 #ifdef MSG_DEBUG
     Serial.println("read_from_peer_serv");
+    print_free_mem();
 #endif
 
     /*
@@ -571,6 +586,7 @@ send_to_peer_server(struct dtls_context_t *ctx,
 
 #ifdef MSG_DEBUG
     Serial.println("send2peer_server");
+    print_free_mem();
 #endif
 
     phexascii (data, len, 25);
@@ -584,6 +600,7 @@ dtls_handle_read(void)
 
 #ifdef MSG_DEBUG
     Serial.println("d_hdl_read");
+    print_free_mem();
 #endif
 
     /*
@@ -618,7 +635,7 @@ dtls_handle_read(void)
 // TODO
 static dtls_handler_t cb_server = {
     .write = send_to_peer_server,
-    .read  = NULL,// read_from_peer_server,
+    .read  = read_from_peer_server,
     .event = NULL,
     .get_psk_info = get_psk_info,
 };
@@ -633,6 +650,7 @@ void init_dtls_server (char line [])
 
 #ifdef MSG_DEBUG
     Serial.println("init_d_serv");
+    print_free_mem();
 #endif
 
     memset(&dst, 0, sizeof(session_t));
@@ -661,10 +679,11 @@ void do_dtls_server (void)
 
 #ifdef MSG_DEBUG
     Serial.println("do_dtls_server");
+    print_free_mem();
 #endif
 
     // on vérifie qu'on n'a pas reçu de message
-    //dtls_handle_read();
+    dtls_handle_read();
 
     //print_frame (z, casan_decode) ;
     //zigmsg.skip_received () ;
@@ -748,6 +767,13 @@ get_psk_info_cli(struct dtls_context_t *ctx UNUSED_PARAM,
 static void
 try_send(struct dtls_context_t *ctx)
 {
+#ifdef MSG_DEBUG
+    Serial.println("try_send");
+    Serial.print("DTLS_MAX_BUF : ");
+    Serial.println(DTLS_MAX_BUF);
+    print_free_mem();
+    delay(1000);
+#endif
     int res;
     res = dtls_write(ctx, &dst, (uint8 *)buf, len);
     if (res >= 0) {
@@ -803,62 +829,62 @@ send_to_peer(struct dtls_context_t *ctx,
     phexascii ((uint8_t *)"coucou\n", 7, 10);
     //phexascii (data, len, 25);
     //int ret = zigmsg.sendto(session->addr, len, data);
-    delay(5000);
+    delay(2000);
     Serial.println("");
     Serial.println(ret);
-    delay(5000);
+    delay(1000);
     return ret;
 }
 
 /*
-static int
-dtls_handle_read(struct dtls_context_t *ctx)
-{
-
-#ifdef MSG_DEBUG
-    Serial.println("d_hdl_read") ;
-#endif
-
-    session_t session;
-#define MAX_READ_BUF 2000
-    static uint8 buf[MAX_READ_BUF];
-    int len;
-
-    //int fd;
-    //fd = *(int *)dtls_get_app_data(ctx);
-    //if (!fd)
-    //    return -1;
-
-    memset(&session, 0, sizeof(session_t));
-    session.size = sizeof(session.addr);
-    //len = recvfrom(fd, buf, MAX_READ_BUF, 0, 
-    //        &session.addr.sa, &session.size);
-
-    ZigMsg::ZigReceivedFrame *z ;
-    while ((z = zigmsg.get_received ()) != NULL)
-    {
-        //print_frame (z, casan_decode) ;
-
-        len = z->paylen;
-
-        if (len < 0) {
-            //perror("recvfrom");
-            print_frame (z, false) ;
-            Serial.println("err: recv, len < 0");
-            return -1;
-        } else {
-            //dtls_dsrv_log_addr(DTLS_LOG_DEBUG, "peer", &session);
-            //dtls_debug_dump("bytes from peer", buf, len);
-            Serial.print("recv : TODO");
-            print_frame (z, false) ;
-            //Serial.println(buf, HEX);
-        }
-
-        zigmsg.skip_received () ;
-    }
-
-    return dtls_handle_message(ctx, &session, buf, len);
-}    
+*static int
+*dtls_handle_read(struct dtls_context_t *ctx)
+*{
+*
+*#ifdef MSG_DEBUG
+*    Serial.println("d_hdl_read") ;
+*#endif
+*
+*    session_t session;
+*#define MAX_READ_BUF 2000
+*    static uint8 buf[MAX_READ_BUF];
+*    int len;
+*
+*    //int fd;
+*    //fd = *(int *)dtls_get_app_data(ctx);
+*    //if (!fd)
+*    //    return -1;
+*
+*    memset(&session, 0, sizeof(session_t));
+*    session.size = sizeof(session.addr);
+*    //len = recvfrom(fd, buf, MAX_READ_BUF, 0, 
+*    //        &session.addr.sa, &session.size);
+*
+*    ZigMsg::ZigReceivedFrame *z ;
+*    while ((z = zigmsg.get_received ()) != NULL)
+*    {
+*        //print_frame (z, casan_decode) ;
+*
+*        len = z->paylen;
+*
+*        if (len < 0) {
+*            //perror("recvfrom");
+*            print_frame (z, false) ;
+*            Serial.println("err: recv, len < 0");
+*            return -1;
+*        } else {
+*            //dtls_dsrv_log_addr(DTLS_LOG_DEBUG, "peer", &session);
+*            //dtls_debug_dump("bytes from peer", buf, len);
+*            Serial.print("recv : TODO");
+*            print_frame (z, false) ;
+*            //Serial.println(buf, HEX);
+*        }
+*
+*        zigmsg.skip_received () ;
+*    }
+*
+*    return dtls_handle_message(ctx, &session, buf, len);
+*}    
 */
 
 /*---------------------------------------------------------------------------*/
@@ -965,17 +991,25 @@ void do_dtls_client (void)
 
 #ifdef MSG_DEBUG
     Serial.println("do_d_client");
+    print_free_mem();
 #endif
 
-    //dtls_handle_read(d_ctxt_cli);
     dtls_handle_read();
+
+#ifdef MSG_DEBUG
+    Serial.println("apres dtls_handle_read");
+    print_free_mem();
+#endif
 
     // TODO
     if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
             !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
                 , strlen(DTLS_CLIENT_CMD_CLOSE)))
     {
+#ifdef MSG_DEBUG
         Serial.println("cli: clos co");
+        print_free_mem();
+#endif
         dtls_close(d_ctxt_cli, &dst);
         len = 0;
     } 
@@ -983,7 +1017,10 @@ void do_dtls_client (void)
             !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
                 , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
     {
+#ifdef MSG_DEBUG
         Serial.println("cli: reneg co");
+        print_free_mem();
+#endif
         dtls_renegotiate(d_ctxt_cli, &dst);
         len = 0;
     } else {
