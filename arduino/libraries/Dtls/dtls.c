@@ -2194,62 +2194,62 @@ dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
     switch (handshake->cipher) {
 #ifdef DTLS_PSK
         case TLS_PSK_WITH_AES_128_CCM_8: {
-                                             int len;
+             int len;
 
-                                             len = CALL(ctx, get_psk_info, &peer->session, DTLS_PSK_IDENTITY,
-                                                     handshake->keyx.psk.identity, handshake->keyx.psk.id_length,
-                                                     buf + sizeof(uint16),
-                                                     min(sizeof(buf) - sizeof(uint16),
-                                                         sizeof(handshake->keyx.psk.identity)));
-                                             if (len < 0) {
-                                                 dtls_crit("no psk identity set in kx\n");
-                                                 return len;
-                                             }
+             len = CALL(ctx, get_psk_info, &peer->session, DTLS_PSK_IDENTITY,
+                     handshake->keyx.psk.identity, handshake->keyx.psk.id_length,
+                     buf + sizeof(uint16),
+                     min(sizeof(buf) - sizeof(uint16),
+                         sizeof(handshake->keyx.psk.identity)));
+             if (len < 0) {
+                 dtls_crit("no psk identity set in kx\n");
+                 return len;
+             }
 
-                                             if (len + sizeof(uint16) > DTLS_CKXEC_LENGTH) {
-                                                 memset(&handshake->keyx.psk, 0, sizeof(dtls_handshake_parameters_psk_t));
-                                                 dtls_warn("the psk identity is too long\n");
-                                                 return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-                                             }
-                                             handshake->keyx.psk.id_length = (unsigned int)len;
-                                             memcpy(handshake->keyx.psk.identity, p + sizeof(uint16), len);
+             if (len + sizeof(uint16) > DTLS_CKXEC_LENGTH) {
+                 memset(&handshake->keyx.psk, 0, sizeof(dtls_handshake_parameters_psk_t));
+                 dtls_warn("the psk identity is too long\n");
+                 return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+             }
+             handshake->keyx.psk.id_length = (unsigned int)len;
+             memcpy(handshake->keyx.psk.identity, p + sizeof(uint16), len);
 
-                                             dtls_int_to_uint16(p, handshake->keyx.psk.id_length);
-                                             p += sizeof(uint16);
+             dtls_int_to_uint16(p, handshake->keyx.psk.id_length);
+             p += sizeof(uint16);
 
-                                             memcpy(p, handshake->keyx.psk.identity, handshake->keyx.psk.id_length);
-                                             p += handshake->keyx.psk.id_length;
+             memcpy(p, handshake->keyx.psk.identity, handshake->keyx.psk.id_length);
+             p += handshake->keyx.psk.id_length;
 
-                                             break;
-                                         }
+             break;
+         }
 #endif /* DTLS_PSK */
 #ifdef DTLS_ECC
         case TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8: {
-                                                     uint8 *ephemeral_pub_x;
-                                                     uint8 *ephemeral_pub_y;
+             uint8 *ephemeral_pub_x;
+             uint8 *ephemeral_pub_y;
 
-                                                     dtls_int_to_uint8(p, 1 + 2 * DTLS_EC_KEY_SIZE);
-                                                     p += sizeof(uint8);
+             dtls_int_to_uint8(p, 1 + 2 * DTLS_EC_KEY_SIZE);
+             p += sizeof(uint8);
 
-                                                     /* This should be an uncompressed point, but I do not have access to the spec. */
-                                                     dtls_int_to_uint8(p, 4);
-                                                     p += sizeof(uint8);
+             /* This should be an uncompressed point, but I do not have access to the spec. */
+             dtls_int_to_uint8(p, 4);
+             p += sizeof(uint8);
 
-                                                     ephemeral_pub_x = p;
-                                                     p += DTLS_EC_KEY_SIZE;
-                                                     ephemeral_pub_y = p;
-                                                     p += DTLS_EC_KEY_SIZE;
+             ephemeral_pub_x = p;
+             p += DTLS_EC_KEY_SIZE;
+             ephemeral_pub_y = p;
+             p += DTLS_EC_KEY_SIZE;
 
-                                                     dtls_ecdsa_generate_key(peer->handshake_params->keyx.ecdsa.own_eph_priv,
-                                                             ephemeral_pub_x, ephemeral_pub_y,
-                                                             DTLS_EC_KEY_SIZE);
+             dtls_ecdsa_generate_key(peer->handshake_params->keyx.ecdsa.own_eph_priv,
+                     ephemeral_pub_x, ephemeral_pub_y,
+                     DTLS_EC_KEY_SIZE);
 
-                                                     break;
-                                                 }
+             break;
+         }
 #endif /* DTLS_ECC */
         default:
-                                                 dtls_crit("cipher not supported\n");
-                                                 return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+            dtls_crit("cipher not supported\n");
+            return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
     }
 
     assert(p - buf <= sizeof(buf));
@@ -2295,7 +2295,7 @@ dtls_send_certificate_verify_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
 }
 #endif /* DTLS_ECC */
 
-    static int
+static int
 dtls_send_finished(dtls_context_t *ctx, dtls_peer_t *peer,
         const unsigned char *label, size_t labellen)
 {
@@ -2622,7 +2622,7 @@ check_server_certificate(dtls_context_t *ctx,
     return 0;
 }
 
-    static int
+static int
 check_server_key_exchange_ecdsa(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)
@@ -3758,6 +3758,42 @@ dtls_handle_message(dtls_context_t *ctx,
     return 0;
 }
 
+#ifdef WITH_ARDUINO
+dtls_context_t *
+dtls_new_context(unsigned long (*get_r)(int max)) {
+    dtls_context_t *c;
+    dtls_tick_t now;
+
+    dtls_ticks(&now);
+
+    /* FIXME: need something better to init PRNG here */
+    dtls_prng_init(get_r);
+
+    c = malloc_context();
+    if (!c)
+        goto error;
+
+    memset(c, 0, sizeof(dtls_context_t));
+    //c->app = app_data;
+
+    LIST_STRUCT_INIT(c, sendqueue);
+
+    if (dtls_prng(c->cookie_secret, DTLS_COOKIE_SECRET_LENGTH))
+        c->cookie_secret_age = now;
+    else 
+        goto error;
+
+    return c;
+
+error:
+    dtls_alert("cannot create DTLS context\n");
+    if (c)
+        dtls_free_context(c);
+    return NULL;
+}
+
+#else
+
 dtls_context_t *
 dtls_new_context(void *app_data) {
     dtls_context_t *c;
@@ -3774,9 +3810,6 @@ dtls_new_context(void *app_data) {
     dtls_ticks(&now);
 #ifdef WITH_CONTIKI
 #error "Can't be compiled for our purpose with this"
-    /* FIXME: need something better to init PRNG here */
-    dtls_prng_init(now);
-#elif defined WITH_ARDUINO
     /* FIXME: need something better to init PRNG here */
     dtls_prng_init(now);
 #else /* WITH_CONTIKI */
@@ -3829,6 +3862,8 @@ error:
         dtls_free_context(c);
     return NULL;
 }
+
+#endif
 
 void
 dtls_free_context(dtls_context_t *ctx) {

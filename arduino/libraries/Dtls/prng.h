@@ -21,38 +21,19 @@
  * @{
  */
 
-#ifndef WITH_CONTIKI
-#include <stdlib.h>
-
-/**
- * Fills \p buf with \p len random bytes. This is the default
- * implementation for prng().  You might want to change prng() to use
- * a better PRNG on your specific platform.
- */
-static inline int
-dtls_prng(unsigned char *buf, size_t len) {
-    while (len--)
-        *buf++ = rand() & 0xFF;
-    return 1;
-}
-
-static inline void
-dtls_prng_init(unsigned short seed) {
-    srand(seed);
-}
-
-#else /* WITH_CONTIKI */
+#ifdef WITH_CONTIKI
+// FIXME maybe we should put this 2 lines below the HAVE_PRNG condition
 #include <string.h>
 #include "random.h"
 
-#ifdef HAVE_PRNG
+#  ifdef HAVE_PRNG
 static inline int
 dtls_prng(unsigned char *buf, size_t len)
 {
     return contiki_prng_impl(buf, len);
 }
 
-#else
+#  else
 
 /**
  * Fills \p buf with \p len random bytes. This is the default
@@ -60,7 +41,8 @@ dtls_prng(unsigned char *buf, size_t len)
  * a better PRNG on your specific platform.
  */
 static inline int
-dtls_prng(unsigned char *buf, size_t len) {
+dtls_prng(unsigned char *buf, size_t len)
+{
     unsigned short v = random_rand();
     while (len > sizeof(v)) {
         memcpy(buf, &v, sizeof(v));
@@ -72,14 +54,59 @@ dtls_prng(unsigned char *buf, size_t len) {
     memcpy(buf, &v, len);
     return 1;
 }
-#endif /* HAVE_PRNG */
+#  endif /* HAVE_PRNG */
 
 static inline void
 dtls_prng_init(unsigned short seed) {
     random_init(seed);
 }
-#endif /* WITH_CONTIKI */
+
+#elif defined WITH_ARDUINO
+
+long (*get_rand)(int max);
+
+/**
+ * Fills \p buf with \p len random bytes. This is the default
+ * implementation for prng().  You might want to change prng() to use
+ * a better PRNG on your specific platform.
+ */
+static inline int
+dtls_prng(unsigned char *buf, size_t len)
+{
+    while (len--)
+        *buf++ = (*get_rand)(256) & 0xFF;
+    return 1;
+}
+
+static inline void
+dtls_prng_init(long (*get_r)(int max)) {
+    get_rand = get_r;
+}
+
+#else
+
+#include <stdlib.h>
+
+/**
+ * Fills \p buf with \p len random bytes. This is the default
+ * implementation for prng().  You might want to change prng() to use
+ * a better PRNG on your specific platform.
+ */
+static inline int
+dtls_prng(unsigned char *buf, size_t len)
+{
+    while (len--)
+        *buf++ = rand() & 0xFF;
+    return 1;
+}
+
+static inline void
+dtls_prng_init(unsigned short seed) {
+    srand(seed);
+}
 
 /** @} */
+#endif /* WITH_CONTIKI */
+
 
 #endif /* _DTLS_PRNG_H_ */
