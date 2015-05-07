@@ -38,6 +38,7 @@ extern "C" {
 #define	PERIODIC	100000
 
 session_t dst;
+session_t session;
 
 // TODO : envoyer les messages d'erreur DTLS au lieu de simplement
 // afficher une erreur et boucler
@@ -55,6 +56,14 @@ int channel = CHANNEL ;
  *******************************************************************************/
 
 #define	HEXCHAR(c)	((c) < 10 ? (c) + '0' : (c) - 10 + 'a')
+
+unsigned long get_random (int max) {
+    return random(max);
+}
+
+unsigned long get_the_time (void) {
+    return millis();
+}
 
 void say (char * txt_to_say)
 {
@@ -382,6 +391,7 @@ void print_stat (void)
 
 void snif (bool casan_decode)
 {
+    Serial.println("coucou");
     static int n = 0 ;
     ZigMsg::ZigReceivedFrame *z ;
 
@@ -393,6 +403,7 @@ void snif (bool casan_decode)
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
+        Serial.println("test");
         print_frame (z, casan_decode) ;
         zigmsg.skip_received () ;
     }
@@ -510,12 +521,12 @@ read_from_peer_server(struct dtls_context_t *ctx,
         session_t *session, uint8 *data, size_t len)
 {
 
-    ZigMsg::ZigReceivedFrame *z ;
-
 #ifdef MSG_DEBUG
     Serial.println("read_from_peer_serv");
 #endif
 
+    /*
+    ZigMsg::ZigReceivedFrame *z ;
     while ((z = zigmsg.get_received ()) != NULL)
     {
         Serial.println("msg recv");
@@ -545,6 +556,9 @@ read_from_peer_server(struct dtls_context_t *ctx,
     }
 
     return dtls_write(ctx, session, data, len);
+    */
+
+    return 0;
 }
 
 // TODO : faire en sorte d'envoyer des messages à session->addr qui 
@@ -559,7 +573,7 @@ send_to_peer_server(struct dtls_context_t *ctx,
     Serial.println("send2peer_server");
 #endif
 
-    phexascii (data, len, 80);
+    phexascii (data, len, 25);
     //return zigmsg.sendto(SENDADDR, len, data);
     return zigmsg.sendto(session->addr, len, data);
 }
@@ -567,29 +581,27 @@ send_to_peer_server(struct dtls_context_t *ctx,
 static int
 dtls_handle_read(void)
 {
-    session_t session;
-    static uint8 buf[DTLS_MAX_BUF];
-    ZigMsg::ZigReceivedFrame *z ;
 
 #ifdef MSG_DEBUG
     Serial.println("d_hdl_read");
 #endif
 
-    memset(&session, 0, sizeof(session_t));
-    session.size = sizeof(session.addr);
-    session.addr = CURRENT_ADDRESS;
-
+    /*
+    static uint8 buf[DTLS_MAX_BUF];
+    ZigMsg::ZigReceivedFrame *z ;
     while ((z = zigmsg.get_received ()) != NULL)
     {
         Serial.println("recv");
         print_frame (z, false) ;
         Serial.println("raw : ");
-        phexascii (z->payload, z->paylen, 80);
+        phexascii (z->payload, z->paylen, 25);
         zigmsg.skip_received () ;
     }
+    */
 
     // TODO vérifier que le paquet est arrivé en bon état
 
+    /*
     int len = 0;
 
     // TODO récupérer le buffer avec le contenu du paquet
@@ -599,18 +611,17 @@ dtls_handle_read(void)
         Serial.println(ret);
     }
     return ret;
+    */
+    return 0;
 }
 
+// TODO
 static dtls_handler_t cb_server = {
     .write = send_to_peer_server,
-    .read  = read_from_peer_server,
+    .read  = NULL,// read_from_peer_server,
     .event = NULL,
     .get_psk_info = get_psk_info,
 };
-
-unsigned long get_the_time (void) {
-    return millis();
-}
 
 void init_dtls_server (char line [])
 {
@@ -624,19 +635,17 @@ void init_dtls_server (char line [])
     Serial.println("init_d_serv");
 #endif
 
-    //session_t dst;
-    //memset(&dst, 0, sizeof(session_t));
-    //dst.addr = SENDADDR;
-    //dst.size = 2;
+    memset(&dst, 0, sizeof(session_t));
+    dst.addr = SENDADDR;
+    dst.size = 2;
 
     //log_t log_level = DTLS_LOG_WARN;
     //dtls_set_log_level(log_level);
 
+    randomSeed(get_the_time());
     dtls_init(get_the_time);
 
-    int fd;
-    the_context = dtls_new_context(&fd);
-
+    the_context = dtls_new_context(get_random);
     the_context->say = say;
 
     dtls_set_handler(the_context, &cb_server);
@@ -654,8 +663,8 @@ void do_dtls_server (void)
     Serial.println("do_dtls_server");
 #endif
 
-    // on verrifie qu'on n'a pas reçu de message
-    dtls_handle_read();
+    // on vérifie qu'on n'a pas reçu de message
+    //dtls_handle_read();
 
     //print_frame (z, casan_decode) ;
     //zigmsg.skip_received () ;
@@ -751,11 +760,12 @@ static int
 read_from_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
-    ZigMsg::ZigReceivedFrame *z ;
 
 #ifdef MSG_DEBUG
     Serial.println("read_from_peer");
 #endif
+
+    ZigMsg::ZigReceivedFrame *z ;
 
     while ((z = zigmsg.get_received ()) != NULL)
     {
@@ -766,7 +776,7 @@ read_from_peer(struct dtls_context_t *ctx,
         delay(500);
     }
 
-    phexascii (data, len, 80);
+    phexascii (data, len, 25);
     return 0;
 }
 
@@ -786,11 +796,21 @@ send_to_peer(struct dtls_context_t *ctx,
     //return sendto(fd, data, len, MSG_DONTWAIT,
     //        &session->addr.sa, session->size);
 
-    phexascii (data, len, 80);
-    delay(500);
-    return zigmsg.sendto(session->addr, len, data);
+    // TODO
+    int ret = zigmsg.sendto(session->addr, 7, (const unsigned char*)"coucou\n");
+
+
+    phexascii ((uint8_t *)"coucou\n", 7, 10);
+    //phexascii (data, len, 25);
+    //int ret = zigmsg.sendto(session->addr, len, data);
+    delay(5000);
+    Serial.println("");
+    Serial.println(ret);
+    delay(5000);
+    return ret;
 }
 
+/*
 static int
 dtls_handle_read(struct dtls_context_t *ctx)
 {
@@ -839,6 +859,7 @@ dtls_handle_read(struct dtls_context_t *ctx)
 
     return dtls_handle_message(ctx, &session, buf, len);
 }    
+*/
 
 /*---------------------------------------------------------------------------*/
 
@@ -902,11 +923,12 @@ void init_dtls_client (char line [])
     int fd;
     memset(&dst, 0, sizeof(session_t));
     dst.addr = RECVADDR;
-    dst.size = 2;
+    dst.size = sizeof(dst.addr);
 
     //log_t log_level = DTLS_LOG_WARN;
     //dtls_set_log_level(log_level);
 
+    randomSeed(get_the_time());
     dtls_init(get_the_time);
 
     // PSK IDENTITY & KEY
@@ -915,7 +937,7 @@ void init_dtls_client (char line [])
     memcpy(psk_id, PSK_DEFAULT_IDENTITY, psk_id_length);
     memcpy(psk_key, PSK_DEFAULT_KEY, psk_key_length);
 
-    d_ctxt_cli = dtls_new_context(&fd);
+    d_ctxt_cli = dtls_new_context(get_random);
     d_ctxt_cli->say = say;
 
     if (!d_ctxt_cli) {
@@ -945,7 +967,8 @@ void do_dtls_client (void)
     Serial.println("do_d_client");
 #endif
 
-    dtls_handle_read(d_ctxt_cli);
+    //dtls_handle_read(d_ctxt_cli);
+    dtls_handle_read();
 
     // TODO
     if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
