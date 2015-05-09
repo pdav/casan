@@ -1,0 +1,279 @@
+bla.c: In function ‘bla’:
+bla.c:6:5: warning: implicit declaration of function ‘printf’ [-Wimplicit-function-declaration]
+     printf("coucou");
+     ^
+bla.c:6:5: warning: incompatible implicit declaration of built-in function ‘printf’ [enabled by default]
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c: In function ‘dtls_get_peer’:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:230:5: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+     HASH_FIND_PEER(ctx->peers, session, p);
+     ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:230:5: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:230:5: warning: left shift count >= width of type [enabled by default]
+In file included from /home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:38:0:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c: In function ‘dtls_add_peer’:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:145:50: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+           HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));               \
+                                                  ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:162:5: note: in expansion of macro ‘HASH_MAKE_TABLE’
+     HASH_MAKE_TABLE(hh,head);                                                    \
+     ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:151:9: note: in expansion of macro ‘HASH_ADD_KEYPTR’
+         HASH_ADD_KEYPTR(hh,head,&add->fieldname,keylen_in,add)
+         ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:68:5: note: in expansion of macro ‘HASH_ADD’
+     HASH_ADD(hh,head,sess,sizeof(session_t),add)
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:246:5: note: in expansion of macro ‘HASH_ADD_PEER’
+     HASH_ADD_PEER(ctx->peers, session, peer);
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:145:50: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+           HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));               \
+                                                  ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:162:5: note: in expansion of macro ‘HASH_MAKE_TABLE’
+     HASH_MAKE_TABLE(hh,head);                                                    \
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:151:9: note: in expansion of macro ‘HASH_ADD_KEYPTR’
+         HASH_ADD_KEYPTR(hh,head,&add->fieldname,keylen_in,add)
+         ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:68:5: note: in expansion of macro ‘HASH_ADD’
+     HASH_ADD(hh,head,sess,sizeof(session_t),add)
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:246:5: note: in expansion of macro ‘HASH_ADD_PEER’
+     HASH_ADD_PEER(ctx->peers, session, peer);
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:145:50: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+           HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));               \
+                                                  ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:162:5: note: in expansion of macro ‘HASH_MAKE_TABLE’
+     HASH_MAKE_TABLE(hh,head);                                                    \
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:151:9: note: in expansion of macro ‘HASH_ADD_KEYPTR’
+         HASH_ADD_KEYPTR(hh,head,&add->fieldname,keylen_in,add)
+         ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:68:5: note: in expansion of macro ‘HASH_ADD’
+     HASH_ADD(hh,head,sess,sizeof(session_t),add)
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:246:5: note: in expansion of macro ‘HASH_ADD_PEER’
+     HASH_ADD_PEER(ctx->peers, session, peer);
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:145:50: warning: left shift count >= width of type [enabled by default]
+           HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));               \
+                                                  ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:162:5: note: in expansion of macro ‘HASH_MAKE_TABLE’
+     HASH_MAKE_TABLE(hh,head);                                                    \
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:151:9: note: in expansion of macro ‘HASH_ADD_KEYPTR’
+         HASH_ADD_KEYPTR(hh,head,&add->fieldname,keylen_in,add)
+         ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:68:5: note: in expansion of macro ‘HASH_ADD’
+     HASH_ADD(hh,head,sess,sizeof(session_t),add)
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:246:5: note: in expansion of macro ‘HASH_ADD_PEER’
+     HASH_ADD_PEER(ctx->peers, session, peer);
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:145:50: warning: left shift count >= width of type [enabled by default]
+           HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));               \
+                                                  ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:162:5: note: in expansion of macro ‘HASH_MAKE_TABLE’
+     HASH_MAKE_TABLE(hh,head);                                                    \
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/uthash.h:151:9: note: in expansion of macro ‘HASH_ADD_KEYPTR’
+         HASH_ADD_KEYPTR(hh,head,&add->fieldname,keylen_in,add)
+         ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:68:5: note: in expansion of macro ‘HASH_ADD’
+     HASH_ADD(hh,head,sess,sizeof(session_t),add)
+     ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:246:5: note: in expansion of macro ‘HASH_ADD_PEER’
+     HASH_ADD_PEER(ctx->peers, session, peer);
+     ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c: In function ‘dtls_retransmit’:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:3994:38: warning: unused variable ‘hs_header’ [-Wunused-variable]
+             dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
+                                      ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c: At top level:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/dtls.c:584:14: warning: ‘dtls_handshake_type_to_name’ defined but not used [-Wunused-function]
+ static char *dtls_handshake_type_to_name(int type)
+              ^
+
+/usr/bin/avr-gcc -MMD -c -mmcu=atmega128rfa1 -DF_CPU=16000000L -DARDUINO=105  -D__PROG_TYPES_COMPAT__ -I/usr/share/arduino/hardware/arduino/cores/zigduino -I/usr/share/arduino/hardware/arduino//variants/zigduino_r2     -I/home/karchnu/repos/stage/casan/arduino/libraries/ZigMsg   -I/home/karchnu/repos/stage/casan/arduino/libraries/Dtls   -I/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/aes   -I/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2 -Wall -ffunction-sections -fdata-sections -Os -U__PROG_TYPES_COMPAT__ -DDBLEVEL=1  /home/karchnu/repos/stage/casan/arduino/libraries/Dtls/debug.c -o build-zigduino_r2/userlibs/Dtls/debug.o
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/debug.c:68:14: warning: ‘loglevels’ defined but not used [-Wunused-variable]
+ static char *loglevels[] = {
+              ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:245:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x428a2f98UL, 0x71374491UL, 0xb5c0fbcfUL, 0xe9b5dba5UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:245:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:245:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:245:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:246:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x3956c25bUL, 0x59f111f1UL, 0x923f82a4UL, 0xab1c5ed5UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:246:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:246:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:246:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:247:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xd807aa98UL, 0x12835b01UL, 0x243185beUL, 0x550c7dc3UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:247:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:247:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:247:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:248:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x72be5d74UL, 0x80deb1feUL, 0x9bdc06a7UL, 0xc19bf174UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:248:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:248:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:248:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:249:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xe49b69c1UL, 0xefbe4786UL, 0x0fc19dc6UL, 0x240ca1ccUL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:249:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:249:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:249:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:250:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x2de92c6fUL, 0x4a7484aaUL, 0x5cb0a9dcUL, 0x76f988daUL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:250:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:250:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:250:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:251:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x983e5152UL, 0xa831c66dUL, 0xb00327c8UL, 0xbf597fc7UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:251:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:251:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:251:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:252:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xc6e00bf3UL, 0xd5a79147UL, 0x06ca6351UL, 0x14292967UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:252:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:252:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:252:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:253:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x27b70a85UL, 0x2e1b2138UL, 0x4d2c6dfcUL, 0x53380d13UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:253:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:253:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:253:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:254:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x650a7354UL, 0x766a0abbUL, 0x81c2c92eUL, 0x92722c85UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:254:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:254:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:254:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:255:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xa2bfe8a1UL, 0xa81a664bUL, 0xc24b8b70UL, 0xc76c51a3UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:255:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:255:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:255:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:256:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xd192e819UL, 0xd6990624UL, 0xf40e3585UL, 0x106aa070UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:256:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:256:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:256:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:257:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x19a4c116UL, 0x1e376c08UL, 0x2748774cUL, 0x34b0bcb5UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:257:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:257:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:257:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:258:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x391c0cb3UL, 0x4ed8aa4aUL, 0x5b9cca4fUL, 0x682e6ff3UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:258:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:258:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:258:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:259:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x748f82eeUL, 0x78a5636fUL, 0x84c87814UL, 0x8cc70208UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:259:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:259:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:259:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:260:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x90befffaUL, 0xa4506cebUL, 0xbef9a3f7UL, 0xc67178f2UL
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:260:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:260:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:261:1: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+ };
+ ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:265:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x6a09e667UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:266:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xbb67ae85UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:267:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x3c6ef372UL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:268:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0xa54ff53aUL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:269:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x510e527fUL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:270:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x9b05688cUL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:271:2: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+  0x1f83d9abUL,
+  ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:273:1: warning: large integer implicitly truncated to unsigned type [-Woverflow]
+ };
+ ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c: In function ‘SHA256_Transform’:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:484:3: warning: right shift count >= width of type [enabled by default]
+   REVERSE32(*data++,W256[j]);
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:484:3: warning: left shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:486:3: warning: left shift count >= width of type [enabled by default]
+   T1 = h + Sigma1_256(e) + Ch(e, f, g) + K256[j] + W256[j];
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:486:3: warning: left shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:486:3: warning: right shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:491:3: warning: left shift count >= width of type [enabled by default]
+   T2 = Sigma0_256(a) + Maj(a, b, c);
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:491:3: warning: left shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:491:3: warning: right shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:507:3: warning: left shift count >= width of type [enabled by default]
+   s0 = sigma0_256(s0);
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:507:3: warning: right shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:509:3: warning: right shift count >= width of type [enabled by default]
+   s1 = sigma1_256(s1);
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:509:3: warning: right shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:512:3: warning: left shift count >= width of type [enabled by default]
+   T1 = h + Sigma1_256(e) + Ch(e, f, g) + K256[j] + 
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:512:3: warning: left shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:512:3: warning: right shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:514:3: warning: left shift count >= width of type [enabled by default]
+   T2 = Sigma0_256(a) + Maj(a, b, c);
+   ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:514:3: warning: left shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:514:3: warning: right shift count >= width of type [enabled by default]
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c: In function ‘SHA256_Final’:
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:630:3: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+   *(sha2_word64*)&context->buffer[SHA256_SHORT_BLOCK_LENGTH] = context->bitcount;
+   ^
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:640:5: warning: right shift count >= width of type [enabled by default]
+     REVERSE32(context->state[j],context->state[j]);
+     ^
+
+/home/karchnu/repos/stage/casan/arduino/libraries/Dtls/sha2/sha2.c:640:5: warning: left shift count >= width of type [enabled by default]
+/usr/bin/avr-objcopy: --change-section-lma .eeprom=0x0000000000000000 jamais utilisé
