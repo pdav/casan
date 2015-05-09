@@ -54,7 +54,6 @@ typedef struct {
 #else /* WITH_CONTIKI */
 #error "Can't be compiled for our purpose with this"
 
-// TODO : remplacer ça
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

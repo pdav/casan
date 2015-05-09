@@ -63,7 +63,7 @@ dtls_prng_init(unsigned short seed) {
 
 #elif defined WITH_ARDUINO
 
-long (*get_rand)(int max);
+unsigned long (*get_rand)(unsigned int max);
 
 /**
  * Fills \p buf with \p len random bytes. This is the default
@@ -79,7 +79,7 @@ dtls_prng(unsigned char *buf, size_t len)
 }
 
 static inline void
-dtls_prng_init(long (*get_r)(int max)) {
+dtls_prng_init(unsigned long (*get_r)(unsigned int max)) {
     get_rand = get_r;
 }
 

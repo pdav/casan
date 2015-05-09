@@ -46,7 +46,7 @@
 #include "netq.h"
 
 #ifdef WITH_CONTIKI
-#elif WITH_ARDUINO
+#elif defined WITH_ARDUINO
 // TODO pthread ?
 #else
 #include <pthread.h>
@@ -58,17 +58,17 @@
 static struct dtls_cipher_context_t cipher_context;
 // pthreads -- TODO FIXME
 #ifdef WITH_CONTIKI
-#elif WITH_ARDUINO
+#elif defined WITH_ARDUINO
 #else
 static pthread_mutex_t cipher_context_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static struct dtls_cipher_context_t *dtls_cipher_context_get(void)
 {
-    #ifndef WITH_CONTIKI
-    #elif   WITH_ARDUINO
+    #ifdef WITH_CONTIKI
+    #elif defined WITH_ARDUINO
     #else
-     // pthread -- TODO FIXME
+    // pthread -- TODO FIXME
     pthread_mutex_lock(&cipher_context_mutex);
     #endif
     return &cipher_context;
@@ -76,8 +76,8 @@ static struct dtls_cipher_context_t *dtls_cipher_context_get(void)
 
 static void dtls_cipher_context_release(void)
 {
-    #ifndef WITH_CONTIKI
-    #elif   WITH_ARDUINO
+    #ifdef WITH_CONTIKI
+    #elif defined WITH_ARDUINO
     #else
      // pthread -- TODO FIXME
     pthread_mutex_unlock(&cipher_context_mutex);

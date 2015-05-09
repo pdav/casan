@@ -281,7 +281,7 @@ void dtls_init();
  * Creates a new context object. The storage allocated for the new
  * object must be released with dtls_free_context(). */
 #ifdef WITH_ARDUINO
-dtls_context_t *dtls_new_context(unsigned long (*get_r)(int max));
+dtls_context_t *dtls_new_context(unsigned long (*get_r)(unsigned int max));
 #else
 dtls_context_t *dtls_new_context(void *app_data);
 #endif

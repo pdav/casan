@@ -3760,7 +3760,7 @@ dtls_handle_message(dtls_context_t *ctx,
 
 #ifdef WITH_ARDUINO
 dtls_context_t *
-dtls_new_context(unsigned long (*get_r)(int max)) {
+dtls_new_context(unsigned long (*get_r)(unsigned int max)) {
     dtls_context_t *c;
     dtls_tick_t now;
 
@@ -3947,13 +3947,13 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst) {
 
     if (!peer) {
         dtls_crit("cannot create new peer\n");
-#ifdef WITH_ARDUINO && defined MSG_DEBUG
+#if defined WITH_ARDUINO && defined MSG_DEBUG
         ctx->say("cannot create new peer\n");
 #endif
         return -1;
     }
 
-#ifdef WITH_ARDUINO && defined MSG_DEBUG
+#if defined WITH_ARDUINO && defined MSG_DEBUG
     ctx->say("dtls_connect !\n");
 #endif
 
