@@ -68,7 +68,7 @@ void print_free_mem()
     Serial.println(memory);
 }
 
-unsigned long get_random (int max) {
+unsigned long get_random (unsigned int max) {
     return random(max);
 }
 
@@ -585,6 +585,8 @@ void do_chan (void)
   DTLS common
  *******************************************************************************/
 
+dtls_context_t *the_context = NULL;
+
 /******************************************************************************
   DTLS server
  *******************************************************************************/
@@ -592,7 +594,7 @@ void do_chan (void)
 /* This function is the "key store" for tinyDTLS. It is called to
  * retrieve a key for the given identity within this particular
  * session. */
-/*
+
 static int
 get_psk_info(struct dtls_context_t *ctx, const session_t *session,
         dtls_credentials_type_t type,
@@ -640,8 +642,6 @@ get_psk_info(struct dtls_context_t *ctx, const session_t *session,
 
 #define DTLS_SERVER_CMD_CLOSE "server:close"
 #define DTLS_SERVER_CMD_RENEGOTIATE "server:renegotiate"
-
-dtls_context_t *the_context = NULL;
 
 static int
 read_from_peer_server(struct dtls_context_t *ctx, 
@@ -728,13 +728,12 @@ dtls_handle_read(void)
     //int len = 0;
 
     // TODO récupérer le buffer avec le contenu du paquet
-    //int ret = dtls_handle_message(the_context, &session, buf, len);
-    //if(ret) {
-    //    Serial.print("err d_hdl_msg > d_h_read : ");
-    //    Serial.println(ret);
-    //}
-    //return ret;
-    return 0;
+    int ret = dtls_handle_message(the_context, &session, buf, len);
+    if(ret) {
+        Serial.print("err d_hdl_msg > d_h_read : ");
+        Serial.println(ret);
+    }
+    return ret;
 }
 
 // TODO
@@ -797,13 +796,10 @@ void do_dtls_server (void)
     //dtls_free_context(the_context);
     // then exit
 }
-*/
 
 /******************************************************************************
   DTLS client
  *******************************************************************************/
-
-static dtls_context_t *d_ctxt_cli = NULL;
 
 // The PSK information for DTLS
 #define PSK_ID_MAXLEN 256
@@ -987,8 +983,7 @@ void init_dtls_client (char line [])
 {
     zigmsg.channel (channel) ;
     zigmsg.panid (PANID) ;
-    zigmsg.addr2 (RECVADDR) ; // TODO replace this
-    //zigmsg.addr2 (SENDADDR) ;
+    zigmsg.addr2 (SENDADDR) ;
     zigmsg.promiscuous (false) ;
     zigmsg.start () ;
 
@@ -996,10 +991,8 @@ void init_dtls_client (char line [])
     Serial.println("Start cli") ;
 #endif
 
-    /*
     memset(&dst, 0, sizeof(session_t));
-    //dst.addr = RECVADDR; TODO replace this
-    dst.addr = SENDADDR;
+    dst.addr = RECVADDR;
     dst.size = sizeof(dst.addr);
 
     //log_t log_level = DTLS_LOG_WARN;
@@ -1014,23 +1007,22 @@ void init_dtls_client (char line [])
     memcpy(psk_id, PSK_DEFAULT_IDENTITY, psk_id_length);
     memcpy(psk_key, PSK_DEFAULT_KEY, psk_key_length);
 
-    d_ctxt_cli = dtls_new_context(get_random);
-    d_ctxt_cli->say = say;
+    the_context = dtls_new_context(get_random);
+    the_context->say = say;
 
-    if (!d_ctxt_cli) {
+    if (!the_context) {
         //dtls_emerg("cannot create context\n");
         while(1) { Serial.println("cant create ctxt"); delay(1000); }
     }
 
-    dtls_set_handler(d_ctxt_cli, &cb_cli);
+    dtls_set_handler(the_context, &cb_cli);
 
-    dtls_connect(d_ctxt_cli, &dst);
-    */
+    dtls_connect(the_context, &dst);
 }
 
 void stop_dtls_client (void)
 {
-    //dtls_free_context(d_ctxt_cli);
+    dtls_free_context(the_context);
 
 #ifdef MSG_DEBUG
     Serial.println("stop_d_c");
@@ -1039,52 +1031,52 @@ void stop_dtls_client (void)
 
 void do_dtls_client (void)
 {
-//#ifdef MSG_DEBUG
-//    Serial.println("do_d_client");
-//    print_free_mem();
-//#endif
+#ifdef MSG_DEBUG
+    Serial.println("do_d_client");
+    print_free_mem();
+#endif
 
-    do_snif();
-    //dtls_handle_read();
+    //do_snif();
+    dtls_handle_read();
 
 //#ifdef MSG_DEBUG
 //    Serial.println("apres dtls_handle_read");
 //    print_free_mem();
 //#endif
 
-    // TODO
-//    if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
-//            !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
-//                , strlen(DTLS_CLIENT_CMD_CLOSE)))
-//    {
-//#ifdef MSG_DEBUG
-//        Serial.println("cli: clos co");
-//        print_free_mem();
-//#endif
-//        dtls_close(d_ctxt_cli, &dst);
-//        len = 0;
-//    } 
-//    else if (len >= strlen(DTLS_CLIENT_CMD_RENEGOTIATE) &&
-//            !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
-//                , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
-//    {
-//#ifdef MSG_DEBUG
-//        Serial.println("cli: reneg co");
-//        print_free_mem();
-//#endif
-//        dtls_renegotiate(d_ctxt_cli, &dst);
-//        len = 0;
-//    } else {
-//        try_send(d_ctxt_cli);
-//    }
+// TODO
+    if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
+            !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
+                , strlen(DTLS_CLIENT_CMD_CLOSE)))
+    {
+#ifdef MSG_DEBUG
+        Serial.println("cli: clos co");
+        print_free_mem();
+#endif
+        dtls_close(the_context, &dst);
+        len = 0;
+    } 
+    else if (len >= strlen(DTLS_CLIENT_CMD_RENEGOTIATE) &&
+            !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
+                , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
+    {
+#ifdef MSG_DEBUG
+        Serial.println("cli: reneg co");
+        print_free_mem();
+#endif
+        dtls_renegotiate(the_context, &dst);
+        len = 0;
+    } else {
+        try_send(the_context);
+    }
 }
 
 
 
 
 /******************************************************************************
-GUI ;-)
-*******************************************************************************/
+  GUI ;-)
+ *******************************************************************************/
 
 void init_idle (char line [])
 {
@@ -1114,11 +1106,11 @@ struct gui gui [] = {
     { 's', "sender", init_send, stop_send, do_send },
     { 'r', "receiver", init_recv, stop_recv, do_recv },
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
+    { 'd', "dtls client", init_dtls_client, stop_dtls_client, do_dtls_client },
     /*
-    { 'S', "dtls server", init_dtls_server, stop_dtls_server, do_dtls_server },
-    { 'C', "dtls client", init_dtls_client, stop_dtls_client, do_dtls_client },
-    { 'C', "dtls client", init_dtls_client, stop_dtls_client, do_snif },
-    */
+       { 'S', "dtls server", init_dtls_server, stop_dtls_server, do_dtls_server },
+       { 'C', "dtls client", init_dtls_client, stop_dtls_client, do_snif },
+     */
 } ;
 #define	IDLE_MODE (& gui [0])
 
@@ -1128,22 +1120,22 @@ struct gui *parse_and_init_or_stop (char line [], struct gui *oldmode)
     struct gui *newmode ;
 
     while (*p == ' ' || *p == '\t')
-	p++ ;
+        p++ ;
 
     newmode = oldmode ;
     for (int i = 0 ; i < NTAB (gui) ; i++)
     {
-	if (*p == gui [i].start_key)
-	{
-	    newmode = &gui [i] ;
-	    break ;
-	}
+        if (*p == gui [i].start_key)
+        {
+            newmode = &gui [i] ;
+            break ;
+        }
     }
 
     if (newmode != oldmode)
     {
-	(* oldmode->f_stop) () ;
-	(* newmode->f_init) (p + 1) ;
+        (* oldmode->f_stop) () ;
+        (* newmode->f_init) (p + 1) ;
     }
 
     return newmode ;
@@ -1153,18 +1145,18 @@ void help (void)
 {
     for (int i = 0 ; i < NTAB (gui) ; i++)
     {
-	if (i > 0)
-	    Serial.print (", ") ;
-	Serial.print (gui [i].start_key) ;
-	Serial.print (':') ;
-	Serial.print (gui [i].desc) ;
+        if (i > 0)
+            Serial.print (", ") ;
+        Serial.print (gui [i].start_key) ;
+        Serial.print (':') ;
+        Serial.print (gui [i].desc) ;
     }
     Serial.println () ;
 }
 
 /******************************************************************************
-Classic Arduino functions
-*******************************************************************************/
+  Classic Arduino functions
+ *******************************************************************************/
 
 void setup ()
 {
@@ -1183,24 +1175,24 @@ void loop()
     n = Serial.available () ;
     if (n > 0)
     {
-	for (int i = 0 ; i < n ; i++)
-	{
-	    *p = Serial.read () ;
-	    Serial.print (*p) ;
-	    if (*p == '\r')
-	    {
-		struct gui *oldmode ;
+        for (int i = 0 ; i < n ; i++)
+        {
+            *p = Serial.read () ;
+            Serial.print (*p) ;
+            if (*p == '\r')
+            {
+                struct gui *oldmode ;
 
-		Serial.print ('\n') ;
-		p = '\0' ;
-		oldmode = curmode ;
-		curmode = parse_and_init_or_stop (line, curmode) ;
-		p = line ;
-		if (curmode == oldmode)
-		    help () ;
-	    }
-	    else p++ ;
-	}
+                Serial.print ('\n') ;
+                p = '\0' ;
+                oldmode = curmode ;
+                curmode = parse_and_init_or_stop (line, curmode) ;
+                p = line ;
+                if (curmode == oldmode)
+                    help () ;
+            }
+            else p++ ;
+        }
     }
 
     (*curmode->f_do) () ;
