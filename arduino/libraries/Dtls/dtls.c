@@ -4183,7 +4183,8 @@ dtls_free_context(dtls_context_t *ctx)
 
 int
 dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
-#if 1
+// FIXME de là que vient le bug pénible ?
+#if 0
     int res;
 
     assert(peer);
@@ -4224,7 +4225,7 @@ dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
 int
 dtls_connect(dtls_context_t *ctx, const session_t *dst) {
 // FIXME de là que vient le bug pénible ?
-#if 0
+#if 1
     dtls_peer_t *peer;
     int res;
 
