@@ -32,8 +32,17 @@
 #include "global.h"
 
 #ifdef WITH_SHA256
-/** Aaron D. Gifford's implementation of SHA256
- *  see http://www.aarongifford.com/ */
+
+// FIXME to get the SHA256 out of the code
+#if 0 
+
+#include "sha256/sha256.h"
+
+#endif
+
+
+// FIXME to get the SHA256 out of the code
+#if 0 
 #include "sha2/sha2.h"
 
 typedef SHA256_CTX dtls_hash_ctx;
@@ -55,6 +64,9 @@ dtls_hash_finalize(unsigned char *buf, dtls_hash_t ctx) {
   SHA256_Final(buf, (SHA256_CTX *)ctx);
   return SHA256_DIGEST_LENGTH;
 }
+#endif // sha2
+
+
 #endif /* WITH_SHA256 */
 
 #ifndef WITH_CONTIKI
@@ -95,7 +107,10 @@ typedef enum {
  */
 typedef struct {
   unsigned char pad[DTLS_HMAC_BLOCKSIZE]; /**< ipad and opad storage */
+// FIXME to get the SHA256 out of the code
+#if 0 
   dtls_hash_ctx data;		          /**< context for hash function */
+#endif
 } dtls_hmac_context_t;
 
 /**

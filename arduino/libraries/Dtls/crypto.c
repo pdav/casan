@@ -136,6 +136,8 @@ dtls_handshake_parameters_t *dtls_handshake_new()
 {
     dtls_handshake_parameters_t *handshake;
 
+// FIXME to get the SHA256 out of the code
+#if 0
     handshake = dtls_handshake_malloc();
     if (!handshake) {
         dtls_crit("can not allocate a handshake struct\n");
@@ -152,6 +154,7 @@ dtls_handshake_parameters_t *dtls_handshake_new()
            hash functions as well */
         dtls_hash_init(&handshake->hs_state.hs_hash);
     }
+#endif
     return handshake;
 }
 

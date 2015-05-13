@@ -47,8 +47,10 @@
 #include "session.h"
 #include "prng.h"
 
+#if 0 // the lib we will use
 #ifdef WITH_SHA256
-#  include "sha2/sha2.h"
+#  include "sha256/sha256.h"
+#endif
 #endif
 
 #define dtls_set_version(H,V) dtls_int_to_uint16((H)->version, (V))
@@ -64,8 +66,14 @@
 #ifndef WITH_CONTIKI
 #define HASH_FIND_PEER(head,sess,out)		\
     HASH_FIND(hh,head,sess,sizeof(session_t),out)
+// FIXME warnings
+#if 0
 #define HASH_ADD_PEER(head,sess,add)		\
     HASH_ADD(hh,head,sess,sizeof(session_t),add)
+#else
+#define HASH_ADD_PEER(head,sess,add)		\
+    do { } while(0)
+#endif
 #define HASH_DEL_PEER(head,delptr)		\
     HASH_DELETE(hh,head,delptr)
 #endif /* WITH_CONTIKI */
@@ -1088,25 +1096,39 @@ check_client_keyexchange(dtls_context_t *ctx,
 static inline void
 update_hs_hash(dtls_peer_t *peer, uint8 *data, size_t length) {
     dtls_debug_dump("add MAC data", data, length);
+// FIXME to get the SHA256 out of the code
+#if 0
     dtls_hash_update(&peer->handshake_params->hs_state.hs_hash, data, length);
+#endif
 }
 
+// FIXME to get the SHA256 out of the code
+#if 0
 static void
 copy_hs_hash(dtls_peer_t *peer, dtls_hash_ctx *hs_hash) {
     memcpy(hs_hash, &peer->handshake_params->hs_state.hs_hash,
             sizeof(peer->handshake_params->hs_state.hs_hash));
 }
+#endif
 
 static inline size_t
 finalize_hs_hash(dtls_peer_t *peer, uint8 *buf) {
+// FIXME to get the SHA256 out of the code
+#if 0
     return dtls_hash_finalize(buf, &peer->handshake_params->hs_state.hs_hash);
+#else
+    return 0;
+#endif
 }
 
 static inline void
 clear_hs_hash(dtls_peer_t *peer) {
     assert(peer);
     dtls_debug("clear MAC\n");
+// FIXME to get the SHA256 out of the code
+#if 0
     dtls_hash_init(&peer->handshake_params->hs_state.hs_hash);
+#endif
 }
 
 /** 
@@ -1122,6 +1144,8 @@ clear_hs_hash(dtls_peer_t *peer) {
 static int
 check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
         uint8 *data, size_t data_length) {
+// FIXME to get the SHA256 out of the code
+#if 0
     size_t digest_length, label_size;
     const unsigned char *label;
     unsigned char buf[DTLS_HMAC_MAX];
@@ -1169,6 +1193,8 @@ check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
     return equals(data + DTLS_HS_LENGTH, b.verify_data, sizeof(b.verify_data))
         ? 0
         : dtls_alert_create(DTLS_ALERT_LEVEL_FATAL, DTLS_ALERT_HANDSHAKE_FAILURE);
+#endif
+    return 0;
 }
 
 /**
@@ -1719,6 +1745,8 @@ check_client_certificate_verify(dtls_context_t *ctx,
     unsigned char *result_r;
     unsigned char *result_s;
     dtls_hash_ctx hs_hash;
+// FIXME to get the SHA256 out of the code
+#if 0 
     unsigned char sha256hash[DTLS_HMAC_DIGEST_SIZE];
 
     assert(is_tls_ecdhe_ecdsa_with_aes_128_ccm_8(config->cipher));
@@ -1750,6 +1778,7 @@ check_client_certificate_verify(dtls_context_t *ctx,
         dtls_alert("wrong signature err: %i\n", ret);
         return dtls_alert_fatal_create(DTLS_ALERT_HANDSHAKE_FAILURE);
     }
+#endif
     return 0;
 }
 #endif /* DTLS_ECC */
@@ -2263,6 +2292,8 @@ dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
 dtls_send_certificate_verify_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
         const dtls_ecdsa_key_t *key)
 {
+// FIXME to get the SHA256 out of the code
+#if 0 
     /* The ASN.1 Integer representation of an 32 byte unsigned int could be
      * 33 bytes long add space for that */
     uint8 buf[DTLS_CV_LENGTH + 2];
@@ -2287,6 +2318,7 @@ dtls_send_certificate_verify_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
             point_r, point_s);
 
     p = dtls_add_ecdsa_signature_elem(p, point_r, point_s);
+#endif
 
     assert(p - buf <= sizeof(buf));
 
@@ -2299,6 +2331,8 @@ static int
 dtls_send_finished(dtls_context_t *ctx, dtls_peer_t *peer,
         const unsigned char *label, size_t labellen)
 {
+// FIXME to get the SHA256 out of the code
+#if 0
     int length;
     uint8 hash[DTLS_HMAC_MAX];
     uint8 buf[DTLS_FIN_LENGTH];
@@ -2324,6 +2358,9 @@ dtls_send_finished(dtls_context_t *ctx, dtls_peer_t *peer,
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_FINISHED,
             buf, p - buf);
+#else
+    return 0;
+#endif
 }
 
 static int
@@ -3991,10 +4028,13 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
         netq_insert_node(context->sendqueue, node);
 
         if (node->type == DTLS_CT_HANDSHAKE) {
+// FIXME to get the SHA256 out of the code
+#if 0
             dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
 
             dtls_debug("** retransmit handshake packet of type: %s (%i)\n",
                     dtls_handshake_type_to_name(hs_header->msg_type), hs_header->msg_type);
+#endif
         } else {
             dtls_debug("** retransmit packet\n");
         }

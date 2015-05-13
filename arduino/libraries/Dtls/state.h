@@ -65,6 +65,10 @@ typedef struct {
     /* FIXME: dtls_security_parameters_t pending_config; */
 
     /* temporary storage for the final handshake hash */
+
+// FIXME to get the SHA256 out of the code
+#if 0 
     dtls_hash_ctx hs_hash;
+#endif
 } dtls_hs_state_t;
 #endif /* _DTLS_STATE_H_ */

@@ -1,9 +1,5 @@
 #include <ZigMsg.h>
 
-extern "C" {
-#include <uselessd.h>
-};
-
 #define	CHANNEL	25		// use "c" to change it while running
 
 #define	PANID		CONST16 (0xbe, 0xef)
@@ -13,15 +9,78 @@ extern "C" {
 #define	MSGBUF_SIZE	100
 
 
+#ifdef __GNUC__
+#define UNUSED_PARAM __attribute__((unused))
+#else
+#define UNUSED_PARAM
+#endif /* __GNUC__ */
+
 #define	PERIODIC	100000
 
 int channel = CHANNEL ;
+
+//#define USE_USELESSD 1
+
+extern "C" {
+#include "free_memory.h"
+
+#ifdef USE_USELESSD
+#include <uselessd.h>
+#else
+#include <tinydtls.h>
+#include <dtls.h>
+#endif
+};
+
+#define PSK_DEFAULT_IDENTITY "Client_identity"
+#define PSK_DEFAULT_KEY      "secretPSK"
+#define DTLS_MAX_BUF 200
+#define MSG_DEBUG 1
+session_t dst;
+session_t session;
+static char buf[DTLS_MAX_BUF];
+static size_t len = 0;
+
+/*
+   TODO
+ * envoyer les messages d'erreur DTLS au lieu de simplement
+   afficher une erreur et boucler
+
+ * les messages reçus doivent être via do_dtls_x puis remontés
+   à la lib via dtls_handle_message
+
+ * vrai envoi de message dans send_to_peer
+ * merge send_to_peer avec send_to_peer_server
+
+*/
+
 
 /******************************************************************************
 Utilities
 *******************************************************************************/
 
 #define	HEXCHAR(c)	((c) < 10 ? (c) + '0' : (c) - 10 + 'a')
+
+void print_free_mem()
+{
+    int memory = freeMemory();
+    Serial.print("mémoire disponible : ");
+    Serial.println(memory);
+}
+
+unsigned long get_random (unsigned int max) {
+    return random(max);
+}
+
+unsigned long get_the_time (void) {
+    return millis();
+}
+
+void say (char * txt_to_say)
+{
+    Serial.print(txt_to_say);
+    delay(1000);
+}
 
 void phex (uint8_t c)
 {
@@ -94,10 +153,6 @@ CoAP decoding
 
 const char *type_string [] = { "CON", "NON", "ACK", "RST" } ;
 const char *code_string [] = { "Empty msg", "GET", "POST", "PUT", "DELETE" } ;
-
-unsigned long get_random (unsigned int max) {
-    return random(max);
-}
 
 void coap_decode (uint8_t msg [], int msglen)
 {
@@ -522,6 +577,8 @@ void do_chan (void)
 {
 }
 
+#ifdef USE_USELESSD
+
 /******************************************************************************
   USELESSD
 *******************************************************************************/
@@ -541,10 +598,499 @@ void do_uselessd(void)
     Serial.println(x);
 }
 
+#else
 
-/******************************************************************************
-GUI ;-)
-*******************************************************************************/
+//  DTLS common
+
+dtls_context_t *the_context = NULL;
+
+// DTLS server
+
+/* This function is the "key store" for tinyDTLS. It is called to
+ * retrieve a key for the given identity within this particular
+ * session. */
+
+static int
+get_psk_info(struct dtls_context_t *ctx, const session_t *session,
+        dtls_credentials_type_t type,
+        const unsigned char *id, size_t id_len,
+        unsigned char *result, size_t result_length)
+{
+
+    struct keymap_t {
+        unsigned char *id;
+        size_t id_length;
+        unsigned char *key;
+        size_t key_length;
+    } psk[3] = {
+        { (unsigned char *)"Client_identity", 15,
+            (unsigned char *)"secretPSK", 9 },
+        { (unsigned char *)"default identity", 16,
+            (unsigned char *)"\x11\x22\x33", 3 },
+        { (unsigned char *)"\0", 2,
+            (unsigned char *)"", 1 }
+    };
+
+    if (type != DTLS_PSK_KEY) {
+        return 0;
+    }
+
+    if (id) {
+        unsigned int i;
+        for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
+            if (id_len == psk[i].id_length && 
+                    memcmp(id, psk[i].id, id_len) == 0) {
+                if (result_length < psk[i].key_length) {
+                    //dtls_warn("buffer too small for PSK");
+                    Serial.println("buf 2 small 4 PSK");
+                    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+                }
+
+                memcpy(result, psk[i].key, psk[i].key_length);
+                return psk[i].key_length;
+            }
+        }
+    }
+
+    return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
+}
+
+#define DTLS_SERVER_CMD_CLOSE "server:close"
+#define DTLS_SERVER_CMD_RENEGOTIATE "server:renegotiate"
+
+static int
+read_from_peer_server(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("read_from_peer_serv");
+    print_free_mem();
+#endif
+
+    ZigMsg::ZigReceivedFrame *z ;
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        Serial.println("msg recv");
+        //print_frame (z, casan_decode) ;
+        print_frame (z, false) ;
+        zigmsg.skip_received () ;
+    }
+
+    size_t i;
+    for (i = 0; i < len; i++)
+        Serial.print(data[i]);
+
+    if (len >= strlen(DTLS_SERVER_CMD_CLOSE) &&
+            !memcmp(data
+                , DTLS_SERVER_CMD_CLOSE
+                , strlen(DTLS_SERVER_CMD_CLOSE))) {
+        Serial.println("serv: clos co");
+        dtls_close(ctx, session);
+        return len;
+
+    } else if (len >= strlen(DTLS_SERVER_CMD_RENEGOTIATE) &&
+            !memcmp(data, DTLS_SERVER_CMD_RENEGOTIATE
+                , strlen(DTLS_SERVER_CMD_RENEGOTIATE))) {
+        Serial.println("serv: reneg co");
+        dtls_renegotiate(ctx, session);
+        return len;
+    }
+
+    return dtls_write(ctx, session, data, len);
+}
+
+// TODO : faire en sorte d'envoyer des messages à session->addr qui 
+// indiquera l'adresse
+
+static int
+send_to_peer_server(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("send2peer_server");
+    print_free_mem();
+#endif
+
+    phexascii (data, len, 25);
+    //return zigmsg.sendto(SENDADDR, len, data);
+    return zigmsg.sendto(session->addr, len, data);
+}
+
+static int
+dtls_handle_read(void)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("d_hdl_read");
+    print_free_mem();
+#endif
+
+    static uint8 buf[DTLS_MAX_BUF];
+    ZigMsg::ZigReceivedFrame *z ;
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        Serial.println("recv");
+        print_frame (z, false) ;
+        Serial.println("raw : ");
+        phexascii (z->payload, z->paylen, 25);
+        zigmsg.skip_received () ;
+    }
+
+    // TODO vérifier que le paquet est arrivé en bon état
+
+    //int len = 0;
+
+    // TODO récupérer le buffer avec le contenu du paquet
+    int ret = dtls_handle_message(the_context, &session, buf, len);
+    if(ret) {
+        Serial.print("err d_hdl_msg > d_h_read : ");
+        Serial.println(ret);
+    }
+    return ret;
+}
+
+// TODO
+static dtls_handler_t cb_server = {
+    .write = send_to_peer_server,
+    .read  = read_from_peer_server,
+    .event = NULL,
+    .get_psk_info = get_psk_info,
+};
+
+void init_dtls_server (char line [])
+{
+    zigmsg.channel (channel) ;
+    zigmsg.panid (PANID) ;
+    zigmsg.addr2 (RECVADDR) ;
+    zigmsg.promiscuous (false) ;
+    zigmsg.start () ;
+
+#ifdef MSG_DEBUG
+    Serial.println("init_d_serv");
+    print_free_mem();
+#endif
+
+    memset(&dst, 0, sizeof(session_t));
+    dst.addr = SENDADDR;
+    dst.size = 2;
+
+    //log_t log_level = DTLS_LOG_WARN;
+    //dtls_set_log_level(log_level);
+
+    randomSeed(get_the_time());
+    dtls_init(get_the_time);
+
+    the_context = dtls_new_context(get_random);
+    the_context->say = say;
+
+    dtls_set_handler(the_context, &cb_server);
+}
+
+void stop_dtls_server (void)
+{
+    Serial.println("Stop D serv") ;
+}
+
+void do_dtls_server (void)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("do_dtls_server");
+    print_free_mem();
+#endif
+
+    // on vérifie qu'on n'a pas reçu de message
+    dtls_handle_read();
+
+    //print_frame (z, casan_decode) ;
+    //zigmsg.skip_received () ;
+
+    // if error:
+    //dtls_free_context(the_context);
+    // then exit
+}
+
+// DTLS client
+
+// The PSK information for DTLS
+#define PSK_ID_MAXLEN 256
+#define PSK_MAXLEN 256
+static unsigned char psk_id[PSK_ID_MAXLEN];
+static size_t psk_id_length = 0;
+static unsigned char psk_key[PSK_MAXLEN];
+static size_t psk_key_length = 0;
+
+// This function is the "key store" for tinyDTLS. It is called to
+// retrieve a key for the given identity within this particular
+// session.
+static int
+get_psk_info_cli(struct dtls_context_t *ctx UNUSED_PARAM,
+        const session_t *session UNUSED_PARAM,
+        dtls_credentials_type_t type,
+        const unsigned char *id, size_t id_len,
+        unsigned char *result, size_t result_length)
+{
+
+    switch (type) {
+        case DTLS_PSK_IDENTITY:
+            if (id_len) {
+                //dtls_debug("got psk_identity_hint: '%.*s'\n", id_len, id);
+                Serial.print("got psk_id_hint: ");
+                Serial.println(*id);
+            }
+
+            if (result_length < psk_id_length) {
+                //dtls_warn("cannot set psk_identity -- buffer too small\n");
+                //return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+                while(1) {
+                    Serial.println("cant set psk_id -- buf 2 small");
+                    delay(1000);
+                }
+            }
+
+            memcpy(result, psk_id, psk_id_length);
+            return psk_id_length;
+        case DTLS_PSK_KEY:
+            if (id_len != psk_id_length || memcmp(psk_id, id, id_len) != 0) {
+                //dtls_warn("PSK for unknown id requested, exiting\n");
+                //return dtls_alert_fatal_create(DTLS_ALERT_ILLEGAL_PARAMETER);
+
+                while(1) {
+                    Serial.println("PSK 4 unknown id req, exit");
+                    delay(1000);
+                }
+
+                break;
+            } else if (result_length < psk_key_length) {
+                // dtls_warn("cannot set psk -- buffer too small\n");
+                Serial.println("cant set psk -- buf 2 small");
+                return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+            }
+
+            memcpy(result, psk_key, psk_key_length);
+            return psk_key_length;
+        default:
+            Serial.print("unsupported req type: ");
+            Serial.println(type);
+    }
+
+    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
+}
+
+static void
+try_send(struct dtls_context_t *ctx)
+{
+#ifdef MSG_DEBUG
+    Serial.println("try_send");
+    Serial.print("DTLS_MAX_BUF : ");
+    Serial.println(DTLS_MAX_BUF);
+    print_free_mem();
+    delay(1000);
+#endif
+    int res;
+    res = dtls_write(ctx, &dst, (uint8 *)buf, len);
+    if (res >= 0) {
+        memmove(buf, buf + res, len - res);
+        len -= res;
+    }
+}
+
+static int
+read_from_peer(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("read_from_peer");
+#endif
+
+    ZigMsg::ZigReceivedFrame *z ;
+
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        Serial.println("msg recv");
+        //print_frame (z, casan_decode) ;
+        print_frame (z, false) ;
+        zigmsg.skip_received ();
+        delay(500);
+    }
+
+    phexascii (data, len, 25);
+    return 0;
+}
+
+static int
+send_to_peer(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("send2peer") ;
+#endif
+
+    //int fd = *(int *)dtls_get_app_data(ctx);
+    //return sendto(fd, data, len, MSG_DONTWAIT,
+    //        &session->addr.sa, session->size);
+
+    // TODO
+    int ret = zigmsg.sendto(session->addr, 7, (const unsigned char*)"coucou\n");
+
+
+    phexascii ((uint8_t *)"coucou\n", 7, 10);
+    //phexascii (data, len, 25);
+    //int ret = zigmsg.sendto(session->addr, len, data);
+    delay(2000);
+    Serial.println("");
+    Serial.println(ret);
+    delay(1000);
+    return ret;
+}
+
+#if 0 // useless right now
+static int
+on_event(struct dtls_context_t *ctx, 
+        session_t *session, uint8 *data, size_t len)
+{
+
+#ifdef MSG_DEBUG
+    Serial.println("on_event") ;
+#endif
+
+    ZigMsg::ZigReceivedFrame *z ;
+    while ((z = zigmsg.get_received ()) != NULL)
+    {
+        //print_frame (z, casan_decode) ;
+
+        len = z->paylen;
+
+        if (len < 0) {
+            //perror("recvfrom");
+            print_frame (z, false) ;
+            Serial.println("err: recv, len < 0");
+            return -1;
+        } else {
+            //dtls_dsrv_log_addr(DTLS_LOG_DEBUG, "peer", &session);
+            //dtls_debug_dump("bytes from peer", buf, len);
+            Serial.print("recv : TODO");
+            print_frame (z, false) ;
+            //Serial.println(buf, HEX);
+        }
+
+        zigmsg.skip_received () ;
+    }
+
+    return 0;
+}
+#endif
+
+static dtls_handler_t cb_cli = {
+    .write = send_to_peer,
+    .read  = read_from_peer,
+    .event = NULL,
+    .get_psk_info = get_psk_info_cli,
+};
+#define DTLS_CLIENT_CMD_CLOSE "client:close"
+#define DTLS_CLIENT_CMD_RENEGOTIATE "client:renegotiate"
+
+void init_dtls_client (char line [])
+{
+    zigmsg.channel (channel) ;
+    zigmsg.panid (PANID) ;
+    zigmsg.addr2 (SENDADDR) ;
+    zigmsg.promiscuous (false) ;
+    zigmsg.start () ;
+
+#ifdef MSG_DEBUG
+    Serial.println("Start cli") ;
+#endif
+
+    memset(&dst, 0, sizeof(session_t));
+    dst.addr = RECVADDR;
+    dst.size = sizeof(dst.addr);
+
+    //log_t log_level = DTLS_LOG_WARN;
+    //dtls_set_log_level(log_level);
+
+    randomSeed(get_the_time());
+    dtls_init(get_the_time);
+
+    // PSK IDENTITY & KEY
+    psk_id_length = strlen(PSK_DEFAULT_IDENTITY);
+    psk_key_length = strlen(PSK_DEFAULT_KEY);
+    memcpy(psk_id, PSK_DEFAULT_IDENTITY, psk_id_length);
+    memcpy(psk_key, PSK_DEFAULT_KEY, psk_key_length);
+
+    the_context = dtls_new_context(get_random);
+    the_context->say = say;
+
+    if (!the_context) {
+        //dtls_emerg("cannot create context\n");
+        while(1) { Serial.println("cant create ctxt"); delay(1000); }
+    }
+
+    dtls_set_handler(the_context, &cb_cli);
+
+    dtls_connect(the_context, &dst);
+}
+
+void stop_dtls_client (void)
+{
+    dtls_free_context(the_context);
+
+#ifdef MSG_DEBUG
+    Serial.println("stop_d_c");
+#endif
+}
+
+void do_dtls_client (void)
+{
+#ifdef MSG_DEBUG
+    Serial.println("do_d_client");
+    print_free_mem();
+#endif
+
+    //do_snif();
+    dtls_handle_read();
+
+//#ifdef MSG_DEBUG
+//    Serial.println("apres dtls_handle_read");
+//    print_free_mem();
+//#endif
+
+// TODO
+    if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
+            !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
+                , strlen(DTLS_CLIENT_CMD_CLOSE)))
+    {
+#ifdef MSG_DEBUG
+        Serial.println("cli: clos co");
+        print_free_mem();
+#endif
+        dtls_close(the_context, &dst);
+        len = 0;
+    } 
+    else if (len >= strlen(DTLS_CLIENT_CMD_RENEGOTIATE) &&
+            !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
+                , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
+    {
+#ifdef MSG_DEBUG
+        Serial.println("cli: reneg co");
+        print_free_mem();
+#endif
+        dtls_renegotiate(the_context, &dst);
+        len = 0;
+    } else {
+        try_send(the_context);
+    }
+}
+
+
+#endif // USE_USELESSD
+
+
+// GUI ;-)
 
 void init_idle (char line [])
 {
@@ -574,7 +1120,12 @@ struct gui gui [] = {
     { 's', "sender", init_send, stop_send, do_send },
     { 'r', "receiver", init_recv, stop_recv, do_recv },
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
+#ifdef USE_USELESSD
     { 'u', "uselessd", init_uselessd, stop_uselessd, do_uselessd },
+#else
+    { 'd', "dtls server", init_dtls_server, stop_dtls_server, do_dtls_server },
+    { 't', "dtls client", init_dtls_client, stop_dtls_client, do_dtls_client },
+#endif
 } ;
 #define	IDLE_MODE (& gui [0])
 

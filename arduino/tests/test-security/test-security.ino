@@ -17,13 +17,6 @@
 
 #define	PERIODIC	100000
 
-#define	CURRENT_ADDRESS SENDADDR
-#if CURRENT_ADDRESS == SENDADDR
-#define	OTHER_ADDRESS RECVADDR
-#else
-#define	OTHER_ADDRESS SENDADDR
-#endif
-
 int channel = CHANNEL ;
 
 /* for DTLS */
