@@ -83,7 +83,7 @@ typedef unsigned int uint32_t;
 #define ELMT_FROM_HH(tbl,hhp) ((void*)(((char*)(hhp)) - ((tbl)->hho)))
 
 // FIXME warnings
-#if 1
+#if 0
 #define HASH_FIND(hh,head,keyptr,keylen,out)                                     \
 do {                                                                             \
   unsigned _hf_bkt,_hf_hashv;                                                    \
@@ -135,7 +135,7 @@ do {                                                                            
 #endif
 
 // FIXME warnings
-#if 1
+#if 0
 #define HASH_MAKE_TABLE(hh,head)                                                 \
 do {                                                                             \
   (head)->hh.tbl = (UT_hash_table*)uthash_malloc(                                \

@@ -293,8 +293,7 @@ void dtls_free_context(dtls_context_t *ctx);
 #define dtls_get_app_data(CTX) ((CTX)->app)
 
 /** Sets the callback handler object for @p ctx to @p h. */
-static inline void dtls_set_handler(dtls_context_t *ctx, dtls_handler_t *h)
-{
+static inline void dtls_set_handler(dtls_context_t *ctx, dtls_handler_t *h) {
   ctx->h = h;
 }
 
