@@ -7,7 +7,7 @@
  */
 
 #include "dtls_config.h"
-#include "debug.h"
+#include "mydebug.h"
 #include "netq.h"
 
 #ifdef HAVE_ASSERT_H

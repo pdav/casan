@@ -56,7 +56,7 @@ static inline void check_stack() {
 static inline void check_stack() {
 }
 #endif /* CONTIKI_TARGET_MBXXX */
-#else /* WITH_CONTKI */
+#else /* WITH_CONTIKI */
 #define PRINTF(...)
 
 static inline void check_stack() {

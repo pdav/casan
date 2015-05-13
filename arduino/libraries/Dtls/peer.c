@@ -25,7 +25,7 @@
 
 #include "global.h"
 #include "peer.h"
-#include "debug.h"
+#include "mydebug.h"
 
 #ifndef WITH_CONTIKI
 void peer_init()

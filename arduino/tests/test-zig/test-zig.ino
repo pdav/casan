@@ -34,7 +34,6 @@ extern "C" {
 
 #define PSK_DEFAULT_IDENTITY "Client_identity"
 #define PSK_DEFAULT_KEY      "secretPSK"
-#define DTLS_MAX_BUF 200
 #define MSG_DEBUG 1
 session_t dst;
 session_t session;

@@ -35,7 +35,7 @@
 #define assert(x)
 #endif
 
-#include "debug.h"
+#include "mydebug.h"
 #include "hmac.h"
 
 /* use malloc()/free() on platforms other than Contiki */

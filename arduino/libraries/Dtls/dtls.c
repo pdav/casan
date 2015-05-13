@@ -38,7 +38,8 @@
 #include "uthash.h"
 #endif /* WITH_CONTIKI */
 
-#include "debug.h"
+#include "mydebug.h"
+
 #include "numeric.h"
 #include "netq.h"
 #include "dtls.h"
@@ -4028,13 +4029,10 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
         netq_insert_node(context->sendqueue, node);
 
         if (node->type == DTLS_CT_HANDSHAKE) {
-// FIXME to get the SHA256 out of the code
-#if 0
             dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
 
             dtls_debug("** retransmit handshake packet of type: %s (%i)\n",
                     dtls_handshake_type_to_name(hs_header->msg_type), hs_header->msg_type);
-#endif
         } else {
             dtls_debug("** retransmit packet\n");
         }

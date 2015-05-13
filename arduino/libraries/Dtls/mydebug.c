@@ -42,7 +42,7 @@
 #endif
 
 #include "global.h"
-#include "debug.h"
+#include "mydebug.h"
 
 static int maxlog = DTLS_LOG_WARN;	/* default maximum log level */
 
@@ -70,6 +70,7 @@ static char *loglevels[] = {
 };
 
 #ifdef HAVE_TIME_H
+#error "We don't have time"
 
 static inline size_t
 print_timestamp(char *s, size_t len, time_t t) {
@@ -81,8 +82,10 @@ print_timestamp(char *s, size_t len, time_t t) {
 #else /* alternative implementation: just print the timestamp */
 
 static inline size_t
-print_timestamp(char *s, size_t len, clock_time_t t) {
+print_timestamp(char *s, size_t len, clock_time_t t)
+{
 #ifdef HAVE_SNPRINTF
+#error "We don't have snprintf"
   return snprintf(s, len, "%u.%03u", 
 		  (unsigned int)(t / CLOCK_SECOND), 
 		  (unsigned int)(t % CLOCK_SECOND));
@@ -115,8 +118,10 @@ dtls_strnlen(const char *s, size_t maxlen) {
 #endif
 
 static size_t
-dsrv_print_addr(const session_t *addr, char *buf, size_t len) {
+dsrv_print_addr(const session_t *addr, char *buf, size_t len)
+{
 #ifdef HAVE_ARPA_INET_H
+#error "We don't have ARPA INET"
   const void *addrptr = NULL;
   in_port_t port;
   char *p = buf;
@@ -162,9 +167,12 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len) {
 
   return p - buf;
 #else /* HAVE_ARPA_INET_H */
+
 # if WITH_CONTIKI
+#error "We don't have WITH_CONTIKI"
   char *p = buf;
 #  ifdef UIP_CONF_IPV6
+#error "We don't have IPv6"
   uint8_t i;
   const char hex[] = "0123456789ABCDEF";
 
@@ -197,20 +205,46 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len) {
   return p - buf;
 # else /* WITH_CONTIKI */
   /* TODO: output addresses manually */
+  /* FIXME arduino => print something */
 //#   warning "inet_ntop() not available, network addresses will not be included in debug output"
 
 # endif /* WITH_CONTIKI */
+
   return 0;
 #endif
 }
 
 #ifdef WITH_CONTIKI
 
-#elif WITH_ARDUINO
+#elif defined WITH_ARDUINO
 
-#elif defined (HAVE_VPRINTF) /* WITH_CONTIKI */
+void hexdump(const unsigned char *packet, int length)
+{
+}
+
+void dump(unsigned char *buf, size_t len)
+{
+}
+
 void 
-dsrv_log(log_t level, char *format, ...) {
+dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr)
+{
+}
+
+void 
+dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
+        , size_t length, int extend)
+{
+}
+
+#endif
+
+#ifdef WITH_CONTIKI
+#error "Can't be compiled for our purpose with this"
+# if defined (HAVE_VPRINTF) /* WITH_CONTIKI */
+void 
+dsrv_log(log_t level, char *format, ...)
+{
   static char timebuf[32];
   va_list ap;
 
@@ -228,9 +262,10 @@ dsrv_log(log_t level, char *format, ...) {
   va_end(ap);
 }
 
-#else
+# else /* HAVE_VPRINTF */
 void 
-dsrv_log(log_t level, char *format, ...) {
+dsrv_log(log_t level, char *format, ...)
+{
   static char timebuf[32];
   va_list ap;
   FILE *log_fd;
@@ -251,7 +286,13 @@ dsrv_log(log_t level, char *format, ...) {
   va_end(ap);
   fflush(log_fd);
 }
+# endif /* HAVE_VPRINTF */
 #endif /* WITH_CONTIKI */
+
+#ifdef WITH_ARDUINO
+
+#elif defined WITH_CONTIKI
+#error "Can't be compiled for our purpose with this"
 
 #ifndef NDEBUG
 /** dumps packets in usual hexdump format */
@@ -291,16 +332,9 @@ void dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr)
   dsrv_log(level, "%s: %s\n", name, addrbuf);
 }
 
-#ifdef ARDUINO
 void 
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
         , size_t length, int extend) {
-}
-
-#elif defined WITH_CONTIKI
-#error "Can't be compiled for our purpose with this"
-void 
-dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {
   static char timebuf[32];
   int n = 0;
 
@@ -342,7 +376,8 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, s
 #error "Can't be compiled for our purpose with this"
 
 void 
-dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf, size_t length, int extend) {
+dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
+        , size_t length, int extend) {
   static char timebuf[32];
   FILE *log_fd;
   int n = 0;
