@@ -261,10 +261,6 @@ int
 dtls_write(struct dtls_context_t *ctx, 
         session_t *dst, uint8 *buf, size_t len)
 {
-
-// FIXME de là que vient le bug pénible ?
-#if 0
-
     dtls_peer_t *peer = dtls_get_peer(ctx, dst);
 
     /* Check if peer connection already exists */
@@ -284,9 +280,6 @@ dtls_write(struct dtls_context_t *ctx,
             return dtls_send(ctx, peer, DTLS_CT_APPLICATION_DATA, buf, len);
         }
     }
-#else
-    return 0;
-#endif
 }
 
 static int
@@ -1186,12 +1179,8 @@ update_hs_hash(dtls_peer_t *peer, uint8 *data, size_t length) {
 #if 0
 static void
 copy_hs_hash(dtls_peer_t *peer, dtls_hash_ctx *hs_hash) {
-#if 0
     memcpy(hs_hash, &peer->handshake_params->hs_state.hs_hash,
             sizeof(peer->handshake_params->hs_state.hs_hash));
-#else
-    return 0;
-#endif
 }
 #endif
 
@@ -1211,13 +1200,11 @@ finalize_hs_hash(dtls_peer_t *peer, uint8 *buf) {
 
 static inline void
 clear_hs_hash(dtls_peer_t *peer) {
-#if 1
     assert(peer);
     dtls_debug("clear MAC\n");
 // FIXME to get the SHA256 out of the code
 #if 0
     dtls_hash_init(&peer->handshake_params->hs_state.hs_hash);
-#endif
 #endif
 }
 
@@ -1317,7 +1304,6 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         uint8 *data_array[], size_t data_len_array[],
         size_t data_array_len,
         uint8 *sendbuf, size_t *rlen) {
-#if 1
     uint8 *p, *start;
     int res;
     unsigned int i;
@@ -1436,10 +1422,13 @@ memcpy(A_DATA, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8); /* epoch and seq_num */
 memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(sendbuf)->content_type, 3); /* type and version */
 dtls_int_to_uint16(A_DATA + 11, res - 8); /* length */
 
+// FIXME de là que vient le bug pénible ?
+#if 0
 res = dtls_encrypt(start + 8, res - 8, start + 8, nonce,
         dtls_kb_local_write_key(security, peer->role),
         dtls_kb_key_size(security, peer->role),
         A_DATA, A_DATA_LEN);
+#endif
 
 if (res < 0)
     return res;
@@ -1453,9 +1442,6 @@ dtls_int_to_uint16(sendbuf + 11, res);
 
 *rlen = DTLS_RH_LENGTH + res;
 return 0;
-#else
-return 0;
-#endif
 }
 
     static int
@@ -1556,7 +1542,8 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
         unsigned char type, uint8 *buf_array[],
         size_t buf_len_array[], size_t buf_array_len)
 {
-#if 1
+
+
     /* We cannot use ctx->sendbuf here as it is reserved for collecting
      * the input for this function, i.e. buf == ctx->sendbuf.
      *
@@ -1630,9 +1617,6 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
      * dtls_prepare_record() tells us in len the number of bytes to
      * send, res will contain the bytes actually sent. */
     return res <= 0 ? res : overall_len - (len - res);
-#else
-    return 0;
-#endif
 }
 
 static inline int
@@ -1651,8 +1635,6 @@ dtls_send_alert(dtls_context_t *ctx, dtls_peer_t *peer, dtls_alert_level_t level
 int 
 dtls_close(dtls_context_t *ctx, const session_t *remote)
 {
-// FIXME de là que vient le bug pénible ?
-#if 0
     int res = -1;
     dtls_peer_t *peer;
 
@@ -1664,9 +1646,6 @@ dtls_close(dtls_context_t *ctx, const session_t *remote)
         peer->state = DTLS_STATE_CLOSING;
     }
     return res;
-#else
-    return 0;
-#endif
 }
 
 static void dtls_destroy_peer(dtls_context_t *ctx, dtls_peer_t *peer
@@ -2542,8 +2521,8 @@ dtls_send_finished(dtls_context_t *ctx, dtls_peer_t *peer,
 
 static int
 dtls_send_client_hello(dtls_context_t *ctx, dtls_peer_t *peer,
-        uint8 cookie[], size_t cookie_length) {
-#if 1
+        uint8 cookie[], size_t cookie_length)
+{
     uint8 buf[DTLS_CH_LENGTH_MAX];
     uint8 *p = buf;
     uint8_t cipher_size;
@@ -2691,9 +2670,6 @@ dtls_send_client_hello(dtls_context_t *ctx, dtls_peer_t *peer,
     return dtls_send_handshake_msg_hash(ctx, peer, &peer->session,
             DTLS_HT_CLIENT_HELLO,
             buf, p - buf, cookie_length != 0);
-#else
-    return 0;
-#endif
 }
 
     static int
@@ -3145,7 +3121,6 @@ check_server_hellodone(dtls_context_t *ctx,
 decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         uint8 **cleartext)
 {
-#if 1
     dtls_record_header_t *header = DTLS_RECORD_HEADER(packet);
     dtls_security_parameters_t *security = dtls_security_params_epoch(peer, dtls_get_epoch(header));
     int clen;
@@ -3196,10 +3171,13 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(packet)->content_type, 3); /* type and version */
         dtls_int_to_uint16(A_DATA + 11, clen - 8); /* length without nonce_explicit */
 
+// FIXME de là que vient le bug pénible ?
+#if 0
         clen = dtls_decrypt(*cleartext, clen, *cleartext, nonce,
                 dtls_kb_remote_write_key(security, peer->role),
                 dtls_kb_key_size(security, peer->role),
                 A_DATA, A_DATA_LEN);
+#endif
         if (clen < 0)
             dtls_warn("decryption failed\n");
         else {
@@ -3211,9 +3189,6 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         }
     }
     return clen;
-#else
-    return 0;
-#endif
 }
 
     static int
@@ -3231,8 +3206,6 @@ dtls_send_hello_request(dtls_context_t *ctx, dtls_peer_t *peer)
     int
 dtls_renegotiate(dtls_context_t *ctx, const session_t *dst)
 {
-// FIXME de là que vient le bug pénible ?
-#if 0
     dtls_peer_t *peer = NULL;
     int err;
 
@@ -3264,9 +3237,6 @@ dtls_renegotiate(dtls_context_t *ctx, const session_t *dst)
     }
 
     return -1;
-#else
-    return 0;
-#endif
 }
 
 static int
@@ -3774,11 +3744,9 @@ handle_ccs(dtls_context_t *ctx, dtls_peer_t *peer,
     }
 
     peer->state = DTLS_STATE_WAIT_FINISHED;
+#endif
 
     return 0;
-#else
-    return 0;
-#endif
 }  
 
 /** 
@@ -3892,8 +3860,6 @@ int
 dtls_handle_message(dtls_context_t *ctx, 
         session_t *session,
         uint8 *msg, int msglen) {
-// FIXME de là que vient le bug pénible ?
-#if 0
     dtls_peer_t *peer = NULL;
     unsigned int rlen;		/* record length */
     uint8 *data; 			/* (decrypted) payload */
@@ -4037,9 +4003,6 @@ dtls_handle_message(dtls_context_t *ctx,
     }
 
     return 0;
-#else
-    return 0;
-#endif
 }
 
 #ifdef WITH_ARDUINO
@@ -4183,8 +4146,6 @@ dtls_free_context(dtls_context_t *ctx)
 
 int
 dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
-// FIXME de là que vient le bug pénible ?
-#if 0
     int res;
 
     assert(peer);
@@ -4217,15 +4178,11 @@ dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
         peer->state = DTLS_STATE_CLIENTHELLO;
 
     return res;
-#else
-    return 0;
-#endif
 }
 
 int
-dtls_connect(dtls_context_t *ctx, const session_t *dst) {
-// FIXME de là que vient le bug pénible ?
-#if 1
+dtls_connect(dtls_context_t *ctx, const session_t *dst)
+{
     dtls_peer_t *peer;
     int res;
 
@@ -4257,9 +4214,6 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst) {
     }
 
     return res;
-#else
-    return 0;
-#endif
 }
 
 static void
