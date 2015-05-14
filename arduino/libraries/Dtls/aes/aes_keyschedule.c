@@ -43,12 +43,16 @@ void aes_rotword(void *a)
     ((uint8_t*) a)[3] = t;
 }
 
+#if 0
 const uint8_t rc_tab[] PROGMEM = { 0x01, 0x02, 0x04, 0x08,
         0x10, 0x20, 0x40, 0x80,
         0x1b, 0x36 };
+#endif
 
+#if 0
 void aes_init(const void *key, uint16_t keysize_b, aes_genctx_t *ctx)
 {
+
     uint8_t hi, i, nk, next_nk;
     uint8_t rc = 0;
     union {
@@ -79,16 +83,20 @@ void aes_init(const void *key, uint16_t keysize_b, aes_genctx_t *ctx)
             rc++;
         }
         ((uint32_t*) (ctx->key[0].ks))[i] = ((uint32_t*) (ctx->key[0].ks))[i
-                - nk]
-                ^ tmp.v32;
+            - nk]
+            ^ tmp.v32;
     }
 }
+#endif
 
 void aes128_init(const void *key, aes128_ctx_t *ctx)
 {
+#if 0
     aes_init(key, 128, (aes_genctx_t*) ctx);
+#endif
 }
 
+#if 0
 void aes192_init(const void *key, aes192_ctx_t *ctx)
 {
     aes_init(key, 192, (aes_genctx_t*) ctx);
@@ -98,3 +106,4 @@ void aes256_init(const void *key, aes256_ctx_t *ctx)
 {
     aes_init(key, 256, (aes_genctx_t*) ctx);
 }
+#endif

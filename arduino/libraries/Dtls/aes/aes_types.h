@@ -37,6 +37,7 @@ typedef struct{
 	aes_roundkey_t key[10+1];
 } aes128_ctx_t;
 
+#if 0
 typedef struct{
 	aes_roundkey_t key[12+1];
 } aes192_ctx_t;
@@ -44,6 +45,7 @@ typedef struct{
 typedef struct{
 	aes_roundkey_t key[14+1];
 } aes256_ctx_t;
+#endif
 
 typedef struct{
 	aes_roundkey_t key[1]; /* just to avoid the warning */

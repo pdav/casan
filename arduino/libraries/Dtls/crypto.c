@@ -35,6 +35,11 @@
 #define assert(x)
 #endif
 
+//#define TEST_USELESS 1
+#ifdef TEST_USELESS
+#include "uselessd.h"
+#endif
+
 #include "global.h"
 #include "mydebug.h"
 #include "numeric.h"
@@ -557,14 +562,20 @@ dtls_encrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
-// FIXME de là que vient le bug pénible ?
 // FIXME old implé AES
 #if 0
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
 
+#ifdef TEST_USELESS
+    ret = uselessd_init(530);
+#endif
+
+    // FIXME de là que vient le bug pénible ? TODO 
+#if 0
     // FIXME attention : forcément une clé de 128 bits !!!
-    aes128_init(key, &ctx->data.ctx);
+    aes128_init((const void *)key, &ctx->data.ctx);
+#endif
 
 // FIXME old implé AES
 #if 0
@@ -579,7 +590,9 @@ dtls_encrypt(const unsigned char *src, size_t length,
     if (src != buf)
         memmove(buf, src, length);
 
+#if 1
     ret = dtls_ccm_encrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#endif
 
 error:
     dtls_cipher_context_release();
@@ -596,13 +609,15 @@ dtls_decrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
-// FIXME de là que vient le bug pénible ?
+    // FIXME old implé AES
 #if 0
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
 
+#if 0
     // FIXME attention : forcément une clé de 128 bits !!!
     aes128_init(key, &ctx->data.ctx);
+#endif
 
 // FIXME old implé AES
 #if 0
@@ -616,7 +631,9 @@ dtls_decrypt(const unsigned char *src, size_t length,
     if (src != buf)
         memmove(buf, src, length);
 
+#if 1
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#endif
 
 error:
     dtls_cipher_context_release();

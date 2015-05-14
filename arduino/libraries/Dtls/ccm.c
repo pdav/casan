@@ -90,7 +90,7 @@ add_auth_data(rijndael_ctx *ctx, const unsigned char *msg, size_t la,
     size_t i,j; 
 
     // FIXME adapter AES 128
-    memcpy(X, msg, la);
+    memcpy(X, B, DTLS_CCM_BLOCKSIZE);
     aes128_enc(X, ctx);
 
     // FIXME old implé AES
@@ -138,7 +138,7 @@ add_auth_data(rijndael_ctx *ctx, const unsigned char *msg, size_t la,
 
     // FIXME nouvelle version AES 128
     // TODO vérifier les tailles des copies
-    memcpy(X, B, i);
+    memcpy(X, B, DTLS_CCM_BLOCKSIZE);
     aes128_enc(X, ctx);
 
     // FIXME old implé AES
@@ -188,7 +188,16 @@ encrypt(rijndael_ctx *ctx, size_t L, unsigned long counter,
     static unsigned long counter_tmp;
 
     SET_COUNTER(A, L, counter, counter_tmp);    
+
+    // FIXME nouvelle version AES 128
+    // TODO vérifier les tailles des copies
+    memcpy(S, A, DTLS_CCM_BLOCKSIZE);
+    aes128_enc(S, ctx);
+
+    // FIXME old implé AES
+#if 0
     rijndael_encrypt(ctx, A, S);
+#endif
     memxor(msg, S, len);
 }
 
@@ -202,14 +211,14 @@ mac(rijndael_ctx *ctx,
     for (i = 0; i < len; ++i)
         B[i] = X[i] ^ msg[i];
 
-        // FIXME nouvelle version AES 128
-        // TODO vérifier les tailles des copies
-        memcpy(X, B, DTLS_CCM_BLOCKSIZE);
-        aes128_enc(X, ctx);
+    // FIXME nouvelle version AES 128
+    // TODO vérifier les tailles des copies
+    memcpy(X, B, DTLS_CCM_BLOCKSIZE);
+    aes128_enc(X, ctx);
 
-        // FIXME old implé AES
+    // FIXME old implé AES
 #if 0
-        rijndael_encrypt(ctx, B, X);
+    rijndael_encrypt(ctx, B, X);
 #endif
 
 }
@@ -270,7 +279,13 @@ dtls_ccm_encrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
 
     /* calculate S_0 */  
     SET_COUNTER(A, L, 0, counter_tmp);
+    memcpy(S, A, DTLS_CCM_BLOCKSIZE);
+    aes128_enc(S, ctx);
+
+    // FIXME old implé AES
+#if 0
     rijndael_encrypt(ctx, A, S);
+#endif
 
     for (i = 0; i < M; ++i)
         *msg++ = X[i] ^ S[i];
@@ -340,7 +355,15 @@ dtls_ccm_decrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
 
     /* calculate S_0 */  
     SET_COUNTER(A, L, 0, counter_tmp);
+
+    // FIXME nouvelle version AES 128
+    memcpy(S, A, DTLS_CCM_BLOCKSIZE);
+    aes128_enc(S, ctx);
+
+    // FIXME old implé AES
+#if 0
     rijndael_encrypt(ctx, A, S);
+#endif
 
     memxor(msg, S, M);
 
