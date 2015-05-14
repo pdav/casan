@@ -572,7 +572,7 @@ dtls_encrypt(const unsigned char *src, size_t length,
 #endif
 
     // FIXME de là que vient le bug pénible ? TODO 
-#if 0
+#if 1
     // FIXME attention : forcément une clé de 128 bits !!!
     aes128_init((const void *)key, &ctx->data.ctx);
 #endif

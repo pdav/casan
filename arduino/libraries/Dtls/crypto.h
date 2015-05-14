@@ -34,8 +34,8 @@
 
 // FIXME adapter AES 128
 //#include "aes/rijndael.h"
-//#include "aes/aes.h"
-#include "aes.h"
+#include "aes/aes.h"
+//#include "aes.h"
 
 #include "global.h"
 #include "state.h"
