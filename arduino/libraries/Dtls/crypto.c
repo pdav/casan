@@ -307,11 +307,14 @@ dtls_ccm_encrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src, size_t srclen,
 
     assert(ccm_ctx);
 
+// FIXME de là que vient le bug pénible ?
+#if 0
     len = dtls_ccm_encrypt_message(&ccm_ctx->ctx, 8 /* M */, 
             max(2, 15 - DTLS_CCM_NONCE_SIZE),
             nounce,
             buf, srclen, 
             aad, la);
+#endif
     return len;
 }
 
@@ -326,11 +329,14 @@ dtls_ccm_decrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src,
 
     assert(ccm_ctx);
 
+// FIXME de là que vient le bug pénible ?
+#if 0
     len = dtls_ccm_decrypt_message(&ccm_ctx->ctx, 8 /* M */, 
             max(2, 15 - DTLS_CCM_NONCE_SIZE),
             nounce,
             buf, srclen, 
             aad, la);
+#endif
     return len;
 }
 
@@ -552,21 +558,28 @@ dtls_encrypt(const unsigned char *src, size_t length,
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
 // FIXME de là que vient le bug pénible ?
+// FIXME old implé AES
 #if 0
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
+
+    // FIXME attention : forcément une clé de 128 bits !!!
+    aes128_init(key, &ctx->data.ctx);
+
+// FIXME old implé AES
+#if 0
     if (ret < 0) {
         /* cleanup everything in case the key has the wrong size */
         dtls_warn("cannot set rijndael key\n");
         goto error;
     }
+#endif
 
+    // TODO comprendre à quoi ça sert
     if (src != buf)
         memmove(buf, src, length);
-    // FIXME de là que vient le bug pénible ?
-#if 0
+
     ret = dtls_ccm_encrypt(&ctx->data, src, length, buf, nounce, aad, la);
-#endif
 
 error:
     dtls_cipher_context_release();
@@ -587,22 +600,25 @@ dtls_decrypt(const unsigned char *src, size_t length,
 #if 0
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
+
+    // FIXME attention : forcément une clé de 128 bits !!!
+    aes128_init(key, &ctx->data.ctx);
+
+// FIXME old implé AES
+#if 0
     if (ret < 0) {
         /* cleanup everything in case the key has the wrong size */
         dtls_warn("cannot set rijndael key\n");
         goto error;
     }
+#endif
 
     if (src != buf)
         memmove(buf, src, length);
 
-// FIXME de là que vient le bug pénible ?
-#if 0
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
-#endif
 
 error:
     dtls_cipher_context_release();
     return ret;
 }
-

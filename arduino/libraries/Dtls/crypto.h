@@ -32,7 +32,9 @@
 
 #include "t_list.h"
 
-#include "aes/rijndael.h"
+// FIXME adapter AES 128
+//#include "aes/rijndael.h"
+#include "aes/aes.h"
 
 #include "global.h"
 #include "state.h"
@@ -69,7 +71,12 @@ typedef enum {
 
 /** Crypto context for TLS_PSK_WITH_AES_128_CCM_8 cipher suite. */
 typedef struct {
+// FIXME nouvelle version AES 128
+#if 0
   rijndael_ctx ctx;		       /**< AES-128 encryption context */
+#endif
+  aes128_ctx_t ctx;     // nouvelle implémentation AES 128 pour AVR
+
 } aes128_ccm_t;
 
 typedef struct dtls_cipher_context_t {

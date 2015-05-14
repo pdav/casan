@@ -26,7 +26,9 @@
 #ifndef _DTLS_CCM_H_
 #define _DTLS_CCM_H_
 
-#include "aes/rijndael.h"
+// FIXME adapter AES 128
+//#include "aes/rijndael.h"
+#include "aes/aes.h"
 
 /* implementation of Counter Mode CBC-MAC, RFC 3610 */
 
@@ -54,6 +56,9 @@
  * \param la  The number of additional authentication octets (may be zero).
  * \return FIXME
  */
+
+typedef aes128_ctx_t rijndael_ctx;
+
 long int
 dtls_ccm_encrypt_message(rijndael_ctx *ctx, size_t M, size_t L, 
 			 unsigned char nonce[DTLS_CCM_BLOCKSIZE], 
