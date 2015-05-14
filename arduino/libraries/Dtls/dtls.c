@@ -1422,13 +1422,10 @@ memcpy(A_DATA, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8); /* epoch and seq_num */
 memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(sendbuf)->content_type, 3); /* type and version */
 dtls_int_to_uint16(A_DATA + 11, res - 8); /* length */
 
-// FIXME de là que vient le bug pénible ?
-#if 0
 res = dtls_encrypt(start + 8, res - 8, start + 8, nonce,
         dtls_kb_local_write_key(security, peer->role),
         dtls_kb_key_size(security, peer->role),
         A_DATA, A_DATA_LEN);
-#endif
 
 if (res < 0)
     return res;
@@ -3171,13 +3168,10 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(packet)->content_type, 3); /* type and version */
         dtls_int_to_uint16(A_DATA + 11, clen - 8); /* length without nonce_explicit */
 
-// FIXME de là que vient le bug pénible ?
-#if 0
         clen = dtls_decrypt(*cleartext, clen, *cleartext, nonce,
                 dtls_kb_remote_write_key(security, peer->role),
                 dtls_kb_key_size(security, peer->role),
                 A_DATA, A_DATA_LEN);
-#endif
         if (clen < 0)
             dtls_warn("decryption failed\n");
         else {

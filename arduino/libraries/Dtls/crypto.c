@@ -200,7 +200,8 @@ dtls_p_hash(dtls_hashfunc_t h,
         const unsigned char *label, size_t labellen,
         const unsigned char *random1, size_t random1len,
         const unsigned char *random2, size_t random2len,
-        unsigned char *buf, size_t buflen) {
+        unsigned char *buf, size_t buflen)
+{
     dtls_hmac_context_t *hmac_a, *hmac_p;
 
     unsigned char A[DTLS_HMAC_DIGEST_SIZE];
@@ -265,7 +266,8 @@ dtls_prf(const unsigned char *key, size_t keylen,
         const unsigned char *label, size_t labellen,
         const unsigned char *random1, size_t random1len,
         const unsigned char *random2, size_t random2len,
-        unsigned char *buf, size_t buflen) {
+        unsigned char *buf, size_t buflen)
+{
 
     /* Clear the result buffer */
     memset(buf, 0, buflen);
@@ -281,7 +283,8 @@ void
 dtls_mac(dtls_hmac_context_t *hmac_ctx, 
         const unsigned char *record,
         const unsigned char *packet, size_t length,
-        unsigned char *buf) {
+        unsigned char *buf)
+{
     uint16 L;
     dtls_int_to_uint16(L, length);
 
@@ -298,7 +301,8 @@ static size_t
 dtls_ccm_encrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src, size_t srclen,
         unsigned char *buf, 
         unsigned char *nounce,
-        const unsigned char *aad, size_t la) {
+        const unsigned char *aad, size_t la)
+{
     long int len;
 
     assert(ccm_ctx);
@@ -315,7 +319,9 @@ static size_t
 dtls_ccm_decrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src,
         size_t srclen, unsigned char *buf,
         unsigned char *nounce,
-        const unsigned char *aad, size_t la) {
+        const unsigned char *aad, size_t la)
+{
+
     long int len;
 
     assert(ccm_ctx);
@@ -535,7 +541,7 @@ dtls_ecdsa_verify_sig(const unsigned char *pub_key_x,
 }
 #endif /* DTLS_ECC */
 
-    int 
+int 
 dtls_encrypt(const unsigned char *src, size_t length,
         unsigned char *buf,
         unsigned char *nounce,
@@ -545,7 +551,10 @@ dtls_encrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+// FIXME de là que vient le bug pénible ?
+#if 0
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
+#endif
     if (ret < 0) {
         /* cleanup everything in case the key has the wrong size */
         dtls_warn("cannot set rijndael key\n");
@@ -554,7 +563,10 @@ dtls_encrypt(const unsigned char *src, size_t length,
 
     if (src != buf)
         memmove(buf, src, length);
+    // FIXME de là que vient le bug pénible ?
+#if 0
     ret = dtls_ccm_encrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#endif
 
 error:
     dtls_cipher_context_release();
@@ -571,7 +583,10 @@ dtls_decrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+// FIXME de là que vient le bug pénible ?
+#if 0
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
+#endif
     if (ret < 0) {
         /* cleanup everything in case the key has the wrong size */
         dtls_warn("cannot set rijndael key\n");
@@ -580,7 +595,11 @@ dtls_decrypt(const unsigned char *src, size_t length,
 
     if (src != buf)
         memmove(buf, src, length);
+
+// FIXME de là que vient le bug pénible ?
+#if 0
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#endif
 
 error:
     dtls_cipher_context_release();
