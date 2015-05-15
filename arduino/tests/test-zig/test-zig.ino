@@ -6,7 +6,7 @@
 #define	SENDADDR	CONST16 (0x12, 0x34)
 #define	RECVADDR	CONST16 (0x45, 0x67)
 
-#define	MSGBUF_SIZE	100
+#define	MSGBUF_SIZE	10	// each msgbuf consumes ~130 bytes
 
 
 #define	PERIODIC	100000
