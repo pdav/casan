@@ -6,7 +6,7 @@
 #define	SENDADDR	CONST16 (0x12, 0x34)
 #define	RECVADDR	CONST16 (0x45, 0x67)
 
-#define	MSGBUF_SIZE	100
+#define	MSGBUF_SIZE	10
 
 
 #define	PERIODIC	100000
@@ -528,6 +528,10 @@ void stop_idle (void)
 
 void do_idle (void)
 {
+    //unsigned long x = 0;
+    uint32_t x = 0;
+    x--;
+    Serial.println(x);
 }
 
 struct gui

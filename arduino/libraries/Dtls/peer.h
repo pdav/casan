@@ -65,6 +65,14 @@ typedef struct dtls_peer_t {
     dtls_handshake_parameters_t *handshake_params;
 } dtls_peer_t;
 
+
+// TODO
+static inline void
+dtls_print_peer(dtls_peer_t *peer
+        , void (*say_)(uint8_t buf [], int len, int flen))
+{
+}
+
 /** 
  * Holds security parameters, local state and the transport address
  * for each peer. */

@@ -37,6 +37,7 @@
 #include "t_list.h"
 #include "state.h"
 #include "peer.h"
+#include "mydebug.h"
 
 #ifdef WITH_CONTIKI
 #elif  WITH_ARDUINO
@@ -250,6 +251,7 @@ typedef struct dtls_context_t {
 #ifdef WITH_ARDUINO
   dtls_peer_t *peers;		/**< peer hash map */
   void (*say)(char * txt_to_say);
+  void (*say_)(uint8_t buf [], int len, int flen);
 #elif defined WITH_CONTIKI
   LIST_STRUCT(peers);
 
@@ -295,7 +297,12 @@ void dtls_free_context(dtls_context_t *ctx);
 /** Sets the callback handler object for @p ctx to @p h. */
 static inline void dtls_set_handler(dtls_context_t *ctx, dtls_handler_t *h)
 {
+#ifdef MSG_DEBUG
+    ctx->say("dtls_set_handler : set smth_to_say too\n\r") ;
+#endif
   ctx->h = h;
+
+  smth_to_say = ctx->say;
 }
 
 /**

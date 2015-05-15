@@ -216,6 +216,11 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
 static int
 dtls_send(dtls_context_t *ctx, dtls_peer_t *peer, unsigned char type,
         uint8 *buf, size_t buflen) {
+
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_send\n\r");
+#endif
+
     return dtls_send_multi(ctx, peer, dtls_security_params(peer), &peer->session,
             type, &buf, &buflen, 1);
 }
@@ -233,6 +238,15 @@ dtls_get_peer(const dtls_context_t *ctx, const session_t *session)
 #ifdef WITH_ARDUINO
     // TODO est-ce qu'on veut faire ça avec arduino ?
     HASH_FIND_PEER(ctx->peers, session, p);
+
+    if(p != NULL) 
+    { 
+        ctx->say("peer found !\n\r");
+    }
+    else
+    {
+        ctx->say("peer not found !\n\r");
+    }
 #elif defined WITH_CONTIKI
     for (p = list_head(ctx->peers); p; p = list_item_next(p))
         if (dtls_session_equals(&p->session, session))
@@ -249,12 +263,13 @@ dtls_add_peer(dtls_context_t *ctx, dtls_peer_t *peer)
 {
 
 #ifdef WITH_ARDUINO
-    ctx->say("dtls_connect_peer\n");
+    ctx->say("dtls_add_peer\n\r");
 #endif
 
 #ifdef WITH_ARDUINO
     // TODO est-ce qu'on veut faire ça avec arduino ?
     HASH_ADD_PEER(ctx->peers, session, peer);
+    ctx->say("peer : TODO\n\r");
 #elif defined WITH_CONTIKI
     list_add(ctx->peers, peer);
 #else
@@ -268,7 +283,13 @@ dtls_write(struct dtls_context_t *ctx,
 {
 
 #ifdef WITH_ARDUINO
-    ctx->say("dtls_write\n\r");
+    char message[60];
+    snprintf(message, 60
+            , "dtls_write, dst=%5x, size=%d, ifindex=%d, msglen=%d\n\r"
+            , dst->addr, dst->size, dst->ifindex, len);
+    ctx->say(message);
+    ctx->say_(buf, len, 16);
+    ctx->say("\n\r");
 #endif
 
     dtls_peer_t *peer = dtls_get_peer(ctx, dst);
@@ -281,12 +302,27 @@ dtls_write(struct dtls_context_t *ctx,
          * connection attempt is made, 0 for session reuse. */
         res = dtls_connect(ctx, dst);
 
+#ifdef WITH_ARDUINO
+    snprintf(message, 60, "no peer and res=%d\n\r", res);
+    ctx->say(message);
+#endif
+
         return (res >= 0) ? 0 : res;
     } else { /* a session exists, check if it is in state connected */
 
         if (peer->state != DTLS_STATE_CONNECTED) {
+#ifdef WITH_ARDUINO
+            snprintf(message, 60
+                    , "there is a peer and his state!=connected\n\r");
+            ctx->say(message);
+#endif
             return 0;
         } else {
+#ifdef WITH_ARDUINO
+            snprintf(message, 60
+                    , "there is a peer and his state==connected\n\r");
+            ctx->say(message);
+#endif
             return dtls_send(ctx, peer, DTLS_CT_APPLICATION_DATA, buf, len);
         }
     }
@@ -1550,6 +1586,12 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
         size_t buf_len_array[], size_t buf_array_len)
 {
 
+#ifdef WITH_ARDUINO
+    char message[60];
+    snprintf(message, 60
+            , "dtls_send_multi\n\r");
+    ctx->say(message);
+#endif
 
     /* We cannot use ctx->sendbuf here as it is reserved for collecting
      * the input for this function, i.e. buf == ctx->sendbuf.
@@ -4181,7 +4223,14 @@ dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
     LIST_STRUCT_INIT(peer->handshake_params, reorder_queue);
     res = dtls_send_client_hello(ctx, peer, NULL, 0);
     if (res < 0)
+    {
         dtls_warn("cannot send ClientHello\n");
+
+        //TODO
+#ifdef WITH_ARDUINO
+        ctx->say("dtls_connect_peer\n\r");
+#endif
+    }
     else 
         peer->state = DTLS_STATE_CLIENTHELLO;
 
@@ -4191,6 +4240,11 @@ dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
 int
 dtls_connect(dtls_context_t *ctx, const session_t *dst)
 {
+
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_connect\n\r");
+#endif
+
     dtls_peer_t *peer;
     int res;
 
@@ -4207,17 +4261,19 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst)
         return -1;
     }
 
-#ifdef WITH_ARDUINO
-    ctx->say("dtls_connect\n\r");
-#endif
-
     res = dtls_connect_peer(ctx, peer);
 
     /* Invoke event callback to indicate connection attempt or
      * re-negotiation. */
     if (res > 0) {
+#ifdef WITH_ARDUINO
+        ctx->say("call : DTLS_EVENT_CONNECT\n\r");
+#endif
         CALL(ctx, event, &peer->session, 0, DTLS_EVENT_CONNECT);
     } else if (res == 0) {
+#ifdef WITH_ARDUINO
+        ctx->say("call : DTLS_EVENT_RENEGOTIATE\n\r");
+#endif
         CALL(ctx, event, &peer->session, 0, DTLS_EVENT_RENEGOTIATE);
     }
 
@@ -4225,9 +4281,10 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst)
 }
 
 static void
-dtls_retransmit(dtls_context_t *context, netq_t *node) {
-#if 1
-    if (!context || !node)
+dtls_retransmit(dtls_context_t *ctx, netq_t *node)
+{
+
+    if (!ctx || !node)
         return;
 
     /* re-initialize timeout when maximum number of retransmissions are not reached yet */
@@ -4243,7 +4300,7 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
         dtls_ticks(&now);
         node->retransmit_cnt++;
         node->t = now + (node->timeout << node->retransmit_cnt);
-        netq_insert_node(context->sendqueue, node);
+        netq_insert_node(ctx->sendqueue, node);
 
         if (node->type == DTLS_CT_HANDSHAKE) {
             dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
@@ -4264,7 +4321,7 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
                 sizeof(dtls_record_header_t));
         dtls_debug_hexdump("retransmit unencrypted", node->data, node->length);
 
-        (void)CALL(context, write, &node->peer->session, sendbuf, len);
+        (void)CALL(ctx, write, &node->peer->session, sendbuf, len);
         return;
     }
 
@@ -4274,12 +4331,11 @@ dtls_retransmit(dtls_context_t *context, netq_t *node) {
 
     /* And finally delete the node */
     netq_node_free(node);
-#endif
 }
 
 static void
 dtls_stop_retransmission(dtls_context_t *context, dtls_peer_t *peer) {
-#if 1
+
     netq_t *node;
     node = list_head(context->sendqueue); 
 
@@ -4292,12 +4348,12 @@ dtls_stop_retransmission(dtls_context_t *context, dtls_peer_t *peer) {
         } else
             node = list_item_next(node);    
     }
-#endif
+
 }
 
 void
 dtls_check_retransmit(dtls_context_t *context, clock_time_t *next) {
-#if 1
+
     dtls_tick_t now;
     netq_t *node = netq_head(context->sendqueue);
 
@@ -4310,7 +4366,7 @@ dtls_check_retransmit(dtls_context_t *context, clock_time_t *next) {
 
     if (next && node)
         *next = node->t;
-#endif
+
 }
 
 #ifdef WITH_CONTIKI

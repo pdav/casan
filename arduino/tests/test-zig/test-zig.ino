@@ -754,6 +754,7 @@ void init_dtls_server (char line [])
 
     the_context = dtls_new_context(get_random);
     the_context->say = say;
+    the_context->say_ = phexascii;
 
     dtls_set_handler(the_context, &cb_server);
 }
@@ -859,6 +860,7 @@ try_send(struct dtls_context_t *ctx)
     print_free_mem();
     delay(1000);
 #endif
+
     int res;
     res = dtls_write(ctx, &dst, (uint8 *)buf, len);
     if (res >= 0) {
@@ -991,6 +993,7 @@ void init_dtls_client (char line [])
 
     the_context = dtls_new_context(get_random);
     the_context->say = say;
+    the_context->say_ = phexascii;
 
     if (!the_context) {
         //dtls_emerg("cannot create context\n");
@@ -998,7 +1001,6 @@ void init_dtls_client (char line [])
     }
 
     dtls_set_handler(the_context, &cb_cli);
-
     dtls_connect(the_context, &dst);
 }
 

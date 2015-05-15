@@ -33,6 +33,10 @@
 #include "global.h"
 #include "session.h"
 
+#ifdef WITH_ARDUINO
+void (*smth_to_say)(char *);
+#endif
+
 #ifdef WITH_CONTIKI
 # ifndef DEBUG
 #  define DEBUG DEBUG_PRINT
@@ -57,7 +61,12 @@ static inline void check_stack() {
 }
 #endif /* CONTIKI_TARGET_MBXXX */
 #else /* WITH_CONTIKI */
-#define PRINTF(...)
+#define PRINTF(fmt,...) \
+{\
+    char message[100];\
+    snprintf(message, 100, fmt, ##__VA_ARGS__); \
+    smth_to_say(message);\
+};
 
 static inline void check_stack() {
 }
