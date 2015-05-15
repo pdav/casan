@@ -35,11 +35,6 @@
 #define assert(x)
 #endif
 
-//#define TEST_USELESS 1
-#ifdef TEST_USELESS
-#include "uselessd.h"
-#endif
-
 #include "global.h"
 #include "mydebug.h"
 #include "numeric.h"
@@ -312,14 +307,11 @@ dtls_ccm_encrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src, size_t srclen,
 
     assert(ccm_ctx);
 
-// FIXME de là que vient le bug pénible ?
-#if 0
     len = dtls_ccm_encrypt_message(&ccm_ctx->ctx, 8 /* M */, 
             max(2, 15 - DTLS_CCM_NONCE_SIZE),
             nounce,
             buf, srclen, 
             aad, la);
-#endif
     return len;
 }
 
@@ -334,14 +326,11 @@ dtls_ccm_decrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src,
 
     assert(ccm_ctx);
 
-// FIXME de là que vient le bug pénible ?
-#if 0
     len = dtls_ccm_decrypt_message(&ccm_ctx->ctx, 8 /* M */, 
             max(2, 15 - DTLS_CCM_NONCE_SIZE),
             nounce,
             buf, srclen, 
             aad, la);
-#endif
     return len;
 }
 
@@ -567,15 +556,8 @@ dtls_encrypt(const unsigned char *src, size_t length,
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
 
-#ifdef TEST_USELESS
-    ret = uselessd_init(530);
-#endif
-
-    // FIXME de là que vient le bug pénible ? TODO 
-#if 0
     // FIXME attention : forcément une clé de 128 bits !!!
     aes128_init((const void *)key, &ctx->data.ctx);
-#endif
 
 // FIXME old implé AES
 #if 0
@@ -590,9 +572,7 @@ dtls_encrypt(const unsigned char *src, size_t length,
     if (src != buf)
         memmove(buf, src, length);
 
-#if 1
     ret = dtls_ccm_encrypt(&ctx->data, src, length, buf, nounce, aad, la);
-#endif
 
 error:
     dtls_cipher_context_release();
@@ -614,10 +594,7 @@ dtls_decrypt(const unsigned char *src, size_t length,
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
 
-#if 1
-    // FIXME attention : forcément une clé de 128 bits !!!
     aes128_init(key, &ctx->data.ctx);
-#endif
 
 // FIXME old implé AES
 #if 0
@@ -631,9 +608,7 @@ dtls_decrypt(const unsigned char *src, size_t length,
     if (src != buf)
         memmove(buf, src, length);
 
-#if 1
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
-#endif
 
 error:
     dtls_cipher_context_release();
