@@ -18,7 +18,7 @@ BOARD_TAG		= zigduino_r2
 ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
 MONITOR_PORT		?= /dev/ttyUSB0
 ARDUINO_LIBS		= ZigMsg Uselessd
-ARDUINO_LIBS		= ZigMsg Dtls/aes Dtls/sha256 Dtls/gf256mul Dtls
+ARDUINO_LIBS		= ZigMsg Dtls/aes Dtls/gf256mul Dtls/sha2 Dtls # Dtls/sha256
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 

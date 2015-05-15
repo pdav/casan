@@ -247,6 +247,11 @@ dtls_get_peer(const dtls_context_t *ctx, const session_t *session)
 static void
 dtls_add_peer(dtls_context_t *ctx, dtls_peer_t *peer)
 {
+
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_connect_peer\n");
+#endif
+
 #ifdef WITH_ARDUINO
     // TODO est-ce qu'on veut faire ça avec arduino ?
     HASH_ADD_PEER(ctx->peers, session, peer);
@@ -261,6 +266,11 @@ int
 dtls_write(struct dtls_context_t *ctx, 
         session_t *dst, uint8 *buf, size_t len)
 {
+
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_write\n\r");
+#endif
+
     dtls_peer_t *peer = dtls_get_peer(ctx, dst);
 
     /* Check if peer connection already exists */
@@ -4142,6 +4152,10 @@ int
 dtls_connect_peer(dtls_context_t *ctx, dtls_peer_t *peer) {
     int res;
 
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_connect_peer\n\r");
+#endif
+
     assert(peer);
     if (!peer)
         return -1;
@@ -4187,14 +4201,14 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst)
 
     if (!peer) {
         dtls_crit("cannot create new peer\n");
-#if defined WITH_ARDUINO && defined MSG_DEBUG
-        ctx->say("cannot create new peer\n");
+#ifdef WITH_ARDUINO
+        ctx->say("cannot create new peer\n\r");
 #endif
         return -1;
     }
 
-#if defined WITH_ARDUINO && defined MSG_DEBUG
-    ctx->say("dtls_connect !\n");
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_connect\n\r");
 #endif
 
     res = dtls_connect_peer(ctx, peer);

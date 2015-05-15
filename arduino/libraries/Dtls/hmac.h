@@ -33,16 +33,32 @@
 
 #ifdef WITH_SHA256
 
-// FIXME to get the SHA256 out of the code
 #if 0 
-
 #include "sha256/sha256.h"
 
-#endif
+typedef sha256_ctx_t dtls_hash_ctx;
+typedef dtls_hash_ctx *dtls_hash_t;
+#define DTLS_HASH_CTX_SIZE sizeof(sha256_ctx_t)
 
+
+static inline void
+dtls_hash_init(dtls_hash_t ctx) {
+    sha256_init((sha256_ctx_t *)ctx);
+}
+
+static inline void 
+dtls_hash_update(dtls_hash_t ctx, const unsigned char *input, size_t len) {
+  sha256_lastBlock((sha256_ctx_t *)ctx, input, len);
+}
+
+static inline size_t
+dtls_hash_finalize(unsigned char *buf, dtls_hash_t ctx) {
+  sha256_nextBlock((sha256_ctx_t *)ctx, input);
+  return SHA256_DIGEST_LENGTH;
+}
 
 // FIXME to get the SHA256 out of the code
-#if 0 
+#else
 #include "sha2/sha2.h"
 
 typedef SHA256_CTX dtls_hash_ctx;
@@ -65,7 +81,6 @@ dtls_hash_finalize(unsigned char *buf, dtls_hash_t ctx) {
   return SHA256_DIGEST_LENGTH;
 }
 #endif // sha2
-
 
 #endif /* WITH_SHA256 */
 
@@ -108,7 +123,7 @@ typedef enum {
 typedef struct {
   unsigned char pad[DTLS_HMAC_BLOCKSIZE]; /**< ipad and opad storage */
 // FIXME to get the SHA256 out of the code
-#if 0 
+#if 1 
   dtls_hash_ctx data;		          /**< context for hash function */
 #endif
 } dtls_hmac_context_t;

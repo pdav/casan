@@ -26,11 +26,6 @@
 #ifndef _DTLS_CCM_H_
 #define _DTLS_CCM_H_
 
-// FIXME adapter AES 128
-//#include "aes/rijndael.h"
-//#include "aes/aes.h"
-//#include "aes.h"
-
 #include "aes/aes.h"
 
 /* implementation of Counter Mode CBC-MAC, RFC 3610 */

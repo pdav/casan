@@ -19,22 +19,16 @@
 
 int channel = CHANNEL ;
 
-//#define USE_USELESSD 1
-
 extern "C" {
-#include "free_memory.h"
+#define MSG_DEBUG
 
-#ifdef USE_USELESSD
-#include <uselessd.h>
-#else
+#include "free_memory.h"
 #include <tinydtls.h>
 #include <dtls.h>
-#endif
 };
 
 #define PSK_DEFAULT_IDENTITY "Client_identity"
 #define PSK_DEFAULT_KEY      "secretPSK"
-#define MSG_DEBUG 1
 session_t dst;
 session_t session;
 static char buf[DTLS_MAX_BUF];
@@ -76,6 +70,7 @@ unsigned long get_the_time (void) {
 
 void say (char * txt_to_say)
 {
+    Serial.print("say : ");
     Serial.print(txt_to_say);
     delay(1000);
 }
@@ -575,29 +570,6 @@ void do_chan (void)
 {
 }
 
-#ifdef USE_USELESSD
-
-/******************************************************************************
-  USELESSD
-*******************************************************************************/
-
-void init_uselessd(char line []) {
-    setup_random(get_random);
-}
-
-void stop_uselessd(void)
-{
-}
-
-void do_uselessd(void)
-{
-    int x = uselessfunction();
-    Serial.print("Valeur inutile : ");
-    Serial.println(x);
-}
-
-#else
-
 //  DTLS common
 
 dtls_context_t *the_context = NULL;
@@ -1008,9 +980,6 @@ void init_dtls_client (char line [])
     dst.addr = RECVADDR;
     dst.size = sizeof(dst.addr);
 
-    //log_t log_level = DTLS_LOG_WARN;
-    //dtls_set_log_level(log_level);
-
     randomSeed(get_the_time());
     dtls_init(get_the_time);
 
@@ -1052,11 +1021,6 @@ void do_dtls_client (void)
     //do_snif();
     dtls_handle_read();
 
-//#ifdef MSG_DEBUG
-//    Serial.println("apres dtls_handle_read");
-//    print_free_mem();
-//#endif
-
 // TODO
     if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
             !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
@@ -1084,8 +1048,6 @@ void do_dtls_client (void)
     }
 }
 
-
-#endif // USE_USELESSD
 
 
 // GUI ;-)
@@ -1118,12 +1080,8 @@ struct gui gui [] = {
     { 's', "sender", init_send, stop_send, do_send },
     { 'r', "receiver", init_recv, stop_recv, do_recv },
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
-#ifdef USE_USELESSD
-    { 'u', "uselessd", init_uselessd, stop_uselessd, do_uselessd },
-#else
     { 'd', "dtls server", init_dtls_server, stop_dtls_server, do_dtls_server },
     { 't', "dtls client", init_dtls_client, stop_dtls_client, do_dtls_client },
-#endif
 } ;
 #define	IDLE_MODE (& gui [0])
 

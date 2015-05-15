@@ -58,7 +58,8 @@ static const uint32_t sha256_init_vector[] PROGMEM = {
  * @param state pointer to a sha256 context
  * @return none
  */
-void sha256_init(sha256_ctx_t *state){
+void sha256_init(sha256_ctx_t *state)
+{
 	state->length = 0;
 	memcpy_P(state->h, sha256_init_vector, 8 * 4);
 }
