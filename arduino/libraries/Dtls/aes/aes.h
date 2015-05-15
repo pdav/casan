@@ -40,24 +40,22 @@
  * \param ctx       pointer to the context where the keyschedule should be stored
  */
 
-
-#if 0
+#if 1
 typedef struct{
-	uint8_t ks[16];
+    uint8_t ks[16];
 } aes_roundkey_t;
 
 typedef struct{
-	aes_roundkey_t key[10+1];
+    aes_roundkey_t key[10+1];
 } aes128_ctx_t;
 
 typedef struct{
-	aes_roundkey_t key[1]; /* just to avoid the warning */
+    aes_roundkey_t key[1]; /* just to avoid the warning */
 } aes_genctx_t;
 
 typedef struct{
-	uint8_t s[16];
+    uint8_t s[16];
 } aes_cipher_state_t;
-
 #else
 struct aes_roundkey {
     unsigned char ks[16];
