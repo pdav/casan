@@ -5,8 +5,9 @@ This is the source code for CASAN.
 
 This directory is structured as follows:
 
-* master: code for the master processor
-* arduino: code for the slave processor running on Arduino
+* c-master: code for the master (C++ version)
+* py-master: code for the master (Python version, needs Python >= 3.4)
+* arduino: code for the slave running on Arduino
 
 Please read the specific README in each subdirectory.
 
@@ -21,9 +22,9 @@ Here are some elements of style for reading the source code:
 - don't modify the tabulation size in your editor configuration: it
     should remain the standard 8 column, as with your printer.
     So, indentation is a combination of tabulations or spaces.
-- CASAN master code is documented via Doxygen. To generate the complete
+- CASAN C++ master code is documented via Doxygen. To generate the complete
     documentation, you need `doxygen`, `dot` (part of graphviz) and
-    `pdflatex`: just type `make pdf` in `./master` directory.
+    `pdflatex`: just type `make pdf` in `./c-master` directory.
 - CASAN slave code is documented via Doxygen. To generate the complete
     documentation, you need `doxygen`, `dot` (part of graphviz) and
     `pdflatex`: just type `make pdf` in `./arduino/libraries` directory.
@@ -84,8 +85,8 @@ Reliable code metrics:
 
 ### Master
 
-    $ find master -name "*.[ch]*" | xargs wc -l
-    $ find master -name "*.[ch]*" | xargs cat | tr -d -c ";" | wc -c
+    $ find c-master -name "*.[ch]*" | xargs wc -l
+    $ find c-master -name "*.[ch]*" | xargs cat | tr -d -c ";" | wc -c
 
 ### Arduino slave
 
