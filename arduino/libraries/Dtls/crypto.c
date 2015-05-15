@@ -572,7 +572,7 @@ dtls_encrypt(const unsigned char *src, size_t length,
 #endif
 
     // FIXME de là que vient le bug pénible ? TODO 
-#if 1
+#if 0
     // FIXME attention : forcément une clé de 128 bits !!!
     aes128_init((const void *)key, &ctx->data.ctx);
 #endif
@@ -614,7 +614,7 @@ dtls_decrypt(const unsigned char *src, size_t length,
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
 
-#if 0
+#if 1
     // FIXME attention : forcément une clé de 128 bits !!!
     aes128_init(key, &ctx->data.ctx);
 #endif
