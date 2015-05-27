@@ -40,7 +40,7 @@
 #include "mydebug.h"
 
 #ifdef WITH_CONTIKI
-#elif  WITH_ARDUINO
+#elif defined WITH_ARDUINO
 #else
 #include <stdlib.h>
 #include "uthash.h"
@@ -58,6 +58,8 @@
 #else
 #define DTLS_VERSION 0xfefd	/* DTLS v1.2 */
 #endif
+
+#define MSG_DEBUG 1
 
 // TODO
 
