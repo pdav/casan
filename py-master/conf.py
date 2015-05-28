@@ -112,13 +112,13 @@ class Conf (object):
     def _parse_namespace (self, sectab, name):
         """
         Parse a "namespace" section.
-        'name' is the namespace type ('admin', 'casan', or 'well-known')
+        'name' is the namespace type ('admin', 'casan', 'sensai' or 'well-known')
         Section contents are:
         - uri: URI of namespace
         """
 
         e = "namespace " + name
-        if name not in ['admin', 'casan', 'well-known']:
+        if name not in ['admin', 'casan', 'sensai', 'well-known']:
             raise RuntimeError ("Unknown namespace type '" + name + "'")
 
         uri = self._getdefault (sectab, 'uri', None, e)

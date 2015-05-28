@@ -61,6 +61,9 @@ class Master (object):
             elif ns == 'casan':
                 uri += '/{name:[^{}]+}'
                 app.router.add_route ('GET', uri, self.handle_casan)
+            elif ns == 'sensai':
+                uri += '/{op}'
+                app.router.add_route ('GET', uri, self.handle_sensai)
             elif ns == 'well-known':
                 app.router.add_route ('GET', uri, self.handle_well_known)
             else:
@@ -159,6 +162,32 @@ class Master (object):
 
         elif name == 'slave':
             r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
+
+        else:
+            raise aiohttp.web.HTTPNotFound ()
+
+        return aiohttp.web.Response (body=r.encode ('utf-8'))
+
+    def handle_sensai (self, request):
+        """
+        Handle HTTP requests for the sensai namespace
+        :param request: an HTTP request
+        :type  request: aiohttp.web.Request object
+        :return: a HTTP response
+        :rtype: aiohttp.web.Response object
+        """
+
+        d.m ('http', 'HTTP admin request {}'.format (request))
+        op = request.match_info ['op']
+
+        if op == 'get':
+            r = """<html><title>get</title>
+                    <body>
+                        a json dump
+                    </body></html>"""
+
+        elif op == 'add':
+            r = '<html><body><pre>done</pre></body></html>'
 
         else:
             raise aiohttp.web.HTTPNotFound ()
