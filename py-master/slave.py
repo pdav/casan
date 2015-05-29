@@ -150,7 +150,6 @@ class Slave (object):
             g.d.m ('slave', 'Received AssocRequest from another master')
             g.e.add ('master', 'received a AssocRequest message from another master (address {})'.format (m.peer))
 
-
         elif cat == msg.Msg.Categories.ASSOC_ANSWER:
             if m.req_rep is not None:
                 g.d.m ('slave', 'Received AssocAnswer for slave.')

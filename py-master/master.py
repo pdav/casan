@@ -218,9 +218,9 @@ class Master (object):
 
         if 'msg' not in param:
             raise aiohttp.web.HTTPBadRequest ()
-        msg = param ['msg']
+        m = param ['msg']
 
-        g.e.add (src, msg, dt=dt)
+        g.e.add (src, m, dt=dt)
 
         r = '<html><body><pre>done</pre></body></html>'
 

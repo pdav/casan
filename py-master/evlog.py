@@ -5,6 +5,7 @@ This module contains the EventLogger class
 import time
 import json
 
+
 class EventLogger (object):
     """
     The EventLogger abstracts event storage, access and retrieval.
@@ -84,5 +85,5 @@ class EventLogger (object):
         """
 
         r = [{"date": dt, "src": src, "msg": msg}
-                    for (dt, src, msg) in self.get (since)]
+             for (dt, src, msg) in self.get (since)]
         return json.dumps (r)
