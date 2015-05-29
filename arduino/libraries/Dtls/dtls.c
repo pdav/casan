@@ -215,7 +215,8 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
  */
 static int
 dtls_send(dtls_context_t *ctx, dtls_peer_t *peer, unsigned char type,
-        uint8 *buf, size_t buflen) {
+        uint8 *buf, size_t buflen)
+{
 
 #ifdef WITH_ARDUINO
     ctx->say("dtls_send\n\r");
@@ -234,6 +235,10 @@ dtls_peer_t *
 dtls_get_peer(const dtls_context_t *ctx, const session_t *session)
 {
     dtls_peer_t *p = NULL;
+
+#ifdef WITH_ARDUINO
+    ctx->say("dtls_get_peer, ");
+#endif
 
 #ifdef WITH_ARDUINO
     // TODO est-ce qu'on veut faire ça avec arduino ?
@@ -3224,9 +3229,13 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
                 dtls_kb_remote_write_key(security, peer->role),
                 dtls_kb_key_size(security, peer->role),
                 A_DATA, A_DATA_LEN);
+
         if (clen < 0)
+        {
             dtls_warn("decryption failed\n");
-        else {
+        }
+        else 
+        {
 #ifndef NDEBUG
             printf("decrypt_verify(): found %i bytes cleartext\n", clen);
 #endif
@@ -3270,13 +3279,18 @@ dtls_renegotiate(dtls_context_t *ctx, const session_t *dst)
     peer->handshake_params->hs_state.mseq_r = 0;
     peer->handshake_params->hs_state.mseq_s = 0;
 
-    if (peer->role == DTLS_CLIENT) {
+    if (peer->role == DTLS_CLIENT) 
+    {
         /* send ClientHello with empty Cookie */
         err = dtls_send_client_hello(ctx, peer, NULL, 0);
-        if (err < 0)
+        if (err < 0) 
+        {
             dtls_warn("cannot send ClientHello\n");
+        }
         else
+        {
             peer->state = DTLS_STATE_CLIENTHELLO;
+        }
         return err;
     } else if (peer->role == DTLS_SERVER) {
         return dtls_send_hello_request(ctx, peer);
@@ -4242,7 +4256,7 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst)
 {
 
 #ifdef WITH_ARDUINO
-    ctx->say("dtls_connect\n\r");
+    ctx->say("dtls_connect, ");
 #endif
 
     dtls_peer_t *peer;

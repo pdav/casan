@@ -302,9 +302,8 @@ static inline void dtls_set_handler(dtls_context_t *ctx, dtls_handler_t *h)
 #ifdef MSG_DEBUG
     ctx->say("dtls_set_handler : set smth_to_say too\n\r") ;
 #endif
-  ctx->h = h;
-
-  smth_to_say = ctx->say;
+    ctx->h = h;
+    smth_to_say = ctx->say;
 }
 
 /**

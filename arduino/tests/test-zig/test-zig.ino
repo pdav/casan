@@ -854,11 +854,9 @@ static void
 try_send(struct dtls_context_t *ctx)
 {
 #ifdef MSG_DEBUG
-    Serial.println("try_send");
-    Serial.print("DTLS_MAX_BUF : ");
-    Serial.println(DTLS_MAX_BUF);
+    Serial.print("try_send, ");
     print_free_mem();
-    delay(1000);
+    delay(500);
 #endif
 
     int res;
@@ -875,7 +873,7 @@ read_from_peer(struct dtls_context_t *ctx,
 {
 
 #ifdef MSG_DEBUG
-    Serial.println("read_from_peer");
+    Serial.print("read_from_peer, ");
 #endif
 
     ZigMsg::ZigReceivedFrame *z ;
@@ -899,7 +897,7 @@ send_to_peer(struct dtls_context_t *ctx,
 {
 
 #ifdef MSG_DEBUG
-    Serial.println("send2peer") ;
+    Serial.print("send2peer, ") ;
 #endif
 
     //int fd = *(int *)dtls_get_app_data(ctx);
