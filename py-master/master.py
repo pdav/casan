@@ -177,6 +177,55 @@ class Master (object):
 
         return aiohttp.web.Response (body=r.encode ('utf-8'))
 
+    def _process_get_evlog (self, param):
+        """
+        Process an event log read request
+        :param param: HTTP GET parameters
+        :type  param: aiohttp MultiDictProxy
+        """
+
+        since = 0
+        if 'since' in param:
+            try:
+                since = int (param ['since'])
+            except ValueError:
+                raise aiohttp.web.HTTPBadRequest ()
+        r = g.e.get_json (since)
+        ct = "application/json"
+        return aiohttp.web.Response (body=r.encode ('utf-8'), content_type=ct)
+
+    def _process_add_evlog (self, param):
+        """
+        Process an event log write request
+        :param param: HTTP GET parameters
+        :type  param: aiohttp MultiDictProxy
+        """
+
+        if not self._addevlog:
+            raise aiohttp.web.HTTPUnauthorized ()
+
+        if 'date' in param:
+            try:
+                dt = int (param ['date'])
+            except ValueError:
+                raise aiohttp.web.HTTPBadRequest ()
+        else:
+            dt = None
+
+        if 'src' not in param:
+            raise aiohttp.web.HTTPBadRequest ()
+        src = param ['src']
+
+        if 'msg' not in param:
+            raise aiohttp.web.HTTPBadRequest ()
+        msg = param ['msg']
+
+        g.e.add (src, msg, dt=dt)
+
+        r = '<html><body><pre>done</pre></body></html>'
+
+        return aiohttp.web.Response (body=r.encode ('utf-8'))
+
     def handle_evlog (self, request):
         """
         Handle HTTP requests for the evlog namespace
@@ -186,24 +235,18 @@ class Master (object):
         :rtype: aiohttp.web.Response object
         """
 
-        g.d.m ('http', 'HTTP admin request {}'.format (request))
+        g.d.m ('http', 'HTTP evlog request {}'.format (request))
         op = request.match_info ['op']
+        param = request.GET
 
         if op == 'get':
-            r = '<html><title>get</title><body>'
-            r += g.e.get_json ()
-            r += '</body></html>'
-
+            r = self._process_get_evlog (param)
         elif op == 'add':
-            if self._addevlog:
-                r = '<html><body><pre>done</pre></body></html>'
-            else:
-                r = '<html><body><pre>NOT ALLOWED</pre></body></html>'
-
+            r = self._process_add_evlog (param)
         else:
             raise aiohttp.web.HTTPNotFound ()
 
-        return aiohttp.web.Response (body=r.encode ('utf-8'))
+        return r
 
     def handle_well_known (self, request):
         """
@@ -213,6 +256,7 @@ class Master (object):
         :return: HTTP response
         :rtype: aiohttp.web.Response object
         """
+
         g.d.m ('http', 'HTTP well-known request {}'.format (request))
         rl = self._engine.resource_list ().encode ()
         return aiohttp.web.Response (body=rl)

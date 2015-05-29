@@ -10,15 +10,14 @@ class EventLogger (object):
     The EventLogger abstracts event storage, access and retrieval.
     Events are signalled by the master or by slaves. An event is
     made of:
-    - a source (master or slave number)
+    - a source (string: 'master' or slave number)
     - a date (time_t)
-    - a message
+    - a message (string)
     """
 
     def __init__(self):
         """
         Default constructor for the EventLogger class.
-        Note: the _log list is always sorted with the last events first
         """
 
         self._maxsize = 0
@@ -39,12 +38,20 @@ class EventLogger (object):
             if len (self._log) > self._maxsize:
                 self._log = self._log [-self._maxsize:]
 
-    def add (self, src, msg):
+    def add (self, src, msg, dt=None):
         """
         Add an event (with source and message) to the event log
+        :param src: source of the event
+        :type  src: str
+        :param msg: event message
+        :type  msg: str
+        :param dt: event date
+        :type  dt: time_t
         """
 
-        dt = int (time.time ())
+        if dt is None:
+            dt = int (time.time ())
+
         self._log.append ((dt, src, msg))
         if self._maxsize > 0 and len (self._log) >= self._maxsize:
             self._log = self._log [-self._maxsize:]

@@ -195,9 +195,10 @@ class Engine (object):
         sl = self._find_peer (m)
         if not sl:
             g.d.m ('slave', 'Sender {} not authorized'.format (m.peer))
+            g.e.add ('master', 'address {} not authorized'.format (m.peer))
             return
 
-        g.d.m ('msg', 'Message is for slave {}'.format (sl))
+        g.d.m ('msg', 'Message is from slave {}'.format (sl))
 
         #
         # Is the received message a reply to pending request?
@@ -207,6 +208,7 @@ class Engine (object):
         if req is not None:
             # Ignore the message if a reply was already received
             if req.req_rep is not None:
+                g.e.add ('master', 'reply from slave {} already received'.format (sl))
                 return
 
             # This is the first reply we get: stop further message
@@ -232,15 +234,18 @@ class Engine (object):
         if mdup is not None:
             # If already received and already replied, ignore it
             if mdup.req_rep is not None:
+                g.e.add ('master', 'duplicate request from slave {}'.format (sl))
                 return
 
         # Process the received message
         cat = m.category ()
         if cat != m.Categories.NONE:
             g.d.m ('msg', 'Control message ({})'.format (cat))
+            g.e.add ('master', 'control message {} from slave {}'.format (cat, sl))
             sl.process_casan (m)
         else:
             g.d.m ('msg', 'Message ignored')
+            g.e.add ('master', 'message from slave {} ignored'.format (sl))
 
         return
 

@@ -94,6 +94,7 @@ class Slave (object):
         self.status = self.Status.INACTIVE
         self._timeout = None
         g.d.m ('slave', 'Slave {}: status set to INACTIVE'.format (self.sid))
+        g.e.add ('master', 'slave {} status set to INACTIVE'.format (self.sid))
 
     ##########################################################################
     # Initialize values from a Discover message
@@ -111,6 +112,8 @@ class Slave (object):
         if self.addr is not None and self.addr != addr:
             g.d.m ('slave', 'Discover from slave {}: address move from '
                             '{} to {}'.format (self.sid, self.addr, addr))
+            g.e.add ('master', 'discover from slave {}: address move from '
+                               '{} to {}'.format (self.sid, self.addr, addr))
 
         if self.addr is None:
             self.addr = addr
@@ -145,10 +148,13 @@ class Slave (object):
 
         elif cat == msg.Msg.Categories.ASSOC_REQUEST:
             g.d.m ('slave', 'Received AssocRequest from another master')
+            g.e.add ('master', 'received a AssocRequest message from another master (address {})'.format (m.peer))
+
 
         elif cat == msg.Msg.Categories.ASSOC_ANSWER:
             if m.req_rep is not None:
                 g.d.m ('slave', 'Received AssocAnswer for slave.')
+                g.e.add ('master', 'received AssocAnswer for slave {}'.format (self.sid))
                 if self.parse_resource_list (m.payload):
                     # XXX check address or L2 move
                     self.addr = m.peer
@@ -165,16 +171,20 @@ class Slave (object):
                     self._loop.call_later (self.ttl, self._slave_timeout)
                     g.d.m ('slave', 'Slave {}: status set to '
                                     'RUNNING'.format (self.sid))
+                    g.e.add ('master', 'slave {} status set to RUNNING'.format (self.sid))
 
                 else:
                     g.d.m ('slave', 'Slave {}: cannot parse '
                                     'resource list'.format (self.sid))
+                    g.e.add ('master', 'unparsable resource list from slave {}'.format (self.sid))
 
         elif cat == msg.Msg.Categories.HELLO:
             g.d.m ('slave', 'Received Hello from another master')
+            g.e.add ('master', 'received a Hello message from another master (address {})'.format (m.peer))
 
         else:
             g.d.m ('slave', 'Received an unrecognized message')
+            g.e.add ('master', 'unrecognized message from address {}'.format (m.peer))
 
     ##########################################################################
     # Association timeout
