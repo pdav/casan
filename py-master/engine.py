@@ -234,18 +234,18 @@ class Engine (object):
         if mdup is not None:
             # If already received and already replied, ignore it
             if mdup.req_rep is not None:
-                g.e.add ('master', 'duplicate request from slave {}'.format (sl))
+                g.e.add ('master', 'duplicate request from slave {}'.format (sl.sid))
                 return
 
         # Process the received message
         cat = m.category ()
         if cat != m.Categories.NONE:
             g.d.m ('msg', 'Control message ({})'.format (cat))
-            g.e.add ('master', 'control message {} from slave {}'.format (cat, sl))
+            g.e.add ('master', 'control message {} from slave {}'.format (cat, sl.sid))
             sl.process_casan (m)
         else:
             g.d.m ('msg', 'Message ignored')
-            g.e.add ('master', 'message from slave {} ignored'.format (sl))
+            g.e.add ('master', 'message from slave {} ignored'.format (sl.sid))
 
         return
 
