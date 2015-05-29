@@ -9,7 +9,7 @@ import sys
 import asyncio
 
 import option
-from debug import d
+import g
 
 # CASAN related constants
 CASAN_VERSION = 1
@@ -184,7 +184,7 @@ class Msg (object):
         if self.bmsg is None:
             self.coap_encode ()
 
-        d.m ('msg', 'Send {}'.format (self))
+        g.d.m ('msg', 'Send {}'.format (self))
         if not self.l2n.send (self.peer, self.bmsg):
             sys.stderr.write ('Error during packet transmission.\n')
             return False
@@ -250,8 +250,8 @@ class Msg (object):
 
             if success:
                 if optnb in option.Option.optdesc:
-                    d.m ('opt', 'Decoding opt o={}, len={}'.format (optnb,
-                                                                    optlen))
+                    g.d.m ('opt', 'Decoding opt o={}, len={}'.format (optnb,
+                                                                      optlen))
                     o = option.Option (optnb, optbin=self.bmsg [i:i + optlen])
                     self.optlist.append (o)
                 else:
@@ -534,7 +534,7 @@ class Msg (object):
                 except asyncio.TimeoutError:
                     self.send ()
                     t = self._next_timeout ()
-                    d.m ('msg', 'Resend message {}, next={}'.format (self, t))
+                    g.d.m ('msg', 'Resend message {}, next={}'.format (self, t))
 
         return self.req_rep
 
@@ -546,7 +546,7 @@ class Msg (object):
         """
 
         yield from self._event.wait ()
-        d.m ('msg', 'Awaken msgid={}'.format (self.mid))
+        g.d.m ('msg', 'Awaken msgid={}'.format (self.mid))
 
     def got_reply (self, rep):
         """

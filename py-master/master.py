@@ -18,8 +18,7 @@ import cache
 import slave
 import msg
 import option
-
-from debug import d
+import g
 
 
 class Master (object):
@@ -36,6 +35,7 @@ class Master (object):
         self._conf = conf
         self._engine = None
         self._cache = None
+        self._addevlog = False
 
     ######################################################################
     # Initialization
@@ -61,15 +61,24 @@ class Master (object):
             elif ns == 'casan':
                 uri += '/{name:[^{}]+}'
                 app.router.add_route ('GET', uri, self.handle_casan)
-            elif ns == 'sensai':
+            elif ns == 'evlog':
                 uri += '/{op}'
-                app.router.add_route ('GET', uri, self.handle_sensai)
+                app.router.add_route ('GET', uri, self.handle_evlog)
             elif ns == 'well-known':
                 app.router.add_route ('GET', uri, self.handle_well_known)
             else:
                 raise RuntimeError ('Unknown configured namespace ' + ns)
 
         loop = asyncio.get_event_loop ()
+
+        #
+        # Initialize event logger
+        #
+
+        if self._conf.namespaces ['evlog']:
+            self._addevlog = self._conf.evlog ['add']
+            g.e.set_size (self._conf.evlog ['size'])
+        g.e.add ('master', 'starting')
 
         #
         # Initialize cache
@@ -99,7 +108,7 @@ class Master (object):
         self._engine = engine.Engine ()
         self._engine.start (self._conf, loop)
 
-        d.m ('master', 'Server ready')
+        g.d.m ('master', 'Server ready')
 
         #
         # Main loop
@@ -108,7 +117,7 @@ class Master (object):
         try:
             loop.run_forever ()
         except KeyboardInterrupt:
-            d.m ('master', 'Interrupt')
+            g.d.m ('master', 'Interrupt')
             raise
 
     ######################################################################
@@ -124,7 +133,7 @@ class Master (object):
         :rtype: aiohttp.web.Response object
         """
 
-        d.m ('http', 'HTTP admin request {}'.format (request))
+        g.d.m ('http', 'HTTP admin request {}'.format (request))
         name = request.match_info ['name']
 
         if name == 'index':
@@ -168,26 +177,28 @@ class Master (object):
 
         return aiohttp.web.Response (body=r.encode ('utf-8'))
 
-    def handle_sensai (self, request):
+    def handle_evlog (self, request):
         """
-        Handle HTTP requests for the sensai namespace
+        Handle HTTP requests for the evlog namespace
         :param request: an HTTP request
         :type  request: aiohttp.web.Request object
         :return: a HTTP response
         :rtype: aiohttp.web.Response object
         """
 
-        d.m ('http', 'HTTP admin request {}'.format (request))
+        g.d.m ('http', 'HTTP admin request {}'.format (request))
         op = request.match_info ['op']
 
         if op == 'get':
-            r = """<html><title>get</title>
-                    <body>
-                        a json dump
-                    </body></html>"""
+            r = '<html><title>get</title><body>'
+            r += g.e.get_json ()
+            r += '</body></html>'
 
         elif op == 'add':
-            r = '<html><body><pre>done</pre></body></html>'
+            if self._addevlog:
+                r = '<html><body><pre>done</pre></body></html>'
+            else:
+                r = '<html><body><pre>NOT ALLOWED</pre></body></html>'
 
         else:
             raise aiohttp.web.HTTPNotFound ()
@@ -202,7 +213,7 @@ class Master (object):
         :return: HTTP response
         :rtype: aiohttp.web.Response object
         """
-        d.m ('http', 'HTTP well-known request {}'.format (request))
+        g.d.m ('http', 'HTTP well-known request {}'.format (request))
         rl = self._engine.resource_list ().encode ()
         return aiohttp.web.Response (body=rl)
 
@@ -216,7 +227,7 @@ class Master (object):
         :rtype: aiohttp.web.Response object
         """
 
-        d.m ('http', 'HTTP casan request {}'.format (request))
+        g.d.m ('http', 'HTTP casan request {}'.format (request))
         name = request.match_info ['name']
         vpath = name.split ('/')
 

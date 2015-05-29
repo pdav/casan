@@ -4,7 +4,7 @@ This module contains the cache related functionality of CASAN.
 
 import datetime
 
-from debug import d
+import g
 
 
 class Cache (object):
@@ -51,7 +51,7 @@ class Cache (object):
         :param timer: interval between cache cleanups
         """
 
-        d.m ('cache', 'Cache cleanup')
+        g.d.m ('cache', 'Cache cleanup')
         now = datetime.datetime.now ()
         self._entries = [(exp, m) for (exp, m) in self._entries if exp > now]
 
@@ -71,7 +71,7 @@ class Cache (object):
                 expire += datetime.timedelta (seconds=ma)
                 entry = (expire, req)
                 self._entries.append (entry)
-                d.m ('cache', 'Adding {} for {} sec'.format (str (req), ma))
+                g.d.m ('cache', 'Adding {} for {} sec'.format (str (req), ma))
 
     def get (self, req):
         """
@@ -86,11 +86,11 @@ class Cache (object):
         now = datetime.datetime.now ()
         for (exp, m) in self._entries:
             if now <= exp and req.cache_match (m):
-                d.m ('cache', 'Cache hit for {} : {}'.format (req, m))
+                g.d.m ('cache', 'Cache hit for {} : {}'.format (req, m))
                 r = m
                 break
 
         if r is None:
-            d.m ('cache', 'Cache miss for {}'.format (req))
+            g.d.m ('cache', 'Cache miss for {}'.format (req))
 
         return r

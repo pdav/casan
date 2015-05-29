@@ -11,7 +11,7 @@ assert sys.version >= '3.4', 'Please use Python 3.4 or higher.'
 
 import conf
 import master
-from debug import d
+import g
 
 
 def run ():
@@ -24,7 +24,7 @@ def run ():
     # Parse arguments
     #
 
-    mcat = '|'.join (d.all_categories ())
+    mcat = '|'.join (g.d.all_categories ())
     parser = argparse.ArgumentParser (description='CASAN master')
     parser.add_argument ('-l', '--log-file', action='store',
                          help='Log file or -', metavar='logfile')
@@ -35,14 +35,16 @@ def run ():
     args = parser.parse_args()
 
     #
-    # Set debug level
+    # Initialize event log and debug level
     #
 
-    d.set_file (args.log_file)
+    g.e.set_size (1000)
+
+    g.d.set_file (args.log_file)
     if args.debug is not []:
         for c in args.debug:
-            d.add_category (c)
-    d.start ()
+            g.d.add_category (c)
+    g.d.start ()
 
     #
     # Parse the configuration file

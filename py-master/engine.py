@@ -24,7 +24,7 @@ import l2_eth
 import l2_154
 import msg
 import slave
-from debug import d
+import g
 
 
 # Seed the RNG
@@ -183,7 +183,7 @@ class Engine (object):
         if not m.recv (l2n):
             return
 
-        d.m ('msg', 'Received message {}'.format (m))
+        g.d.m ('msg', 'Received message {}'.format (m))
 
         m.refresh_expiration ()
 
@@ -194,10 +194,10 @@ class Engine (object):
         # or a slave, cited in the configuration file, trying to associate
         sl = self._find_peer (m)
         if not sl:
-            d.m ('slave', 'Sender {} not authorized'.format (m.peer))
+            g.d.m ('slave', 'Sender {} not authorized'.format (m.peer))
             return
 
-        d.m ('msg', 'Message is for slave {}'.format (sl))
+        g.d.m ('msg', 'Message is for slave {}'.format (sl))
 
         #
         # Is the received message a reply to pending request?
@@ -237,10 +237,10 @@ class Engine (object):
         # Process the received message
         cat = m.category ()
         if cat != m.Categories.NONE:
-            d.m ('msg', 'Control message ({})'.format (cat))
+            g.d.m ('msg', 'Control message ({})'.format (cat))
             sl.process_casan (m)
         else:
-            d.m ('msg', 'Message ignored')
+            g.d.m ('msg', 'Message ignored')
 
         return
 
@@ -324,7 +324,7 @@ class Engine (object):
             m.refresh_expiration ()
             self._deduplist.append (m)
         else:
-            d.m ('msg', 'Duplicate message: {}'.format (omsg))
+            g.d.m ('msg', 'Duplicate message: {}'.format (omsg))
             if omsg.req_rep is not None:
                 omsg.req_rep.send ()
 
@@ -344,7 +344,7 @@ class Engine (object):
             i = m.mid
             for mreq in m.l2n.sentlist:
                 if mreq.mid == i:
-                    d.m ('msg', 'Found original request for {}'.format (mreq))
+                    g.d.m ('msg', 'Found original request for {}'.format (mreq))
                     r = mreq
                     break
         return r

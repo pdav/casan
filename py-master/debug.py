@@ -1,9 +1,5 @@
 """
 This module provides debugging facilities.
-To abbreviate typing, import this module with:
-    from debug import d
-then you can use the various methods of the class Debug
-    d.m ('cache', 'Cache hit')
 """
 
 import logging
@@ -103,7 +99,3 @@ class Debug (object):
             raise RuntimeError ('Invalid debug category ' + cat)
         if cat in self._cat:
             logging.info (msg, *args, **kwargs)
-
-
-# pylint: disable=invalid-name
-d = Debug ()

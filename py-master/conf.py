@@ -7,7 +7,7 @@ import urllib.parse
 import io
 import html
 
-from debug import d
+import g
 
 
 class Conf (object):
@@ -31,6 +31,8 @@ class Conf (object):
         'port:https': '443',
         'sslcert': '',
         'sslkey': '',
+        'evlog:add': 'False',
+        'evlog:size': '1000',
         '802154:channel': '12',
         'ethertype': '0x88b5',
         'mtu': '0',
@@ -50,6 +52,7 @@ class Conf (object):
         self.timers = {}
         self.namespaces = {}
         self.networks = []
+        self.evlog = {}
         self.http = []
         self.slaves = []
 
@@ -73,16 +76,23 @@ class Conf (object):
         :type  filename: str
         """
 
-        d.m ('conf', 'Parsing configuration file {}'.format (filename))
+        g.d.m ('conf', 'Parsing configuration file {}'.format (filename))
         self._config = configparser.ConfigParser ()
         if not self._config.read (filename):
             raise RuntimeError ('Cannot read ' + filename)
+
+        parsed_timers = False
+        parsed_evlog = False
 
         for sect in self._config.sections ():
             w = sect.split ()
             l = len (w)
             if sect == 'timers':
                 self._parse_timers (self._config [sect])
+                parse_timers = True
+            elif sect == 'evlog':
+                self._parse_evlog (self._config [sect])
+                parse_evlog = True
             elif w [0] == 'namespace' and l == 2:
                 self._parse_namespace (self._config [sect], w [1])
             elif w [0] == 'http' and l == 2:
@@ -94,6 +104,12 @@ class Conf (object):
             else:
                 raise RuntimeError ("Unknown section '" + sect + "' in "
                                     + filename)
+
+        # set reasonnable defaults
+        if not parse_timers:
+            self._parse_timers ({})
+        if not parse_evlog:
+            self._parse_evlog ({})
 
     def _parse_timers (self, sectab):
         """
@@ -112,19 +128,33 @@ class Conf (object):
     def _parse_namespace (self, sectab, name):
         """
         Parse a "namespace" section.
-        'name' is the namespace type ('admin', 'casan', 'sensai' or 'well-known')
+        'name' is the namespace type ('admin', 'casan', 'evlog' or 'well-known')
         Section contents are:
         - uri: URI of namespace
         """
 
         e = "namespace " + name
-        if name not in ['admin', 'casan', 'sensai', 'well-known']:
+        if name not in ['admin', 'casan', 'evlog', 'well-known']:
             raise RuntimeError ("Unknown namespace type '" + name + "'")
 
         uri = self._getdefault (sectab, 'uri', None, e)
         if uri in self.namespaces:
             raise RuntimeError ("Duplicate URI '" + uri + "' for " + e)
         self.namespaces [name] = uri
+
+    def _parse_evlog (self, sectab):
+        """
+        Parse a "evlog" section.
+        Section contents are:
+        - add: True if events may be added with the /evlog/add URL
+        - size: max size of event log, in events. 0 means unlimited event log
+        """
+
+        v = self._getdefault (sectab, 'add', 'evlog:add', None)
+        self.evlog ['add'] = v.lower () in ['true', '1', 't', 'y', 'yes']
+
+        v = self._getdefault (sectab, 'size', 'evlog:size', None)
+        self.evlog ['size'] = int (v, 0)
 
     def _parse_http (self, sectab, name):
         """

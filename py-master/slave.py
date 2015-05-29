@@ -7,7 +7,7 @@ import re
 
 import msg
 import resource
-from debug import d
+import g
 
 
 # pylint: disable=too-many-instance-attributes
@@ -93,7 +93,7 @@ class Slave (object):
         self.curmtu = 0
         self.status = self.Status.INACTIVE
         self._timeout = None
-        d.m ('slave', 'Slave {}: status set to INACTIVE'.format (self.sid))
+        g.d.m ('slave', 'Slave {}: status set to INACTIVE'.format (self.sid))
 
     ##########################################################################
     # Initialize values from a Discover message
@@ -109,8 +109,8 @@ class Slave (object):
         """
 
         if self.addr is not None and self.addr != addr:
-            d.m ('slave', 'Discover from slave {}: address move from '
-                          '{} to {}'.format (self.sid, self.addr, addr))
+            g.d.m ('slave', 'Discover from slave {}: address move from '
+                            '{} to {}'.format (self.sid, self.addr, addr))
 
         if self.addr is None:
             self.addr = addr
@@ -141,14 +141,14 @@ class Slave (object):
             massoc.mk_assoc (m.l2n, m.peer, self.ttl, self._disc_curmtu)
             r = massoc.send ()
             if not r:
-                d.m ('slave', 'Error while sending AssocRequest message')
+                g.d.m ('slave', 'Error while sending AssocRequest message')
 
         elif cat == msg.Msg.Categories.ASSOC_REQUEST:
-            d.m ('slave', 'Received AssocRequest from another master')
+            g.d.m ('slave', 'Received AssocRequest from another master')
 
         elif cat == msg.Msg.Categories.ASSOC_ANSWER:
             if m.req_rep is not None:
-                d.m ('slave', 'Received AssocAnswer for slave.')
+                g.d.m ('slave', 'Received AssocAnswer for slave.')
                 if self.parse_resource_list (m.payload):
                     # XXX check address or L2 move
                     self.addr = m.peer
@@ -163,18 +163,18 @@ class Slave (object):
                     now = datetime.datetime.now ()
                     self._timeout = now + datetime.timedelta (seconds=self.ttl)
                     self._loop.call_later (self.ttl, self._slave_timeout)
-                    d.m ('slave', 'Slave {}: status set to '
-                                  'RUNNING'.format (self.sid))
+                    g.d.m ('slave', 'Slave {}: status set to '
+                                    'RUNNING'.format (self.sid))
 
                 else:
-                    d.m ('slave', 'Slave {}: cannot parse '
-                                  'resource list'.format (self.sid))
+                    g.d.m ('slave', 'Slave {}: cannot parse '
+                                    'resource list'.format (self.sid))
 
         elif cat == msg.Msg.Categories.HELLO:
-            d.m ('slave', 'Received Hello from another master')
+            g.d.m ('slave', 'Received Hello from another master')
 
         else:
-            d.m ('slave', 'Received an unrecognized message')
+            g.d.m ('slave', 'Received an unrecognized message')
 
     ##########################################################################
     # Association timeout
