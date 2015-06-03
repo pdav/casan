@@ -59,14 +59,18 @@ class Cache (object):
 
     def add (self, req):
         """
-        Add a request to the cache
+        Add a request to the cache, according to rfc 7252, sec 5.6
         :param req: Msg object to add to the cache
         """
 
         rep = req.req_rep
         if rep is not None:
             ma = rep.max_age ()
-            if ma is not None:
+            if ma is None:
+                # Max-Age is 60 sec by default. Use Max-Age=0 for no caching
+                ma = 60
+
+            if ma != 0:
                 expire = datetime.datetime.now ()
                 expire += datetime.timedelta (seconds=ma)
                 entry = (expire, req)
