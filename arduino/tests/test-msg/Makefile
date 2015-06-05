@@ -8,16 +8,16 @@ TARGET			= .
 DBLEVEL			= -DDBLEVEL=1
 
 #### For Arduino Uno platform and Ethernet
-BOARD_TAG		= uno
-# no need for ARDUINO_CORE_PATH	for uno
-MONITOR_PORT		= /dev/ttyACM3
-ARDUINO_LIBS		= Casan
+# BOARD_TAG		= uno
+# # no need for ARDUINO_CORE_PATH	for uno
+# MONITOR_PORT		= /dev/ttyACM3
+# ARDUINO_LIBS		= Casan
 
 #### For Zigduino r2 platform and 802.15.4
-# BOARD_TAG		= zigduino_r2
-# ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
-# MONITOR_PORT		= /dev/zig0		# /dev/ttyUSB0
-# ARDUINO_LIBS		= Casan
+BOARD_TAG		= zigduino_r2
+ARDUINO_CORE_PATH	= $(ARDUINO_DIR)/hardware/arduino/cores/zigduino
+MONITOR_PORT		= /dev/zig0		# /dev/ttyUSB0
+ARDUINO_LIBS		= Casan
 
 USER_LIB_PATH		= $(realpath ../../libraries)
 

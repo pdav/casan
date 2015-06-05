@@ -70,6 +70,7 @@ option::optdesc option::optdesc_ [] =
     { option::MO_Accept,		option::OF_UINT,	0, 2	},
     { option::MO_If_None_Match,		option::OF_EMPTY,	0, 0	},
     { option::MO_If_Match,		option::OF_OPAQUE,	0, 8	},
+    { option::MO_Observe,		option::OF_UINT,	0, 3	},
 } ;
 
 /******************************************************************************

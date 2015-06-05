@@ -32,42 +32,44 @@ int led = A2 ;
 Casan *casan ;
 Debug debug ;
 
-uint8_t process_temp1 (Msg &in, Msg &out) 
+uint8_t process_temp1 (Msg *in, Msg *out) 
 {
     char payload [10] ;
+
+    out->max_age (true, 0) ;		// answer is not cachable
 
     DBGLN1 (F ("process_temp")) ;
 
     int sensorValue = analogRead (tmp_sensor) ;
     snprintf (payload, 10, "%d", sensorValue) ;
 
-    out.set_payload ((uint8_t *) payload,  strlen (payload)) ;
+    out->set_payload ((uint8_t *) payload,  strlen (payload)) ;
 
     return COAP_RETURN_CODE (2, 5) ;
 }
 
-uint8_t process_temp2 (Msg &in, Msg &out) 
+uint8_t process_temp2 (Msg *in, Msg *out) 
 {
     char payload [10] ;
 
-    out.max_age (true, 60) ;		// answer is cacheable
+    // out->max_age (true, 60) ;	// answer is cachable (default)
 
     DBGLN1 (F ("process_temp")) ;
 
     int sensorValue = analogRead (tmp_sensor) ;
     snprintf (payload, 10, "%d", sensorValue) ;
 
-    out.set_payload ((uint8_t *) payload,  strlen (payload)) ;
+    out->set_payload ((uint8_t *) payload,  strlen (payload)) ;
 
     return COAP_RETURN_CODE (2, 5) ;
 }
 
-uint8_t process_led (Msg &in, Msg &out) 
+uint8_t process_led (Msg *in, Msg *out) 
 {
     DBGLN1 (F ("process_led")) ;
 
     int n ;
-    char *payload = (char*) in.get_payload () ;
+    char *payload = (char*) in->get_payload () ;
     if (payload != NULL && sscanf ((const char *) payload, "val=%d", &n) == 1)
     {
 	analogWrite (led, n) ;

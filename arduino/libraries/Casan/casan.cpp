@@ -263,7 +263,7 @@ void Casan::register_resource (Resource *res)
  * @param out Message which will be sent in return
  */
 
-void Casan::request_resource (Msg &in, Msg &out) 
+void Casan::process_request (Msg &in, Msg &out) 
 {
     option *o ;
     bool rfound = false ;		// resource found
@@ -293,25 +293,34 @@ void Casan::request_resource (Msg &in, Msg &out)
 		res = get_resource ((char *) o->optval ((int *) 0)) ;
 		if (res != NULL)
 		{
+		    option *obs ;
+		    uint32_t obsval ;
+
 		    rfound = true ;
+
+		    obs = in.search_option (option::MO_Observe) ;
+		    if (obs != NULL)
+			obsval = obs->optval () ;
+
+		    if (obs != NULL && obsval == 0)
+			res->observed (true, &in) ;
+		    else
+			res->observed (false, NULL) ;
+
 		    out.set_type (COAP_TYPE_ACK) ;
 		    out.set_id (in.get_id ()) ;
 		    out.set_token (in.get_toklen (), in.get_token ()) ;
 
-		    // call handler
-		    Resource::handler_t h ;
-		    
-		    h = res->handler ((coap_code_t) in.get_code ()) ;
-		    if (h == NULL)
+		    if (obs != NULL && obsval == 0)
 		    {
-			out.set_code (COAP_CODE_BAD_REQUEST) ;
+			option robs ;
+
+			robs.optcode (option::MO_Observe) ;
+			robs.optval (res->next_serial ()) ;
+			out.push_option (robs) ;
 		    }
-		    else
-		    {
-			// add Content Format option
-			out.content_format (false, option::cf_text_plain) ;
-			out.set_code ((*h) (in, out)) ;
-		    }
+
+		    request_resource (&in, &out, res) ;
 		}
 	    }
 	    break ;
@@ -328,17 +337,46 @@ void Casan::request_resource (Msg &in, Msg &out)
 }
 
 /**
- * Find a particular resource by its name
+ * Build a response message
+ *
+ * Build a CASAN response message for an incoming request or when
+ * an observed resource triggered an event. Part of the message
+ * is already built (type, id, token, observe option), answer must
+ * be completed by the application handler.
+ *
+ * @param pin pointer to incoming message or NULL
+ * @param pout pointer to the output message being built
+ * @param res addressed resource
  */
 
-Resource *Casan::get_resource (const char *name)
+void Casan::request_resource (Msg *pin, Msg *pout, Resource *res)
 {
-    reslist *rl ;
+    Resource::handler_t h ;
+    uint8_t code ;
 
-    for (rl = reslist_ ; rl != NULL ; rl = rl->next)
-	if (strcmp (name, rl->res->name ()) == 0)
-	    break ;
-    return rl != NULL ? rl->res : NULL ;
+    h = res->handler ((coap_code_t) pin->get_code ()) ;
+    if (h == NULL)
+    {
+	code = COAP_CODE_BAD_REQUEST ;
+    }
+    else
+    {
+	// add Content Format option
+	pout->content_format (false, option::cf_text_plain) ;
+	code = (*h) (pin, pout) ;
+    }
+    pout->set_code (code) ;
+}
+
+/**
+ * Check all observed resources in order to detect changes and
+ * send appropriate observe message.
+ *
+ * @param out an output message
+ */
+
+void Casan::check_observed_resources (Msg &out)
+{
 }
 
 /**
@@ -347,9 +385,11 @@ Resource *Casan::get_resource (const char *name)
  * message).
  *
  * The answer will have a payload similar to:
- *	</temp> ;
+ *	</temp>;
  *		title="the temp";
- *		rt="Temp",</light>;
+ *		rt="Temp"
+ *              ,
+ *      </light>;
  *		title="Luminosity";
  *		rt="light-lux"
  * (with the newlines removed)
@@ -412,6 +452,20 @@ bool Casan::get_well_known (Msg &out)
     }
 
     return rl == NULL ;			// true if all res are in the message
+}
+
+/**
+ * Find a particular resource by its name
+ */
+
+Resource *Casan::get_resource (const char *name)
+{
+    reslist *rl ;
+
+    for (rl = reslist_ ; rl != NULL ; rl = rl->next)
+    if (strcmp (name, rl->res->name ()) == 0)
+	break ;
+    return rl != NULL ? rl->res : NULL ;
 }
 
 /******************************************************************************
@@ -564,7 +618,7 @@ void Casan::loop ()
 		else		// request for a normal resource
 		{
 		    // deduplicate () ;
-		    request_resource (in, out) ;
+		    process_request (in, out) ;
 		    out.send (*master_) ;
 		}
 	    }
@@ -579,6 +633,8 @@ void Casan::loop ()
 		out.set_code (COAP_CODE_TOO_LARGE) ;
 		out.send (*master_) ;
 	    }
+
+	    check_observed_resources (out) ;
 
 	    if (status_ == SL_RUNNING && trenew_.renew (curtime))
 	    {

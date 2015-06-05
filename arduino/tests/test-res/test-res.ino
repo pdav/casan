@@ -52,17 +52,17 @@ const char *resname [] =
     R2_name,
 } ;
 
-uint8_t process_light (Msg &in, Msg &out)
+uint8_t process_light (Msg *in, Msg *out)
 {
     Serial.println (F ("process_light")) ;
-    out.set_payload ((uint8_t *) "on", 2) ;		// light is "on"
+    out->set_payload ((uint8_t *) "on", 2) ;		// light is "on"
     return COAP_RETURN_CODE (2, 5) ; ;
 }
 
-uint8_t process_temp (Msg &in, Msg &out)
+uint8_t process_temp (Msg *in, Msg *out)
 {
     Serial.println (F ("process_temp")) ;
-    out.set_payload ((uint8_t *) "23.5", 4) ;		// temp is hot ;-)
+    out->set_payload ((uint8_t *) "23.5", 4) ;		// temp is hot ;-)
     return COAP_RETURN_CODE (2, 5) ;
 }
 
@@ -78,7 +78,7 @@ void setup ()
     l2.start (myaddr, promisc, CHANNEL, PANID) ;
 #endif
 
-    casan = new Casan (&l2, mtu, slaveid) ;
+    casan = new Casan (&l2, MTU, slaveid) ;
 
     Resource *r1 = new Resource (R1_name, R1_title, R1_rt) ;
     r1->handler (COAP_CODE_GET, process_light) ;
@@ -91,7 +91,7 @@ void setup ()
 
 void test_resource (const char *name)
 {
-    Msg in, out ;			// test with simulated messages
+    Msg in (&l2), out (&l2) ;		// test with simulated messages
 
     Serial.print (F ("Resource: '")) ;
     Serial.print (name) ;
@@ -108,7 +108,7 @@ void test_resource (const char *name)
     Serial.println (F ("Simulated message IN: ")) ;
     in.print () ;
 
-    casan->request_resource (in, out) ;
+    casan->process_request (in, out) ;
 
     Serial.println (F ("Simulated message OUT: ")) ;
     out.print () ;

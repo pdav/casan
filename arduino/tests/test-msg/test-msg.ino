@@ -24,12 +24,16 @@ void setup ()
     debug.start (DEBUGINTERVAL) ;
 }
 
+l2net *l2 ;
+
 void test_msg (void)
 {
+    l2net *l2 ;
+
     Serial.println (F ("STEP 1: create 2 empty messages")) ;
-    Msg m1 ;
+    Msg m1 (l2) ;
     m1.print () ;
-    Msg m2 ;
+    Msg m2 (l2) ;
     m2.print () ;
 
     Serial.println (F ("STEP 2: create options")) ;

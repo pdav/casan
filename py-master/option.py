@@ -32,6 +32,7 @@ class Option (object):
         IF_NONE_MATCH = 5
         IF_MATCH = 1
         SIZE1 = 60
+        OBSERVE = 6
 
     # Option descriptions: optdesc [optcode] = (type, minlen, maxlen)
     # type in ['opaque', 'string', 'uint', 'empty']
@@ -51,6 +52,7 @@ class Option (object):
         Codes.IF_NONE_MATCH: ('empty', 0, 0),
         Codes.IF_MATCH: ('opaque', 0, 8),
         Codes.SIZE1: ('uint', 0, 4),
+        Codes.OBSERVE: ('uint', 0, 3),
     }
 
     # pylint: disable=too-many-branches
@@ -186,7 +188,7 @@ class Option (object):
         :param b: bytes to convert.
         :type  b: bytearray
         """
-        t = b [0]
+        t = b [0] if len (b) > 0 else 0
         if len (b) != 1:
             for byte in b [1:]:
                 t *= byte

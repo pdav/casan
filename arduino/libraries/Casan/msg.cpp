@@ -613,6 +613,30 @@ option *Msg::next_option (void)
     return o ;
 }
 
+/**
+ * @brief Search for a specific (and unique) option
+ *
+ * This method returns the first option in the option list which
+ * match the given opcode. If not found, returns `NULL`.
+ */
+
+option *Msg::search_option (option::optcode_t c)
+{
+    optlist *ol ;
+    option *o ;
+
+    o = NULL ;
+    for (ol = optlist_ ; ol != NULL ; ol = ol->next)
+    {
+	if (ol->o->optcode_ == c)
+	{
+	    o = ol->o ;
+	    break ;
+	}
+    }
+    return o ;
+}
+
 
 /*
  * Copy a whole message, including payload and option list

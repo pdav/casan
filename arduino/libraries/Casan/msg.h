@@ -103,6 +103,7 @@ class Msg {
 	option *next_option (void) ;	// loop through options
 	void reset_next_option (void) ;	// reset loop
 	void push_option (option &o) ;	// to prepare to send a message
+	option *search_option (option::optcode_t c) ;
 
 	// not so basic methods
 	size_t avail_space (void) ;	// available space in msg

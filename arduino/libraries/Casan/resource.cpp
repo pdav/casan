@@ -17,6 +17,12 @@ Resource::Resource (const char *name, const char *title, const char *rt)
     ALLOC_COPY (name_, name) ;
     ALLOC_COPY (title_, title) ;
     ALLOC_COPY (rt_, rt) ;
+    for (int i = 0 ; i < NTAB (handler_) ; i++)
+	handler_ [i] = NULL ;
+    observed_ = false ;
+    obs_trig_ = NULL ;
+    obs_reg_ = NULL ;
+    obs_dereg_ = NULL ;
 }
 
 /** @brief Destructor
@@ -50,6 +56,58 @@ Resource::handler_t Resource::handler (coap_code_t op)
 {
     return handler_ [op] ;
 }
+
+/** @brief Set observe handlers
+ *
+ * @param reg handler for registering the observation (may be null)
+ * @param dereg handler for deregistering the observation (may be null)
+ * @param trigger handler for detecting a change (must not be null)
+ */
+
+void Resource::ohandler (obs_register_t reg, obs_deregister_t dereg, obs_trigger_t trig)
+{
+    observed_ = false ;
+    obs_reg_ = reg ;
+    obs_dereg_ = dereg ;
+    obs_trig_ = trig ;
+    obs_serial_ = 0 ;
+}
+
+/** @brief Register or deregister an observer
+ *
+ * @param onoff true (register) or false (deregister)
+ * @param m incoming message (for registering) or NULL (for deregistering)
+ */
+
+void Resource::observed (bool onoff, Msg *m)
+{
+    if (obs_trig_ != NULL)
+    {
+	if (observed_ && obs_dereg_ != NULL)
+	    (*obs_dereg_) () ;
+
+	observed_ = onoff ;
+	if (onoff)
+	{
+	    if (obs_reg_ != NULL)
+		(*obs_reg_) (*m) ;
+	    obs_serial_ = 2 ;			/* starting value */
+	    obs_toklen_ = m->get_toklen () ;
+	    memcpy (obs_token_, m->get_token (), obs_toklen_) ;
+	}
+    }
+}
+
+/** @brief Detect observe events
+ *
+ * @return 1 if an observe message must be sent
+ */
+
+int Resource::check_trigger (void)
+{
+    return obs_trig_ == NULL ? 0 : (*obs_trig_) () ;
+}
+
 
 /** @brief Get the textual representation of the resource for the
  *	`/.well-known/casan` resource.

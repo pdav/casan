@@ -69,6 +69,7 @@ class option
 	    MO_If_None_Match	= 5,
 	    MO_If_Match		= 1,
 	    MO_Size1		= 60,
+	    MO_Observe		= 6,		// Observe draft
 	} optcode_t ;
 	typedef unsigned long int uint ;
 
