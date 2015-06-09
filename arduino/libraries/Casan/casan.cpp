@@ -281,7 +281,7 @@ void Casan::process_request (Msg &in, Msg &out)
 		rfound = true ;
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
-		out.set_token (in.get_toklen (), in.get_token ()) ;
+		out.set_token (in.get_token ()) ;
 		out.set_code (COAP_CODE_OK) ;
 		(void) get_well_known (out) ;
 	    }
@@ -309,7 +309,7 @@ void Casan::process_request (Msg &in, Msg &out)
 
 		    out.set_type (COAP_TYPE_ACK) ;
 		    out.set_id (in.get_id ()) ;
-		    out.set_token (in.get_toklen (), in.get_token ()) ;
+		    out.set_token (in.get_token ()) ;
 
 		    if (obs != NULL && obsval == 0)
 		    {
@@ -331,7 +331,7 @@ void Casan::process_request (Msg &in, Msg &out)
     {
 	out.set_type (COAP_TYPE_ACK) ;
 	out.set_id (in.get_id ()) ;
-	out.set_token (in.get_toklen (), in.get_token ()) ;
+	out.set_token (in.get_token ()) ;
 	out.set_code (COAP_CODE_NOT_FOUND) ;
     }
 }
@@ -377,6 +377,25 @@ void Casan::request_resource (Msg *pin, Msg *pout, Resource *res)
 
 void Casan::check_observed_resources (Msg &out)
 {
+    Resource *res ;
+    reslist *rl ;
+
+    for (rl = reslist_ ; rl != NULL ; rl = rl->next)
+    {
+	res = rl->res ;
+	if (res->check_trigger ())
+	{
+	    out.reset () ;
+
+	    out.set_type (COAP_TYPE_ACK) ;
+	    out.set_token (res->get_token ()) ;
+
+	    option obs (option::MO_Observe, res->next_serial ()) ;
+	    out.push_option (obs) ;
+
+	    request_resource (NULL, &out, res) ;
+	}
+    }
 }
 
 /**
@@ -627,7 +646,7 @@ void Casan::loop ()
 		DBGLN1 (F (RED ("Request too large"))) ;
 		out.set_type (COAP_TYPE_ACK) ;
 		out.set_id (in.get_id ()) ;
-		out.set_token (in.get_toklen (), in.get_token ()) ;
+		out.set_token (in.get_token ()) ;
 		option o (option::MO_Size1, l2_->mtu ()) ;
 		out.push_option (o) ;
 		out.set_code (COAP_CODE_TOO_LARGE) ;

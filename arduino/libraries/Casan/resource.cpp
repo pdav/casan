@@ -92,8 +92,7 @@ void Resource::observed (bool onoff, Msg *m)
 	    if (obs_reg_ != NULL)
 		(*obs_reg_) (*m) ;
 	    obs_serial_ = 2 ;			/* starting value */
-	    obs_toklen_ = m->get_toklen () ;
-	    memcpy (obs_token_, m->get_token (), obs_toklen_) ;
+	    obs_token_ = m->get_token () ;
 	}
     }
 }

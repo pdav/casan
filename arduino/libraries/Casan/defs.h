@@ -58,6 +58,9 @@
 #define	BLUE(m)			C_BLUE m C_RESET
 #define	YELLOW(m)		C_YELLOW m C_RESET
 
+// Maximum token length
+#define	COAP_MAX_TOKLEN		8
+
 // CoAP ACK timeout (milliseconds) for CONfirmable messages
 #define	ACK_TIMEOUT	2000
 // CoAP ACK random factor to compute initial timeout for CON messages

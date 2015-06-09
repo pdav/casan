@@ -81,6 +81,7 @@ class Resource {
 	bool observed (void) 		{ return observed_ ; }
 	int check_trigger (void) ;
 	uint32_t next_serial (void) 	{ return ++obs_serial_ ; }
+	Token &get_token (void)		{ return obs_token_ ; }
 
 	int well_known (char *buf, size_t maxlen) ;
 	void print (void) ;
@@ -97,8 +98,7 @@ class Resource {
 	obs_deregister_t obs_dereg_ ;		// unregister an observer
 	obs_trigger_t obs_trig_ ;		// detect observe event
 	uint32_t obs_serial_ ;			// increasing value for option
-	uint8_t obs_token_ [COAP_MAX_TOKLEN] ;
-	uint8_t obs_toklen_ ;
+	Token obs_token_ ;
 };
 
 #endif

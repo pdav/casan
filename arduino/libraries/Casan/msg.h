@@ -8,6 +8,7 @@
 
 #include "l2.h"
 #include "option.h"
+#include "token.h"
 #include "time.h"
 
 #define COAP_RETURN_CODE(x,y) ((x << 5) | (y & 0x1f))
@@ -18,8 +19,6 @@
 #define	COAP_OFFSET_CODE	1
 #define	COAP_OFFSET_ID		2
 #define	COAP_OFFSET_TOKEN	4
-
-#define	COAP_MAX_TOKLEN		8
 
 /** CoAP methods */
 typedef enum coap_code {
@@ -79,8 +78,7 @@ class Msg {
 	uint8_t  get_type    (void)	{ return type_ ; }
 	uint8_t  get_code    (void)	{ return code_ ; }
 	uint16_t get_id      (void)	{ return id_ ; }
-	uint8_t  get_toklen  (void)	{ return toklen_ ; }
-	uint8_t *get_token   (void)	{ return token_ ; }
+	Token   &get_token   (void)	{ return token_ ; }
 	uint16_t get_paylen  (void)	{ return paylen_ ; }
 	uint8_t *get_payload (void)	{ return payload_ ; }
 
@@ -91,7 +89,7 @@ class Msg {
 	void set_type    (uint8_t t)	{ type_ = t ; }
 	void set_code    (uint8_t c)	{ code_ = c ; }
 	void set_id      (uint16_t id)	{ id_ = id ; }
-	void set_token   (uint8_t toklen, uint8_t *token) ;
+	void set_token   (Token &tok)	{ token_ = tok ; }
 	void set_payload (uint8_t *payload, uint16_t paylen) ;
 
 	// Option management
@@ -137,8 +135,7 @@ class Msg {
 	uint8_t  type_ ;
 	uint8_t  code_ ;
 	uint16_t id_ ;
-	uint8_t  toklen_ ;
-	uint8_t  token_ [COAP_MAX_TOKLEN] ;
+	Token    token_ ;
 	uint16_t paylen_ ;
 	uint8_t *payload_ ;
 	uint8_t  optlen_ ;

@@ -158,15 +158,15 @@ bool Msg::coap_decode (uint8_t rbuf [], size_t len, bool truncated)
 	int opt_nb ;
 
 	type_ = COAP_TYPE (rbuf) ;
-	toklen_ = COAP_TOKLEN (rbuf) ;
+	token_.toklen_ = COAP_TOKLEN (rbuf) ;
 	code_ = COAP_CODE (rbuf) ;
 	id_ = COAP_ID (rbuf) ;
 	i = 4 ;
 
-	if (toklen_ > 0)
+	if (token_.toklen_ > 0)
 	{
-	    memcpy (token_, rbuf + i, toklen_) ;
-	    i += toklen_ ;
+	    memcpy (token_.token_, rbuf + i, token_.toklen_) ;
+	    i += token_.toklen_ ;
 	}
 
 	/*
@@ -349,15 +349,15 @@ bool Msg::coap_encode (uint8_t sbuf [], size_t &sbuflen)
 	i = 0 ;
 
 	// header
-	sbuf [i++] = FORMAT_BYTE0 (CASAN_VERSION, type_, toklen_) ;
+	sbuf [i++] = FORMAT_BYTE0 (CASAN_VERSION, type_, token_.toklen_) ;
 	sbuf [i++] = code_ ;
 	sbuf [i++] = BYTE_HIGH (id_) ;
 	sbuf [i++] = BYTE_LOW  (id_) ;
 	// token
-	if (toklen_ > 0)
+	if (token_.toklen_ > 0)
 	{
-	    memcpy (sbuf + i, token_, toklen_) ;
-	    i += toklen_ ;
+	    memcpy (sbuf + i, token_.token_, token_.toklen_) ;
+	    i += token_.toklen_ ;
 	}
 	// options
 	reset_next_option () ;
@@ -445,7 +445,7 @@ size_t Msg::coap_size (bool emulpayload)
     uint16_t opt_nb ;
     size_t size ;
 
-    size = 4 + toklen_ ;
+    size = 4 + token_.toklen_ ;
 
     reset_next_option () ;
     opt_nb = 0 ;
@@ -500,12 +500,6 @@ size_t Msg::avail_space (void)
 /*
  * Various mutators to long to be inlined: token and payload
  */
-
-void Msg::set_token (uint8_t toklen, uint8_t *token)
-{
-    toklen_ = toklen ;
-    memcpy (token_, token, toklen) ;
-}
 
 void Msg::set_payload (uint8_t *payload, uint16_t paylen) 
 {
@@ -829,13 +823,11 @@ void Msg::print (void)
     DBG1 (".") ;
     DBG2 (get_code () & 0x1f, HEX) ;
     DBG1 (F (", toklen=")) ;
-    DBG1 (get_toklen ()) ;
+    DBG1 (token_.toklen_) ;
 
-    if (get_toklen () > 0) {
+    if (token_.toklen_ > 0) {
 	DBG1 (F (", token=")) ;
-	uint8_t *token = get_token () ;
-	for (int i = 0 ; i < get_toklen () ; i++)
-	    DBG2 (token [i], HEX) ;
+	token_.print () ;
 	DBGLN0 () ;
     }
 
