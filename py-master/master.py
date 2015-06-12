@@ -61,7 +61,8 @@ class Master (object):
                 app.router.add_route ('GET', uri, self.handle_admin)
             elif ns == 'casan':
                 uri += '/{sid:\d+}/{respath:[^{}]+}'
-                app.router.add_route ('GET', uri, self.handle_casan)
+                for meth in ['POST', 'DELETE', 'GET', 'PUT']:
+                    app.router.add_route (meth, uri, self.handle_casan)
             elif ns == 'observe':
                 uri += '/{token}/{sid:\d+}/{respath:[^{}]+}'
                 for meth in ['POST', 'DELETE', 'GET']:
@@ -277,8 +278,9 @@ class Master (object):
         """
 
         g.d.m ('http', 'HTTP casan request {}'.format (request))
+        meth = request.method
         sid = request.match_info ['sid']
-        respath = request.match_info ['respath'].split ('/')
+        vpath = request.match_info ['respath'].split ('/')
 
         #
         # Find slave and resource
@@ -291,7 +293,6 @@ class Master (object):
         if sl is None or not sl.isrunning ():
             raise aiohttp.web.HTTPNotFound ()
 
-        vpath = respath.split ('/')
         res = sl.find_resource (vpath)
         if res is None:
             return None
@@ -304,7 +305,18 @@ class Master (object):
         mreq.peer = sl.addr
         mreq.l2n = sl.l2n
         mreq.msgtype = msg.Msg.Types.CON
-        mreq.msgcode = msg.Msg.Codes.GET
+
+        if meth == 'GET':
+            mreq.msgcode = msg.Msg.Codes.GET
+        elif meth == 'POST':
+            mreq.msgcode = msg.Msg.Codes.POST
+        elif meth == 'DELETE':
+            mreq.msgcode = msg.Msg.Codes.DELETE
+        elif meth == 'PUT':
+            mreq.msgcode = msg.Msg.Codes.PUT
+        else:
+            raise aiohttp.web.HTTPNotFound ()
+
         up = option.Option.Codes.URI_PATH
         for p in vpath:
             mreq.optlist.append (option.Option (up, optval=p))
@@ -360,7 +372,7 @@ class Master (object):
         meth = request.method
         token = request.match_info ['token']
         sid = request.match_info ['sid']
-        respath = request.match_info ['respath']
+        vpath = request.match_info ['respath'].split ('/')
         qs = request.query_string
 
         #
@@ -371,7 +383,6 @@ class Master (object):
         if sl is None:
             raise aiohttp.web.HTTPNotFound ()
 
-        vpath = respath.split ('/')
         obs = sl.find_observer (vpath, token)
 
         #
