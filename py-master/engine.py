@@ -282,9 +282,15 @@ class Engine (object):
         """
         Find a slave by its id
         :param sid: sid
-        :type  sid: int
+        :type  sid: int or str
         :return: found slave (class Slave) or None
         """
+
+        if isinstance (sid, str):
+            try:
+                sid = int (sid)
+            except ValueError:
+                return None
 
         s = None
         for sl in self._slaves:
@@ -367,7 +373,7 @@ class Engine (object):
 
         s = ''
         for sl in self._slaves:
-            if sl.status == slave.Slave.Status.RUNNING:
+            if sl.isrunning ():
                 for res in sl.reslist:
                     s += str (res)
         return s

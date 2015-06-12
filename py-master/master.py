@@ -13,6 +13,7 @@ import asyncio
 import aiohttp
 import aiohttp.web
 
+import observer
 import engine
 import cache
 import slave
@@ -56,11 +57,15 @@ class Master (object):
             uri = self._conf.namespaces [ns]
 
             if ns == 'admin':
-                uri += '/{name}'
+                uri += '/{action}'
                 app.router.add_route ('GET', uri, self.handle_admin)
             elif ns == 'casan':
-                uri += '/{name:[^{}]+}'
+                uri += '/{sid:\d+}/{respath:[^{}]+}'
                 app.router.add_route ('GET', uri, self.handle_casan)
+            elif ns == 'observe':
+                uri += '/{token}/{sid:\d+}/{respath:[^{}]+}'
+                for meth in ['POST', 'DELETE', 'GET']:
+                    app.router.add_route (meth, uri, self.handle_observe)
             elif ns == 'evlog':
                 uri += '/{op}'
                 app.router.add_route ('GET', uri, self.handle_evlog)
@@ -134,9 +139,9 @@ class Master (object):
         """
 
         g.d.m ('http', 'HTTP admin request {}'.format (request))
-        name = request.match_info ['name']
+        action = request.match_info ['action']
 
-        if name == 'index':
+        if action == 'index':
             r = """<html><title>Welcome to CASAN</title>
                     <body>
                         <h1>Welcome to CASAN</h1>
@@ -148,12 +153,12 @@ class Master (object):
                         </ul>
                     </body></html>"""
 
-        elif name == 'conf':
+        elif action == 'conf':
             r = '<html><body><pre>'
             r += html.escape (str (self._conf))
             r += '</pre></body></html>'
 
-        elif name == 'run':
+        elif action == 'run':
             r = """<html><title>Current status</title>
                     <body>
                         <h1>Current CASAN status</h1>
@@ -161,7 +166,7 @@ class Master (object):
             r += self._engine.html ()
             r += '</body></html>'
 
-        elif name == 'cache':
+        elif action == 'cache':
             r = """<html><title>Cache contents</title>
                     <body>
                         <h1>CASAN cache contents</h1>
@@ -169,7 +174,7 @@ class Master (object):
             r += self._cache.html ()
             r += '</body></html>'
 
-        elif name == 'slave':
+        elif action == 'slave':
             r = '<html><body><pre>' + str(self._conf) + '</pre></body></html>'
 
         else:
@@ -272,26 +277,24 @@ class Master (object):
         """
 
         g.d.m ('http', 'HTTP casan request {}'.format (request))
-        name = request.match_info ['name']
-        vpath = name.split ('/')
+        sid = request.match_info ['sid']
+        respath = request.match_info ['respath'].split ('/')
 
         #
         # Find slave and resource
         #
 
-        try:
-            sid = int (vpath [0])
-        except:
-            raise aiohttp.web.HTTPNotFound ()
-
         sl = self._engine.find_slave (sid)
-        if sl is None or sl.status != slave.Slave.Status.RUNNING:
+        if sl is None:
             raise aiohttp.web.HTTPNotFound ()
 
-        del vpath [0]
+        if sl is None or not sl.isrunning ():
+            raise aiohttp.web.HTTPNotFound ()
+
+        vpath = respath.split ('/')
         res = sl.find_resource (vpath)
         if res is None:
-            raise aiohttp.web.HTTPNotFound ()
+            return None
 
         #
         # Build request
@@ -332,3 +335,65 @@ class Master (object):
         r = aiohttp.web.Response (body=pl)
 
         return r
+
+    @asyncio.coroutine
+    def handle_observe (self, request):
+        """
+        Handle HTTP request to observe a resource. Parameter are:
+        - HTTP method:
+            - POST: add an observer
+            - DELETE: remove an observer
+            - GET: get the current resource value
+        - path: includes /token/path/to/slave/and/resource
+            (e.g.: /foo/169/temp)
+        - query string: to send to the resource to be observed (for POST)
+        The parameters may be given with the 'curl' command. E.g.:
+            curl -X POST -d "" http://.../token/res
+            curl -X DELETE http://..../token/res
+            curl -X GET http://.../token/res
+        :param request: an HTTP request
+        :type  request: aiohttp.web.Request object
+        :return: a HTTP response
+        """
+
+        g.d.m ('http', 'HTTP observe request {}'.format (request))
+        meth = request.method
+        token = request.match_info ['token']
+        sid = request.match_info ['sid']
+        respath = request.match_info ['respath']
+        qs = request.query_string
+
+        #
+        # Find slave
+        #
+
+        sl = self._engine.find_slave (sid)
+        if sl is None:
+            raise aiohttp.web.HTTPNotFound ()
+
+        vpath = respath.split ('/')
+        obs = sl.find_observer (vpath, token)
+
+        #
+        # Find slave and resource
+        #
+
+        r = None
+        if obs is None:
+            if meth == 'POST':
+                obs = observer.Observer (sl, vpath, token)
+                sl.add_observer (obs)
+                r = 'Observer created'
+        else:
+            if meth == 'POST':
+                r = 'Observer already created'
+            elif meth == 'DELETE':
+                sl.del_observer (obs)
+                r = 'Observer deleted'
+            elif meth == 'GET':
+                r = 'blablabla'
+
+        if r is None:
+            raise aiohttp.web.HTTPNotFound ()
+            
+        return aiohttp.web.Response (body=r.encode ('utf-8'))

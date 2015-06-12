@@ -42,6 +42,7 @@ class Slave (object):
         self._disc_curmtu = 0               # Advertised by slave (Discov msg)
         self._loop = loop                   # Asyncio loop
         self._timeout = None                # Association timeout
+        self._observers = []                # Observers
 
     def __str__(self):
         """
@@ -60,7 +61,10 @@ class Slave (object):
         res = ''
         for r in self.reslist:
             res += str (r) + '\n'
-        return l1 + l2 + l3 + '\t' + res
+        obs = 'Observers'
+        for o in self._observers:
+            obs += '\n' + str (o)
+        return l1 + l2 + l3 + '\t' + res + '\n' + obs
 
     def html (self):
         """
@@ -76,11 +80,15 @@ class Slave (object):
         else:
             l2 = '<b>(unknown state)</>'
         l3 = ' mac=' + str (self.addr) + '\n'
-        res = '<ul>'
+        res = '</br>Resources: <ul>'
         for r in self.reslist:
             res += '<li>' + r.html () + '</li>'
         res += '</ul>'
-        return l1 + l2 + l3 + res
+        obs = 'Observers: <ul>'
+        for o in self._observers:
+            obs += '<li>' + o.html () + '</li>'
+        obs += '</ul>'
+        return l1 + l2 + l3 + res + obs
 
     def reset (self):
         """
@@ -95,6 +103,13 @@ class Slave (object):
         self._timeout = None
         g.d.m ('slave', 'Slave {}: status set to INACTIVE'.format (self.sid))
         g.e.add ('master', 'slave {} status set to INACTIVE'.format (self.sid))
+
+    ##########################################################################
+    # Various utilities
+    ##########################################################################
+
+    def isrunning (self):
+        return self.status == self.Status.RUNNING
 
     ##########################################################################
     # Initialize values from a Discover message
@@ -260,3 +275,41 @@ class Slave (object):
             self.reslist.append (res)
 
         return True
+
+    ##########################################################################
+    # Observation management
+    ##########################################################################
+
+    def find_observer (self, res, token):
+        """
+        Check if an observer is registered for the sid and the resource.
+        :param res: string or iterable object containing the resource path.
+        :type  res: list
+        :param token: token used to identify the observer
+        :type  token: str
+        :return: observer object or None
+        """
+
+        o = None
+        for ol in self._observers:
+            if ol.res == res and ol.token == token:
+                o = ol
+                break
+        return o
+
+    def add_observer (self, obs):
+        """
+        Add an observer to the list
+        :param obs: observer
+        :type  obs: class Observer
+        """
+        self._observers.append (obs)
+
+    def del_observer (self, obs):
+        """
+        Add an observer to the list
+        :param obs: observer
+        :type  obs: class Observer
+        """
+        self._observers.remove (obs)
+
