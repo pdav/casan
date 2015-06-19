@@ -83,7 +83,7 @@ void Resource::observed (bool onoff, Msg *m)
 {
     if (obs_trig_ != NULL)
     {
-	if (observed_ && obs_dereg_ != NULL)
+	if (observed_ && obs_trig_ != NULL)
 	    (*obs_dereg_) () ;
 
 	observed_ = onoff ;
@@ -91,7 +91,7 @@ void Resource::observed (bool onoff, Msg *m)
 	{
 	    if (obs_reg_ != NULL)
 		(*obs_reg_) (*m) ;
-	    obs_serial_ = 2 ;			/* starting value */
+	    obs_serial_ = 1 ;			/* starting value */
 	    obs_token_ = m->get_token () ;
 	}
     }
@@ -104,7 +104,11 @@ void Resource::observed (bool onoff, Msg *m)
 
 int Resource::check_trigger (void)
 {
-    return obs_trig_ == NULL ? 0 : (*obs_trig_) () ;
+    int r = 0 ;
+
+    if (observed_ && obs_trig_ != NULL)
+	r = (*obs_trig_) () ;
+    return r ;
 }
 
 
@@ -112,7 +116,7 @@ int Resource::check_trigger (void)
  *	`/.well-known/casan` resource.
  *
  * The format of a "well-known"-type text is:
- *	<temp>;title="Temperature";rt="celcius"
+ *	<temp>;title="Temperature";rt="celcius"[;obs]
  *
  * @param buf buffer where the textual representation must be stored
  * @param maxlen size of buffer
@@ -123,13 +127,16 @@ int Resource::check_trigger (void)
 int Resource::well_known (char *buf, size_t maxlen)
 {
     int len ;
-    
+    const char *obs ;
+
+    obs = (obs_trig_ == NULL) ? "" : ";obs" ;
     len = sizeof "<>;title=..;rt=.." ;		// including '\0'
-    len += strlen (name_) + strlen (title_) + strlen (rt_) ;
+    len += strlen (name_) + strlen (title_) + strlen (rt_) + strlen (obs) ;
     if (len > (int) maxlen)
 	len = -1 ;
     else
-	sprintf (buf, "<%s>;title=\"%s\";rt=\"%s\"", name_, title_, rt_) ;
+	sprintf (buf, "<%s>;title=\"%s\";rt=\"%s\"%s",
+			name_, title_, rt_, obs) ;
 
     return len ;
 }

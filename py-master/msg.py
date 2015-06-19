@@ -24,6 +24,8 @@ MAX_RETRANSMIT = 4
 MAX_XMIT_SPAN = ACK_TIMEOUT * ((1 >> MAX_RETRANSMIT) - 1) * ACK_RANDOM_FACTOR
 PROCESSING_DELAY = ACK_TIMEOUT
 
+MAX_AGE_DEFAULT = 60
+
 
 # pylint: disable=too-many-instance-attributes
 class Msg (object):
@@ -375,19 +377,63 @@ class Msg (object):
         self._ntrans = 0
 
     ##########################################################################
-    # Cache control
+    # Return various high-level elements from message
     ##########################################################################
+
+    def lookup_option (self, optcode):
+        """
+        Lookup message for a specific option code. Stop at the first
+        option occurrence => useful only for options not repeatable
+        (cf RFC 7252, sec 5.4.5)
+        :param optcode: option code
+        :type  optcode: option.Option.Codes
+        :return: option value
+        :rtype : all types supported by optval (string, int, etc.)
+        """
+
+        r = None
+        for o in self.optlist:
+            if o.optcode == optcode:
+                r = o.optval
+                break
+        return r
+
+    def observe (self):
+        """
+        Check if the message has the Observe option and, if this is the
+        case, returns the value.
+        :return: None or Observe value (message counter)
+        """
+
+        return self.lookup_option (option.Option.Codes.OBSERVE)
+
+    def content_format (self):
+        """
+        Check if the message has the Content-Format option and, if
+        this is the case, returns the associated value.
+        :return: int or None
+        """
+
+        return self.lookup_option (option.Option.Codes.CONTENT_FORMAT)
 
     def max_age (self):
         """
         Look for the option Max-Age in the option list and
         returns its value if any, else returns None.
-        :return: int or None
+        Special case (cf RFC 7252, sec 5.10.4): if this option
+        is not present, it defaults to 60 sec. (one must
+        explicitely use 0 for no caching)
+        :return: int
         """
-        for o in self.optlist:
-            if o.optcode == option.Option.Codes.MAX_AGE:
-                return o.optval
-        return None
+
+        ma = self.lookup_option (option.Option.Codes.MAX_AGE)
+        if ma is None:
+            ma = MAX_AGE_DEFAULT
+        return ma
+
+    ##########################################################################
+    # Cache control
+    ##########################################################################
 
     def cache_match (self, m):
         """

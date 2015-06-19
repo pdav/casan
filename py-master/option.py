@@ -1,6 +1,8 @@
 """
-This module contains the Option class
+This module contains the Option class and some related classes
 """
+
+import g
 
 
 class Option (object):
@@ -13,7 +15,7 @@ class Option (object):
     - optval: option value, decoded (type int, string or bytes)
     """
 
-    class Codes:
+    class Codes (object):
         """
         All valid option codes (see RFC 7252, sec 12.2)
         """
@@ -37,7 +39,7 @@ class Option (object):
     # Option descriptions: optdesc [optcode] = (type, minlen, maxlen)
     # type in ['opaque', 'string', 'uint', 'empty']
     optdesc = {
-        Codes.CONTENT_FORMAT: ('opaque', 0, 8),
+        Codes.CONTENT_FORMAT: ('uint', 0, 2),
         Codes.ETAG: ('opaque', 1, 8),
         Codes.LOCATION_PATH: ('string', 0, 255),
         Codes.LOCATION_QUERY: ('string', 0, 255),
@@ -116,6 +118,8 @@ class Option (object):
         if not minlen <= len (self.optbin) <= maxlen:
             raise RuntimeError ('Invalid option length')
 
+        g.d.m ('opt', 'optval={}, optbin={}'.format (self.optval, self.optbin))
+
     def __lt__(self, other):
         """
         Comparison operator '<'. Implemented for the sole purpose of
@@ -175,21 +179,59 @@ class Option (object):
             bytes_.append (b)
 
         bytes_.reverse ()
-        while bytes_ [0] == 0:
+        while len (bytes_) > 0 and bytes_ [0] == 0:
             del bytes_ [0]
 
         return bytes_
 
     @staticmethod
-    def bytes_to_int (b):
+    def bytes_to_int (bstr):
         """
         Convert a sequence of bytes in network byte order into an
         unsigned integer.
-        :param b: bytes to convert.
-        :type  b: bytearray
+        :param bstr: bytes to convert.
+        :type  bstr: bytearray
         """
-        t = b [0] if len (b) > 0 else 0
-        if len (b) != 1:
-            for byte in b [1:]:
-                t *= byte
-        return t
+        if len (bstr) == 0:
+            r = 0
+        else:
+            r = 1
+            for b in bstr:
+                r *= b
+        return r
+
+class ContentFormat (object):
+    """
+    See RFC 7252, sec 12.3
+    """
+    TEXT_PLAIN = 0
+    APP_LINK_FORMAT = 40
+    APP_XML = 41
+    APP_OCTET_STREAM = 42
+    APP_EXI = 47
+    APP_JSON = 50
+
+    TOHTTP = {
+        TEXT_PLAIN: 'text/plain; charset=utf-8',
+        APP_LINK_FORMAT: 'application/link-format',
+        APP_XML: 'application/xml',
+        APP_OCTET_STREAM: 'application/octet-stream',
+        APP_EXI: 'application/exi',
+        APP_JSON: 'application/json',
+    }
+
+    @staticmethod
+    def coap2http (optval):
+        """
+        Translate a CoAP Content-Format option value into
+        an HTTP Content-Type option value.
+        :param optval: Content-Format option value
+        :type  optval: ContentFormat value
+        :return: string
+        """
+
+        if optval in ContentFormat.TOHTTP:
+            r = ContentFormat.TOHTTP [optval]
+        else:
+            r = ContentFormat.TOHTTP [ContentFormat.TEXT_PLAIN]
+        return r

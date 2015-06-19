@@ -127,7 +127,7 @@ class Master (object):
             raise
 
     ######################################################################
-    # HTTP handle routines
+    # HTTP handler for admin namespace
     ######################################################################
 
     def handle_admin (self, request):
@@ -182,6 +182,10 @@ class Master (object):
             raise aiohttp.web.HTTPNotFound ()
 
         return aiohttp.web.Response (body=r.encode ('utf-8'))
+
+    ######################################################################
+    # HTTP handler for evlog namespace
+    ######################################################################
 
     def _process_get_evlog (self, param):
         """
@@ -254,6 +258,10 @@ class Master (object):
 
         return r
 
+    ######################################################################
+    # HTTP handler for well-known namespace
+    ######################################################################
+
     def handle_well_known (self, request):
         """
         Handle HTTP requests for the well-known namespace
@@ -266,6 +274,10 @@ class Master (object):
         g.d.m ('http', 'HTTP well-known request {}'.format (request))
         rl = self._engine.resource_list ().encode ()
         return aiohttp.web.Response (body=rl)
+
+    ######################################################################
+    # HTTP handler for casan namespace
+    ######################################################################
 
     @asyncio.coroutine
     def handle_casan (self, request):
@@ -339,7 +351,7 @@ class Master (object):
                 # Add the request (and the linked answer) to the cache
                 self._cache.add (mreq)
             else:
-                return aiohttp.web.Response (body=b"TIMEOUT")
+                return aiohttp.web.HTTPRequestTimeout ()
 
         # Python black magic: aiohttp.web.Response expects a
         # bytes argument, but mrep.payload is a bytearray
@@ -347,6 +359,10 @@ class Master (object):
         r = aiohttp.web.Response (body=pl)
 
         return r
+
+    ######################################################################
+    # HTTP handler for observe namespace
+    ######################################################################
 
     @asyncio.coroutine
     def handle_observe (self, request):
@@ -370,7 +386,7 @@ class Master (object):
 
         g.d.m ('http', 'HTTP observe request {}'.format (request))
         meth = request.method
-        token = request.match_info ['token']
+        token = request.match_info ['token'].encode ()
         sid = request.match_info ['sid']
         vpath = request.match_info ['respath'].split ('/')
         qs = request.query_string
@@ -389,6 +405,7 @@ class Master (object):
         # Find slave and resource
         #
 
+        ct = 'text/plain;; charset=utf-8'
         r = None
         if obs is None:
             if meth == 'POST':
@@ -402,9 +419,11 @@ class Master (object):
                 sl.del_observer (obs)
                 r = 'Observer deleted'
             elif meth == 'GET':
-                r = 'blablabla'
+                (r, ct) = obs.get_value ()
+                if r is None:
+                    raise aiohttp.web.HTTPNoContent ()
 
         if r is None:
             raise aiohttp.web.HTTPNotFound ()
             
-        return aiohttp.web.Response (body=r.encode ('utf-8'))
+        return aiohttp.web.Response (body=r.encode ('utf-8'), content_type=ct)

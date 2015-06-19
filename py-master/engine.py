@@ -224,7 +224,21 @@ class Engine (object):
 
             cat = m.category ()
             if cat == m.Categories.NONE:
+                obsval = m.observe ()
+                if obsval is not None:
+                    sl.recv_observe (m)
                 return
+        else:
+            # Unsollicited message: it may be the result of an
+            # observation
+            cat = m.category ()
+            if cat == m.Categories.NONE:
+                obsval = m.observe ()
+                if obsval is not None:
+                    sl.recv_observe (m)
+                    return
+                else:
+                    g.e.add ('master', 'unsollicited message from slave {}'.format (sl))
 
         #
         # Was the message already received?

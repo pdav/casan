@@ -34,7 +34,10 @@ class Resource (object):
         s = '<' + self._path + '>'
         for (key, vallist) in self._attr:
             for val in vallist:
-                s += ';' + key + '="' + val + '"'
+                if val is None:
+                    s += ';' + key
+                else:
+                    s += ';' + key + '=' + val
         return s
 
     def html (self):
@@ -45,7 +48,10 @@ class Resource (object):
         s = html.escape ('<' + self._path + '>')
         for (key, vallist) in self._attr:
             for val in vallist:
-                s += ';' + html.escape (key) + '="' + html.escape (val) + '"'
+                if val is None:
+                    s += ';' + html.escape (key)
+                else:
+                    s += ';' + html.escape (key) + '=' + html.escape (val)
         return s
 
     # XXX

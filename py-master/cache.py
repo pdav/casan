@@ -66,10 +66,6 @@ class Cache (object):
         rep = req.req_rep
         if rep is not None:
             ma = rep.max_age ()
-            if ma is None:
-                # Max-Age is 60 sec by default. Use Max-Age=0 for no caching
-                ma = 60
-
             if ma != 0:
                 expire = datetime.datetime.now ()
                 expire += datetime.timedelta (seconds=ma)

@@ -313,10 +313,7 @@ void Casan::process_request (Msg &in, Msg &out)
 
 		    if (obs != NULL && obsval == 0)
 		    {
-			option robs ;
-
-			robs.optcode (option::MO_Observe) ;
-			robs.optval (res->next_serial ()) ;
+			option robs (option::MO_Observe, res->next_serial ()) ;
 			out.push_option (robs) ;
 		    }
 
@@ -353,8 +350,10 @@ void Casan::request_resource (Msg *pin, Msg *pout, Resource *res)
 {
     Resource::handler_t h ;
     uint8_t code ;
+    coap_code_t op ;
 
-    h = res->handler ((coap_code_t) pin->get_code ()) ;
+    op = (pin == NULL) ?  COAP_CODE_GET : (coap_code_t) pin->get_code () ;
+    h = res->handler (op) ;
     if (h == NULL)
     {
 	code = COAP_CODE_BAD_REQUEST ;
@@ -385,15 +384,24 @@ void Casan::check_observed_resources (Msg &out)
 	res = rl->res ;
 	if (res->check_trigger ())
 	{
+	    DBG1 (F (B_BLUE "Observed resource '")) ;
+	    DBG1 (rl->res->name ()) ;
+	    DBG1 (F ("' triggered" C_RESET)) ;
+	    DBGLN0 () ;
+
 	    out.reset () ;
 
 	    out.set_type (COAP_TYPE_ACK) ;
 	    out.set_token (res->get_token ()) ;
+	    out.set_id (curid_++) ;
+	    out.set_code (COAP_CODE_OK) ;
 
 	    option obs (option::MO_Observe, res->next_serial ()) ;
 	    out.push_option (obs) ;
 
 	    request_resource (NULL, &out, res) ;
+
+	    out.send (*master_) ;
 	}
     }
 }

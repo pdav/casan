@@ -187,6 +187,11 @@ class Slave (object):
                                     'RUNNING'.format (self.sid))
                     g.e.add ('master', 'slave {} status set to RUNNING'.format (self.sid))
 
+                    #
+                    # Start observers, if any
+                    #
+                    self.start_all_observers ()
+
                 else:
                     g.d.m ('slave', 'Slave {}: cannot parse '
                                     'resource list'.format (self.sid))
@@ -265,12 +270,17 @@ class Slave (object):
 
             for linkparam in lvl [1:]:
                 match = re.match ('^([^=]+)=(.*)', linkparam)
-                if not match:
-                    return False
-                key = match.group (1)
-                val = match.group (2)
-
-                res.add_attribute (key, val)
+                if match:
+                    key = match.group (1)
+                    val = match.group (2)
+                    res.add_attribute (key, val)
+                else:
+                    match = re.match ('^([^=]+)$', linkparam)
+                    if match:
+                        key = match.group (1)
+                        res.add_attribute (key, None)
+                    else:
+                        return False
 
             self.reslist.append (res)
 
@@ -292,7 +302,7 @@ class Slave (object):
 
         o = None
         for ol in self._observers:
-            if ol.res == res and ol.token == token:
+            if ol.match (token, res):
                 o = ol
                 break
         return o
@@ -303,7 +313,10 @@ class Slave (object):
         :param obs: observer
         :type  obs: class Observer
         """
+
         self._observers.append (obs)
+        if self.isrunning () and self.find_resource (obs.res) is not None:
+            obs.start ()
 
     def del_observer (self, obs):
         """
@@ -311,5 +324,38 @@ class Slave (object):
         :param obs: observer
         :type  obs: class Observer
         """
+
         self._observers.remove (obs)
 
+    def start_all_observers (self):
+        """
+        Start all observers (with valid resource) registered for
+        the slave.
+        """
+
+        if not self.isrunning ():
+            return
+
+        for o in self._observers:
+            if self.find_resource (o.res) is not None:
+                o.start ()
+
+    def recv_observe (self, m):
+        """
+        Process an observe event (message) from this slave.
+        :param m: message containing the observe event
+        :type  m: class Msg
+        """
+
+        # Find the observer responsible for this event
+        o = None
+        for ol in self._observers:
+            if ol.match (m.token):
+                o = ol
+                break
+
+        if o is None:
+            g.d.m ('slave', 'Slave {} emitted an unsollicited observe'.format (self.sid))
+            g.e.add ('master', 'slave {} emitted an unsollicited observe'.format (self.sid))
+        else:
+            o.set_value (m)
