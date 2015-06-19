@@ -1205,39 +1205,27 @@ check_client_keyexchange(dtls_context_t *ctx,
 static inline void
 update_hs_hash(dtls_peer_t *peer, uint8 *data, size_t length) {
     //dtls_debug_dump("add MAC data", data, length);
-// FIXME to get the SHA256 out of the code
-#if 1
+
     dtls_hash_update(&peer->handshake_params->hs_state.hs_hash, data, length);
-#endif
+
 }
 
-// FIXME to get the SHA256 out of the code
-#if 1
 static void
 copy_hs_hash(dtls_peer_t *peer, dtls_hash_ctx *hs_hash) {
     memcpy(hs_hash, &peer->handshake_params->hs_state.hs_hash,
             sizeof(peer->handshake_params->hs_state.hs_hash));
 }
-#endif
 
 static inline size_t
 finalize_hs_hash(dtls_peer_t *peer, uint8 *buf) {
-#if 1
-// FIXME to get the SHA256 out of the code
     return dtls_hash_finalize(buf, &peer->handshake_params->hs_state.hs_hash);
-#else
-    return 0;
-#endif
 }
 
 static inline void
 clear_hs_hash(dtls_peer_t *peer) {
     assert(peer);
     //dtls_debug("clear MAC\n\r");
-// FIXME to get the SHA256 out of the code
-#if 1
     dtls_hash_init(&peer->handshake_params->hs_state.hs_hash);
-#endif
 }
 
 /** 
@@ -1253,8 +1241,6 @@ clear_hs_hash(dtls_peer_t *peer) {
 static int
 check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
         uint8 *data, size_t data_length) {
-// FIXME to get the SHA256 out of the code
-#if 1
     size_t digest_length, label_size;
     const unsigned char *label;
     unsigned char buf[DTLS_HMAC_MAX];
@@ -1302,8 +1288,6 @@ check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
     return equals(data + DTLS_HS_LENGTH, b.verify_data, sizeof(b.verify_data))
         ? 0
         : dtls_alert_create(DTLS_ALERT_LEVEL_FATAL, DTLS_ALERT_HANDSHAKE_FAILURE);
-#endif
-    return 0;
 }
 
 /**
@@ -2184,6 +2168,8 @@ dtls_send_server_key_exchange_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
 #endif /* DTLS_ECC */
 
 #ifdef DTLS_PSK
+
+// TODO was here : server key exchange
     static int
 dtls_send_server_key_exchange_psk(dtls_context_t *ctx, dtls_peer_t *peer,
         const unsigned char *psk_hint, size_t len)
@@ -2260,20 +2246,17 @@ dtls_send_server_certificate_request(dtls_context_t *ctx, dtls_peer_t *peer)
 }
 #endif /* DTLS_ECC */
 
+
+// TODO was here : server hello done
     static int
 dtls_send_server_hello_done(dtls_context_t *ctx, dtls_peer_t *peer)
 {
-#if 1
-
     /* ServerHelloDone 
      *
      * Start message construction at beginning of buffer. */
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_SERVER_HELLO_DONE,
             NULL, 0);
-#else
-    return 0;
-#endif
 }
 
     static int
@@ -2335,30 +2318,18 @@ dtls_send_server_hello_msgs(dtls_context_t *ctx, dtls_peer_t *peer)
                 NULL, 0, psk_hint, DTLS_PSK_MAX_CLIENT_IDENTITY_LEN);
 
         if (len < 0) {
-            dtls_debug("dtls_server_hello: cannot create ServerKeyExchange\n\r");
+            dtls_debug("dtls_server_hello: psk identity not found\n\r");
             return len;
         }
 
-        if (len > 0) {
-            res = dtls_send_server_key_exchange_psk(ctx, peer, psk_hint, (size_t)len);
-
-            if (res < 0) {
-                dtls_debug("dtls_server_key_exchange_psk: cannot send server key exchange record\n\r");
-                return res;
-            }
-        }
+        // TODO was here : server key exchange
     }
     else {
         dtls_warn("FIXME NO PSK\n\r");
     }
 #endif /* DTLS_PSK */
 
-    res = dtls_send_server_hello_done(ctx, peer);
-
-    if (res < 0) {
-        dtls_debug("dtls_server_hello: cannot prepare ServerHelloDone record\n\r");
-        return res;
-    }
+    // TODO was here : server hello done
     return 0;
 }
 
@@ -2373,7 +2344,7 @@ dtls_send_ccs(dtls_context_t *ctx, dtls_peer_t *peer) {
     static int
 dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
 {
-#if 1
+
     uint8 buf[DTLS_CKXEC_LENGTH];
     uint8 *p;
     dtls_handshake_parameters_t *handshake = peer->handshake_params;
@@ -2412,6 +2383,7 @@ dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
              break;
          }
 #endif /* DTLS_PSK */
+
 #ifdef DTLS_ECC
         case TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8: {
              uint8 *ephemeral_pub_x;
@@ -2445,9 +2417,6 @@ dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_CLIENT_KEY_EXCHANGE,
             buf, p - buf);
-#else
-    return 0;
-#endif
 }
 
 #ifdef DTLS_ECC
@@ -2455,8 +2424,6 @@ dtls_send_client_key_exchange(dtls_context_t *ctx, dtls_peer_t *peer)
 dtls_send_certificate_verify_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
         const dtls_ecdsa_key_t *key)
 {
-// FIXME to get the SHA256 out of the code
-#if 1 
     /* The ASN.1 Integer representation of an 32 byte unsigned int could be
      * 33 bytes long add space for that */
     uint8 buf[DTLS_CV_LENGTH + 2];
@@ -2486,9 +2453,6 @@ dtls_send_certificate_verify_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_CERTIFICATE_VERIFY,
             buf, p - buf);
-#else
-    return 0;
-#endif
 }
 #endif /* DTLS_ECC */
 
@@ -2924,7 +2888,6 @@ check_server_key_exchange_psk(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)
 {
-#if 1
     dtls_handshake_parameters_t *config = peer->handshake_params;
     uint16_t len;
 
@@ -2956,9 +2919,6 @@ check_server_key_exchange_psk(dtls_context_t *ctx,
     config->keyx.psk.id_length = len;
     memcpy(config->keyx.psk.identity, data, len);
     return 0;
-#else
-    return 0;
-#endif
 }
 #endif /* DTLS_PSK */
 
@@ -2967,7 +2927,6 @@ check_certificate_request(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)
 {
-#if 1
     unsigned int i;
     int auth_alg;
     int sig_alg;
@@ -3039,9 +2998,6 @@ check_certificate_request(dtls_context_t *ctx,
 
     peer->handshake_params->do_client_auth = 1;
     return 0;
-#else
-    return 0;
-#endif
 }
 
     static int
@@ -3049,7 +3005,7 @@ check_server_hellodone(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)
 {
-#if 1
+
     int res;
 #ifdef DTLS_ECC
     const dtls_ecdsa_key_t *ecdsa_key;
@@ -3079,13 +3035,7 @@ check_server_hellodone(dtls_context_t *ctx,
     }
 #endif /* DTLS_ECC */
 
-    /* send ClientKeyExchange */
-    res = dtls_send_client_key_exchange(ctx, peer);
-
-    if (res < 0) {
-        dtls_debug("cannot send KeyExchange message\n\r");
-        return res;
-    }
+    // TODO was here : client key exchange
 
 #ifdef DTLS_ECC
     if (handshake->do_client_auth) {
@@ -3116,9 +3066,6 @@ check_server_hellodone(dtls_context_t *ctx,
 
     /* Client Finished */
     return dtls_send_finished(ctx, peer, PRF_LABEL(client), PRF_LABEL_SIZE(client));
-#else
-    return 0;
-#endif
 }
 
     static int
@@ -3285,6 +3232,7 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
             }
 
             break;
+
         case DTLS_HT_SERVER_HELLO:
 
             if (state != DTLS_STATE_CLIENTHELLO) {
@@ -3297,14 +3245,30 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
                 dtls_warn("error in check_server_hello err: %i\n\r", err);
                 return err;
             }
+
+            /* TODO envoyer message Finished, attendre pour un Finished */
+
+            // SERVER HELLO DONE
+            err = check_server_hellodone(ctx, peer, data, data_length);
+            if (err < 0) {
+                dtls_warn("error in check_server_hellodone err: %i\n\r", err);
+                return err;
+            }
+
+            peer->state = DTLS_STATE_WAIT_FINISHED;
+            /* update_hs_hash(peer, data, data_length); */
+
+#if 0
             if (is_tls_ecdhe_ecdsa_with_aes_128_ccm_8(peer->handshake_params->cipher))
                 peer->state = DTLS_STATE_WAIT_SERVERCERTIFICATE;
             else
                 peer->state = DTLS_STATE_WAIT_SERVERHELLODONE;
             /* update_hs_hash(peer, data, data_length); */
+#endif
 
             break;
 
+#if 0
 #ifdef DTLS_ECC
         case DTLS_HT_CERTIFICATE:
 
@@ -3326,7 +3290,9 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
 
             break;
 #endif /* DTLS_ECC */
+#endif
 
+#if 0
         case DTLS_HT_SERVER_KEY_EXCHANGE:
 
 #ifdef DTLS_ECC
@@ -3351,25 +3317,12 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
                 return err;
             }
             peer->state = DTLS_STATE_WAIT_SERVERHELLODONE;
+
             /* update_hs_hash(peer, data, data_length); */
 
             break;
+#endif
 
-        case DTLS_HT_SERVER_HELLO_DONE:
-
-            if (state != DTLS_STATE_WAIT_SERVERHELLODONE) {
-                return dtls_alert_fatal_create(DTLS_ALERT_UNEXPECTED_MESSAGE);
-            }
-
-            err = check_server_hellodone(ctx, peer, data, data_length);
-            if (err < 0) {
-                dtls_warn("error in check_server_hellodone err: %i\n\r", err);
-                return err;
-            }
-            peer->state = DTLS_STATE_WAIT_CHANGECIPHERSPEC;
-            /* update_hs_hash(peer, data, data_length); */
-
-            break;
 
         case DTLS_HT_CERTIFICATE_REQUEST:
 
@@ -3517,6 +3470,7 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
                 security->rseq = 1;
                 dtls_add_peer(ctx, peer);
             }
+
             if (peer && !peer->handshake_params) {
                 dtls_handshake_header_t *hs_header = DTLS_HANDSHAKE_HEADER(data);
 
