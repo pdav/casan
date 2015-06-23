@@ -553,6 +553,8 @@ try_send(struct dtls_context_t *ctx)
  * retrieve a key for the given identity within this particular
  * session. */
 
+// Became useless, we already know the key
+#if 0
 static int
 get_psk_info(struct dtls_context_t *ctx, const session_t *session,
         dtls_credentials_type_t type,
@@ -597,6 +599,7 @@ get_psk_info(struct dtls_context_t *ctx, const session_t *session,
 
     return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
 }
+#endif
 
 #define DTLS_SERVER_CMD_CLOSE "server:close"
 #define DTLS_SERVER_CMD_RENEGOTIATE "server:renegotiate"
@@ -716,7 +719,8 @@ static dtls_handler_t cb_server = {
     .write = send_to_peer,
     .read  = read_from_peer,
     .event = NULL,
-    .get_psk_info = get_psk_info,
+    //.get_psk_info = get_psk_info,
+    .get_psk_info = NULL,
 };
 
 void init_dtls_server (char line [])
@@ -748,6 +752,9 @@ void init_dtls_server (char line [])
     the_context->smth_to_say = something_to_say;
     the_context->smth_to_hexdump = something_to_hexdump;
 
+    memcpy(the_context->psk.key, PSK_DEFAULT_KEY, strlen(PSK_DEFAULT_KEY));
+    the_context->psk.len = strlen(PSK_DEFAULT_KEY);
+
     dtls_set_handler(the_context, &cb_server);
 }
 
@@ -776,14 +783,17 @@ void do_dtls_server (void)
 // The PSK information for DTLS
 #define PSK_ID_MAXLEN 256
 #define PSK_MAXLEN 256
-static unsigned char psk_id[PSK_ID_MAXLEN];
-static size_t psk_id_length = 0;
-static unsigned char psk_key[PSK_MAXLEN];
-static size_t psk_key_length = 0;
+//static unsigned char psk_id[PSK_ID_MAXLEN];
+//static size_t psk_id_length = 0;
+//static unsigned char psk_key[PSK_MAXLEN];
+//static size_t psk_key_length = 0;
 
 // This function is the "key store" for tinyDTLS. It is called to
 // retrieve a key for the given identity within this particular
 // session.
+
+// Became useless, we already know the key
+#if 0
 static int
 get_psk_info_cli(struct dtls_context_t *ctx UNUSED_PARAM,
         const session_t *session UNUSED_PARAM,
@@ -824,6 +834,7 @@ get_psk_info_cli(struct dtls_context_t *ctx UNUSED_PARAM,
 
     return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
 }
+#endif
 
 #if 0 // useless right now
 static int
@@ -866,7 +877,8 @@ static dtls_handler_t cb_cli = {
     .write = send_to_peer,
     .read  = read_from_peer,
     .event = NULL,
-    .get_psk_info = get_psk_info_cli,
+    //.get_psk_info = get_psk_info_cli,
+    .get_psk_info = NULL,
 };
 #define DTLS_CLIENT_CMD_CLOSE "client:close"
 #define DTLS_CLIENT_CMD_RENEGOTIATE "client:renegotiate"
@@ -891,16 +903,19 @@ void init_dtls_client (char line [])
     dtls_init(get_the_time);
 
     // PSK IDENTITY & KEY
-    psk_id_length = strlen(PSK_DEFAULT_IDENTITY);
-    psk_key_length = strlen(PSK_DEFAULT_KEY);
-    memcpy(psk_id, PSK_DEFAULT_IDENTITY, psk_id_length);
-    memcpy(psk_key, PSK_DEFAULT_KEY, psk_key_length);
+    //psk_id_length = strlen(PSK_DEFAULT_IDENTITY);
+    //psk_key_length = strlen(PSK_DEFAULT_KEY);
+    //memcpy(psk_id, PSK_DEFAULT_IDENTITY, psk_id_length);
+    //memcpy(psk_key, PSK_DEFAULT_KEY, psk_key_length);
 
     the_context = dtls_new_context(get_random);
     the_context->say = say;
     the_context->smth_to_say = something_to_say;
     the_context->smth_to_hexdump = something_to_hexdump;
     the_context->say_ = phexascii;
+
+    memcpy(the_context->psk.key, PSK_DEFAULT_KEY, strlen(PSK_DEFAULT_KEY));
+    the_context->psk.len = strlen(PSK_DEFAULT_KEY);
 
     if (!the_context) {
         //dtls_emerg("cannot create context\n");
