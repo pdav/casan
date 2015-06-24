@@ -573,7 +573,8 @@ static inline int is_tls_psk_with_aes_128_ccm_8(dtls_cipher_t cipher)
 static inline int is_psk_supported(dtls_context_t *ctx)
 {
 #ifdef DTLS_PSK
-    return ctx && ctx->h && ctx->h->get_psk_info;
+    return 1;
+    //return ctx && ctx->h && ctx->h->get_psk_info;
 #else
     return 0;
 #endif /* DTLS_PSK */
@@ -613,7 +614,6 @@ static inline int is_ecdsa_client_auth_supported(dtls_context_t *ctx)
 static int
 known_cipher(dtls_context_t *ctx, dtls_cipher_t code, int is_client)
 {
-#if 1
     int psk;
     int ecdsa;
 
@@ -622,10 +622,6 @@ known_cipher(dtls_context_t *ctx, dtls_cipher_t code, int is_client)
     ecdsa = is_ecdsa_supported(ctx, is_client);
     return (psk && is_tls_psk_with_aes_128_ccm_8(code)) ||
         (ecdsa && is_tls_ecdhe_ecdsa_with_aes_128_ccm_8(code));
-
-#else
-    return 0;
-#endif
 }
 
 /** Dump out the cipher keys and IVs used for the symetric cipher. */
@@ -1032,7 +1028,7 @@ static int
 dtls_update_parameters(dtls_context_t *ctx, 
         dtls_peer_t *peer,
         uint8 *data, size_t data_length) {
-#if 1
+
     int i, j;
     int ok;
     dtls_handshake_parameters_t *config = peer->handshake_params;
@@ -1128,9 +1124,6 @@ error:
     } else {
         return dtls_alert_fatal_create(DTLS_ALERT_HANDSHAKE_FAILURE);
     }
-#else
-    return 0;
-#endif
 }
 
 /**
@@ -2555,6 +2548,14 @@ dtls_send_client_hello(dtls_context_t *ctx, dtls_peer_t *peer,
     dtls_tick_t now;
 
     psk = is_psk_supported(ctx);
+
+    if(psk) {
+        dtls_warn("PSK ACTIVATED\r\n");
+    }
+    else {
+        dtls_warn("PSK NOT ACTIVATED !! !! ! ! !!  ! !!! !\r\n");
+    }
+
     ecdsa = is_ecdsa_supported(ctx, 1);
 
     cipher_size = 2 + ((ecdsa) ? 2 : 0) + ((psk) ? 2 : 0);
