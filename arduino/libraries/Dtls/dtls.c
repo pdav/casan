@@ -2549,13 +2549,6 @@ dtls_send_client_hello(dtls_context_t *ctx, dtls_peer_t *peer,
 
     psk = is_psk_supported(ctx);
 
-    if(psk) {
-        dtls_warn("PSK ACTIVATED\r\n");
-    }
-    else {
-        dtls_warn("PSK NOT ACTIVATED !! !! ! ! !!  ! !!! !\r\n");
-    }
-
     ecdsa = is_ecdsa_supported(ctx, 1);
 
     cipher_size = 2 + ((ecdsa) ? 2 : 0) + ((psk) ? 2 : 0);
