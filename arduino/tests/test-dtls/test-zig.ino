@@ -694,7 +694,6 @@ dtls_handle_read(void)
         i++;
     }
 
-#if 1
     dtls_peer_t * peer = dtls_get_peer(the_context, &session);
     // if no received message and handshake complete
     if(i == 0 && peer && peer->state == DTLS_STATE_CONNECTED)
@@ -710,7 +709,6 @@ dtls_handle_read(void)
         len = 7;
         try_send(the_context);
     }
-#endif
 
     return 1;
 }

@@ -489,18 +489,25 @@ dtls_set_record_header(uint8 type, dtls_security_parameters_t *security,
     buf += sizeof(uint16);
 
     if (security) {
+    // TODO was here : epoch and/or seq_num
+#if 1
         dtls_int_to_uint16(buf, security->epoch);
         buf += sizeof(uint16);
 
         dtls_int_to_uint48(buf, security->rseq);
         buf += sizeof(uint48);
-
+#endif
         /* increment record sequence counter by 1 */
         security->rseq++;
-    } else {
+    } 
+    
+    // TODO was here : epoch and/or seq_num
+#if 1
+    else {
         memset(buf, 0, sizeof(uint16) + sizeof(uint48));
         buf += sizeof(uint16) + sizeof(uint48);
     }
+#endif
 
     memset(buf, 0, sizeof(uint16));
     return buf + sizeof(uint16);
@@ -1449,8 +1456,11 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         } CCMNonceExample;
         */
 
+        // TODO was here : epoch and/or seq_num
+#if 0
         memcpy(p, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
         p += 8;
+#endif
         res = 8;
 
         for (i = 0; i < data_array_len; i++) {
@@ -3109,7 +3119,7 @@ check_server_hellodone(dtls_context_t *ctx,
     return dtls_send_finished(ctx, peer, PRF_LABEL(client), PRF_LABEL_SIZE(client));
 }
 
-    static int
+static int
 decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         uint8 **cleartext)
 {
@@ -3117,7 +3127,12 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
     dtls_security_parameters_t *security = dtls_security_params_epoch(peer, dtls_get_epoch(header));
     int clen;
 
+#if 0
     *cleartext = (uint8 *)packet + sizeof(dtls_record_header_t);
+#else
+    *cleartext = (uint8 *)packet + sizeof(dtls_record_header_t);
+#endif
+
     clen = length - sizeof(dtls_record_header_t);
 
     if (!security) {
@@ -3140,6 +3155,8 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         if (clen < 16)		/* need at least IV and MAC */
             return -1;
 
+        // TODO was here : epoch and/or seq_num
+#if 1
         memset(nonce, 0, DTLS_CCM_BLOCKSIZE);
         memcpy(nonce, dtls_kb_remote_iv(security, peer->role),
                 dtls_kb_iv_size(security, peer->role));
@@ -3148,6 +3165,7 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         memcpy(nonce + dtls_kb_iv_size(security, peer->role), *cleartext, 8);
         *cleartext += 8;
         clen -= 8;
+#endif
 
         dtls_debug_dump("nonce", nonce, DTLS_CCM_BLOCKSIZE);
         dtls_debug_dump("key", dtls_kb_remote_write_key(security, peer->role),
@@ -3159,9 +3177,16 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
          * additional_data = seq_num + TLSCompressed.type +
          *                   TLSCompressed.version + TLSCompressed.length;
          */
+
+        // TODO was here : epoch and/or seq_num
+#if 1
         memcpy(A_DATA, &DTLS_RECORD_HEADER(packet)->epoch, 8); /* epoch and seq_num */
         memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(packet)->content_type, 3); /* type and version */
         dtls_int_to_uint16(A_DATA + 11, clen - 8); /* length without nonce_explicit */
+#else
+        memcpy(A_DATA,  &DTLS_RECORD_HEADER(packet)->content_type, 3); /* type and version */
+        dtls_int_to_uint16(A_DATA + 3, clen); /* length without nonce_explicit */
+#endif
 
         clen = dtls_decrypt(*cleartext, clen, *cleartext, nonce,
                 dtls_kb_remote_write_key(security, peer->role),
@@ -3973,8 +3998,12 @@ dtls_handle_message(dtls_context_t *ctx,
 
                 if (peer) {
                     uint16_t expected_epoch = dtls_security_params(peer)->epoch;
+
+        // TODO was here : epoch and/or seq_num
+#if 1
                     uint16_t msg_epoch = 
                         dtls_uint16_to_int(DTLS_RECORD_HEADER(msg)->epoch);
+#endif
 
                     /* The new security parameters must be used for all messages
                      * that are sent after the ChangeCipherSpec message. This
