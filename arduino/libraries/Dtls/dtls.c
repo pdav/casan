@@ -367,8 +367,6 @@ dtls_create_cookie(dtls_context_t *ctx,
     unsigned char buf[DTLS_HMAC_MAX];
     size_t len, e;
 
-#if 1
-
     /* create cookie with HMAC-SHA256 over:
      * - SECRET
      * - session parameters (only IP address?)
@@ -419,9 +417,6 @@ dtls_create_cookie(dtls_context_t *ctx,
 
     memcpy(cookie, buf, *clen);
     return 0;
-#else
-    return 0;
-#endif
 }
 
 #ifdef DTLS_CHECK_CONTENTTYPE
@@ -442,7 +437,7 @@ static char const content_types[] = {
 static unsigned int
 is_record(uint8 *msg, size_t msglen) 
 {
-#if 1
+
     unsigned int rlen = 0;
 
     if (msglen >= DTLS_RH_LENGTH	/* FIXME allow empty records? */
@@ -461,9 +456,6 @@ is_record(uint8 *msg, size_t msglen)
     } 
 
     return rlen;
-#else
-    return 0;
-#endif
 }
 
 /**
@@ -489,25 +481,18 @@ dtls_set_record_header(uint8 type, dtls_security_parameters_t *security,
     buf += sizeof(uint16);
 
     if (security) {
-    // TODO was here : epoch and/or seq_num
-#if 1
         dtls_int_to_uint16(buf, security->epoch);
         buf += sizeof(uint16);
 
         dtls_int_to_uint48(buf, security->rseq);
         buf += sizeof(uint48);
-#endif
+
         /* increment record sequence counter by 1 */
         security->rseq++;
-    } 
-    
-    // TODO was here : epoch and/or seq_num
-#if 1
-    else {
+    } else {
         memset(buf, 0, sizeof(uint16) + sizeof(uint48));
         buf += sizeof(uint16) + sizeof(uint48);
     }
-#endif
 
     memset(buf, 0, sizeof(uint16));
     return buf + sizeof(uint16);
@@ -1334,6 +1319,17 @@ check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
         : dtls_alert_create(DTLS_ALERT_LEVEL_FATAL, DTLS_ALERT_HANDSHAKE_FAILURE);
 }
 
+void swap(int nb, size_t *len, uint8 *packet)
+{
+    dtls_warn("\r\n\r\nswap\r\n");
+
+    size_t i;
+    for(i = 0 ; i < *len - DTLS_RH_LENGTH ; i++)
+    {
+        packet[i] = packet[i + nb];
+    }
+}
+
 /**
  * Prepares the payload given in \p data for sending with
  * dtls_send(). The \p data is encrypted and compressed according to
@@ -1381,6 +1377,10 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
     p = dtls_set_record_header(type, security, sendbuf);
     start = p;
 
+//#ifdef WITH_ARDUINO
+//    dtls_warn("dtls_set_record_header DONE\n\r");
+//#endif
+
     if (!security || security->cipher == TLS_NULL_WITH_NULL_NULL) {
         /* no cipher suite */
 
@@ -1397,22 +1397,11 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
             res += data_len_array[i];
         }
     } else { /* TLS_PSK_WITH_AES_128_CCM_8 or TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 */   
-
-        // TODO was here : epoch and/or seq_num
-#if 1
         /** 
          * length of additional_data for the AEAD cipher which consists of
          * seq_num(2+6) + type(1) + version(2) + length(2)
          */
 #define A_DATA_LEN 13
-#else
-        /** 
-         * length of new additional_data for the AEAD cipher which consists of
-         * type(1) + version(2) + length(2)
-         */
-#define A_DATA_LEN 5
-#endif
-
         unsigned char nonce[DTLS_CCM_BLOCKSIZE];
         unsigned char A_DATA[A_DATA_LEN];
 
@@ -1464,16 +1453,9 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         } CCMNonceExample;
         */
 
-        // TODO was here : epoch and/or seq_num
-        // don't put the nonce into the packet
-        // p = sendbuf + sizeof(record header)
-#if 0
         memcpy(p, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
         p += 8;
         res = 8;
-#else
-        res = 0;
-#endif
 
         for (i = 0; i < data_array_len; i++) {
             /* check the minimum that we need for packets that are not encrypted */
@@ -1487,19 +1469,12 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
             res += data_len_array[i];
         }
 
-        // nonce[DTLS_CCM_BLOCKSIZE];
-        // A_DATA[A_DATA_LEN];
-
-        // this nonce will be used to compute the encryption
-
         memset(nonce, 0, DTLS_CCM_BLOCKSIZE);
         memcpy(nonce, dtls_kb_local_iv(security, peer->role),
                 dtls_kb_iv_size(security, peer->role));
 
-        // TODO was here : epoch and/or seq_num
-        // get the nonce from the record layer instead of the following header
-        memcpy(nonce + dtls_kb_iv_size(security, peer->role)
-                , &DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
+        /* epoch + seq_num */
+        memcpy(nonce + dtls_kb_iv_size(security, peer->role), start, 8);
 
         dtls_debug_dump("nonce:", nonce, DTLS_CCM_BLOCKSIZE);
         dtls_debug_dump("key:", dtls_kb_local_write_key(security, peer->role),
@@ -1515,43 +1490,37 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         memcpy(A_DATA, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
         /* type and version */
         memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(sendbuf)->content_type, 3);
-        /* length */
-        dtls_int_to_uint16(A_DATA + 11, res - 8);
+        dtls_int_to_uint16(A_DATA + 11, res - 8); /* length */
 
-        // TODO was here : epoch and/or seq_num
-#if 0
         res = dtls_encrypt(start + 8, res - 8, start + 8, nonce,
                 dtls_kb_local_write_key(security, peer->role),
                 dtls_kb_key_size(security, peer->role),
                 A_DATA, A_DATA_LEN);
-#else
-        res = dtls_encrypt(start, res - 8, start, nonce,
-                dtls_kb_local_write_key(security, peer->role),
-                dtls_kb_key_size(security, peer->role),
-                A_DATA, A_DATA_LEN);
-#endif
 
         if (res < 0)
             return res;
 
-        // TODO was here : epoch and/or seq_num
-#if 0
-        res += 8;	/* increment res by size of nonce_explicit */
-#endif
-
+        res += 8;			/* increment res by size of nonce_explicit */
         dtls_debug_dump("message:", start, res);
     }
 
-        // TODO was here : epoch and/or seq_num
-#if 0
     /* fix length of fragment in sendbuf */
     dtls_int_to_uint16(sendbuf + 11, res);
-#else
-    /* fix length of fragment in sendbuf */
-    dtls_int_to_uint16(sendbuf + 3, res);
+    *rlen = DTLS_RH_LENGTH + res;
+
+#define PKT_OPTIM 1
+#ifdef PKT_OPTIM
+    // Not to send epoch and seq_num twice in application msg
+    if(type == DTLS_CT_APPLICATION_DATA)
+    {
+        /* fix length of fragment in sendbuf */
+        dtls_int_to_uint16(sendbuf + 11, res - 8);
+        *rlen = DTLS_RH_LENGTH + res - 8;
+
+        swap(8, rlen, start);
+    }
 #endif
 
-    *rlen = DTLS_RH_LENGTH + res;
     return 0;
 }
 
@@ -1954,8 +1923,7 @@ check_client_certificate_verify(dtls_context_t *ctx,
     unsigned char *result_r;
     unsigned char *result_s;
     dtls_hash_ctx hs_hash;
-// FIXME to get the SHA256 out of the code
-#if 1 
+
     unsigned char sha256hash[DTLS_HMAC_DIGEST_SIZE];
 
     assert(is_tls_ecdhe_ecdsa_with_aes_128_ccm_8(config->cipher));
@@ -1987,7 +1955,7 @@ check_client_certificate_verify(dtls_context_t *ctx,
         dtls_alert("wrong signature err: %i\n\r", ret);
         return dtls_alert_fatal_create(DTLS_ALERT_HANDSHAKE_FAILURE);
     }
-#endif
+
     return 0;
 }
 #endif /* DTLS_ECC */
@@ -2095,7 +2063,7 @@ dtls_send_server_hello(dtls_context_t *ctx, dtls_peer_t *peer)
 dtls_send_certificate_ecdsa(dtls_context_t *ctx, dtls_peer_t *peer,
         const dtls_ecdsa_key_t *key)
 {
-#if 1
+
     uint8 buf[DTLS_CE_LENGTH];
     uint8 *p;
 
@@ -2123,15 +2091,12 @@ dtls_send_certificate_ecdsa(dtls_context_t *ctx, dtls_peer_t *peer,
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_CERTIFICATE,
             buf, p - buf);
-#else
-    return 0;
-#endif
 }
 
     static uint8 *
 dtls_add_ecdsa_signature_elem(uint8 *p, uint32_t *point_r, uint32_t *point_s)
 {
-#if 1
+
     int len_r;
     int len_s;
 
@@ -2184,16 +2149,13 @@ dtls_add_ecdsa_signature_elem(uint8 *p, uint32_t *point_r, uint32_t *point_s)
     p += len_s;
 
     return p;
-#else
-    return 0;
-#endif
 }
 
     static int
 dtls_send_server_key_exchange_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
         const dtls_ecdsa_key_t *key)
 {
-#if 1
+
     /* The ASN.1 Integer representation of an 32 byte unsigned int could be
      * 33 bytes long add space for that */
     uint8 buf[DTLS_SKEXEC_LENGTH + 2];
@@ -2251,9 +2213,6 @@ dtls_send_server_key_exchange_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_SERVER_KEY_EXCHANGE,
             buf, p - buf);
-#else
-    return 0;
-#endif
 }
 #endif /* DTLS_ECC */
 
@@ -2295,7 +2254,7 @@ dtls_send_server_key_exchange_psk(dtls_context_t *ctx, dtls_peer_t *peer,
     static int
 dtls_send_server_certificate_request(dtls_context_t *ctx, dtls_peer_t *peer)
 {
-#if 1
+
     uint8 buf[8];
     uint8 *p;
 
@@ -2332,9 +2291,6 @@ dtls_send_server_certificate_request(dtls_context_t *ctx, dtls_peer_t *peer)
 
     return dtls_send_handshake_msg(ctx, peer, DTLS_HT_CERTIFICATE_REQUEST,
             buf, p - buf);
-#else
-    return 0;
-#endif
 }
 #endif /* DTLS_ECC */
 
@@ -3166,38 +3122,55 @@ static int
 decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         uint8 **cleartext)
 {
+    int clen;
+
     dtls_record_header_t *header = DTLS_RECORD_HEADER(packet);
     dtls_security_parameters_t *security = 
         dtls_security_params_epoch(peer, dtls_get_epoch(header));
-    int clen;
-
-    *cleartext = (uint8 *)packet + sizeof(dtls_record_header_t);
-
-    clen = length - sizeof(dtls_record_header_t);
 
     if (!security) {
         dtls_alert("No security context for epoch: %i\n\r", dtls_get_epoch(header));
         return -1;
     }
 
+    *cleartext = (uint8 *)packet + sizeof(dtls_record_header_t);
+    clen = length - sizeof(dtls_record_header_t);
+
+#ifdef PKT_OPTIM
+#define PKT_SIZE_MAX 128
+
+    // Not to send epoch and seq_num twice in application msg
+    if(header->content_type == DTLS_CT_APPLICATION_DATA)
+    {
+        dtls_warn("\r\n\r\nDTLS_CT_APPLICATION_DATA\r\n");
+        uint8_t tmpbuf[PKT_SIZE_MAX];
+
+        /* read epoch and seq_num from record header */
+        memcpy(tmpbuf, &DTLS_RECORD_HEADER(packet)->epoch, 8);
+        memcpy(tmpbuf + 8
+                , *cleartext
+                , (clen <= PKT_SIZE_MAX - 8) ? clen : PKT_SIZE_MAX - 8);
+
+        clen += 8; // epoch and seq_num not sended
+
+        /* then recopy this to the packet */
+        memcpy(*cleartext, tmpbuf, clen);
+    }
+    else
+    {
+        dtls_warn("\r\n\r\n!     DTLS_CT_APPLICATION_DATA\r\n");
+    }
+#endif
+
     if (security->cipher == TLS_NULL_WITH_NULL_NULL) {
         /* no cipher suite selected */
         return clen;
     } else { /* TLS_PSK_WITH_AES_128_CCM_8 or TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8 */
-        // TODO was here : epoch and/or seq_num
-#if 1
         /** 
          * length of additional_data for the AEAD cipher which consists of
          * seq_num(2+6) + type(1) + version(2) + length(2)
          */
 #define A_DATA_LEN 13
-#else
-        /** 
-         * length of new additional_data for the AEAD cipher which consists of
-         * type(1) + version(2) + length(2)
-         */
-#define A_DATA_LEN 5
-#endif
         unsigned char nonce[DTLS_CCM_BLOCKSIZE];
         unsigned char A_DATA[A_DATA_LEN];
 
@@ -3208,23 +3181,15 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         memcpy(nonce, dtls_kb_remote_iv(security, peer->role),
                 dtls_kb_iv_size(security, peer->role));
 
-        // TODO was here : epoch and/or seq_num
-#if 0
         /* read epoch and seq_num from message */
         memcpy(nonce + dtls_kb_iv_size(security, peer->role), *cleartext, 8);
         *cleartext += 8;
         clen -= 8;
-#else
-        /* read epoch and seq_num from message */
-        // TODO ?
-        // get the nonce from the record layer instead of the following header
-        memcpy(nonce + dtls_kb_iv_size(security, peer->role)
-                , &DTLS_RECORD_HEADER(packet)->epoch, 8);
-#endif
 
         dtls_debug_dump("nonce", nonce, DTLS_CCM_BLOCKSIZE);
-        dtls_debug_dump("key", dtls_kb_remote_write_key(security, peer->role),
-                dtls_kb_key_size(security, peer->role));
+        dtls_debug_dump("key"
+                , dtls_kb_remote_write_key(security, peer->role)
+                , dtls_kb_key_size(security, peer->role));
         dtls_debug_dump("ciphertext", *cleartext, clen);
 
         /* re-use N to create additional data according to RFC 5246, Section 6.2.3.3:
@@ -3233,27 +3198,17 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
          *                   TLSCompressed.version + TLSCompressed.length;
          */
 
-        // TODO was here : epoch and/or seq_num
-#if 0
         /* epoch and seq_num */
         memcpy(A_DATA, &DTLS_RECORD_HEADER(packet)->epoch, 8);
         /* type and version */
         memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(packet)->content_type, 3);
         /* length without nonce_explicit */
         dtls_int_to_uint16(A_DATA + 11, clen - 8);
-#else
-        /* epoch and seq_num */
-        memcpy(A_DATA, &DTLS_RECORD_HEADER(packet)->epoch, 8);
-        /* type and version */
-        memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(packet)->content_type, 3);
-        /* length without nonce_explicit */
-        dtls_int_to_uint16(A_DATA + 11, clen - 8);
-#endif
 
-        clen = dtls_decrypt(*cleartext, clen, *cleartext, nonce,
-                dtls_kb_remote_write_key(security, peer->role),
-                dtls_kb_key_size(security, peer->role),
-                A_DATA, A_DATA_LEN);
+        clen = dtls_decrypt(*cleartext, clen, *cleartext, nonce
+                , dtls_kb_remote_write_key(security, peer->role)
+                , dtls_kb_key_size(security, peer->role)
+                , A_DATA, A_DATA_LEN);
 
         if (clen < 0)
         {
@@ -4003,6 +3958,8 @@ dtls_handle_message(dtls_context_t *ctx,
         //dtls_debug("dtls_handle_message: FOUND PEER\n\r");
     }
 
+    dtls_debug_hexdump("RECEIVED MSG", msg, msglen);
+
     while ((rlen = is_record(msg,msglen))) {
         dtls_peer_type role;
         dtls_state_t state;
@@ -4060,12 +4017,8 @@ dtls_handle_message(dtls_context_t *ctx,
 
                 if (peer) {
                     uint16_t expected_epoch = dtls_security_params(peer)->epoch;
-
-        // TODO was here : epoch and/or seq_num
-#if 1
                     uint16_t msg_epoch = 
                         dtls_uint16_to_int(DTLS_RECORD_HEADER(msg)->epoch);
-#endif
 
                     /* The new security parameters must be used for all messages
                      * that are sent after the ChangeCipherSpec message. This
