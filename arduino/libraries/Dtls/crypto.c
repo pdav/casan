@@ -570,7 +570,9 @@ dtls_encrypt(const unsigned char *src, size_t length,
         memmove(buf, src, length);
 
     ret = dtls_ccm_encrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("after encrypt", (char *)buf, length);
+#endif
 
 error:
     dtls_cipher_context_release();
@@ -587,7 +589,9 @@ dtls_decrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("before decrypt", (char *)src, length);
+#endif
 #ifdef ANCIENNE_IMPLE_AES
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
@@ -608,7 +612,9 @@ dtls_decrypt(const unsigned char *src, size_t length,
         memmove(buf, src, length);
 
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("after decrypt", (char *)buf, length);
+#endif
 
 error:
     dtls_cipher_context_release();

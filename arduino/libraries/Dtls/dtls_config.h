@@ -124,6 +124,8 @@
 
 #define WITH_ARDUINO 1
 
+#define MSG_DEBUG 1
+
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD

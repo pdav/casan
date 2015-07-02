@@ -59,8 +59,6 @@
 #define DTLS_VERSION 0xfefd	/* DTLS v1.2 */
 #endif
 
-#define MSG_DEBUG 1
-
 // TODO
 
 /* // test
@@ -261,7 +259,6 @@ clock_time_t cookie_secret_age; /**< the time the secret has been generated */
 #ifdef WITH_ARDUINO
   dtls_peer_t *peers;		/**< peer hash map */
   void (*say)(char * txt_to_say);
-  void (*say_)(uint8_t buf [], int len, int flen);
   void (*smth_to_say) (log_t loglvl, char * format, ...);
   void (*smth_to_hexdump)(log_t loglvl, char *name, unsigned char *buf
         , size_t length, int extend);

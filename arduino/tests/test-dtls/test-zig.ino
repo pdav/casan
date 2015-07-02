@@ -21,29 +21,16 @@
 int channel = CHANNEL ;
 
 extern "C" {
-#define MSG_DEBUG
+//#define MSG_DEBUG
 
 #include "free_memory.h"
 #include <tinydtls.h>
 #include <dtls.h>
 };
 
-#define PSK_DEFAULT_IDENTITY "Client_identity"
+//#define PSK_DEFAULT_IDENTITY "Client_identity"
 #define PSK_DEFAULT_KEY      "secretPSK"
 #define LOGLVL          DTLS_LOG_WARN
-
-/*
-   TODO
- * envoyer les messages d'erreur DTLS au lieu de simplement
-   afficher une erreur et boucler
-
- * les messages reçus doivent être via do_dtls_x puis remontés
-   à la lib via dtls_handle_message
-
- * vrai envoi de message dans send_to_peer
- * merge send_to_peer avec send_to_peer_server
-
-*/
 
 /******************************************************************************
 Utilities
@@ -56,7 +43,7 @@ void print_free_mem()
     int memory = freeMemory();
     Serial.print(F("mémoire disponible : "));
     Serial.println(memory);
-    delay(2000);
+    //delay(1000);
 }
 
 unsigned long get_random (unsigned int max) {
@@ -99,9 +86,9 @@ void something_to_say (log_t loglvl, char * format, ...)
 static inline size_t
 print_timestamp_(char *s, size_t len, clock_time_t t)
 {
-  return snprintf(s, len, "%u.%03u", 
-		  (unsigned int)(t / CLOCK_SECOND), 
-		  (unsigned int)(t % CLOCK_SECOND));
+  return snprintf(s, len, "%u.%03u"
+		  , (unsigned int)(t / CLOCK_SECOND)
+		  , (unsigned int)(t % CLOCK_SECOND));
 }
 
 void 
@@ -374,28 +361,6 @@ void do_snif (void)
 }
 
 /******************************************************************************
-CoAP sniffer
-*******************************************************************************/
-
-void init_casan (char line [])
-{
-    zigmsg.channel (channel) ;
-    zigmsg.promiscuous (true) ;
-    zigmsg.start () ;
-    Serial.println (F("Starting CASAN sniffer")) ;
-}
-
-void stop_casan (void)
-{
-    Serial.println (F("Stopping CASAN sniffer")) ;
-}
-
-void do_casan (void)
-{
-    snif (true) ;
-}
-
-/******************************************************************************
 Sender
 *******************************************************************************/
 
@@ -511,7 +476,7 @@ void do_chan (void)
 
 //  DTLS common
 
-static char buf[DTLS_MAX_BUF];
+static unsigned char buf[DTLS_MAX_BUF];
 static size_t len = 0;
 session_t session;
 dtls_context_t *the_context = NULL;
@@ -520,19 +485,7 @@ static int
 send_to_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
-
-#ifdef MSG_DEBUG
-    //phexascii (data, len, 10);
-    //Serial.println("");
-    //something_to_hexdump(const_cast<char*>("to send"), data, len, 1);
-#endif
-
-    //int fd = *(int *)dtls_get_app_data(ctx);
-    //return sendto(fd, data, len, MSG_DONTWAIT,
-    //        &session->addr.sa, session->size);
-
     int ret = zigmsg.sendto(session->addr, len, data);
-
     return ret ? len : -1;
 }
 
@@ -549,103 +502,19 @@ try_send(struct dtls_context_t *ctx)
 
 // DTLS server
 
-/* This function is the "key store" for tinyDTLS. It is called to
- * retrieve a key for the given identity within this particular
- * session. */
-
-// Became useless, we already know the key
-#if 0
-static int
-get_psk_info(struct dtls_context_t *ctx, const session_t *session,
-        dtls_credentials_type_t type,
-        const unsigned char *id, size_t id_len,
-        unsigned char *result, size_t result_length)
-{
-
-    struct keymap_t {
-        unsigned char *id;
-        size_t id_length;
-        unsigned char *key;
-        size_t key_length;
-    } psk[3] = {
-        { (unsigned char *)"Client_identity", 15,
-            (unsigned char *)"secretPSK", 9 },
-        { (unsigned char *)"default identity", 16,
-            (unsigned char *)"\x11\x22\x33", 3 },
-        { (unsigned char *)"\0", 2,
-            (unsigned char *)"", 1 }
-    };
-
-    if (type != DTLS_PSK_KEY) {
-        return 0;
-    }
-
-    if (id) {
-        unsigned int i;
-        for (i = 0; i < sizeof(psk)/sizeof(struct keymap_t); i++) {
-            if (id_len == psk[i].id_length && 
-                    memcmp(id, psk[i].id, id_len) == 0) {
-                if (result_length < psk[i].key_length) {
-                    //dtls_warn("buffer too small for PSK");
-                    Serial.println(F("buf 2 small 4 PSK"));
-                    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-                }
-
-                memcpy(result, psk[i].key, psk[i].key_length);
-                return psk[i].key_length;
-            }
-        }
-    }
-
-    return dtls_alert_fatal_create(DTLS_ALERT_DECRYPT_ERROR);
-}
-#endif
-
-#define DTLS_SERVER_CMD_CLOSE "server:close"
-#define DTLS_SERVER_CMD_RENEGOTIATE "server:renegotiate"
+// get_psk_info became useless, we already know the key
 
 static int
 read_from_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
-
-    Serial.println(F("READ FROM PEER"));
-
-//    size_t i;
-//    for (i = 0; i < len; i++)
-//        Serial.print(data[i]);
-
-//    if (len >= strlen(DTLS_SERVER_CMD_CLOSE) &&
-//            !memcmp(data
-//                , DTLS_SERVER_CMD_CLOSE
-//                , strlen(DTLS_SERVER_CMD_CLOSE))) {
-//        Serial.println("serv: clos co");
-//        dtls_close(ctx, session);
-//        return len;
-//
-//    } else if (len >= strlen(DTLS_SERVER_CMD_RENEGOTIATE) &&
-//            !memcmp(data, DTLS_SERVER_CMD_RENEGOTIATE
-//                , strlen(DTLS_SERVER_CMD_RENEGOTIATE))) {
-//        Serial.println("serv: reneg co");
-//        dtls_renegotiate(ctx, session);
-//        return len;
-//    }
-//
-//    return dtls_write(ctx, session, data, len);
-
+    //Serial.println(F("READ FROM PEER"));
     return 1;
 }
-
-// TODO : faire en sorte d'envoyer des messages à session->addr qui 
-// indiquera l'adresse
 
 static int
 dtls_handle_read(void)
 {
-
-#ifdef MSG_DEBUG
-    Serial.println(F("handle read"));
-#endif
 
     ZigMsg::ZigReceivedFrame *z ;
     size_t i = 0;
@@ -654,7 +523,20 @@ dtls_handle_read(void)
         memcpy(buf, z->payload, z->paylen);
         len += z->paylen; // TODO FIXME : pas sûr de += ou =
         zigmsg.skip_received () ;
-        //something_to_hexdump(const_cast<char*>("RECV"), buf, len, 1);
+
+        dtls_debug_hexdump("RECEIVED MSG", buf, len);
+
+        int ret = dtls_handle_message(the_context, &session, (uint8_t*)buf, len);
+        len = 0; // TODO do we have to put the length of the received pkt to 0 ?
+
+        if(ret) {
+            Serial.print(F("\r\nerr d_hdl_msg > d_h_read : "));
+            Serial.println(ret);
+            return ret;
+        }
+
+        i++;
+    }
 
 #if 0
         // TODO
@@ -677,22 +559,6 @@ dtls_handle_read(void)
             try_send(the_context);
         }
 #endif
-
-        // TODO vérifier que le paquet est arrivé en bon état
-        // TODO récupérer le buffer avec le contenu du paquet
-        int ret = dtls_handle_message(the_context, &session, (uint8_t*)buf, len);
-        len = 0; // TODO do we have to put the length of the received pkt to 0 ?
-
-        if(ret) {
-            Serial.print(F("\r\nerr d_hdl_msg > d_h_read : "));
-            Serial.println(ret);
-        }
-        //return ret;
-
-        Serial.print(F("Passage : "));
-        Serial.println(i);
-        i++;
-    }
 
     dtls_peer_t * peer = dtls_get_peer(the_context, &session);
     // if no received message and handshake complete
@@ -717,7 +583,6 @@ static dtls_handler_t cb_server = {
     .write = send_to_peer,
     .read  = read_from_peer,
     .event = NULL,
-    //.get_psk_info = get_psk_info,
     .get_psk_info = NULL,
 };
 
@@ -728,11 +593,6 @@ void init_dtls_server (char line [])
     zigmsg.addr2 (RECVADDR) ;
     zigmsg.promiscuous (false) ;
     zigmsg.start () ;
-
-#ifdef MSG_DEBUG
-    //Serial.println("init_d_serv");
-    //print_free_mem();
-#endif
 
     memset(&session, 0, sizeof(session_t));
     session.addr = SENDADDR;
@@ -746,7 +606,6 @@ void init_dtls_server (char line [])
 
     the_context = dtls_new_context(get_random);
     the_context->say = say;
-    the_context->say_ = phexascii;
     the_context->smth_to_say = something_to_say;
     the_context->smth_to_hexdump = something_to_hexdump;
 
@@ -759,16 +618,13 @@ void init_dtls_server (char line [])
 void stop_dtls_server (void)
 {
     dtls_free_context(the_context);
-#ifdef MSG_DEBUG
-    Serial.println(F("stop_d_serv"));
-#endif
+    Serial.println(F("stop dtls server"));
 }
 
 void do_dtls_server (void)
 {
 
 #ifdef MSG_DEBUG
-    Serial.println("do_dtls_server");
     print_free_mem();
 #endif
 
@@ -778,108 +634,14 @@ void do_dtls_server (void)
 
 // DTLS client
 
-// The PSK information for DTLS
-#define PSK_ID_MAXLEN 256
-#define PSK_MAXLEN 256
-//static unsigned char psk_id[PSK_ID_MAXLEN];
-//static size_t psk_id_length = 0;
-//static unsigned char psk_key[PSK_MAXLEN];
-//static size_t psk_key_length = 0;
-
-// This function is the "key store" for tinyDTLS. It is called to
-// retrieve a key for the given identity within this particular
-// session.
-
-// Became useless, we already know the key
-#if 0
-static int
-get_psk_info_cli(struct dtls_context_t *ctx UNUSED_PARAM,
-        const session_t *session UNUSED_PARAM,
-        dtls_credentials_type_t type,
-        const unsigned char *id, size_t id_len,
-        unsigned char *result, size_t result_length)
-{
-
-    switch (type) {
-        case DTLS_PSK_IDENTITY:
-            if (id_len) {
-                dtls_debug("got psk_identity_hint: '%.*s'\n\r", id_len, id);
-            }
-
-            if (result_length < psk_id_length) {
-                dtls_warn("cannot set psk_identity -- buffer too small\n\r");
-                return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-            }
-
-            memcpy(result, psk_id, psk_id_length);
-            return psk_id_length;
-        case DTLS_PSK_KEY:
-            if (id_len != psk_id_length || memcmp(psk_id, id, id_len) != 0) {
-                dtls_warn("PSK for unknown id requested, exiting\n\r");
-                return dtls_alert_fatal_create(DTLS_ALERT_ILLEGAL_PARAMETER);
-                break;
-            } else if (result_length < psk_key_length) {
-                dtls_warn("cannot set psk -- buffer too small\n\r");
-                return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-            }
-
-            memcpy(result, psk_key, psk_key_length);
-            return psk_key_length;
-        default:
-            Serial.print("unsupported req type: ");
-            Serial.println(type);
-    }
-
-    return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
-}
-#endif
-
-#if 0 // useless right now
-static int
-on_event(struct dtls_context_t *ctx, 
-        session_t *session, uint8 *data, size_t len)
-{
-
-#ifdef MSG_DEBUG
-    Serial.println("on_event") ;
-#endif
-
-    ZigMsg::ZigReceivedFrame *z ;
-    while ((z = zigmsg.get_received ()) != NULL)
-    {
-        //print_frame (z, casan_decode) ;
-
-        len = z->paylen;
-
-        if (len < 0) {
-            //perror("recvfrom");
-            print_frame (z, false) ;
-            Serial.println("err: recv, len < 0");
-            return -1;
-        } else {
-            //dtls_dsrv_log_addr(DTLS_LOG_DEBUG, "peer", &session);
-            //dtls_debug_dump("bytes from peer", buf, len);
-            Serial.print("recv : TODO");
-            print_frame (z, false) ;
-            //Serial.println(buf, HEX);
-        }
-
-        zigmsg.skip_received () ;
-    }
-
-    return 0;
-}
-#endif
+// get_psk_info became useless, we already know the key
 
 static dtls_handler_t cb_cli = {
     .write = send_to_peer,
     .read  = read_from_peer,
     .event = NULL,
-    //.get_psk_info = get_psk_info_cli,
     .get_psk_info = NULL,
 };
-#define DTLS_CLIENT_CMD_CLOSE "client:close"
-#define DTLS_CLIENT_CMD_RENEGOTIATE "client:renegotiate"
 
 void init_dtls_client (char line [])
 {
@@ -890,7 +652,7 @@ void init_dtls_client (char line [])
     zigmsg.start () ;
 
 #ifdef MSG_DEBUG
-    Serial.println(F("Start cli")) ;
+    Serial.println(F("Start client")) ;
 #endif
 
     memset(&session, 0, sizeof(session_t));
@@ -900,24 +662,16 @@ void init_dtls_client (char line [])
     randomSeed(get_the_time());
     dtls_init(get_the_time);
 
-    // PSK IDENTITY & KEY
-    //psk_id_length = strlen(PSK_DEFAULT_IDENTITY);
-    //psk_key_length = strlen(PSK_DEFAULT_KEY);
-    //memcpy(psk_id, PSK_DEFAULT_IDENTITY, psk_id_length);
-    //memcpy(psk_key, PSK_DEFAULT_KEY, psk_key_length);
-
     the_context = dtls_new_context(get_random);
     the_context->say = say;
     the_context->smth_to_say = something_to_say;
     the_context->smth_to_hexdump = something_to_hexdump;
-    the_context->say_ = phexascii;
 
     memcpy(the_context->psk.key, PSK_DEFAULT_KEY, strlen(PSK_DEFAULT_KEY));
     the_context->psk.len = strlen(PSK_DEFAULT_KEY);
 
     if (!the_context) {
-        //dtls_emerg("cannot create context\n");
-        while(1) { Serial.println(F("cant create ctxt")); delay(1000); }
+        while(1) { Serial.println(F("can't create ctxt")); delay(1000); }
     }
 
     dtls_set_handler(the_context, &cb_cli);
@@ -927,21 +681,17 @@ void init_dtls_client (char line [])
 void stop_dtls_client (void)
 {
     dtls_free_context(the_context);
-
-#ifdef MSG_DEBUG
-    Serial.println(F("stop_d_c"));
-#endif
+    Serial.println(F("stop dtls client"));
 }
 
 void do_dtls_client (void)
 {
+
 #ifdef MSG_DEBUG
-    Serial.println("do_d_client");
     print_free_mem();
 #endif
 
     dtls_handle_read();
-
 }
 
 // GUI ;-)
@@ -970,7 +720,6 @@ struct gui
 struct gui gui [] = {
     { 'i', "idle", init_idle, stop_idle, do_idle },
     { 'n', "raw sniffer", init_snif, stop_snif, do_snif },
-    { 'o', "casan sniffer", init_casan, stop_casan, do_casan },
     { 's', "sender", init_send, stop_send, do_send },
     { 'r', "receiver", init_recv, stop_recv, do_recv },
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
@@ -1027,7 +776,7 @@ void setup ()
 {
     Serial.begin (38400);	// don't introduce spaces here
     Serial.println (F("Starting...")) ; // signal the start with a new line
-    zigmsg.msgbufsize (MSGBUF_SIZE) ;	// space for 100 received messages
+    zigmsg.msgbufsize (MSGBUF_SIZE) ;	// space for 10 received messages
     help () ;
 }
 
