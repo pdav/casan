@@ -40,10 +40,12 @@ Utilities
 
 void print_free_mem()
 {
+#if 0
     int memory = freeMemory();
     Serial.print(F("mémoire disponible : "));
     Serial.println(memory);
     //delay(1000);
+#endif
 }
 
 unsigned long get_random (unsigned int max) {
@@ -485,6 +487,7 @@ static int
 send_to_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
+    dtls_debug_hexdump("SENT MSG", data, len);
     int ret = zigmsg.sendto(session->addr, len, data);
     return ret ? len : -1;
 }
@@ -536,6 +539,10 @@ dtls_handle_read(void)
         }
 
         i++;
+
+        Serial.print("Passage : ");
+        Serial.println(i);
+
     }
 
 #if 0
@@ -564,6 +571,14 @@ dtls_handle_read(void)
     // if no received message and handshake complete
     if(i == 0 && peer && peer->state == DTLS_STATE_CONNECTED)
     {
+        static int x = 0;
+        if( x == 0 )
+            Serial.println("CONNECTE");
+        else
+            return 1;
+
+        delay(1000);
+        x++;
         int res;
         buf[0] = 'C';
         buf[1] = 'O';
@@ -575,6 +590,7 @@ dtls_handle_read(void)
         len = 7;
         try_send(the_context);
     }
+    i = 0;
 
     return 1;
 }

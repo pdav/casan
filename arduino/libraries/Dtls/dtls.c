@@ -62,6 +62,9 @@
 #define dtls_get_sequence_number(H) dtls_uint48_to_ulong((H)->sequence_number)
 #define dtls_get_fragment_length(H) dtls_uint24_to_int((H)->fragment_length)
 
+#define PKT_OPTIM 1
+#define PKT_SIZE_MAX 128
+
 #ifndef WITH_CONTIKI
 #define HASH_FIND_PEER(head,sess,out)		\
     HASH_FIND(hh,head,sess,sizeof(session_t),out)
@@ -135,9 +138,6 @@ static const unsigned char cert_asn1_header[] = {
 
 #ifdef WITH_CONTIKI
 PROCESS(dtls_retransmit_process, "DTLS retransmit process");
-
-#define PKT_OPTIM 1
-#define PKT_SIZE_MAX 128
 
 static dtls_context_t the_dtls_context;
 
@@ -711,13 +711,13 @@ calculate_key_block(dtls_context_t *ctx,
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
     }
 
-#ifdef MSG_DEBUG
+//#ifdef MSG_DEBUG
     dtls_debug_dump("client_random", handshake->tmp.random.client
             , DTLS_RANDOM_LENGTH);
     dtls_debug_dump("server_random", handshake->tmp.random.server
             , DTLS_RANDOM_LENGTH);
     dtls_debug_dump("pre_master_secret", pre_master_secret, pre_master_len);
-#endif
+//#endif
 
     dtls_prf(pre_master_secret, pre_master_len,
             PRF_LABEL(master), PRF_LABEL_SIZE(master),
@@ -726,9 +726,9 @@ calculate_key_block(dtls_context_t *ctx,
             master_secret,
             DTLS_MASTER_SECRET_LENGTH);
 
-#ifdef MSG_DEBUG
+//#ifdef MSG_DEBUG
     dtls_debug_dump("master_secret", master_secret, DTLS_MASTER_SECRET_LENGTH);
-#endif
+//#endif
 
     /* create key_block from master_secret
      * key_block = PRF(master_secret,
@@ -1223,6 +1223,7 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         unsigned char nonce[DTLS_CCM_BLOCKSIZE];
         unsigned char A_DATA[A_DATA_LEN];
 
+#ifdef MSG_DEBUG
         if (is_tls_psk_with_aes_128_ccm_8(security->cipher)) {
             dtls_debug("dtls_prepare_record(): encrypt using TLS_PSK_WITH_AES_128_CCM_8\n\r");
         } else if (is_tls_ecdhe_ecdsa_with_aes_128_ccm_8(security->cipher)) {
@@ -1230,6 +1231,7 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         } else {
             dtls_debug("dtls_prepare_record(): encrypt using unknown cipher\n\r");
         }
+#endif
 
         /* set nonce       
            from RFC 6655:
@@ -1294,9 +1296,11 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         /* epoch + seq_num */
         memcpy(nonce + dtls_kb_iv_size(security, peer->role), start, 8);
 
+#ifdef MSG_DEBUG
         dtls_debug_dump("nonce:", nonce, DTLS_CCM_BLOCKSIZE);
         dtls_debug_dump("key:", dtls_kb_local_write_key(security, peer->role),
                 dtls_kb_key_size(security, peer->role));
+#endif
 
         /* re-use N to create additional data according to RFC 5246, Section 6.2.3.3:
          * 
@@ -3479,7 +3483,9 @@ dtls_handle_message(dtls_context_t *ctx,
         dtls_peer_type role;
         dtls_state_t state;
 
+#ifdef MSG_DEBUG
         dtls_debug("got packet %d (%d bytes)\n\r", msg[0], rlen);
+#endif
         if (peer) {
             data_length = decrypt_verify(peer, msg, rlen, &data);
             if (data_length < 0) {
@@ -3831,6 +3837,7 @@ dtls_retransmit(dtls_context_t *ctx, netq_t *node)
             dtls_warn("can not retransmit packet, err: %i\n\r", err);
             return;
         }
+
         dtls_debug_hexdump("retransmit header", sendbuf,
                 sizeof(dtls_record_header_t));
         dtls_debug_hexdump("retransmit unencrypted", node->data, node->length);
