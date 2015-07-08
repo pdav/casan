@@ -485,6 +485,8 @@ static int
 send_to_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
+    // NEXT
+    //dtls_debug_hexdump("TO SEND", data, len);
     int ret = zigmsg.sendto(session->addr, len, data);
     return ret ? len : -1;
 }
@@ -524,7 +526,8 @@ dtls_handle_read(void)
         len += z->paylen; // TODO FIXME : pas sûr de += ou =
         zigmsg.skip_received () ;
 
-        dtls_debug_hexdump("RECEIVED MSG", buf, len);
+        // NEXT
+        //dtls_debug_hexdump("RECEIVED MSG", buf, len);
 
         int ret = dtls_handle_message(the_context, &session, (uint8_t*)buf, len);
         len = 0; // TODO do we have to put the length of the received pkt to 0 ?

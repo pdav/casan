@@ -581,6 +581,7 @@ known_cipher(dtls_context_t *ctx, dtls_cipher_t code, int is_client)
 static void dtls_debug_keyblock(dtls_security_parameters_t *config)
 {
     dtls_debug("key_block (%d bytes):\n\r", dtls_kb_size(config, peer->role));
+#ifdef MSG_DEBUG
     dtls_debug_dump("  client_MAC_secret",
             dtls_kb_client_mac_secret(config, peer->role),
             dtls_kb_mac_secret_size(config, peer->role));
@@ -604,6 +605,7 @@ static void dtls_debug_keyblock(dtls_security_parameters_t *config)
     dtls_debug_dump("  server_IV",
             dtls_kb_server_iv(config, peer->role),
             dtls_kb_iv_size(config, peer->role));
+#endif
 
 }
 
@@ -711,13 +713,14 @@ calculate_key_block(dtls_context_t *ctx,
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
     }
 
-#ifdef MSG_DEBUG
+    // NEXT
+//#ifdef MSG_DEBUG
     dtls_debug_dump("client_random", handshake->tmp.random.client
             , DTLS_RANDOM_LENGTH);
     dtls_debug_dump("server_random", handshake->tmp.random.server
             , DTLS_RANDOM_LENGTH);
     dtls_debug_dump("pre_master_secret", pre_master_secret, pre_master_len);
-#endif
+//#endif
 
     dtls_prf(pre_master_secret, pre_master_len,
             PRF_LABEL(master), PRF_LABEL_SIZE(master),
@@ -1138,8 +1141,10 @@ check_finished(dtls_context_t *ctx, dtls_peer_t *peer,
             buf, digest_length,
             b.verify_data, sizeof(b.verify_data));
 
+#ifdef MSG_DEBUG
     dtls_debug_dump("d:", data + DTLS_HS_LENGTH, sizeof(b.verify_data));
     dtls_debug_dump("v:", b.verify_data, sizeof(b.verify_data));
+#endif
 
     /* compare verify data and create DTLS alert code when they differ */
     return equals(data + DTLS_HS_LENGTH, b.verify_data, sizeof(b.verify_data))
@@ -1294,9 +1299,11 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         /* epoch + seq_num */
         memcpy(nonce + dtls_kb_iv_size(security, peer->role), start, 8);
 
+#ifdef MSG_DEBUG
         dtls_debug_dump("nonce:", nonce, DTLS_CCM_BLOCKSIZE);
         dtls_debug_dump("key:", dtls_kb_local_write_key(security, peer->role),
                 dtls_kb_key_size(security, peer->role));
+#endif
 
         /* re-use N to create additional data according to RFC 5246, Section 6.2.3.3:
          * 
@@ -1598,7 +1605,9 @@ dtls_verify_peer(dtls_context_t *ctx,
     if (err < 0)
         return err;
 
+#ifdef MSG_DEBUG
     dtls_debug_dump("create cookie", mycookie, len);
+#endif
 
     assert(len == DTLS_COOKIE_LENGTH);
 
@@ -2209,7 +2218,9 @@ dtls_send_finished(dtls_context_t *ctx, dtls_peer_t *peer,
             hash, length,
             p, DTLS_FIN_LENGTH);
 
+#ifdef MSG_DEBUG
     dtls_debug_dump("server finished MAC", p, DTLS_FIN_LENGTH);
+#endif
 
     p += DTLS_FIN_LENGTH;
 
@@ -2812,11 +2823,13 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         *cleartext += 8;
         clen -= 8;
 
+#ifdef MSG_DEBUG
         dtls_debug_dump("nonce", nonce, DTLS_CCM_BLOCKSIZE);
         dtls_debug_dump("key"
                 , dtls_kb_remote_write_key(security, peer->role)
                 , dtls_kb_key_size(security, peer->role));
         dtls_debug_dump("ciphertext", *cleartext, clen);
+#endif
 
         /* re-use N to create additional data according to RFC 5246, Section 6.2.3.3:
          * 
@@ -2846,7 +2859,9 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
             dtls_warn("decrypt_verify(): found %i bytes cleartext\n\r", clen);
 #endif
             dtls_security_params_free_other(peer);
+#ifdef MSG_DEBUG
             dtls_debug_dump("cleartext", *cleartext, clen);
+#endif
         }
     }
     return clen;
