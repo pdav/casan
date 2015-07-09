@@ -61,6 +61,10 @@ void dtls_ticks(dtls_tick_t *t) {
     *t = x * DTLS_TICKS_PER_SECOND / 1000000;
 }
 
+void dtls_get_time(uint32_t *t) {
+    *t = (*get_current_time)();
+}
+
 // TODO clock with arduino FIXME
 
 #else /* WITH_CONTIKI */

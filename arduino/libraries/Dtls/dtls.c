@@ -731,6 +731,7 @@ calculate_key_block(dtls_context_t *ctx,
             master_secret,
             DTLS_MASTER_SECRET_LENGTH);
 
+
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("master_secret", master_secret
             , DTLS_MASTER_SECRET_LENGTH);

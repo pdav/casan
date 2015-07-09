@@ -85,7 +85,7 @@ void something_to_say (log_t loglvl, char * format, ...)
 
     if(strlen(msg) > 4) {
         if(msg[0] == 'W' && msg[1] == 'A' && msg[2] == 'I' && msg[3] == 'T')
-            delay(2000);
+            delay(50);
     }
 }
 
@@ -482,6 +482,9 @@ void do_chan (void)
 
 //  DTLS common
 
+bool am_i_server;
+uint32_t time_start_pushing_msg;
+uint32_t time_end_pushing_msg;
 uint32_t time_start_nego;
 uint32_t time_end_nego;
 static unsigned char buf[DTLS_MAX_BUF];
@@ -496,6 +499,12 @@ send_to_peer(struct dtls_context_t *ctx,
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("TO SEND", data, len);
 #endif
+    if(time_start_pushing_msg != 0)
+    {
+        time_end_pushing_msg = millis() - time_start_pushing_msg;
+        Serial.print("duration between asking and sending the msg : ");
+        Serial.println(time_end_pushing_msg);
+    }
     int ret = zigmsg.sendto(session->addr, len, data);
     return ret ? len : -1;
 }
@@ -504,6 +513,7 @@ static void
 try_send(struct dtls_context_t *ctx)
 {
     int res;
+    time_start_pushing_msg = millis();
     res = dtls_write(ctx, &session, (uint8 *)buf, len);
     if (res >= 0) {
         memmove(buf, buf + res, len - res);
@@ -534,7 +544,6 @@ read_from_peer(struct dtls_context_t *ctx,
 static int
 dtls_handle_read(void)
 {
-
     ZigMsg::ZigReceivedFrame *z ;
     size_t i = 0;
     while ((z = zigmsg.get_received ()) != NULL)
@@ -543,10 +552,18 @@ dtls_handle_read(void)
         len += z->paylen; // TODO FIXME : pas sûr de += ou =
         zigmsg.skip_received () ;
 
-        // NEXT
 #ifdef MSG_DEBUG
         dtls_debug_hexdump("RECEIVED MSG", buf, len);
 #endif
+        static int is_first_ch = 1;
+        dtls_record_header_t *header = DTLS_RECORD_HEADER(buf);
+
+        if(am_i_server && is_first_ch && 
+                dtls_get_content_type(header) == DTLS_CT_HANDSHAKE)
+        {
+            is_first_ch = 0;
+            time_start_nego = millis();
+        }
 
         int ret = dtls_handle_message(the_context, &session, (uint8_t*)buf, len);
         len = 0; // TODO do we have to put the length of the received pkt to 0 ?
@@ -559,6 +576,7 @@ dtls_handle_read(void)
 
         i++;
 
+
 #ifdef MSG_DEBUG
         Serial.print("Passage : ");
         Serial.println(i);
@@ -566,40 +584,50 @@ dtls_handle_read(void)
 
     }
 
+
 #if 0
-        // TODO
-        if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
-                !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
-                    , strlen(DTLS_CLIENT_CMD_CLOSE)))
-        {
-            Serial.println(F("client: closing connection"));
-            dtls_close(the_context, &session);
-            len = 0;
-        } 
-        else if (len >= strlen(DTLS_CLIENT_CMD_RENEGOTIATE) &&
-                !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
-                    , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
-        {
-            Serial.println(F("client: renegotiate connection"));
-            dtls_renegotiate(the_context, &session);
-            len = 0;
-        } else {
-            try_send(the_context);
-        }
+    // TODO
+    if (len >= strlen(DTLS_CLIENT_CMD_CLOSE) &&
+            !memcmp(buf, DTLS_CLIENT_CMD_CLOSE
+                , strlen(DTLS_CLIENT_CMD_CLOSE)))
+    {
+        Serial.println(F("client: closing connection"));
+        dtls_close(the_context, &session);
+        len = 0;
+    } 
+    else if (len >= strlen(DTLS_CLIENT_CMD_RENEGOTIATE) &&
+            !memcmp(buf, DTLS_CLIENT_CMD_RENEGOTIATE
+                , strlen(DTLS_CLIENT_CMD_RENEGOTIATE))) 
+    {
+        Serial.println(F("client: renegotiate connection"));
+        dtls_renegotiate(the_context, &session);
+        len = 0;
+    } else {
+        try_send(the_context);
+    }
 #endif
 
     dtls_peer_t * peer = dtls_get_peer(the_context, &session);
+
     // if no received message and handshake complete
     if(i == 0 && peer && peer->state == DTLS_STATE_CONNECTED)
     {
         static int x = 0;
         if( x == 0 )
-            Serial.println("CONNECTE");
+        {
+            time_end_nego = millis() - time_start_nego;
+
+            Serial.print("Handshake duration : ");
+            Serial.println(time_end_nego);
+
+            x++;
+            delay(1000);
+
+        }
         else
             return 1;
 
-        delay(1000);
-        x++;
+
         int res;
         buf[0] = 'C';
         buf[1] = 'O';
@@ -667,6 +695,7 @@ void do_dtls_server (void)
 
     // on vérifie qu'on n'a pas reçu de message
     dtls_handle_read();
+    am_i_server = true;
 }
 
 // DTLS client
@@ -731,6 +760,7 @@ void do_dtls_client (void)
 #endif
 
     dtls_handle_read();
+    am_i_server = false;
 }
 
 // GUI ;-)
