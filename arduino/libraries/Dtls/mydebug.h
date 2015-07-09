@@ -147,7 +147,12 @@ dtls_dsrv_log_addr(log_t level, const char *name, const struct __session_t *addr
 #define dtls_notice(...)    PRINTF(DTLS_LOG_NOTICE, __VA_ARGS__)
 #define dtls_info(...)      PRINTF(DTLS_LOG_INFO, __VA_ARGS__)
 #define dtls_debug(...)     PRINTF(DTLS_LOG_DEBUG, __VA_ARGS__)
-#define dtls_debug_hexdump(name, buf, length) smth_to_hexdump(DTLS_LOG_DEBUG,name, buf, length, 1)
-#define dtls_debug_dump(name, buf, length) smth_to_hexdump(DTLS_LOG_DEBUG,name, buf, length, 0)
+
+#define dtls_debug_hexdump(name, buf, length) \
+    smth_to_hexdump(DTLS_LOG_DEBUG,name, buf, length, 1)
+#define dtls_debug_dump(name, buf, length) \
+    smth_to_hexdump(DTLS_LOG_DEBUG,name, buf, length, 0)
+#define dtls_always_hexdump(name, buf, length) \
+    smth_to_hexdump(DTLS_LOG_EMERG, name, buf, length, 1)
 
 #endif /* _DTLS_DEBUG_H_ */

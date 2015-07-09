@@ -32,6 +32,10 @@ extern "C" {
 #define PSK_DEFAULT_KEY      "secretPSK"
 #define LOGLVL          DTLS_LOG_WARN
 
+//log_t:
+// DTLS_LOG_EMERG DTLS_LOG_ALERT DTLS_LOG_CRIT DTLS_LOG_WARN DTLS_LOG_NOTICE
+// DTLS_LOG_INFO DTLS_LOG_DEBUG
+
 /******************************************************************************
 Utilities
 *******************************************************************************/
@@ -68,7 +72,7 @@ void instant_print (char * format, ...)
 
 void something_to_say (log_t loglvl, char * format, ...)
 {
-    if(loglvl < LOGLVL)
+    if(loglvl > LOGLVL)
         return;
 
     va_list args;
@@ -98,7 +102,7 @@ something_to_hexdump(log_t loglvl, char *name, unsigned char *buf
         , size_t length, int extend)
 {
 
-    if(loglvl < LOGLVL)
+    if(loglvl > LOGLVL)
         return;
 
     static char timebuf[32];
@@ -478,6 +482,8 @@ void do_chan (void)
 
 //  DTLS common
 
+uint32_t time_start_nego;
+uint32_t time_end_nego;
 static unsigned char buf[DTLS_MAX_BUF];
 static size_t len = 0;
 session_t session;
@@ -487,8 +493,9 @@ static int
 send_to_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
-    // NEXT
-    //dtls_debug_hexdump("TO SEND", data, len);
+#ifdef MSG_DEBUG
+    dtls_debug_hexdump("TO SEND", data, len);
+#endif
     int ret = zigmsg.sendto(session->addr, len, data);
     return ret ? len : -1;
 }
@@ -512,7 +519,15 @@ static int
 read_from_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
-    //Serial.println(F("READ FROM PEER"));
+
+    if(len > 0) {
+        int MTU = 127;
+        char x[MTU +1];
+        memcpy(x, data, (len > MTU) ? MTU : len);
+        x[MTU] = '\0';
+        Serial.println(x);
+    }
+
     return 1;
 }
 
@@ -529,7 +544,9 @@ dtls_handle_read(void)
         zigmsg.skip_received () ;
 
         // NEXT
-        //dtls_debug_hexdump("RECEIVED MSG", buf, len);
+#ifdef MSG_DEBUG
+        dtls_debug_hexdump("RECEIVED MSG", buf, len);
+#endif
 
         int ret = dtls_handle_message(the_context, &session, (uint8_t*)buf, len);
         len = 0; // TODO do we have to put the length of the received pkt to 0 ?
@@ -542,8 +559,10 @@ dtls_handle_read(void)
 
         i++;
 
+#ifdef MSG_DEBUG
         Serial.print("Passage : ");
         Serial.println(i);
+#endif
 
     }
 
@@ -693,6 +712,8 @@ void init_dtls_client (char line [])
     }
 
     dtls_set_handler(the_context, &cb_cli);
+
+    time_start_nego = millis () ;
     dtls_connect(the_context, &session);
 }
 

@@ -337,21 +337,27 @@ dtls_psk_pre_master_secret(unsigned char *key, size_t keylen,
         unsigned char *result, size_t result_len) {
     unsigned char *p = result;
 
+    // if reslen < 4* keylen
     if (result_len < (2 * (sizeof(uint16) + keylen))) {
         return -1;
     }
 
+    // copy keylen in res
     dtls_int_to_uint16(p, keylen);
     p += sizeof(uint16);
 
+    // put 0s in res of size keylen
     memset(p, 0, keylen);
     p += keylen;
 
+    // copy keylen in result
     memcpy(p, result, sizeof(uint16));
     p += sizeof(uint16);
 
+    // copy the key into res
     memcpy(p, key, keylen);
 
+    // return 4 * keylen
     return 2 * (sizeof(uint16) + keylen);
 }
 #endif /* DTLS_PSK */
@@ -548,7 +554,10 @@ dtls_encrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("before encrypt", (char *)src, length);
+#endif
+
 #ifdef ANCIENNE_IMPLE_AES
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif

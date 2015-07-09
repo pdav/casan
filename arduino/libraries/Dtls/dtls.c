@@ -580,8 +580,8 @@ known_cipher(dtls_context_t *ctx, dtls_cipher_t code, int is_client)
 /** Dump out the cipher keys and IVs used for the symetric cipher. */
 static void dtls_debug_keyblock(dtls_security_parameters_t *config)
 {
-    dtls_debug("key_block (%d bytes):\n\r", dtls_kb_size(config, peer->role));
 #ifdef MSG_DEBUG
+    dtls_debug("key_block (%d bytes):\n\r", dtls_kb_size(config, peer->role));
     dtls_debug_dump("  client_MAC_secret",
             dtls_kb_client_mac_secret(config, peer->role),
             dtls_kb_mac_secret_size(config, peer->role));
@@ -682,7 +682,9 @@ calculate_key_block(dtls_context_t *ctx,
                         , pre_master_secret
                         , MAX_KEYBLOCK_LENGTH);
 
+#ifdef MSG_DEBUG
                 dtls_debug_hexdump("psk", ctx->psk.key, ctx->psk.len);
+#endif
 
                 if (pre_master_len < 0) {
                     dtls_crit("the psk was too long, for the pre master secret\n\r");
@@ -713,14 +715,14 @@ calculate_key_block(dtls_context_t *ctx,
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
     }
 
-    // NEXT
-//#ifdef MSG_DEBUG
-    dtls_debug_dump("client_random", handshake->tmp.random.client
+#ifdef MSG_DEBUG
+    dtls_always_hexdump("client_random", handshake->tmp.random.client
             , DTLS_RANDOM_LENGTH);
-    dtls_debug_dump("server_random", handshake->tmp.random.server
+    dtls_always_hexdump("server_random", handshake->tmp.random.server
             , DTLS_RANDOM_LENGTH);
-    dtls_debug_dump("pre_master_secret", pre_master_secret, pre_master_len);
-//#endif
+#endif
+
+    dtls_always_hexdump("pre_master_secret", pre_master_secret, pre_master_len);
 
     dtls_prf(pre_master_secret, pre_master_len,
             PRF_LABEL(master), PRF_LABEL_SIZE(master),
@@ -729,9 +731,10 @@ calculate_key_block(dtls_context_t *ctx,
             master_secret,
             DTLS_MASTER_SECRET_LENGTH);
 
-//#ifdef MSG_DEBUG
-    dtls_debug_dump("master_secret", master_secret, DTLS_MASTER_SECRET_LENGTH);
-//#endif
+#ifdef MSG_DEBUG
+    dtls_debug_hexdump("master_secret", master_secret
+            , DTLS_MASTER_SECRET_LENGTH);
+#endif
 
     /* create key_block from master_secret
      * key_block = PRF(master_secret,
@@ -1383,8 +1386,11 @@ dtls_send_handshake_msg_hash(dtls_context_t *ctx,
         i++;
     }
 
+#ifdef MSG_DEBUG
     dtls_debug("send handshake packet of type: %s (%i)\n\r",
             dtls_handshake_type_to_name(header_type), header_type);
+#endif
+
     return dtls_send_multi(ctx, peer, security, session, DTLS_CT_HANDSHAKE,
             data_array, data_len_array, i);
 }
@@ -1620,18 +1626,24 @@ dtls_verify_peer(dtls_context_t *ctx,
         return err;
     }
 
+#ifdef MSG_DEBUG
     dtls_debug_dump("compare with cookie", cookie, len);
+#endif
 
     /* check if cookies match */
     if (len == DTLS_COOKIE_LENGTH && memcmp(cookie, mycookie, len) == 0) {
+#ifdef MSG_DEBUG
         dtls_debug("found matching cookie\n\r");
+#endif
         return 0;
     }
 
     if (len > 0) {
         dtls_debug_dump("invalid cookie", cookie, len);
     } else {
+#ifdef MSG_DEBUG
         dtls_debug("cookie len is 0!\n\r");
+#endif
     }
 
     /* ClientHello did not contain any valid cookie, hence we send a
@@ -2858,7 +2870,9 @@ decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         else 
         {
 #ifndef NDEBUG
+#ifdef MSG_DEBUG
             dtls_warn("decrypt_verify(): found %i bytes cleartext\n\r", clen);
+#endif
 #endif
             dtls_security_params_free_other(peer);
 #ifdef MSG_DEBUG
@@ -2937,8 +2951,11 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
      * respect to the current internal state for this peer. In case of
      * error, it is left with return 0. */
 
+#ifdef MSG_DEBUG
     dtls_debug("handle handshake packet of type: %s (%i)\n\r",
             dtls_handshake_type_to_name(data[0]), data[0]);
+#endif
+
     switch (data[0]) {
 
         /************************************************************************
@@ -3118,7 +3135,9 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
             }
 
             if (err > 0) {
+#ifdef MSG_DEBUG
                 dtls_debug("server hello verify was sent\n\r");
+#endif
                 break;
             }
 
