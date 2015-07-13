@@ -46,7 +46,7 @@ Utilities
 
 void print_free_mem()
 {
-#if 0
+#if 1
     int memory = freeMemory();
     Serial.print(F("mémoire disponible : "));
     Serial.println(memory);
@@ -488,10 +488,13 @@ void do_chan (void)
 //  DTLS common
 
 bool am_i_server;
+#ifdef MESURE_TIME_START_PUSHING_MSG
 uint32_t time_start_pushing_msg;
+#endif
 uint32_t time_end_pushing_msg;
 uint32_t time_start_nego;
 uint32_t time_end_nego;
+uint32_t time ;
 static unsigned char buf[DTLS_MAX_BUF];
 static size_t len = 0;
 session_t session;
@@ -504,12 +507,16 @@ send_to_peer(struct dtls_context_t *ctx,
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("TO SEND", data, len);
 #endif
+
+#ifdef MESURE_TIME_START_PUSHING_MSG
     if(time_start_pushing_msg != 0)
     {
         time_end_pushing_msg = millis() - time_start_pushing_msg;
         Serial.print("duration between asking and sending the msg : ");
         Serial.println(time_end_pushing_msg);
     }
+#endif
+
     int ret = zigmsg.sendto(session->addr, len, data);
     return ret ? len : -1;
 }
@@ -517,8 +524,11 @@ send_to_peer(struct dtls_context_t *ctx,
 static void
 try_send(struct dtls_context_t *ctx)
 {
-    int res;
+#ifdef MESURE_TIME_START_PUSHING_MSG
     time_start_pushing_msg = millis();
+#endif
+
+    int res;
     res = dtls_write(ctx, &session, (uint8 *)buf, len);
     if (res >= 0) {
         memmove(buf, buf + res, len - res);
@@ -534,7 +544,49 @@ static int
 read_from_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
 {
+#ifdef MSG_DEBUG
+        Serial.print(F("len : "));
+        Serial.print(len);
+#endif
 
+    if(am_i_server == false)
+    {
+
+        memcpy(buf, data, 4);
+        len = 4;
+
+        try_send(the_context);
+
+        uint32_t time_tmp = 0;
+        memcpy(&time_tmp, data, 4);
+        Serial.print("time : ");
+        Serial.println(time_tmp);
+    }
+    else
+    {
+
+        uint32_t time_recv(0);
+        memcpy(&time_recv, data, 4);
+        len = 0;
+
+        if(time_recv != time)
+        {
+            Serial.print(F("ERROR : Sent != Received time : "));
+            Serial.print(time);
+            Serial.print(F(" received : "));
+            Serial.print(time_recv);
+            Serial.print(F(" "));
+        }
+        else
+        {
+#ifdef MSG_DEBUG
+            Serial.print(F("Sent == Received : "));
+#endif
+        }
+
+    }
+
+    /*
     if(len > 0) {
         size_t MTU = 127;
         char x[MTU +1];
@@ -542,12 +594,13 @@ read_from_peer(struct dtls_context_t *ctx,
         x[MTU] = '\0';
         Serial.println(x);
     }
+    */
 
     return 1;
 }
 
 static int
-dtls_handle_read(void)
+connection_handle(void)
 {
     ZigMsg::ZigReceivedFrame *z ;
     size_t i = 0;
@@ -581,14 +634,88 @@ dtls_handle_read(void)
 
         i++;
 
-
 #ifdef MSG_DEBUG
         Serial.print("Passage : ");
         Serial.println(i);
 #endif
 
     }
+}
 
+void
+dtls_handle_read_server()
+{
+    ZigMsg::ZigReceivedFrame *z ;
+
+    static int n = 0 ;
+
+    if (++n % PERIODIC == 0)
+    {
+        print_stat ();
+        n = 0;
+    }
+
+    bool found = false;
+    // send
+    uint32_t duration;
+
+    time = millis () ;
+
+#ifdef MSG_DEBUG
+    Serial.print(time, HEX);
+    Serial.print(' ');
+#endif
+
+    memset(buf, '\0', DTLS_MAX_BUF);
+    memcpy(buf, &time, 4);
+    len = 4;
+    try_send(the_context);
+
+    while(! found && ++n % PERIODIC != 0)
+    {
+
+        while ((z = zigmsg.get_received ()) != NULL)
+        {
+#ifdef MSG_DEBUG
+            Serial.print(F("paylen : "));
+            Serial.println(z->paylen);
+#endif
+
+            memcpy(buf, z->payload, z->paylen);
+            len += z->paylen;
+            zigmsg.skip_received () ;
+            int ret = dtls_handle_message(the_context, &session
+                    , (uint8_t*)buf, len);
+            len = 0;
+
+            if(ret) {
+                Serial.print(F("\r\nerr d_hdl_msg > d_h_read : "));
+                Serial.println(ret);
+                return ;
+            }
+
+            found = true;
+        }
+    }
+
+    duration = millis () - time ;
+
+    Serial.print(F("duration: "));
+    Serial.println(duration);
+    delay(500);
+
+    if (n % PERIODIC == 0)
+        n = 0;
+}
+
+//void
+//dtls_handle_read_client()
+//{
+//}
+
+static int
+dtls_handle_read(void)
+{
 
 #if 0
     // TODO
@@ -612,39 +739,15 @@ dtls_handle_read(void)
     }
 #endif
 
-    dtls_peer_t * peer = dtls_get_peer(the_context, &session);
-
-    // if no received message and handshake complete
-    if(i == 0 && peer && peer->state == DTLS_STATE_CONNECTED)
+    if(am_i_server)
     {
-        static int x = 0;
-        if( x == 0 )
-        {
-            time_end_nego = millis() - time_start_nego;
-
-            Serial.print("Handshake duration : ");
-            Serial.println(time_end_nego);
-
-            x++;
-            delay(1000);
-
-        }
-        else
-            return 1;
-
-
-        int res;
-        buf[0] = 'C';
-        buf[1] = 'O';
-        buf[2] = 'U';
-        buf[3] = 'C';
-        buf[4] = 'O';
-        buf[5] = 'U';
-        buf[6] = '\0';
-        len = 7;
-        try_send(the_context);
+        dtls_handle_read_server();
     }
-    i = 0;
+    else
+    {
+        connection_handle();
+        //dtls_handle_read_client();
+    }
 
     return 1;
 }
@@ -683,6 +786,8 @@ void init_dtls_server (char line [])
     the_context->psk.len = strlen(PSK_DEFAULT_KEY);
 
     dtls_set_handler(the_context, &cb_server);
+
+    am_i_server = true;
 }
 
 void stop_dtls_server (void)
@@ -698,9 +803,27 @@ void do_dtls_server (void)
     print_free_mem();
 #endif
 
-    // on vérifie qu'on n'a pas reçu de message
-    dtls_handle_read();
-    am_i_server = true;
+    static char only_print_one_time_the_handshake_duration = 0;
+    dtls_peer_t * peer = dtls_get_peer(the_context, &session);
+
+    // if no received message and handshake complete
+    if(peer && peer->state == DTLS_STATE_CONNECTED)
+    {
+        if(only_print_one_time_the_handshake_duration == 0)
+        {
+            only_print_one_time_the_handshake_duration++;
+            time_end_nego = millis() - time_start_nego;
+
+            Serial.print("Handshake duration : ");
+            Serial.println(time_end_nego);
+        }
+
+        dtls_handle_read();
+    }
+    else
+    {
+        connection_handle();
+    }
 }
 
 // DTLS client
@@ -749,6 +872,7 @@ void init_dtls_client (char line [])
 
     time_start_nego = millis () ;
     dtls_connect(the_context, &session);
+    am_i_server = false;
 }
 
 void stop_dtls_client (void)
@@ -764,12 +888,31 @@ void do_dtls_client (void)
     print_free_mem();
 #endif
 
-    dtls_handle_read();
-    am_i_server = false;
+    static char only_print_one_time_the_handshake_duration = 0;
+    dtls_peer_t * peer = dtls_get_peer(the_context, &session);
+
+    // if no received message and handshake complete
+    if(peer && peer->state == DTLS_STATE_CONNECTED)
+    {
+        if(only_print_one_time_the_handshake_duration == 0)
+        {
+            only_print_one_time_the_handshake_duration++;
+            time_end_nego = millis() - time_start_nego;
+
+            Serial.print("Handshake duration : ");
+            Serial.println(time_end_nego);
+        }
+
+        dtls_handle_read();
+    }
+    else
+    {
+        connection_handle();
+    }
 }
 
 /******************************************************************************
-  Ping pong ping
+  Ping pong send recv
  *******************************************************************************/
 
 void init_send_recv (char line [])
@@ -806,9 +949,10 @@ void do_send_recv (void)
 
     time = millis () ;
 
-    Serial.println();
+#ifdef MSG_DEBUG
     Serial.print(time, HEX);
     Serial.print(' ');
+#endif
 
     if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
     {
@@ -822,23 +966,38 @@ void do_send_recv (void)
         // recv
         while ((z = zigmsg.get_received ()) != NULL)
         {
+#ifdef MSG_DEBUG
             Serial.print(F("paylen : "));
             Serial.println(z->paylen);
+#endif
 
-            memset(buf, '\0', DTLS_MAX_BUF);
-            memcpy(buf, z->payload, z->paylen);
             zigmsg.skip_received () ;
 
-            Serial.println((char *)buf);
-            //dtls_always_hexdump("RECEIVED", buf, z->paylen);
+            uint32_t time_recv(0);
+            memcpy(&time_recv, z->payload, 4);
+
+            if(time_recv != time)
+            {
+                Serial.print(F("ERROR : Sent != Received "));
+                Serial.print(time);
+                Serial.print(F(" "));
+                Serial.print(time_recv);
+                Serial.print(F(" "));
+            }
+            else
+            {
+#ifdef MSG_DEBUG
+                Serial.println(F("Sent == Received"));
+#endif
+            }
+
             found = true;
         }
-
     }
 
     duration = millis () - time ;
 
-    Serial.print("duration: ");
+    Serial.print(F("duration: "));
     Serial.println(duration);
     delay(500);
 
@@ -847,7 +1006,7 @@ void do_send_recv (void)
 }
 
 /******************************************************************************
-  Ping pong pong
+  Ping pong recv send
  *******************************************************************************/
 
 void init_recv_send (char line [])
@@ -868,7 +1027,6 @@ void stop_recv_send (void)
 void do_recv_send (void)
 {
     ZigMsg::ZigReceivedFrame *z ;
-    Serial.println(F("RS"));
 
     uint32_t time = 0;
     bool found = false;
@@ -877,34 +1035,38 @@ void do_recv_send (void)
         // recv
         while ((z = zigmsg.get_received ()) != NULL)
         {
+#ifdef MSG_DEBUG
             Serial.print(F("paylen : "));
-            Serial.println(z->paylen);
+            Serial.print(z->paylen);
+#endif
 
-            memset(buf, '\0', DTLS_MAX_BUF);
-            memcpy(buf, z->payload, z->paylen);
-            time = dtls_uint32_to_int(buf);
-            Serial.println(time);
-            //Serial.println((char *) buf);
-            //dtls_always_hexdump("RECEIVED", buf, z->paylen);
+            memcpy(&time, z->payload, 4);
+
+#ifdef MSG_DEBUG
+            Serial.print(F(" time : "));
+            Serial.print(time);
+#endif
 
             zigmsg.skip_received () ;
 
-            //Serial.print(F(" time : "));
-            //Serial.print(time);
-
+#ifdef MSG_DEBUG
             Serial.print(F(" "));
+#endif
             found = true;
         }
     }
 
+    if (zigmsg.sendto (SENDADDR, 4, (uint8_t *) &time))
+    {
 #ifdef MSG_DEBUG
-    if (zigmsg.sendto (SENDADDR, 0, (uint8_t *) &time))
-        Serial.println ("Sent") ;
-    else
-        Serial.println ("Sent error") ;
+        Serial.println (F("Sent")) ;
 #endif
+    }
+    else
+    {
+        Serial.println (F("Sent error")) ;
+    }
 }
-
 
 // GUI ;-)
 

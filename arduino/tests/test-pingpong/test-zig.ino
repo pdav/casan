@@ -11,11 +11,22 @@
 
 #define	PERIODIC	100000
 
+#define DTLS_MAX_BUF 127
+static unsigned char buf[DTLS_MAX_BUF];
+
 int channel = CHANNEL ;
 
 /******************************************************************************
   Utilities
  *******************************************************************************/
+
+static inline uint32_t uint32_to_int(const unsigned char *field)
+{
+  return ((uint32_t)field[0] << 24)
+	 | ((uint32_t)field[1] << 16)
+	 | ((uint32_t)field[2] << 8)
+	 | (uint32_t)field[3];
+}
 
 #define	HEXCHAR(c)	((c) < 10 ? (c) + '0' : (c) - 10 + 'a')
 
@@ -516,27 +527,26 @@ void do_dtls_client (void)
     }
 }
 
-
 /******************************************************************************
-  Ping pong ping
+  Ping pong send recv
  *******************************************************************************/
 
-void init_pingpong_ping (char line [])
+void init_send_recv (char line [])
 {
     zigmsg.channel (channel) ;
     zigmsg.panid (PANID) ;
     zigmsg.addr2 (SENDADDR) ;
     zigmsg.promiscuous (false) ;
     zigmsg.start () ;
-    Serial.println("Starting PING PONG") ;
+    Serial.println("Starting send then receive") ;
 }
 
-void stop_pingpong_ping (void)
+void stop_send_recv (void)
 {
-    Serial.println("Stopping PING PONG PING") ;
+    Serial.println("Stopping send then receive") ;
 }
 
-void do_pingpong_ping (void)
+void do_send_recv (void)
 {
     ZigMsg::ZigReceivedFrame *z ;
 
@@ -571,16 +581,38 @@ void do_pingpong_ping (void)
         // recv
         while ((z = zigmsg.get_received ()) != NULL)
         {
-            //print_frame (z, false) ;
+#ifdef MSG_DEBUG
+            Serial.print(F("paylen : "));
+            Serial.println(z->paylen);
+#endif
+
             zigmsg.skip_received () ;
+
+            uint32_t time_recv(0);
+            memcpy(&time_recv, z->payload, 4);
+
+            if(time_recv != time)
+            {
+                Serial.print(F("ERROR : Sent != Received "));
+                Serial.print(time);
+                Serial.print(F(" "));
+                Serial.print(time_recv);
+                Serial.print(F(" "));
+            }
+            else
+            {
+#ifdef MSG_DEBUG
+                Serial.println(F("Sent == Received"));
+#endif
+            }
+
             found = true;
         }
-
     }
 
     duration = millis () - time ;
 
-    Serial.print("duration: ");
+    Serial.print(F("duration: "));
     Serial.println(duration);
     delay(500);
 
@@ -589,53 +621,25 @@ void do_pingpong_ping (void)
 }
 
 /******************************************************************************
-  Ping pong pong
+  Ping pong recv send
  *******************************************************************************/
 
-uint32_t get_time ( ZigMsg::ZigReceivedFrame *z) 
-{
-    //time = (uint32_t) (z->rawframe + z->rawlen - 4);
-
-    union uint32_to_uint8 {
-        uint32_t x;
-        uint8_t  y[4];
-    } myunion;
-
-    myunion.y[0] = z->payload[z->paylen-4];
-    myunion.y[1] = z->payload[z->paylen-3];
-    myunion.y[2] = z->payload[z->paylen-2];
-    myunion.y[3] = z->payload[z->paylen-1];
-
-    Serial.println();
-    Serial.print("payload len : ");
-    Serial.println(z->paylen);
-
-    Serial.print(myunion.y[0], HEX);
-    Serial.print(myunion.y[1], HEX);
-    Serial.print(myunion.y[2], HEX);
-    Serial.print(myunion.y[3], HEX);
-    Serial.print(' ');
-
-    return myunion.x;
-
-}
-
-void init_pingpong_pong (char line [])
+void init_recv_send (char line [])
 {
     zigmsg.channel (channel) ;
     zigmsg.panid (PANID) ;
     zigmsg.addr2 (RECVADDR) ;
     zigmsg.promiscuous (false) ;
     zigmsg.start () ;
-    Serial.println("Starting PING PONG PONG") ;
+    Serial.println("Starting receive then send") ;
 }
 
-void stop_pingpong_pong (void)
+void stop_recv_send (void)
 {
-    Serial.println("Stopping PING PONG PONG") ;
+    Serial.println("Stopping receive then send") ;
 }
 
-void do_pingpong_pong (void)
+void do_recv_send (void)
 {
     ZigMsg::ZigReceivedFrame *z ;
 
@@ -646,16 +650,37 @@ void do_pingpong_pong (void)
         // recv
         while ((z = zigmsg.get_received ()) != NULL)
         {
-            //print_frame (z, false) ;
+#ifdef MSG_DEBUG
+            Serial.print(F("paylen : "));
+            Serial.print(z->paylen);
+#endif
+
+            memcpy(&time, z->payload, 4);
+
+#ifdef MSG_DEBUG
+            Serial.print(F(" time : "));
+            Serial.print(time);
+#endif
+
             zigmsg.skip_received () ;
+
+#ifdef MSG_DEBUG
+            Serial.print(F(" "));
+#endif
             found = true;
         }
     }
 
-    if (zigmsg.sendto (SENDADDR, 0, (uint8_t *) &time))
-        Serial.println ("Sent") ;
+    if (zigmsg.sendto (SENDADDR, 4, (uint8_t *) &time))
+    {
+#ifdef MSG_DEBUG
+        Serial.println (F("Sent")) ;
+#endif
+    }
     else
-        Serial.println ("Sent error") ;
+    {
+        Serial.println (F("Sent error")) ;
+    }
 }
 
 /******************************************************************************
@@ -748,8 +773,8 @@ struct gui
 
 struct gui gui [] = {
     { 'c', "channel (n)", init_chan, stop_chan, do_chan },
-    { 'p', "ping pong ping", init_pingpong_ping, stop_pingpong_ping, do_pingpong_ping },
-    { 'o', "ping pong pong", init_pingpong_pong, stop_pingpong_pong, do_pingpong_pong },
+    { 'p', "send recv", init_send_recv, stop_send_recv, do_send_recv },
+    { 'o', "recv send", init_recv_send, stop_recv_send, do_recv_send },
 } ;
 #define	IDLE_MODE (& gui [0])
 
