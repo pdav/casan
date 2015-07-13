@@ -266,6 +266,12 @@ dtls_prf(const unsigned char *key, size_t keylen,
         unsigned char *buf, size_t buflen)
 {
 
+    if(key == NULL)
+    {
+        dtls_always_hexdump("WAIT : key not present \r\n", 0, 0);
+        return 0;
+    }
+
     /* Clear the result buffer */
     memset(buf, 0, buflen);
     return dtls_p_hash(HASH_SHA256, 

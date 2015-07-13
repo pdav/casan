@@ -722,7 +722,15 @@ calculate_key_block(dtls_context_t *ctx,
             , DTLS_RANDOM_LENGTH);
 #endif
 
-    dtls_always_hexdump("pre_master_secret", pre_master_secret, pre_master_len);
+    //dtls_always_hexdump("pre_master_secret", pre_master_secret, pre_master_len);
+    dtls_emerg("%c %c %c %d %d\n\r"
+            , pre_master_secret[pre_master_len-1]
+            , pre_master_secret[pre_master_len-1]
+            , handshake->tmp.random.client[5]
+            , handshake->tmp.random.server[5]
+            , pre_master_len
+            , DTLS_RANDOM_LENGTH
+            );
 
     dtls_prf(pre_master_secret, pre_master_len,
             PRF_LABEL(master), PRF_LABEL_SIZE(master),
@@ -732,9 +740,9 @@ calculate_key_block(dtls_context_t *ctx,
             DTLS_MASTER_SECRET_LENGTH);
 
 
-#ifdef MSG_DEBUG
-    dtls_debug_hexdump("master_secret", master_secret
+    dtls_always_hexdump("master_secret", master_secret
             , DTLS_MASTER_SECRET_LENGTH);
+#ifdef MSG_DEBUG
 #endif
 
     /* create key_block from master_secret
@@ -3290,7 +3298,9 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
         /* This is a ClientHello or Hello Request send when doing TLS renegotiation */
         if (hs_header->msg_type == DTLS_HT_CLIENT_HELLO ||
                 hs_header->msg_type == DTLS_HT_HELLO_REQUEST) {
+#ifdef MSG_DEBUG
             dtls_warn("error client hello or hello request when renego\n\r");
+#endif
             return handle_handshake_msg(ctx, peer, session, role, state, data,
                     data_length);
         } else {
@@ -3823,10 +3833,14 @@ dtls_connect(dtls_context_t *ctx, const session_t *dst)
     /* Invoke event callback to indicate connection attempt or
      * re-negotiation. */
     if (res > 0) {
+#ifdef MSG_DEBUG
         dtls_warn("call : DTLS_EVENT_CONNECT\n\r");
+#endif
         CALL(ctx, event, &peer->session, 0, DTLS_EVENT_CONNECT);
     } else if (res == 0) {
+#ifdef MSG_DEBUG
         dtls_warn("call : DTLS_EVENT_RENEGOTIATE\n\r");
+#endif
         CALL(ctx, event, &peer->session, 0, DTLS_EVENT_RENEGOTIATE);
     }
 

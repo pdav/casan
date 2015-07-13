@@ -708,11 +708,6 @@ dtls_handle_read_server()
         n = 0;
 }
 
-//void
-//dtls_handle_read_client()
-//{
-//}
-
 static int
 dtls_handle_read(void)
 {
