@@ -46,12 +46,9 @@ Utilities
 
 void print_free_mem()
 {
-#if 1
     int memory = freeMemory();
     Serial.print(F("mémoire disponible : "));
     Serial.println(memory);
-    //delay(1000);
-#endif
 }
 
 unsigned long get_random (unsigned int max) {
@@ -576,6 +573,31 @@ read_from_peer(struct dtls_context_t *ctx,
             Serial.print(F(" received : "));
             Serial.print(time_recv);
             Serial.print(F(" "));
+
+            // check if there isn't another msg in queue
+            ZigMsg::ZigReceivedFrame *z ;
+
+            static int n = 0;
+            bool found = false;
+
+            while(! found && ++n % PERIODIC != 0)
+            {
+                while ((z = zigmsg.get_received ()) != NULL)
+                {
+                    memcpy(buf, z->payload, z->paylen);
+                    len += z->paylen; // TODO FIXME : pas sûr de += ou =
+                    zigmsg.skip_received () ;
+                    int ret = dtls_handle_message(the_context, session
+                            , (uint8_t*)buf, len);
+                    len = 0; // TODO do we have to put the length of the received pkt to 0 ?
+                    if(ret) {
+                        Serial.print(F("\r\nerr d_hdl_msg > d_h_read : "));
+                        Serial.println(ret);
+                        return ret;
+                    }
+                    found = true;
+                }
+            }
         }
         else
         {
@@ -781,7 +803,6 @@ void init_dtls_server (char line [])
     the_context->psk.len = strlen(PSK_DEFAULT_KEY);
 
     dtls_set_handler(the_context, &cb_server);
-
     am_i_server = true;
 }
 
@@ -793,7 +814,6 @@ void stop_dtls_server (void)
 
 void do_dtls_server (void)
 {
-
 #ifdef MSG_DEBUG
     print_free_mem();
 #endif
@@ -878,7 +898,6 @@ void stop_dtls_client (void)
 
 void do_dtls_client (void)
 {
-
 #ifdef MSG_DEBUG
     print_free_mem();
 #endif
