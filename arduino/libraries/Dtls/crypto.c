@@ -146,7 +146,9 @@ dtls_handshake_parameters_t *dtls_handshake_new()
 
     if (handshake) {
         /* initialize the handshake hash wrt. the hard-coded DTLS version */
+#ifdef MSG_DEBUG
         dtls_debug("DTLSv12: initialize HASH_SHA256\n\r");
+#endif
         /* TLS 1.2:  PRF(secret, label, seed) = P_<hash>(secret, label + seed) */
         /* FIXME: we use the default SHA256 here, might need to support other 
            hash functions as well */
@@ -560,6 +562,12 @@ dtls_encrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_ENCRYPT_TIME
+    uint32_t time_before;
+    uint32_t time_after;
+    dtls_get_time(&time_before);
+#endif
+
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("before encrypt", (char *)src, length);
 #endif
@@ -589,6 +597,11 @@ dtls_encrypt(const unsigned char *src, size_t length,
     dtls_debug_hexdump("after encrypt", (char *)buf, length);
 #endif
 
+#ifdef MSG_ENCRYPT_TIME
+    dtls_get_time(&time_after);
+    dtls_debug("Encryption took : %d \r\n", time_after - time_before);
+#endif
+
 error:
     dtls_cipher_context_release();
     return ret;
@@ -603,6 +616,12 @@ dtls_decrypt(const unsigned char *src, size_t length,
 {
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
+
+#ifdef MSG_ENCRYPT_TIME
+    uint32_t time_before;
+    uint32_t time_after;
+    dtls_get_time(&time_before);
+#endif
 
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("before decrypt", (char *)src, length);
@@ -629,6 +648,11 @@ dtls_decrypt(const unsigned char *src, size_t length,
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("after decrypt", (char *)buf, length);
+#endif
+
+#ifdef MSG_ENCRYPT_TIME
+    dtls_get_time(&time_after);
+    dtls_debug("Decryption took : %d \r\n", time_after - time_before);
 #endif
 
 error:

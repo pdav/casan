@@ -30,7 +30,7 @@ extern "C" {
 
 //#define PSK_DEFAULT_IDENTITY "Client_identity"
 #define PSK_DEFAULT_KEY      "secretPSK"
-#define LOGLVL          DTLS_LOG_WARN
+#define LOGLVL          DTLS_LOG_DEBUG
 #define DTLS_RECORD_HEADER(M) ((dtls_record_header_t *)(M))
 #define dtls_get_content_type(H) ((H)->content_type & 0xff)
 
@@ -84,7 +84,7 @@ void something_to_say (log_t loglvl, char * format, ...)
 
     if(strlen(msg) > 4) {
         if(msg[0] == 'W' && msg[1] == 'A' && msg[2] == 'I' && msg[3] == 'T')
-            delay(50);
+            delay(2000);
     }
 }
 
@@ -413,9 +413,9 @@ void do_send (void)
         uint32_t time ;
         time = millis () ;
         if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
-            Serial.println ("Sent") ;
+            Serial.println (F("Sent")) ;
         else
-            Serial.println ("Sent error") ;
+            Serial.println (F("Sent error")) ;
     }
 }
 
@@ -440,7 +440,7 @@ void stop_recv (void)
 
 void do_recv (void)
 {
-    do_snif();
+    do_snif () ;
 }
 
 /******************************************************************************
@@ -679,7 +679,10 @@ dtls_handle_read_server()
 
     bool found = false;
     // send
+
+#ifdef MSG_DURATION
     uint32_t duration;
+#endif
 
     time = millis () ;
 
@@ -720,10 +723,12 @@ dtls_handle_read_server()
         }
     }
 
+#ifdef MSG_DURATION
     duration = millis () - time ;
 
     Serial.print(F("duration: "));
     Serial.println(duration);
+#endif
     delay(500);
 
     if (n % PERIODIC == 0)
@@ -959,7 +964,9 @@ void do_send_recv (void)
     bool found = false;
     // send
     uint32_t time ;
+#ifdef MSG_DURATION
     uint32_t duration;
+#endif
 
     time = millis () ;
 
@@ -1009,10 +1016,13 @@ void do_send_recv (void)
         }
     }
 
+#ifdef MSG_DURATION
     duration = millis () - time ;
 
     Serial.print(F("duration: "));
     Serial.println(duration);
+#endif
+
     delay(500);
 
     if (n % PERIODIC == 0)
