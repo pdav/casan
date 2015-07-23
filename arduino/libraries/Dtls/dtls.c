@@ -3617,7 +3617,7 @@ dtls_handle_message(dtls_context_t *ctx,
                 break;
 
             case DTLS_CT_APPLICATION_DATA:
-                dtls_info("** application data:\n\r");
+                //dtls_info("** application data:\n\r");
                 if (!peer) {
                     dtls_warn("no peer available, send an alert\n\r");
                     // TODO: should we send a alert here?

@@ -126,7 +126,7 @@
 
 //#define MSG_DEBUG 1
 
-//#define MSG_DURATION 1
+#define MSG_DURATION 1
 
 #define MSG_ENCRYPT_TIME 1
 
