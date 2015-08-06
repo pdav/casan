@@ -34,6 +34,8 @@ extern "C" {
 #define DTLS_RECORD_HEADER(M) ((dtls_record_header_t *)(M))
 #define dtls_get_content_type(H) ((H)->content_type & 0xff)
 
+#define SIZE_TO_SEND 20
+
 //log_t:
 // DTLS_LOG_EMERG DTLS_LOG_ALERT DTLS_LOG_CRIT DTLS_LOG_WARN DTLS_LOG_NOTICE
 // DTLS_LOG_INFO DTLS_LOG_DEBUG
@@ -497,6 +499,8 @@ static size_t len = 0;
 session_t session;
 dtls_context_t *the_context = NULL;
 
+char mbuffer[DTLS_MAX_BUF];
+
 static int
 send_to_peer(struct dtls_context_t *ctx, 
         session_t *session, uint8 *data, size_t len)
@@ -542,36 +546,56 @@ read_from_peer(struct dtls_context_t *ctx,
         session_t *session, uint8 *data, size_t len)
 {
 #ifdef MSG_DEBUG
-        Serial.print(F("len : "));
-        Serial.print(len);
+    Serial.print(F("len : "));
+    Serial.print(len);
 #endif
+
+    char mbuffer_recv[DTLS_MAX_BUF];
+    memset(mbuffer_recv, '\0', DTLS_MAX_BUF);
+
 
     if(am_i_server == false)
     {
 
-        memcpy(buf, data, 4);
-        len = 4;
+        //memcpy(buf, data, 4);
+        //len = 4;
+
+        memcpy(buf, data, SIZE_TO_SEND);
+        len = SIZE_TO_SEND;
+
+        memcpy(mbuffer_recv, data, SIZE_TO_SEND);
 
         try_send(the_context);
 
-        uint32_t time_tmp = 0;
-        memcpy(&time_tmp, data, 4);
-        Serial.print("time : ");
-        Serial.println(time_tmp);
+        Serial.print("mbuffer_recv : ");
+        Serial.println(mbuffer_recv);
+
+        //uint32_t time_tmp = 0;
+        //memcpy(&time_tmp, data, 4);
+        //Serial.print("time : ");
+        //Serial.println(time_tmp);
     }
     else
     {
 
-        uint32_t time_recv(0);
-        memcpy(&time_recv, data, 4);
+        //uint32_t time_recv(0);
+        //memcpy(&time_recv, data, 4);
+        //len = 0;
+
+        memcpy(mbuffer_recv, data, SIZE_TO_SEND);
         len = 0;
 
-        if(time_recv != time)
+        memset(mbuffer, 'a', SIZE_TO_SEND);
+
+        //if(time_recv != time)
+        if(memcpy(mbuffer_recv, mbuffer, SIZE_TO_SEND) == 0)
         {
-            Serial.print(F("ERROR : Sent != Received time : "));
-            Serial.print(time);
+            Serial.print(F("ERROR : Sent != Received : "));
+            //Serial.print(time);
+            Serial.print(mbuffer);
             Serial.print(F(" received : "));
-            Serial.print(time_recv);
+            //Serial.print(time_recv);
+            Serial.print(mbuffer_recv);
             Serial.print(F(" "));
 
             // check if there isn't another msg in queue
@@ -692,8 +716,11 @@ dtls_handle_read_server()
 #endif
 
     memset(buf, '\0', DTLS_MAX_BUF);
-    memcpy(buf, &time, 4);
-    len = 4;
+    //memcpy(buf, &time, 4);
+    //len = 4;
+
+    memset(buf, 'a', SIZE_TO_SEND);
+    len = SIZE_TO_SEND;
     try_send(the_context);
 
     while(! found && ++n % PERIODIC != 0)
