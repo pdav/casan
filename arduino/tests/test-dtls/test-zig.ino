@@ -56,7 +56,7 @@ unsigned long get_random (unsigned int max) {
 }
 
 unsigned long get_the_time (void) {
-    return millis();
+    return micros();
 }
 
 void instant_print (char * format, ...)
@@ -411,7 +411,7 @@ void do_send (void)
 	n = 0 ;
 
         uint32_t time ;
-        time = millis () ;
+        time = micros () ;
         if (zigmsg.sendto (RECVADDR, 4, (uint8_t *) &time))
             Serial.println (F("Sent")) ;
         else
@@ -508,7 +508,7 @@ send_to_peer(struct dtls_context_t *ctx,
 #ifdef MESURE_TIME_START_PUSHING_MSG
     if(time_start_pushing_msg != 0)
     {
-        time_end_pushing_msg = millis() - time_start_pushing_msg;
+        time_end_pushing_msg = micros() - time_start_pushing_msg;
         Serial.print("duration between asking and sending the msg : ");
         Serial.println(time_end_pushing_msg);
     }
@@ -522,7 +522,7 @@ static void
 try_send(struct dtls_context_t *ctx)
 {
 #ifdef MESURE_TIME_START_PUSHING_MSG
-    time_start_pushing_msg = millis();
+    time_start_pushing_msg = micros();
 #endif
 
     int res;
@@ -642,7 +642,7 @@ connection_handle(void)
                 dtls_get_content_type(header) == DTLS_CT_HANDSHAKE)
         {
             is_first_ch = 0;
-            time_start_nego = millis();
+            time_start_nego = micros();
         }
 
         int ret = dtls_handle_message(the_context, &session, (uint8_t*)buf, len);
@@ -684,7 +684,7 @@ dtls_handle_read_server()
     uint32_t duration;
 #endif
 
-    time = millis () ;
+    time = micros () ;
 
 #ifdef MSG_DEBUG
     Serial.print(time, HEX);
@@ -724,7 +724,7 @@ dtls_handle_read_server()
     }
 
 #ifdef MSG_DURATION
-    duration = millis () - time ;
+    duration = micros () - time ;
 
     Serial.print(F("duration: "));
     Serial.println(duration);
@@ -832,7 +832,7 @@ void do_dtls_server (void)
         if(only_print_one_time_the_handshake_duration == 0)
         {
             only_print_one_time_the_handshake_duration++;
-            time_end_nego = millis() - time_start_nego;
+            time_end_nego = micros() - time_start_nego;
 
             Serial.print("Handshake duration : ");
             Serial.println(time_end_nego);
@@ -890,7 +890,7 @@ void init_dtls_client (char line [])
 
     dtls_set_handler(the_context, &cb_cli);
 
-    time_start_nego = millis () ;
+    time_start_nego = micros () ;
     dtls_connect(the_context, &session);
     am_i_server = false;
 }
@@ -916,7 +916,7 @@ void do_dtls_client (void)
         if(only_print_one_time_the_handshake_duration == 0)
         {
             only_print_one_time_the_handshake_duration++;
-            time_end_nego = millis() - time_start_nego;
+            time_end_nego = micros() - time_start_nego;
 
             Serial.print("Handshake duration : ");
             Serial.println(time_end_nego);
@@ -968,7 +968,7 @@ void do_send_recv (void)
     uint32_t duration;
 #endif
 
-    time = millis () ;
+    time = micros () ;
 
 #ifdef MSG_DEBUG
     Serial.print(time, HEX);
@@ -1017,7 +1017,7 @@ void do_send_recv (void)
     }
 
 #ifdef MSG_DURATION
-    duration = millis () - time ;
+    duration = micros () - time ;
 
     Serial.print(F("duration: "));
     Serial.println(duration);
