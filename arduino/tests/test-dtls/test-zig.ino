@@ -567,8 +567,8 @@ read_from_peer(struct dtls_context_t *ctx,
 
         try_send(the_context);
 
-        Serial.print("mbuffer_recv : ");
-        Serial.println(mbuffer_recv);
+        //Serial.print("mbuffer_recv : ");
+        //Serial.println(mbuffer_recv);
 
         //uint32_t time_tmp = 0;
         //memcpy(&time_tmp, data, 4);
