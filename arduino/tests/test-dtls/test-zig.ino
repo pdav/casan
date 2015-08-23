@@ -23,7 +23,7 @@ int channel = CHANNEL ;
 //#define MSG_FREEMEM
 //#define MSG_DEBUG
 
-#define MSG_DELAY    1000
+#define MSG_DELAY    100
 #define SIZE_TO_SEND 85
 //#define SIZE_TO_SEND 1
 //#define MSG_RECEIVED
