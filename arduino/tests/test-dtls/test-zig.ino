@@ -145,100 +145,8 @@ void say (char * txt_to_say)
     //delay(1000);
 }
 
-void phex (uint8_t c)
-{
-    char x ;
-    x = (c >> 4) & 0xf ; x = HEXCHAR (x) ; Serial.print (x) ;
-    x = (c     ) & 0xf ; x = HEXCHAR (x) ; Serial.print (x) ;
-}
-
-void pdec (int c, int ndigits, char fill)
-{
-    int c2 ;
-    int n ;
-
-    /*
-     * compute number of digits of c
-     */
-
-    c2 = c ;
-    n = 1 ;
-    while (c2 > 0)
-    {
-	n++ ;
-	c2 /= 10 ;
-    }
-
-    /*
-     * Complete with fill characters
-     */
-
-    for ( ; n <= ndigits ; n++)
-	Serial.print (fill) ;
-    Serial.print (c) ;
-}
-
-void phexn (uint8_t *c, int len, char sep)
-{
-    int i ;
-
-    for (i = 0 ; i < len ; i++)
-    {
-	if (i > 0 && sep != '\0')
-	    Serial.print (sep) ;
-	phex (c [i]) ;
-    }
-}
-
-/* flen = field length = nominal number of chars in a "normal" row */
-void phexascii (uint8_t buf [], int len, int flen)
-{
-    int i ;
-
-    phexn (buf, len, ' ') ;
-    for (i = 0 ; i < (flen - len) * 3 + 4 ; i++)
-	Serial.print (' ') ;
-    for (i = 0 ; i < len ; i++)
-	Serial.print ((char) (buf [i] >= ' ' && buf [i] < 127 ? buf [i] : '.')) ;
-}
-
-/******************************************************************************
-CoAP decoding
-*******************************************************************************/
-
-#define	COAP_VERSION(b)	(((b) [0] >> 6) & 0x3)
-#define	COAP_TYPE(b)	(((b) [0] >> 4) & 0x3)
-#define	COAP_TOKLEN(b)	(((b) [0]     ) & 0xf)
-#define	COAP_CODE(b)	(((b) [1]))
-#define	COAP_ID(b)	(((b) [2] << 8) | (b) [3])
-
 #define	NTAB(t)		((int) (sizeof (t) / sizeof (t)[0]))
 
-const char *type_string [] = { "CON", "NON", "ACK", "RST" } ;
-const char *code_string [] = { "Empty msg", "GET", "POST", "PUT", "DELETE" } ;
-
-
-/******************************************************************************
-Raw Sniffer
-*******************************************************************************/
-
-void print_stat (void)
-{
-    ZigMsg::ZigStat *zs = zigmsg.getstat () ;
-    Serial.print ("RX overrun=") ;
-    Serial.print (zs->rx_overrun) ;
-    Serial.print (", crcfail=") ;
-    Serial.print (zs->rx_crcfail) ;
-    Serial.print (", TX sent=") ;
-    Serial.print (zs->tx_sent) ;
-    Serial.print (", e_cca=") ;
-    Serial.print (zs->tx_error_cca) ;
-    Serial.print (", e_noack=") ;
-    Serial.print (zs->tx_error_noack) ;
-    Serial.print (", e_fail=") ;
-    Serial.print (zs->tx_error_fail) ;
-    Serial.println () ;
-}
 
 /******************************************************************************
 Channel
@@ -294,7 +202,6 @@ static size_t len = 0;
 session_t session;
 dtls_context_t *the_context = NULL;
 
-char mbuffer[DTLS_MAX_BUF];
 char whatisent[DTLS_MAX_BUF];
 
 static int
@@ -378,7 +285,7 @@ read_from_peer(struct dtls_context_t *ctx,
             // check if there isn't another msg in queue
             ZigMsg::ZigReceivedFrame *z ;
 
-            static int n = 0;
+            int n = 0;
             bool found = false;
 
             while(! found && ++n % PERIODIC != 0)
@@ -484,12 +391,7 @@ dtls_send_then_read()
     ZigMsg::ZigReceivedFrame *z ;
 
     static int n = 0 ;
-
-    if (++n % PERIODIC == 0)
-    {
-        print_stat ();
-        n = 0;
-    }
+    n = 0;
 
     bool found = false;
 #ifdef MSG_DURATION
@@ -556,9 +458,6 @@ dtls_send_then_read()
 #endif
 
     delay(MSG_DELAY);
-
-    if (n % PERIODIC == 0)
-        n = 0;
 }
 
 static dtls_handler_t cb_server = {
