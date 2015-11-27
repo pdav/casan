@@ -1460,12 +1460,6 @@ dtls_send_multi(dtls_context_t *ctx, dtls_peer_t *peer,
         size_t buf_len_array[], size_t buf_array_len)
 {
 
-#if 0
-#ifdef WITH_ARDUINO
-    dtls_warn("dtls_send_multi\n\r");
-#endif
-#endif
-
     /* We cannot use ctx->sendbuf here as it is reserved for collecting
      * the input for this function, i.e. buf == ctx->sendbuf.
      *
