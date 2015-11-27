@@ -562,9 +562,13 @@ dtls_encrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_DEBUG
+    dtls_debug_hexdump("before encrypt", (char *)src, length);
+#endif
+
 #ifdef MSG_ENCRYPT_TIME
-    uint32_t time_before;
-    uint32_t time_after;
+    uint32_t time_before = 0;
+    uint32_t time_after = 0;
     dtls_get_time(&time_before);
 #endif
 
@@ -617,9 +621,14 @@ dtls_decrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_DEBUG
+    dtls_debug_hexdump("before decrypt", (char *)src, length);
+#endif
+
+
 #ifdef MSG_ENCRYPT_TIME
-    uint32_t time_before;
-    uint32_t time_after;
+    uint32_t time_before = 0;
+    uint32_t time_after = 0;
     dtls_get_time(&time_before);
 #endif
 

@@ -632,8 +632,6 @@ static char *dtls_handshake_type_to_name(int type)
             return "server_key_exchange";
         case DTLS_HT_CERTIFICATE_REQUEST:
             return "certificate_request";
-        case DTLS_HT_SERVER_HELLO_DONE:
-            return "server_hello_done";
         case DTLS_HT_CERTIFICATE_VERIFY:
             return "certificate_verify";
         case DTLS_HT_CLIENT_KEY_EXCHANGE:
@@ -1341,6 +1339,10 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
             return res;
 
         res += 8;			/* increment res by size of nonce_explicit */
+
+#ifdef MSG_DEBUG
+        dtls_debug_dump("message:", start, res);
+#endif
     }
 
     /* fix length of fragment in sendbuf */
@@ -2115,16 +2117,6 @@ dtls_send_server_certificate_request(dtls_context_t *ctx, dtls_peer_t *peer)
 
 
 // was here : server hello done
-    static int
-dtls_send_server_hello_done(dtls_context_t *ctx, dtls_peer_t *peer)
-{
-    /* ServerHelloDone 
-     *
-     * Start message construction at beginning of buffer. */
-
-    return dtls_send_handshake_msg(ctx, peer, DTLS_HT_SERVER_HELLO_DONE,
-            NULL, 0);
-}
 
     static int
 dtls_send_server_hello_msgs(dtls_context_t *ctx, dtls_peer_t *peer)
@@ -2788,19 +2780,19 @@ static int
 decrypt_verify(dtls_peer_t *peer, uint8 *packet, size_t length,
         uint8 **cleartext)
 {
-    int clen;
-
     dtls_record_header_t *header = DTLS_RECORD_HEADER(packet);
     dtls_security_parameters_t *security = 
         dtls_security_params_epoch(peer, dtls_get_epoch(header));
+
+    int clen;
+
+    *cleartext = (uint8 *)packet + sizeof(dtls_record_header_t);
+    clen = length - sizeof(dtls_record_header_t);
 
     if (!security) {
         dtls_alert("No security context for epoch: %i\n\r", dtls_get_epoch(header));
         return -1;
     }
-
-    *cleartext = (uint8 *)packet + sizeof(dtls_record_header_t);
-    clen = length - sizeof(dtls_record_header_t);
 
 #ifdef PKT_OPTIM
 
@@ -3091,7 +3083,9 @@ handle_handshake_msg(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
             }
             dtls_handshake_free(peer->handshake_params);
             peer->handshake_params = NULL;
+#ifdef MSG_DEBUG
             dtls_debug("Handshake complete\n\r");
+#endif
             check_stack();
             peer->state = DTLS_STATE_CONNECTED;
 
@@ -3353,9 +3347,11 @@ handle_handshake(dtls_context_t *ctx, dtls_peer_t *peer, session_t *session,
             netq_node_free(n);
         }
 
+#ifdef MSG_DEBUG
         dtls_info("Added packet for reordering : msg %d, expected %d\n\r"
                 , dtls_uint16_to_int(hs_header->message_seq)
                 , peer->handshake_params->hs_state.mseq_r);
+#endif
 
         return 0;
     } else if (dtls_uint16_to_int(hs_header->message_seq) == peer->handshake_params->hs_state.mseq_r) {
@@ -3618,7 +3614,10 @@ dtls_handle_message(dtls_context_t *ctx,
                 break;
 
             case DTLS_CT_APPLICATION_DATA:
-                //dtls_info("** application data:\n\r");
+#ifdef MSG_DEBUG
+                dtls_info("** application data:\n\r");
+#endif
+
                 if (!peer) {
                     dtls_warn("no peer available, send an alert\n\r");
                     // TODO: should we send a alert here?

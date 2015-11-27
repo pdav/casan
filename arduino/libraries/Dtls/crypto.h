@@ -304,7 +304,7 @@ int dtls_decrypt(const unsigned char *src, size_t length,
 /* helper functions */
 
 /** 
- * Generates pre_master_sercet from given PSK and fills the result
+ * Generates pre_master_secret from given PSK and fills the result
  * according to the "plain PSK" case in section 2 of RFC 4279.
  * Diffie-Hellman and RSA key exchange are currently not supported.
  *
