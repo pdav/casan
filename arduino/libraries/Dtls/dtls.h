@@ -59,8 +59,6 @@
 #define DTLS_VERSION 0xfefd	/* DTLS v1.2 */
 #endif
 
-#define MSG_DEBUG 1
-
 // TODO
 
 /* // test
@@ -245,6 +243,14 @@ typedef struct {
 #endif /* DTLS_ECC */
 } dtls_handler_t;
 
+#ifdef DTLS_PSK
+typedef struct psk
+{
+  unsigned char key[DTLS_PSK_MAX_KEY_LEN];
+  uint16_t len;
+} psk_t ;
+#endif
+
 /** Holds global information of the DTLS engine. */
 typedef struct dtls_context_t {
   unsigned char cookie_secret[DTLS_COOKIE_SECRET_LENGTH];
@@ -253,7 +259,6 @@ clock_time_t cookie_secret_age; /**< the time the secret has been generated */
 #ifdef WITH_ARDUINO
   dtls_peer_t *peers;		/**< peer hash map */
   void (*say)(char * txt_to_say);
-  void (*say_)(uint8_t buf [], int len, int flen);
   void (*smth_to_say) (log_t loglvl, char * format, ...);
   void (*smth_to_hexdump)(log_t loglvl, char *name, unsigned char *buf
         , size_t length, int extend);
@@ -264,6 +269,10 @@ clock_time_t cookie_secret_age; /**< the time the secret has been generated */
 #else
   dtls_peer_t *peers;		/**< peer hash map */
 #endif /* WITH_CONTIKI */
+
+#ifdef DTLS_PSK
+    psk_t psk;
+#endif
 
   LIST_STRUCT(sendqueue);	/**< the packets to send */
 
@@ -375,8 +384,13 @@ void dtls_check_retransmit(dtls_context_t *context, clock_time_t *next);
 typedef struct __attribute__((__packed__)) {
   uint8 content_type;		/**< content type of the included message */
   uint16 version;		/**< Protocol version */
+
+  // TODO was here : epoch and/or seq_num
+#if 1
   uint16 epoch;		        /**< counter for cipher state changes */
   uint48 sequence_number;       /**< sequence number */
+#endif
+
   uint16 length;		/**< length of the following fragment */
   /* fragment */
 } dtls_record_header_t;

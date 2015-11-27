@@ -124,6 +124,12 @@
 
 #define WITH_ARDUINO 1
 
+//#define MSG_DEBUG 1
+
+#define MSG_DURATION 1
+#define MSG_ENCRYPT_TIME 1
+//#define MESURE_TIME_START_PUSHING_MSG
+
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD

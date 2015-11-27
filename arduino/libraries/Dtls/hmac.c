@@ -76,10 +76,7 @@ void
 dtls_hmac_update(dtls_hmac_context_t *ctx,
 		 const unsigned char *input, size_t ilen) {
   assert(ctx);
-// FIXME to get the SHA256 out of the code
-#if 1 
   dtls_hash_update(&ctx->data, input, ilen);
-#endif
 }
 
 dtls_hmac_context_t *
@@ -102,12 +99,9 @@ dtls_hmac_init(dtls_hmac_context_t *ctx, const unsigned char *key, size_t klen) 
   memset(ctx, 0, sizeof(dtls_hmac_context_t));
 
   if (klen > DTLS_HMAC_BLOCKSIZE) {
-// FIXME to get the SHA256 out of the code
-#if 1 
     dtls_hash_init(&ctx->data);
     dtls_hash_update(&ctx->data, key, klen);
     dtls_hash_finalize(ctx->pad, &ctx->data);
-#endif
   } else
     memcpy(ctx->pad, key, klen);
 
@@ -140,8 +134,6 @@ dtls_hmac_finalize(dtls_hmac_context_t *ctx, unsigned char *result) {
   assert(ctx);
   assert(result);
   
-// FIXME to get the SHA256 out of the code
-#if 1 
   len = dtls_hash_finalize(buf, &ctx->data);
 
   dtls_hash_init(&ctx->data);
@@ -149,7 +141,6 @@ dtls_hmac_finalize(dtls_hmac_context_t *ctx, unsigned char *result) {
   dtls_hash_update(&ctx->data, buf, len);
 
   len = dtls_hash_finalize(result, &ctx->data);
-#endif
 
   return len;
 }

@@ -146,7 +146,9 @@ dtls_handshake_parameters_t *dtls_handshake_new()
 
     if (handshake) {
         /* initialize the handshake hash wrt. the hard-coded DTLS version */
+#ifdef MSG_DEBUG
         dtls_debug("DTLSv12: initialize HASH_SHA256\n\r");
+#endif
         /* TLS 1.2:  PRF(secret, label, seed) = P_<hash>(secret, label + seed) */
         /* FIXME: we use the default SHA256 here, might need to support other 
            hash functions as well */
@@ -266,6 +268,12 @@ dtls_prf(const unsigned char *key, size_t keylen,
         unsigned char *buf, size_t buflen)
 {
 
+    if(key == NULL)
+    {
+        dtls_always_hexdump("WAIT : key not present \r\n", 0, 0);
+        return 0;
+    }
+
     /* Clear the result buffer */
     memset(buf, 0, buflen);
     return dtls_p_hash(HASH_SHA256, 
@@ -337,21 +345,27 @@ dtls_psk_pre_master_secret(unsigned char *key, size_t keylen,
         unsigned char *result, size_t result_len) {
     unsigned char *p = result;
 
+    // if reslen < 4* keylen
     if (result_len < (2 * (sizeof(uint16) + keylen))) {
         return -1;
     }
 
+    // copy keylen in res
     dtls_int_to_uint16(p, keylen);
     p += sizeof(uint16);
 
+    // put 0s in res of size keylen
     memset(p, 0, keylen);
     p += keylen;
 
+    // copy keylen in result
     memcpy(p, result, sizeof(uint16));
     p += sizeof(uint16);
 
+    // copy the key into res
     memcpy(p, key, keylen);
 
+    // return 4 * keylen
     return 2 * (sizeof(uint16) + keylen);
 }
 #endif /* DTLS_PSK */
@@ -548,7 +562,16 @@ dtls_encrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_ENCRYPT_TIME
+    uint32_t time_before;
+    uint32_t time_after;
+    dtls_get_time(&time_before);
+#endif
+
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("before encrypt", (char *)src, length);
+#endif
+
 #ifdef ANCIENNE_IMPLE_AES
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
@@ -570,7 +593,14 @@ dtls_encrypt(const unsigned char *src, size_t length,
         memmove(buf, src, length);
 
     ret = dtls_ccm_encrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("after encrypt", (char *)buf, length);
+#endif
+
+#ifdef MSG_ENCRYPT_TIME
+    dtls_get_time(&time_after);
+    dtls_debug("Encryption took : %d \r\n", time_after - time_before);
+#endif
 
 error:
     dtls_cipher_context_release();
@@ -587,7 +617,15 @@ dtls_decrypt(const unsigned char *src, size_t length,
     int ret;
     struct dtls_cipher_context_t *ctx = dtls_cipher_context_get();
 
+#ifdef MSG_ENCRYPT_TIME
+    uint32_t time_before;
+    uint32_t time_after;
+    dtls_get_time(&time_before);
+#endif
+
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("before decrypt", (char *)src, length);
+#endif
 #ifdef ANCIENNE_IMPLE_AES
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif
@@ -608,7 +646,14 @@ dtls_decrypt(const unsigned char *src, size_t length,
         memmove(buf, src, length);
 
     ret = dtls_ccm_decrypt(&ctx->data, src, length, buf, nounce, aad, la);
+#ifdef MSG_DEBUG
     dtls_debug_hexdump("after decrypt", (char *)buf, length);
+#endif
+
+#ifdef MSG_ENCRYPT_TIME
+    dtls_get_time(&time_after);
+    dtls_debug("Decryption took : %d \r\n", time_after - time_before);
+#endif
 
 error:
     dtls_cipher_context_release();

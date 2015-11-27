@@ -63,6 +63,7 @@ typedef clock_time_t dtls_tick_t;
 
 #if defined WITH_ARDUINO
 void dtls_clock_init(unsigned long (*get_cur_time)(void));
+void dtls_get_time(uint32_t *t);
 #else
 void dtls_clock_init(void);
 #endif
