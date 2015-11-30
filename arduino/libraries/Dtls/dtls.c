@@ -713,9 +713,9 @@ calculate_key_block(dtls_context_t *ctx,
             return dtls_alert_fatal_create(DTLS_ALERT_INTERNAL_ERROR);
     }
 
-//#ifdef MSG_DEBUG
-    dtls_debug_dump("client_random", handshake->tmp.random.client
 #ifdef MSG_DEBUG
+    dtls_debug_dump("pre_master_secret", pre_master_secret, pre_master_len);
+    dtls_debug_dump("client_random", handshake->tmp.random.client
             , DTLS_RANDOM_LENGTH);
     dtls_always_hexdump("server_random", handshake->tmp.random.server
             , DTLS_RANDOM_LENGTH);
@@ -738,10 +738,9 @@ calculate_key_block(dtls_context_t *ctx,
             master_secret,
             DTLS_MASTER_SECRET_LENGTH);
 
-
+#ifdef MSG_DEBUG
     dtls_always_hexdump("master_secret", master_secret
             , DTLS_MASTER_SECRET_LENGTH);
-#ifdef MSG_DEBUG
 #endif
 
     /* create key_block from master_secret
@@ -2755,8 +2754,7 @@ check_server_hellodone(dtls_context_t *ctx,
 
     // Process the master key
     // put it in the peer structure
-    res = calculate_key_block(ctx, handshake, peer,
-            &peer->session, peer->role);
+    res = calculate_key_block(ctx, handshake, peer, &peer->session, peer->role);
     if (res < 0) {
         return res;
     }
@@ -3511,7 +3509,9 @@ dtls_handle_message(dtls_context_t *ctx,
         //dtls_debug("dtls_handle_message: FOUND PEER\n\r");
     }
 
-    //dtls_debug_hexdump("RECEIVED MSG", msg, msglen);
+#ifdef MSG_DEBUG
+    dtls_debug_hexdump("RECEIVED MSG", msg, msglen);
+#endif
 
     while ((rlen = is_record(msg,msglen))) {
         dtls_peer_type role;

@@ -139,12 +139,6 @@ something_to_hexdump(log_t loglvl, char *name, unsigned char *buf
     instant_print(const_cast<char *>("\n\r"));
 }
 
-void say (char * txt_to_say)
-{
-    Serial.print(txt_to_say);
-    //delay(1000);
-}
-
 #define	NTAB(t)		((int) (sizeof (t) / sizeof (t)[0]))
 
 
@@ -486,7 +480,6 @@ void init_dtls_server (char line [])
     dtls_init(get_the_time);
 
     the_context = dtls_new_context(get_random);
-    the_context->say = say;
     the_context->smth_to_say = something_to_say;
     the_context->smth_to_hexdump = something_to_hexdump;
 
@@ -561,7 +554,6 @@ void init_dtls_client (char line [])
     dtls_init(get_the_time);
 
     the_context = dtls_new_context(get_random);
-    the_context->say = say;
     the_context->smth_to_say = something_to_say;
     the_context->smth_to_hexdump = something_to_hexdump;
 
