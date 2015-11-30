@@ -30,9 +30,9 @@
 #endif
 #endif
 
-/** 
+/**
  * Datagrams in the netq_t structure have a fixed maximum size of
- * DTLS_MAX_BUF to simplify memory management on constrained nodes. */ 
+ * DTLS_MAX_BUF to simplify memory management on constrained nodes. */
 typedef unsigned char netq_packet_t[DTLS_MAX_BUF];
 
 typedef struct netq_t {
@@ -61,7 +61,7 @@ static inline void netq_init()
 void netq_init();
 #endif
 
-/** 
+/**
  * Adds a node to the given queue, ordered by their time-stamp t.
  * This function returns @c 0 on error, or non-zero if @p node has
  * been added successfully.
@@ -84,7 +84,7 @@ netq_t *netq_node_new(size_t size);
 
 /**
  * Returns a pointer to the first item in given queue or NULL if
- * empty. 
+ * empty.
  */
 netq_t *netq_head(list_t queue);
 

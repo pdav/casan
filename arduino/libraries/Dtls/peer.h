@@ -65,7 +65,7 @@ typedef struct dtls_peer_t {
     dtls_handshake_parameters_t *handshake_params;
 } dtls_peer_t;
 
-/** 
+/**
  * Holds security parameters, local state and the transport address
  * for each peer. */
 
@@ -101,7 +101,7 @@ dtls_security_params_next(dtls_peer_t *peer)
     return peer->security_params[1];
 }
 
-static inline void 
+static inline void
 dtls_security_params_free_other(dtls_peer_t *peer)
 {
     dtls_security_parameters_t * security0 = peer->security_params[0];
@@ -114,7 +114,7 @@ dtls_security_params_free_other(dtls_peer_t *peer)
     peer->security_params[1] = NULL;
 }
 
-static inline void 
+static inline void
 dtls_security_params_switch(dtls_peer_t *peer)
 {
     dtls_security_parameters_t * security = peer->security_params[1];
@@ -123,7 +123,7 @@ dtls_security_params_switch(dtls_peer_t *peer)
     peer->security_params[0] = security;
 }
 
-void 
+void
 peer_init();
 
 /**
@@ -141,11 +141,11 @@ dtls_peer_t *
 dtls_new_peer(const session_t *session);
 
 /** Releases the storage allocated to @p peer. */
-void 
+void
 dtls_free_peer(dtls_peer_t *peer);
 
 /** Returns the current state of @p peer. */
-static inline 
+static inline
 dtls_state_t dtls_peer_state(const dtls_peer_t *peer) {
     return peer->state;
 }
@@ -154,7 +154,7 @@ dtls_state_t dtls_peer_state(const dtls_peer_t *peer) {
  * Checks if given @p peer is connected. This function returns
  * @c 1 if connected, or @c 0 otherwise.
  */
-static inline int 
+static inline int
 dtls_peer_is_connected(const dtls_peer_t *peer) {
     return peer->state == DTLS_STATE_CONNECTED;
 }

@@ -150,7 +150,7 @@ dtls_handshake_parameters_t *dtls_handshake_new()
         dtls_debug("DTLSv12: initialize HASH_SHA256\n\r");
 #endif
         /* TLS 1.2:  PRF(secret, label, seed) = P_<hash>(secret, label + seed) */
-        /* FIXME: we use the default SHA256 here, might need to support other 
+        /* FIXME: we use the default SHA256 here, might need to support other
            hash functions as well */
         dtls_hash_init(&handshake->hs_state.hs_hash);
     }
@@ -260,7 +260,7 @@ error:
     return buflen;
 }
 
-size_t 
+size_t
 dtls_prf(const unsigned char *key, size_t keylen,
         const unsigned char *label, size_t labellen,
         const unsigned char *random1, size_t random1len,
@@ -276,16 +276,16 @@ dtls_prf(const unsigned char *key, size_t keylen,
 
     /* Clear the result buffer */
     memset(buf, 0, buflen);
-    return dtls_p_hash(HASH_SHA256, 
-            key, keylen, 
-            label, labellen, 
+    return dtls_p_hash(HASH_SHA256,
+            key, keylen,
+            label, labellen,
             random1, random1len,
             random2, random2len,
             buf, buflen);
 }
 
 void
-dtls_mac(dtls_hmac_context_t *hmac_ctx, 
+dtls_mac(dtls_hmac_context_t *hmac_ctx,
         const unsigned char *record,
         const unsigned char *packet, size_t length,
         unsigned char *buf)
@@ -304,7 +304,7 @@ dtls_mac(dtls_hmac_context_t *hmac_ctx,
 
 static size_t
 dtls_ccm_encrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src, size_t srclen,
-        unsigned char *buf, 
+        unsigned char *buf,
         unsigned char *nounce,
         const unsigned char *aad, size_t la)
 {
@@ -312,10 +312,10 @@ dtls_ccm_encrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src, size_t srclen,
 
     assert(ccm_ctx);
 
-    len = dtls_ccm_encrypt_message(&ccm_ctx->ctx, 8 /* M */, 
+    len = dtls_ccm_encrypt_message(&ccm_ctx->ctx, 8 /* M */,
             max(2, 15 - DTLS_CCM_NONCE_SIZE),
             nounce,
-            buf, srclen, 
+            buf, srclen,
             aad, la);
     return len;
 }
@@ -331,10 +331,10 @@ dtls_ccm_decrypt(aes128_ccm_t *ccm_ctx, const unsigned char *src,
 
     assert(ccm_ctx);
 
-    len = dtls_ccm_decrypt_message(&ccm_ctx->ctx, 8 /* M */, 
+    len = dtls_ccm_decrypt_message(&ccm_ctx->ctx, 8 /* M */,
             max(2, 15 - DTLS_CCM_NONCE_SIZE),
             nounce,
-            buf, srclen, 
+            buf, srclen,
             aad, la);
     return len;
 }
@@ -395,7 +395,7 @@ int dtls_ec_key_from_uint32_asn1(const uint32_t *key, size_t key_size,
         unsigned char *buf) {
     int i;
     unsigned char *buf_orig = buf;
-    int first = 1; 
+    int first = 1;
 
     for (i = (key_size / sizeof(uint32_t)) - 1; i >= 0 ; i--) {
         if (key[i] == 0)
@@ -405,7 +405,7 @@ int dtls_ec_key_from_uint32_asn1(const uint32_t *key, size_t key_size,
             *buf = 0;
             buf++;
             dtls_int_to_uint32(buf, key[i]);
-            buf += 4;      
+            buf += 4;
         } else if (first && !(key[i] & 0xFF800000)) {
             buf[0] = (key[i] >> 16) & 0xff;
             buf[1] = (key[i] >> 8) & 0xff;
@@ -552,7 +552,7 @@ dtls_ecdsa_verify_sig(const unsigned char *pub_key_x,
 }
 #endif /* DTLS_ECC */
 
-int 
+int
 dtls_encrypt(const unsigned char *src, size_t length,
         unsigned char *buf,
         unsigned char *nounce,
@@ -611,7 +611,7 @@ error:
     return ret;
 }
 
-int 
+int
 dtls_decrypt(const unsigned char *src, size_t length,
         unsigned char *buf,
         unsigned char *nounce,

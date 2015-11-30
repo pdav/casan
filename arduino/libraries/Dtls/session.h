@@ -71,11 +71,11 @@ typedef struct {
 
 #endif /* WITH_CONTIKI */
 
-/** 
+/**
  * Resets the given session_t object @p sess to its default
  * values.  In particular, the member rlen must be initialized to the
  * available size for storing addresses.
- * 
+ *
  * @param sess The session_t object to initialize.
  */
 void dtls_session_init(session_t *sess);

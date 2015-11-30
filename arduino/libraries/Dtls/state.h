@@ -38,7 +38,7 @@
 #include "global.h"
 #include "hmac.h"
 
-typedef enum { 
+typedef enum {
     DTLS_STATE_INIT = 0
         , DTLS_STATE_WAIT_CLIENTHELLO
         , DTLS_STATE_WAIT_CLIENTCERTIFICATE
@@ -67,7 +67,7 @@ typedef struct {
     /* temporary storage for the final handshake hash */
 
 // FIXME to get the SHA256 out of the code
-#if 1 
+#if 1
     dtls_hash_ctx hs_hash;
 #endif
 } dtls_hs_state_t;

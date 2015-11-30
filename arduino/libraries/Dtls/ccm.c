@@ -46,7 +46,7 @@
     (A)[i] |= (C) & 0xFF;						\
 }
 
-static inline void 
+static inline void
 block0(size_t M,       /* number of auth bytes */
         size_t L,       /* number of bytes to encode message length */
         size_t la,      /* l(a) octets additional authenticated data */
@@ -66,9 +66,9 @@ block0(size_t M,       /* number of auth bytes */
     }
 }
 
-/** 
+/**
  * Creates the CBC-MAC for the additional authentication data that
- * is sent in cleartext. 
+ * is sent in cleartext.
  *
  * \param ctx  The crypto context for the AES encryption.
  * \param msg  The message starting with the additional authentication data.
@@ -85,10 +85,10 @@ block0(size_t M,       /* number of auth bytes */
 // TODO vérifier les tailles des copies
 static void
 add_auth_data(rijndael_ctx *ctx, const unsigned char *msg, size_t la,
-        unsigned char B[DTLS_CCM_BLOCKSIZE], 
+        unsigned char B[DTLS_CCM_BLOCKSIZE],
         unsigned char X[DTLS_CCM_BLOCKSIZE])
 {
-    size_t i,j; 
+    size_t i,j;
 
 #ifdef NOUVELLE_IMPLE_AES
     memcpy(X, B, DTLS_CCM_BLOCKSIZE);
@@ -175,9 +175,9 @@ add_auth_data(rijndael_ctx *ctx, const unsigned char *msg, size_t la,
 #endif
 
 #ifdef ANCIENNE_IMPLE_AES
-        rijndael_encrypt(ctx, B, X);  
+        rijndael_encrypt(ctx, B, X);
 #endif
-    } 
+    }
 }
 
 static inline void
@@ -188,7 +188,7 @@ encrypt(rijndael_ctx *ctx, size_t L, unsigned long counter,
 
     static unsigned long counter_tmp;
 
-    SET_COUNTER(A, L, counter, counter_tmp);    
+    SET_COUNTER(A, L, counter, counter_tmp);
 
 #ifdef NOUVELLE_IMPLE_AES
     // TODO vérifier les tailles des copies
@@ -203,7 +203,7 @@ encrypt(rijndael_ctx *ctx, size_t L, unsigned long counter,
 }
 
 static inline void
-mac(rijndael_ctx *ctx, 
+mac(rijndael_ctx *ctx,
         unsigned char *msg, size_t len,
         unsigned char B[DTLS_CCM_BLOCKSIZE],
         unsigned char X[DTLS_CCM_BLOCKSIZE]) {
@@ -225,9 +225,9 @@ mac(rijndael_ctx *ctx,
 }
 
 long int
-dtls_ccm_encrypt_message(rijndael_ctx *ctx, size_t M, size_t L, 
-        unsigned char nonce[DTLS_CCM_BLOCKSIZE], 
-        unsigned char *msg, size_t lm, 
+dtls_ccm_encrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
+        unsigned char nonce[DTLS_CCM_BLOCKSIZE],
+        unsigned char *msg, size_t lm,
         const unsigned char *aad, size_t la) {
     size_t i, len;
     unsigned long counter_tmp;
@@ -278,7 +278,7 @@ dtls_ccm_encrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
         msg += lm;
     }
 
-    /* calculate S_0 */  
+    /* calculate S_0 */
     SET_COUNTER(A, L, 0, counter_tmp);
 
 #ifdef NOUVELLE_IMPLE_AES
@@ -298,8 +298,8 @@ dtls_ccm_encrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
 
 long int
 dtls_ccm_decrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
-        unsigned char nonce[DTLS_CCM_BLOCKSIZE], 
-        unsigned char *msg, size_t lm, 
+        unsigned char nonce[DTLS_CCM_BLOCKSIZE],
+        unsigned char *msg, size_t lm,
         const unsigned char *aad, size_t la) {
 
     size_t len;
@@ -350,13 +350,13 @@ dtls_ccm_decrypt_message(rijndael_ctx *ctx, size_t M, size_t L,
          * (i.e., we can use memcpy() here).
          */
         memcpy(B + lm, X + lm, DTLS_CCM_BLOCKSIZE - lm);
-        mac(ctx, msg, lm, B, X); 
+        mac(ctx, msg, lm, B, X);
 
         /* update local pointers */
         msg += lm;
     }
 
-    /* calculate S_0 */  
+    /* calculate S_0 */
     SET_COUNTER(A, L, 0, counter_tmp);
 
 #ifdef NOUVELLE_IMPLE_AES

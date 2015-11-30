@@ -3,10 +3,10 @@
  * Copyright (C) 2010--2012 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the library tinydtls. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
-/** 
+/**
  * @file prng.h
  * @brief Pseudo Random Numbers
  */
@@ -16,7 +16,7 @@
 
 #include "tinydtls.h"
 
-/** 
+/**
  * @defgroup prng Pseudo Random Numbers
  * @{
  */

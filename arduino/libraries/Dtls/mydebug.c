@@ -54,7 +54,7 @@ const char *dtls_package_version() {
   return PACKAGE_VERSION;
 }
 
-log_t 
+log_t
 dtls_get_log_level() {
   return maxlog;
 }
@@ -66,7 +66,7 @@ dtls_set_log_level(log_t level) {
 
 /* this array has the same order as the type log_t */
 static char *loglevels[] = {
-  "EMRG", "ALRT", "CRIT", "WARN", "NOTE", "INFO", "DEBG" 
+  "EMRG", "ALRT", "CRIT", "WARN", "NOTE", "INFO", "DEBG"
 };
 
 #ifdef HAVE_TIME_H
@@ -84,19 +84,19 @@ print_timestamp(char *s, size_t len, time_t t) {
 static inline size_t
 print_timestamp(char *s, size_t len, clock_time_t t)
 {
-  return snprintf(s, len, "%u.%03u", 
-		  (unsigned int)(t / CLOCK_SECOND), 
+  return snprintf(s, len, "%u.%03u",
+		  (unsigned int)(t / CLOCK_SECOND),
 		  (unsigned int)(t % CLOCK_SECOND));
 }
 
 #endif /* HAVE_TIME_H */
 
-/** 
- * A length-safe strlen() fake. 
- * 
+/**
+ * A length-safe strlen() fake.
+ *
  * @param s      The string to count characters != 0.
  * @param maxlen The maximum length of @p s.
- * 
+ *
  * @return The length of @p s.
  */
 static inline size_t
@@ -121,10 +121,10 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len)
   char *p = buf;
 
   switch (addr->addr.sa.sa_family) {
-  case AF_INET: 
+  case AF_INET:
     if (len < INET_ADDRSTRLEN)
       return 0;
-  
+
     addrptr = &addr->addr.sin.sin_addr;
     port = ntohs(addr->addr.sin.sin_port);
     break;
@@ -153,7 +153,7 @@ dsrv_print_addr(const session_t *addr, char *buf, size_t len)
   if (addr->addr.sa.sa_family == AF_INET6) {
     if (p < buf + len) {
       *p++ = ']';
-    } else 
+    } else
       return 0;
   }
 
@@ -220,12 +220,12 @@ void dump(unsigned char *buf, size_t len)
 {
 }
 
-void 
+void
 dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr)
 {
 }
 
-void 
+void
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
         , size_t length, int extend)
 {
@@ -236,7 +236,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
 #ifdef WITH_CONTIKI
 #error "Can't be compiled for our purpose with this"
 # if defined (HAVE_VPRINTF) /* WITH_CONTIKI */
-void 
+void
 dsrv_log(log_t level, char *format, ...)
 {
   static char timebuf[32];
@@ -248,7 +248,7 @@ dsrv_log(log_t level, char *format, ...)
   if (print_timestamp(timebuf,sizeof(timebuf), clock_time()))
     PRINTF("%s ", timebuf);
 
-  if (level <= DTLS_LOG_DEBUG) 
+  if (level <= DTLS_LOG_DEBUG)
     PRINTF("%s ", loglevels[level]);
 
   va_start(ap, format);
@@ -257,7 +257,7 @@ dsrv_log(log_t level, char *format, ...)
 }
 
 # else /* HAVE_VPRINTF */
-void 
+void
 dsrv_log(log_t level, char *format, ...)
 {
   static char timebuf[32];
@@ -272,7 +272,7 @@ dsrv_log(log_t level, char *format, ...)
   if (print_timestamp(timebuf,sizeof(timebuf), time(NULL)))
     fprintf(log_fd, "%s ", timebuf);
 
-  if (level <= DTLS_LOG_DEBUG) 
+  if (level <= DTLS_LOG_DEBUG)
     fprintf(log_fd, "%s ", loglevels[level]);
 
   va_start(ap, format);
@@ -293,12 +293,12 @@ dsrv_log(log_t level, char *format, ...)
 void hexdump(const unsigned char *packet, int length) {
   int n = 0;
 
-  while (length--) { 
+  while (length--) {
     if (n % 16 == 0)
       printf("%08X ",n);
 
     printf("%02X ", *packet++);
-    
+
     n++;
     if (n % 8 == 0) {
       if (n % 16 == 0)
@@ -311,7 +311,7 @@ void hexdump(const unsigned char *packet, int length) {
 
 /** dump as narrow string of hex digits */
 void dump(unsigned char *buf, size_t len) {
-  while (len--) 
+  while (len--)
     printf("%02x", *buf++);
 }
 
@@ -326,7 +326,7 @@ void dtls_dsrv_log_addr(log_t level, const char *name, const session_t *addr)
   dsrv_log(level, "%s: %s\n", name, addrbuf);
 }
 
-void 
+void
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
         , size_t length, int extend) {
   static char timebuf[32];
@@ -338,7 +338,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
   if (print_timestamp(timebuf,sizeof(timebuf), clock_time()))
     PRINTF("%s ", timebuf);
 
-  if (level >= 0 && level <= DTLS_LOG_DEBUG) 
+  if (level >= 0 && level <= DTLS_LOG_DEBUG)
     PRINTF("%s ", loglevels[level]);
 
   if (extend) {
@@ -360,7 +360,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
     }
   } else {
     PRINTF("%s: (%zu bytes): ", name, length);
-    while (length--) 
+    while (length--)
       PRINTF("%02X", *buf++);
   }
   PRINTF("\n");
@@ -369,7 +369,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
 #else
 #error "Can't be compiled for our purpose with this"
 
-void 
+void
 dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
         , size_t length, int extend) {
   static char timebuf[32];
@@ -384,7 +384,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
   if (print_timestamp(timebuf, sizeof(timebuf), time(NULL)))
     fprintf(log_fd, "%s ", timebuf);
 
-  if (level <= DTLS_LOG_DEBUG) 
+  if (level <= DTLS_LOG_DEBUG)
     fprintf(log_fd, "%s ", loglevels[level]);
 
   if (extend) {
@@ -406,7 +406,7 @@ dtls_dsrv_hexdump_log(log_t level, const char *name, const unsigned char *buf
     }
   } else {
     fprintf(log_fd, "%s: (%zu bytes): ", name, length);
-    while (length--) 
+    while (length--)
       fprintf(log_fd, "%02X", *buf++);
   }
   fprintf(log_fd, "\n");

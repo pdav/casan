@@ -97,18 +97,18 @@ list_head(list_t list) {
     return *list;
 }
 
-static inline void 
+static inline void
 list_remove(list_t list, void *item) {
     LL_DELETE(*(struct list **)list, (struct list *)item);
 }
 
-static inline void 
+static inline void
 list_add(list_t list, void *item) {
     list_remove(list, item);
     LL_APPEND(*(struct list **)list, (struct list *)item);
 }
 
-static inline void 
+static inline void
 list_push(list_t list, void *item) {
     LL_PREPEND(*(struct list **)list, (struct list *)item);
 }
@@ -129,7 +129,7 @@ list_insert(list_t list, void *previtem, void *newitem) {
     } else {
         ((struct list *)newitem)->next = ((struct list *)previtem)->next;
         ((struct list *)previtem)->next = (struct list* ) newitem;
-    } 
+    }
 }
 
     static inline void *
