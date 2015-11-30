@@ -431,10 +431,6 @@ dtls_set_record_header(uint8 type, dtls_security_parameters_t *security,
         uint8 *buf)
 {
 
-//#ifdef WITH_ARDUINO
-//    dtls_warn("dtls_set_record_header\n\r");
-//#endif
-
     dtls_int_to_uint8(buf, type);
     buf += sizeof(uint8);
 
@@ -615,7 +611,6 @@ static void dtls_debug_keyblock(dtls_security_parameters_t *config)
  */
 static char *dtls_handshake_type_to_name(int type)
 {
-#if 1
 
     switch (type) {
         case DTLS_HT_HELLO_REQUEST:
@@ -641,9 +636,6 @@ static char *dtls_handshake_type_to_name(int type)
         default:
             return "unknown";
     }
-#else
-    return 0;
-#endif
 }
 
 /**
@@ -739,8 +731,7 @@ calculate_key_block(dtls_context_t *ctx,
             DTLS_MASTER_SECRET_LENGTH);
 
 #ifdef MSG_DEBUG
-    dtls_always_hexdump("master_secret", master_secret
-            , DTLS_MASTER_SECRET_LENGTH);
+    dtls_debug_dump("master_secret", master_secret, DTLS_MASTER_SECRET_LENGTH);
 #endif
 
     /* create key_block from master_secret
@@ -1076,7 +1067,6 @@ error:
 static inline void
 update_hs_hash(dtls_peer_t *peer, uint8 *data, size_t length) {
     //dtls_debug_dump("add MAC data", data, length);
-
     dtls_hash_update(&peer->handshake_params->hs_state.hs_hash, data, length);
 }
 
@@ -1327,7 +1317,8 @@ dtls_prepare_record(dtls_peer_t *peer, dtls_security_parameters_t *security,
         memcpy(A_DATA, &DTLS_RECORD_HEADER(sendbuf)->epoch, 8);
         /* type and version */
         memcpy(A_DATA + 8,  &DTLS_RECORD_HEADER(sendbuf)->content_type, 3);
-        dtls_int_to_uint16(A_DATA + 11, res - 8); /* length */
+        /* length */
+        dtls_int_to_uint16(A_DATA + 11, res - 8);
 
         res = dtls_encrypt(start + 8, res - 8, start + 8, nonce,
                 dtls_kb_local_write_key(security, peer->role),
@@ -1669,6 +1660,7 @@ dtls_verify_peer(dtls_context_t *ctx,
     err = dtls_send_handshake_msg_hash(ctx, peer, session,
             DTLS_HT_HELLO_VERIFY_REQUEST,
             buf, p - buf, 0);
+
     if (err < 0) {
         dtls_warn("cannot send HelloVerify request : err=%d\n\r", err);
     }
@@ -2174,6 +2166,7 @@ dtls_send_server_hello_msgs(dtls_context_t *ctx, dtls_peer_t *peer)
 dtls_send_certificate_verify_ecdh(dtls_context_t *ctx, dtls_peer_t *peer,
         const dtls_ecdsa_key_t *key)
 {
+
     /* The ASN.1 Integer representation of an 32 byte unsigned int could be
      * 33 bytes long add space for that */
     uint8 buf[DTLS_CV_LENGTH + 2];
@@ -2253,7 +2246,6 @@ dtls_send_client_hello(dtls_context_t *ctx, dtls_peer_t *peer,
     dtls_tick_t now;
 
     psk = is_psk_supported(ctx);
-
     ecdsa = is_ecdsa_supported(ctx, 1);
 
     cipher_size = 2 + ((ecdsa) ? 2 : 0) + ((psk) ? 2 : 0);
@@ -2393,7 +2385,7 @@ dtls_send_client_hello(dtls_context_t *ctx, dtls_peer_t *peer,
             buf, p - buf, cookie_length != 0);
 }
 
-    static int
+static int
 check_server_hello(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)
@@ -2464,7 +2456,7 @@ error:
     return dtls_alert_fatal_create(DTLS_ALERT_DECODE_ERROR);
 }
 
-    static int
+static int
 check_server_hello_verify_request(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)
@@ -2486,7 +2478,7 @@ check_server_hello_verify_request(dtls_context_t *ctx,
 }
 
 #ifdef DTLS_ECC
-    static int
+static int
 check_server_certificate(dtls_context_t *ctx,
         dtls_peer_t *peer,
         uint8 *data, size_t data_length)

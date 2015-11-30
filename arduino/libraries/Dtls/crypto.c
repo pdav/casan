@@ -625,7 +625,6 @@ dtls_decrypt(const unsigned char *src, size_t length,
     dtls_debug_hexdump("before decrypt", (char *)src, length);
 #endif
 
-
 #ifdef MSG_ENCRYPT_TIME
     uint32_t time_before = 0;
     uint32_t time_after = 0;
@@ -635,6 +634,7 @@ dtls_decrypt(const unsigned char *src, size_t length,
 #ifdef MSG_DEBUG
     dtls_debug_hexdump("before decrypt", (char *)src, length);
 #endif
+
 #ifdef ANCIENNE_IMPLE_AES
     ret = rijndael_set_key_enc_only(&ctx->data.ctx, key, 8 * keylen);
 #endif

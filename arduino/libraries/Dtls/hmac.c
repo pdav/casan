@@ -109,10 +109,7 @@ dtls_hmac_init(dtls_hmac_context_t *ctx, const unsigned char *key, size_t klen) 
   for (i=0; i < DTLS_HMAC_BLOCKSIZE; ++i)
     ctx->pad[i] ^= 0x36;
 
-// FIXME to get the SHA256 out of the code
-#if 1
   dtls_hash_init(&ctx->data);
-#endif
   dtls_hmac_update(ctx, ctx->pad, DTLS_HMAC_BLOCKSIZE);
 
   /* create opad by xor-ing pad[i] with 0x36 ^ 0x5C: */

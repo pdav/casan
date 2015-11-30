@@ -363,13 +363,8 @@ void dtls_check_retransmit(dtls_context_t *context, clock_time_t *next);
 typedef struct __attribute__((__packed__)) {
     uint8 content_type;		/**< content type of the included message */
     uint16 version;		/**< Protocol version */
-
-    // TODO was here : epoch and/or seq_num
-#if 1
     uint16 epoch;		        /**< counter for cipher state changes */
     uint48 sequence_number;       /**< sequence number */
-#endif
-
     uint16 length;		/**< length of the following fragment */
     /* fragment */
 } dtls_record_header_t;
