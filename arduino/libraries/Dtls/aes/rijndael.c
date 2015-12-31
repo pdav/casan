@@ -30,6 +30,7 @@
 /* #include <sys/systm.h> */
 
 #include "rijndael.h"
+#include "../dtls_config.h"
 
 #undef FULL_UNROLL
 
@@ -863,6 +864,34 @@ void
 rijndaelEncrypt(const aes_u32 rk[/*4*(Nr + 1)*/], int Nr, const aes_u8 pt[16],
     aes_u8 ct[16])
 {
+
+#ifdef HW_ENCRYPTION_ATMEGA128RFA1
+    char key[16];
+    PUTU32(key, rk[0]);
+    PUTU32(key + 4, rk[1]);
+    PUTU32(key + 8, rk[2]);
+    PUTU32(key + 12, rk[3]);
+
+    // TODO : not generic
+    int keylen = 16;
+
+    int i;
+    for (i = 0; i < keylen ; i++)
+        AES_KEY = key[i];
+
+    AES_CTRL = (0<<AES_CTRL_DIR) | (0<<AES_CTRL_MODE);
+
+    for (i = 0; i < keylen; i++)
+        AES_STATE = pt[i];
+
+    AES_CTRL |= (1<<AES_CTRL_REQUEST);
+
+    while (0 == (AES_STATUS & (1<<AES_STATUS_RY)));
+
+    for (i = 0; i < keylen; i++)
+        ct[i] = AES_STATE;
+#else
+
 	aes_u32 s0, s1, s2, s3, t0, t1, t2, t3;
 #ifndef FULL_UNROLL
     int r;
@@ -1041,6 +1070,7 @@ rijndaelEncrypt(const aes_u32 rk[/*4*(Nr + 1)*/], int Nr, const aes_u8 pt[16],
 		(Te4[(t2      ) & 0xff] & 0x000000ff) ^
 		rk[3];
 	PUTU32(ct + 12, s3);
+#endif
 }
 
 #ifdef WITH_AES_DECRYPT
