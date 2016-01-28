@@ -223,6 +223,14 @@ typedef struct {
 #endif /* DTLS_ECC */
 } dtls_handler_t;
 
+#ifdef DTLS_PSK
+typedef struct psk
+{
+    unsigned char key[DTLS_PSK_MAX_KEY_LEN];
+    uint16_t len;
+} psk_t ;
+#endif
+
 /** Holds global information of the DTLS engine. */
 typedef struct dtls_context_t {
     unsigned char cookie_secret[DTLS_COOKIE_SECRET_LENGTH];
@@ -240,6 +248,10 @@ typedef struct dtls_context_t {
 #else
     dtls_peer_t *peers;		/**< peer hash map */
 #endif /* WITH_CONTIKI */
+
+#ifdef DTLS_PSK
+    psk_t psk;
+#endif
 
     LIST_STRUCT(sendqueue);	/**< the packets to send */
 

@@ -1,6 +1,8 @@
-/* dtls -- a very basic DTLS implementation
+/* tinydtls.h.  Generated from tinydtls.h.in by configure.  */
+/* tinydtls -- a very basic DTLS implementation
  *
- * Copyright (C) 2011--2013 Olaf Bergmann <bergmann@tzi.org>
+ * Copyright (C) 2011--2014 Olaf Bergmann <bergmann@tzi.org>
+ * Copyright (C) 2013 Hauke Mehrtens <hauke@hauke-m.de>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,51 +26,23 @@
  */
 
 /**
- * @file dtls_time.h
- * @brief Clock Handling
+ * @file tinydtls.h
+ * @brief public tinydtls API
  */
 
-#ifndef _DTLS_DTLS_TIME_H_
-#define _DTLS_DTLS_TIME_H_
+#ifndef _DTLS_TINYDTLS_H_
+#define _DTLS_TINYDTLS_H_
 
-#include <stdint.h>
-//#include <sys/time.h>
+/** Defined to 1 if tinydtls is built with support for ECC */
+/* #undef DTLS_ECC */
 
-#include "tinydtls.h"
+/** Defined to 1 if tinydtls is built with support for PSK */
+#define DTLS_PSK 1
 
-/**
- * @defgroup clock Clock Handling
- * Default implementation of internal clock. You should redefine this if
- * you do not have time() and gettimeofday().
- * @{
- */
+// TODO because we need it
+#define WITH_SHA256 1
 
-#ifdef WITH_CONTIKI
-#include "clock.h"
-#else /* WITH_CONTIKI */
-//#include <time.h>
+/** Defined to 1 if tinydtls is built for Contiki OS */
+//#define WITH_CONTIKI 1
 
-#ifndef CLOCK_SECOND
-# define CLOCK_SECOND 1000
-#endif
-
-typedef uint32_t clock_time_t;
-#endif /* WITH_CONTIKI */
-
-typedef clock_time_t dtls_tick_t;
-
-#ifndef DTLS_TICKS_PER_SECOND
-#define DTLS_TICKS_PER_SECOND CLOCK_SECOND
-#endif /* DTLS_TICKS_PER_SECOND */
-
-#if defined WITH_ARDUINO
-void dtls_clock_init(unsigned long (*get_cur_time)(void));
-void dtls_get_time(uint32_t *t);
-#else
-void dtls_clock_init(void);
-#endif
-void dtls_ticks(dtls_tick_t *t);
-
-/** @} */
-
-#endif /* _DTLS_DTLS_TIME_H_ */
+#endif /* _DTLS_TINYDTLS_H_ */
