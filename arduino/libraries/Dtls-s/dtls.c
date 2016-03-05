@@ -709,7 +709,7 @@ calculate_key_block(dtls_context_t *ctx,
     dtls_debug_dump("pre_master_secret", pre_master_secret, pre_master_len);
     dtls_debug_dump("client_random", handshake->tmp.random.client
             , DTLS_RANDOM_LENGTH);
-    dtls_always_hexdump("server_random", handshake->tmp.random.server
+    dtls_debug_dump("server_random", handshake->tmp.random.server
             , DTLS_RANDOM_LENGTH);
 #endif
 
